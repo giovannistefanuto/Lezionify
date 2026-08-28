@@ -57,22 +57,34 @@ const PLAYBACK_SPEEDS = [1.0, 1.25, 1.5, 1.75, 2.0]
 
 const AVAILABLE_MODELS: { value: GeminiModel; label: string; tag: string; description: string }[] = [
   {
+    value: 'gemini-3.6-flash',
+    label: 'Gemini 3.6 Flash',
+    tag: 'Consigliato · Free Tier Ottimale',
+    description: 'Il modello più equilibrato e accurato per formule LaTeX e dispense di ingegneria.'
+  },
+  {
+    value: 'gemini-3.5-flash-lite',
+    label: 'Gemini 3.5 Flash-Lite',
+    tag: 'Ultra Veloce (~700ms)',
+    description: 'Generazione quasi istantanea, perfetto per lezioni veloci e consumo minimo di quota.'
+  },
+  {
+    value: 'gemini-3.5-flash',
+    label: 'Gemini 3.5 Flash',
+    tag: 'Veloce',
+    description: 'Solido per elaborazioni ad alta capacità di contesto.'
+  },
+  {
     value: 'gemini-2.5-flash',
     label: 'Gemini 2.5 Flash',
-    tag: 'Consigliato',
-    description: 'Molto veloce, economico e accurato per trascrizioni universitarie.'
-  },
-  {
-    value: 'gemini-2.5-pro',
-    label: 'Gemini 2.5 Pro',
-    tag: 'Avanzato',
-    description: 'Massima capacità di ragionamento matematico e deduzione logica.'
-  },
-  {
-    value: 'gemini-2.0-flash',
-    label: 'Gemini 2.0 Flash',
     tag: 'Stabile',
-    description: 'Modello precedente ad alta velocità.'
+    description: 'Collaudato per trascrizioni universitarie e dispense didattiche.'
+  },
+  {
+    value: 'gemini-3.7-flash',
+    label: 'Gemini 3.7 Flash',
+    tag: 'Nuovo Flagship',
+    description: 'Il modello più potente per compiti articolati (richiede quota disponibile).'
   }
 ]
 
@@ -87,10 +99,10 @@ export default function App() {
   const [notice, setNotice] = useState<string | null>(null)
 
   // App settings state
-  const [settings, setSettings] = useState<AppSettings>({ apiKey: '', model: 'gemini-2.5-flash' })
+  const [settings, setSettings] = useState<AppSettings>({ apiKey: '', model: 'gemini-3.6-flash' })
   const [showSettingsModal, setShowSettingsModal] = useState(false)
   const [inputApiKey, setInputApiKey] = useState('')
-  const [inputModel, setInputModel] = useState<GeminiModel>('gemini-2.5-flash')
+  const [inputModel, setInputModel] = useState<GeminiModel>('gemini-3.6-flash')
   const [isTestingKey, setIsTestingKey] = useState(false)
   const [testKeyFeedback, setTestKeyFeedback] = useState<{ valid: boolean; error?: string } | null>(null)
   const [showApiKeyText, setShowApiKeyText] = useState(false)

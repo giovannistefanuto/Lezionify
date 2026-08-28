@@ -174,7 +174,7 @@ describe('SettingsService', () => {
   it('restituisce impostazioni di default se il file non esiste', async () => {
     const s = await settingsService.getSettings()
     expect(s.apiKey).toBe('')
-    expect(s.model).toBe('gemini-2.5-flash')
+    expect(s.model).toBe('gemini-3.6-flash')
   })
 
   it('salva e recupera la chiave API e il modello scelto', async () => {

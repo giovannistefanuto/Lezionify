@@ -1,10 +1,22 @@
 import { readFile, rename, stat, writeFile } from 'node:fs/promises'
 import * as path from 'node:path'
-import type { AppSettings } from '../../shared/archive'
+import type { AppSettings, GeminiModel } from '../../shared/archive'
+
+const VALID_MODELS: GeminiModel[] = [
+  'gemini-3.7-flash',
+  'gemini-3.6-flash',
+  'gemini-3.5-flash',
+  'gemini-3.5-flash-lite',
+  'gemini-3.1-flash-lite',
+  'gemini-3.1-pro-preview',
+  'gemini-2.5-flash',
+  'gemini-2.5-pro',
+  'gemini-2.5-flash-lite'
+]
 
 const DEFAULT_SETTINGS: AppSettings = {
   apiKey: '',
-  model: 'gemini-2.5-flash'
+  model: 'gemini-3.6-flash'
 }
 
 export class SettingsService {
@@ -22,7 +34,7 @@ export class SettingsService {
       return {
         apiKey: typeof parsed.apiKey === 'string' ? parsed.apiKey : DEFAULT_SETTINGS.apiKey,
         model:
-          parsed.model === 'gemini-2.5-pro' || parsed.model === 'gemini-2.0-flash' || parsed.model === 'gemini-2.5-flash'
+          parsed.model && VALID_MODELS.includes(parsed.model)
             ? parsed.model
             : DEFAULT_SETTINGS.model
       }
@@ -35,7 +47,7 @@ export class SettingsService {
     const current = await this.getSettings()
     const updated: AppSettings = {
       apiKey: updates.apiKey !== undefined ? updates.apiKey.trim() : current.apiKey,
-      model: updates.model !== undefined ? updates.model : current.model
+      model: updates.model && VALID_MODELS.includes(updates.model) ? updates.model : current.model
     }
 
     const tempPath = `${this.settingsPath}.tmp`
