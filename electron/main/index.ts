@@ -2,7 +2,7 @@ import { app, BrowserWindow, ipcMain, net, protocol } from 'electron'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { ArchiveService } from './archive'
-import type { UpdateLecturePayload } from '../../shared/archive'
+import type { AppSettings, UpdateLecturePayload } from '../../shared/archive'
 
 protocol.registerSchemesAsPrivileged([
   {
@@ -76,6 +76,14 @@ function registerIpcHandlers(): void {
   ipcMain.handle('archive:delete-lecture', (_event, id: string) => archive.deleteLecture(id))
   ipcMain.handle('archive:get-audio-url', (_event, id: string) => `media://audio/${id}.mp3`)
   ipcMain.handle('archive:search-fulltext', (_event, query: string) => archive.searchFullText(query))
+  ipcMain.handle('archive:get-settings', () => archive.getSettings())
+  ipcMain.handle('archive:save-settings', (_event, settings: Partial<AppSettings>) =>
+    archive.saveSettings(settings)
+  )
+  ipcMain.handle('archive:test-api-key', (_event, apiKey: string) => archive.testApiKey(apiKey))
+  ipcMain.handle('archive:generate-lecture-notes', (_event, id: string) =>
+    archive.generateLectureNotes(id)
+  )
 }
 
 app.whenReady().then(async () => {

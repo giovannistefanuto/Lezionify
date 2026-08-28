@@ -1,5 +1,6 @@
 export type LectureStatus = 'audio-only' | 'transcript-available'
 export type StudyStatus = 'da-studiare' | 'in-corso' | 'completata'
+export type GeminiModel = 'gemini-2.5-flash' | 'gemini-2.5-pro' | 'gemini-2.0-flash'
 
 export interface Lecture {
   id: string
@@ -33,6 +34,22 @@ export interface UpdateLecturePayload {
   studyStatus?: StudyStatus
 }
 
+export interface AppSettings {
+  apiKey: string
+  model: GeminiModel
+}
+
+export interface TestApiKeyResult {
+  valid: boolean
+  error?: string
+}
+
+export interface GenerationResult {
+  success: boolean
+  markdown?: string
+  error?: string
+}
+
 export interface ArchiveApi {
   listLectures: () => Promise<Lecture[]>
   importFiles: () => Promise<ImportSummary | null>
@@ -45,4 +62,8 @@ export interface ArchiveApi {
   deleteLecture: (lectureId: string) => Promise<boolean>
   getAudioUrl: (lectureId: string) => Promise<string | null>
   searchFullText: (query: string) => Promise<string[]>
+  getSettings: () => Promise<AppSettings>
+  saveSettings: (settings: Partial<AppSettings>) => Promise<AppSettings>
+  testApiKey: (apiKey: string) => Promise<TestApiKeyResult>
+  generateLectureNotes: (lectureId: string) => Promise<GenerationResult>
 }

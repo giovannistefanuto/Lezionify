@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron'
-import type { ArchiveApi, UpdateLecturePayload } from '../../shared/archive'
+import type { AppSettings, ArchiveApi, UpdateLecturePayload } from '../../shared/archive'
 
 const archiveApi: ArchiveApi = {
   listLectures: () => ipcRenderer.invoke('archive:list'),
@@ -14,7 +14,13 @@ const archiveApi: ArchiveApi = {
     ipcRenderer.invoke('archive:update-lecture', lectureId, updates),
   deleteLecture: (lectureId: string) => ipcRenderer.invoke('archive:delete-lecture', lectureId),
   getAudioUrl: (lectureId: string) => ipcRenderer.invoke('archive:get-audio-url', lectureId),
-  searchFullText: (query: string) => ipcRenderer.invoke('archive:search-fulltext', query)
+  searchFullText: (query: string) => ipcRenderer.invoke('archive:search-fulltext', query),
+  getSettings: () => ipcRenderer.invoke('archive:get-settings'),
+  saveSettings: (settings: Partial<AppSettings>) =>
+    ipcRenderer.invoke('archive:save-settings', settings),
+  testApiKey: (apiKey: string) => ipcRenderer.invoke('archive:test-api-key', apiKey),
+  generateLectureNotes: (lectureId: string) =>
+    ipcRenderer.invoke('archive:generate-lecture-notes', lectureId)
 }
 
 contextBridge.exposeInMainWorld('archive', archiveApi)

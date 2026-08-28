@@ -145,3 +145,14 @@ Non modificare manualmente la sezione `Registro`: aggiungi le nuove decisioni es
 - **Impatto:** Il prompt generato con Copia per Gemini include automaticamente tutti i vincoli operativi e la struttura richiesta (Overview, Corpo, Note per l'Esame, formule LaTeX).
 - **Follow-up:** Utilizzare questo stesso system prompt come base per la futura pipeline AI della Milestone 3.
 - **File coinvolti:** src/utils/contextPrompt.ts, src/App.tsx
+
+## D-0013 — Implementazione Milestone 3 — Generazione automatica dispense tramite API Google Gemini
+
+- **Data:** 2026-08-28
+- **Stato:** accettata
+- **Area:** ai
+- **Decisione:** Integrato il servizio GeminiService nel backend Electron con SDK ufficiale @google/genai, gestione impostazioni e chiave API locale (userData/settings.json), pulsante 1-click di generazione/rigenerazione dispensa e applicazione automatica del prompt Gems con formule LaTeX (KaTeX).
+- **Motivazione:** Permette allo studente di trasformare le trascrizioni grezze in dispense didattiche rifinite con formule ed enfasi esame senza passaggi manuali di copia-incolla sul browser, mantenendo audio originale e testo grezzo intatti.
+- **Impatto:** L'interfaccia include il pannello Impostazioni per la chiave API, indicatore di progresso animato durante la generazione e salvataggio automatico del file Markdown renderizzato.
+- **Follow-up:** Valutare pipeline di trascrizione locale o automatica per file audio privi di TXT.
+- **File coinvolti:** electron/main/gemini.ts, electron/main/settings.ts, electron/main/archive.ts, electron/main/index.ts, electron/preload/index.ts, shared/archive.ts, src/App.tsx, src/styles.css, tests/archive.test.ts, package.json

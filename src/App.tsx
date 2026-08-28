@@ -1,5 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import type { ImportSummary, Lecture, StudyStatus } from '../shared/archive'
+import type {
+  AppSettings,
+  GeminiModel,
+  ImportSummary,
+  Lecture,
+  StudyStatus
+} from '../shared/archive'
 import { MarkdownViewer } from './components/MarkdownViewer'
 import {
   buildGeminiContextPrompt,
@@ -49,6 +55,27 @@ const STUDY_STATUS_LABELS: Record<StudyStatus, { label: string; icon: string; cl
 
 const PLAYBACK_SPEEDS = [1.0, 1.25, 1.5, 1.75, 2.0]
 
+const AVAILABLE_MODELS: { value: GeminiModel; label: string; tag: string; description: string }[] = [
+  {
+    value: 'gemini-2.5-flash',
+    label: 'Gemini 2.5 Flash',
+    tag: 'Consigliato',
+    description: 'Molto veloce, economico e accurato per trascrizioni universitarie.'
+  },
+  {
+    value: 'gemini-2.5-pro',
+    label: 'Gemini 2.5 Pro',
+    tag: 'Avanzato',
+    description: 'Massima capacità di ragionamento matematico e deduzione logica.'
+  },
+  {
+    value: 'gemini-2.0-flash',
+    label: 'Gemini 2.0 Flash',
+    tag: 'Stabile',
+    description: 'Modello precedente ad alta velocità.'
+  }
+]
+
 export default function App() {
   const [lectures, setLectures] = useState<Lecture[]>([])
   const [selectedCourse, setSelectedCourse] = useState<string>('tutti')
@@ -58,6 +85,19 @@ export default function App() {
   const [isLoading, setIsLoading] = useState(true)
   const [isImporting, setIsImporting] = useState(false)
   const [notice, setNotice] = useState<string | null>(null)
+
+  // App settings state
+  const [settings, setSettings] = useState<AppSettings>({ apiKey: '', model: 'gemini-2.5-flash' })
+  const [showSettingsModal, setShowSettingsModal] = useState(false)
+  const [inputApiKey, setInputApiKey] = useState('')
+  const [inputModel, setInputModel] = useState<GeminiModel>('gemini-2.5-flash')
+  const [isTestingKey, setIsTestingKey] = useState(false)
+  const [testKeyFeedback, setTestKeyFeedback] = useState<{ valid: boolean; error?: string } | null>(null)
+  const [showApiKeyText, setShowApiKeyText] = useState(false)
+
+  // AI generation state
+  const [isGenerating, setIsGenerating] = useState(false)
+  const [generationError, setGenerationError] = useState<string | null>(null)
 
   // Selected lecture & drawer state
   const [selectedLectureId, setSelectedLectureId] = useState<string | null>(null)
@@ -101,8 +141,20 @@ export default function App() {
     }
   }
 
+  async function loadSettings(): Promise<void> {
+    try {
+      const s = await window.archive.getSettings()
+      setSettings(s)
+      setInputApiKey(s.apiKey)
+      setInputModel(s.model)
+    } catch {
+      // Ignora errore
+    }
+  }
+
   useEffect(() => {
     void refreshLibrary()
+    void loadSettings()
   }, [])
 
   // Full text search debounced
@@ -135,6 +187,7 @@ export default function App() {
       setIsPlaying(false)
       setCurrentTime(0)
       setDuration(0)
+      setGenerationError(null)
       return
     }
 
@@ -147,6 +200,7 @@ export default function App() {
     setIsLoadingContent(true)
     setIsPlaying(false)
     setCurrentTime(0)
+    setGenerationError(null)
 
     Promise.all([
       selectedLecture.status === 'transcript-available'
@@ -318,6 +372,63 @@ export default function App() {
     }
   }
 
+  // AI automatic generation
+  async function handleGenerateLectureNotes(): Promise<void> {
+    if (!selectedLecture) return
+    if (!settings.apiKey) {
+      setShowSettingsModal(true)
+      setNotice('Inserisci prima la tua chiave API Gemini nelle Impostazioni.')
+      return
+    }
+
+    setIsGenerating(true)
+    setGenerationError(null)
+    try {
+      const res = await window.archive.generateLectureNotes(selectedLecture.id)
+      if (res.success && res.markdown) {
+        setMarkdownText(res.markdown)
+        setActiveTab('markdown')
+        setNotice('⚡ Dispensa generata con successo da Gemini!')
+        await refreshLibrary()
+      } else {
+        setGenerationError(res.error ?? 'Errore sconosciuto durante la generazione.')
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Errore di connessione con l’API Gemini.'
+      setGenerationError(msg)
+    } finally {
+      setIsGenerating(false)
+    }
+  }
+
+  async function handleSaveSettings(): Promise<void> {
+    try {
+      const updated = await window.archive.saveSettings({
+        apiKey: inputApiKey.trim(),
+        model: inputModel
+      })
+      setSettings(updated)
+      setShowSettingsModal(false)
+      setNotice('Impostazioni API salvate correttamente.')
+    } catch {
+      setNotice('Errore durante il salvataggio delle impostazioni.')
+    }
+  }
+
+  async function handleTestApiKey(): Promise<void> {
+    setIsTestingKey(true)
+    setTestKeyFeedback(null)
+    try {
+      const res = await window.archive.testApiKey(inputApiKey.trim())
+      setTestKeyFeedback(res)
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Errore di test.'
+      setTestKeyFeedback({ valid: false, error: msg })
+    } finally {
+      setIsTestingKey(false)
+    }
+  }
+
   async function handlePasteFromClipboard(): Promise<void> {
     if (!selectedLecture) return
     try {
@@ -442,17 +553,31 @@ export default function App() {
         </nav>
 
         <div className="sidebar-footer">
-          <p><strong>{completedCount}</strong> lezioni completate</p>
-          <p><strong>{inProgressCount}</strong> in corso · <strong>{transcriptCount}</strong> con testo</p>
+          <button
+            className="settings-trigger-btn"
+            onClick={() => {
+              setInputApiKey(settings.apiKey)
+              setInputModel(settings.model)
+              setTestKeyFeedback(null)
+              setShowSettingsModal(true)
+            }}
+          >
+            <span>⚙️ Impostazioni AI</span>
+            {!settings.apiKey && <span className="settings-warning-dot" title="Chiave API non configurata">•</span>}
+          </button>
+          <div className="stats-lines">
+            <p><strong>{completedCount}</strong> completate · <strong>{inProgressCount}</strong> in studio</p>
+            <p><strong>{transcriptCount}</strong> con testo / <strong>{lectures.length}</strong> totali</p>
+          </div>
         </div>
       </aside>
 
       <section className="content">
         <header className="content-header">
           <div>
-            <p className="eyebrow">MILESTONE 2 · VIEWER, NOTE & STUDIO</p>
+            <p className="eyebrow">MILESTONE 3 · GENERAZIONE AUTOMATICA AI</p>
             <h1>{selectedCourse === 'tutti' ? 'Le tue lezioni' : selectedCourse}</h1>
-            <p className="subtitle">Consulta lezioni con formule LaTeX, ascolta l'audio e copia il contesto per Gemini.</p>
+            <p className="subtitle">Genera dispense universitarie strutturate con formule LaTeX tramite Google Gemini con 1 click.</p>
           </div>
           <div className="actions">
             <button className="secondary-button" disabled={isImporting} onClick={() => void handleImport('files')}>
@@ -533,11 +658,11 @@ export default function App() {
                     <h3>{lecture.sourceAudioFileName}</h3>
                     <p>
                       {formatFileSize(lecture.byteSize)} ·{' '}
-                      {lecture.markdownFileName ? '📝 Note Markdown (LaTeX)' : lecture.sourceTranscriptFileName ? '📄 Trascrizione grezza' : 'Solo audio'}
+                      {lecture.markdownFileName ? '📝 Dispensa Pronta (LaTeX)' : lecture.sourceTranscriptFileName ? '📄 Trascrizione grezza' : 'Solo audio'}
                     </p>
                   </div>
-                  <span className={`status-pill ${lecture.status}`}>
-                    {lecture.status === 'transcript-available' ? 'Testo pronto' : 'Solo audio'}
+                  <span className={`status-pill ${lecture.markdownFileName ? 'dispensa-ready' : lecture.status}`}>
+                    {lecture.markdownFileName ? '✨ Dispensa AI' : lecture.status === 'transcript-available' ? 'Testo pronto' : 'Solo audio'}
                   </span>
                 </article>
               ))}
@@ -580,7 +705,7 @@ export default function App() {
                   onClick={() => handleCopyGeminiContext('dispensa-lezionify')}
                   title="Copia prompt strutturato per Gemini"
                 >
-                  ✨ {copyFeedback ?? 'Copia per Gemini'}
+                  ✨ {copyFeedback ?? 'Copia prompt'}
                 </button>
                 <button
                   className="gemini-dropdown-arrow"
@@ -623,7 +748,7 @@ export default function App() {
               className={`tab-btn ${activeTab === 'markdown' ? 'is-active' : ''}`}
               onClick={() => setActiveTab('markdown')}
             >
-              📝 Lezione Markdown {markdownText && '•'}
+              📝 Dispensa Didattica {markdownText && '•'}
             </button>
             <button
               className={`tab-btn ${activeTab === 'transcript' ? 'is-active' : ''}`}
@@ -644,64 +769,116 @@ export default function App() {
               <p className="loading">Caricamento contenuti lezione…</p>
             ) : (
               <>
-                {/* TAB 1: MARKDOWN VIEWER */}
+                {/* TAB 1: MARKDOWN VIEWER & AI GENERATION */}
                 {activeTab === 'markdown' && (
                   <div className="tab-pane">
                     <div className="detail-card markdown-card">
                       <div className="card-header">
                         <div className="card-title-group">
-                          <h3>Lezione Elaborata (LaTeX / Markdown)</h3>
+                          <h3>Dispensa Strutturata (LaTeX / Markdown)</h3>
                         </div>
                         <div className="card-actions">
-                          {markdownText ? (
-                            <>
-                              <button className="secondary-button small" onClick={handleCopyMarkdown}>
-                                Copia Markdown
-                              </button>
-                              <button
-                                className="primary-button small"
-                                onClick={() => void handlePasteFromClipboard()}
-                                title="Incolla dagli appunti la risposta generata da Gemini"
-                              >
-                                📋 Incolla da Gemini
-                              </button>
-                            </>
-                          ) : (
+                          {selectedLecture.status === 'transcript-available' && (
                             <button
-                              className="primary-button small"
-                              onClick={() => void handlePasteFromClipboard()}
+                              className="ai-generate-header-btn"
+                              onClick={() => void handleGenerateLectureNotes()}
+                              disabled={isGenerating}
+                              title="Genera o rigenera la dispensa didattica chiamando l'API di Gemini"
                             >
-                              📋 Incolla lezione da Gemini
+                              ⚡ {isGenerating ? 'Generazione in corso…' : markdownText ? 'Rigenera con AI' : 'Genera con AI'}
+                            </button>
+                          )}
+                          {markdownText && (
+                            <button className="secondary-button small" onClick={handleCopyMarkdown}>
+                              Copia Markdown
                             </button>
                           )}
                         </div>
                       </div>
 
-                      {markdownText ? (
-                        <div className="markdown-view-container">
-                          <MarkdownViewer content={markdownText} />
+                      {/* Generation In Progress Box */}
+                      {isGenerating && (
+                        <div className="ai-generating-box">
+                          <div className="ai-pulse-spinner" />
+                          <div className="ai-generating-text">
+                            <h4>⚡ Elaborazione con Google Gemini ({settings.model})...</h4>
+                            <p>
+                              L'AI sta analizzando la trascrizione grezza, strutturando i concetti gerarchici,
+                              evidenziando i punti d'esame e formattando le formule in LaTeX (KaTeX).
+                            </p>
+                          </div>
                         </div>
-                      ) : (
-                        <div className="gemini-flow-box">
-                          <h4>Nessuna lezione Markdown generata ancora</h4>
-                          <ol className="flow-steps">
-                            <li>
-                              Clicca in alto su <strong>✨ Copia per Gemini</strong> per copiare il materiale e le istruzioni con formule LaTeX.
-                            </li>
-                            <li>
-                              Incolla il prompt in <strong>Google Gemini</strong> e attendi la generazione.
-                            </li>
-                            <li>
-                              Copia la risposta da Gemini e clicca sul pulsante qui sotto:
-                            </li>
-                          </ol>
-                          <button
-                            className="primary-button paste-cta-btn"
-                            onClick={() => void handlePasteFromClipboard()}
-                          >
-                            📋 Incolla risposta di Gemini dagli appunti
-                          </button>
+                      )}
+
+                      {/* Error Box */}
+                      {generationError && (
+                        <div className="ai-error-box">
+                          <strong>Errore durante la generazione:</strong>
+                          <p>{generationError}</p>
+                          <div className="error-actions">
+                            <button
+                              className="primary-button small"
+                              onClick={() => void handleGenerateLectureNotes()}
+                            >
+                              Riprova
+                            </button>
+                            <button
+                              className="secondary-button small"
+                              onClick={() => setShowSettingsModal(true)}
+                            >
+                              Verifica Impostazioni API
+                            </button>
+                          </div>
                         </div>
+                      )}
+
+                      {/* Rendered Markdown or Call to Action */}
+                      {!isGenerating && (
+                        markdownText ? (
+                          <div className="markdown-view-container">
+                            <MarkdownViewer content={markdownText} />
+                          </div>
+                        ) : (
+                          <div className="ai-cta-card">
+                            {selectedLecture.status === 'transcript-available' ? (
+                              <>
+                                <div className="ai-cta-icon">⚡</div>
+                                <h4>Genera la dispensa automaticamente</h4>
+                                <p>
+                                  Hai a disposizione la trascrizione grezza. Puoi generare istantaneamente
+                                  la dispensa universitaria con formule matematiche LaTeX, terminologia inglese e note per l'esame.
+                                </p>
+                                <div className="ai-cta-buttons">
+                                  <button
+                                    className="primary-button large ai-main-btn"
+                                    onClick={() => void handleGenerateLectureNotes()}
+                                  >
+                                    ⚡ Genera Dispensa con Gemini AI
+                                  </button>
+                                  <button
+                                    className="secondary-button"
+                                    onClick={() => void handlePasteFromClipboard()}
+                                  >
+                                    📋 Incolla manualmente
+                                  </button>
+                                </div>
+                              </>
+                            ) : (
+                              <>
+                                <h4>Trascrizione necessaria</h4>
+                                <p>
+                                  Per generare la dispensa con l'AI, associa prima un file di trascrizione `.txt` a questa lezione.
+                                </p>
+                                <button
+                                  className="primary-button small"
+                                  onClick={() => void handleAttachTranscript()}
+                                >
+                                  Associa file TXT
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        )
                       )}
                     </div>
                   </div>
@@ -721,6 +898,13 @@ export default function App() {
                         <div className="card-actions">
                           {selectedLecture.status === 'transcript-available' ? (
                             <>
+                              <button
+                                className="ai-generate-header-btn"
+                                onClick={() => void handleGenerateLectureNotes()}
+                                disabled={isGenerating}
+                              >
+                                ⚡ Genera con AI
+                              </button>
                               <button
                                 className="secondary-button small"
                                 onClick={handleCopyTranscript}
@@ -852,7 +1036,7 @@ export default function App() {
                       </div>
                       {showDeleteConfirm ? (
                         <div className="delete-confirm-box">
-                          <p>Sei sicuro di voler eliminare questa lezione, l'audio e le note dall'archivio locale?</p>
+                          <p>Sei sicuro di voler eliminare questa lezione, l'audio e la dispensa dall'archivio locale?</p>
                           <div className="delete-actions">
                             <button
                               className="danger-button"
@@ -948,7 +1132,7 @@ export default function App() {
             <div className="modal-overlay">
               <div className="modal-content">
                 <div className="modal-header">
-                  <h3>Incolla Lezione Markdown da Gemini</h3>
+                  <h3>Incolla Dispensa Markdown da Gemini</h3>
                   <button className="modal-close" onClick={() => setShowPasteModal(false)}>✕</button>
                 </div>
                 <p className="modal-description">
@@ -980,6 +1164,111 @@ export default function App() {
             </div>
           )}
         </aside>
+      )}
+
+      {/* Settings Modal */}
+      {showSettingsModal && (
+        <div className="modal-overlay">
+          <div className="modal-content settings-modal-content">
+            <div className="modal-header">
+              <h3>⚙️ Impostazioni AI & Google Gemini</h3>
+              <button className="modal-close" onClick={() => setShowSettingsModal(false)}>✕</button>
+            </div>
+            <p className="modal-description">
+              Configura la tua chiave API Google Gemini per abilitare la generazione automatica con 1 click.
+            </p>
+
+            <div className="settings-form">
+              <label className="settings-field">
+                <div className="field-label-row">
+                  <span>Chiave API Google Gemini:</span>
+                  <a
+                    href="https://aistudio.google.com/app/apikey"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="api-key-link"
+                  >
+                    Ottieni chiave API (gratuita) ↗
+                  </a>
+                </div>
+                <div className="api-input-wrap">
+                  <input
+                    type={showApiKeyText ? 'text' : 'password'}
+                    value={inputApiKey}
+                    onChange={(e) => setInputApiKey(e.target.value)}
+                    placeholder="AIzaSy..."
+                    className="api-key-input"
+                  />
+                  <button
+                    type="button"
+                    className="toggle-show-btn"
+                    onClick={() => setShowApiKeyText((prev) => !prev)}
+                  >
+                    {showApiKeyText ? 'Nascondi' : 'Mostra'}
+                  </button>
+                </div>
+              </label>
+
+              <div className="test-key-row">
+                <button
+                  type="button"
+                  className="secondary-button small"
+                  onClick={() => void handleTestApiKey()}
+                  disabled={isTestingKey || !inputApiKey.trim()}
+                >
+                  {isTestingKey ? 'Verifica in corso…' : '🧪 Testa Connessione'}
+                </button>
+                {testKeyFeedback && (
+                  <span className={`test-result ${testKeyFeedback.valid ? 'is-valid' : 'is-error'}`}>
+                    {testKeyFeedback.valid ? '✅ Connessione riuscita!' : `❌ ${testKeyFeedback.error}`}
+                  </span>
+                )}
+              </div>
+
+              <div className="settings-field">
+                <span>Modello Gemini:</span>
+                <div className="model-options-list">
+                  {AVAILABLE_MODELS.map((m) => (
+                    <label
+                      key={m.value}
+                      className={`model-option-card ${inputModel === m.value ? 'is-selected' : ''}`}
+                    >
+                      <input
+                        type="radio"
+                        name="gemini-model"
+                        value={m.value}
+                        checked={inputModel === m.value}
+                        onChange={() => setInputModel(m.value)}
+                      />
+                      <div className="model-option-info">
+                        <div className="model-option-title">
+                          <strong>{m.label}</strong>
+                          <span className="model-badge">{m.tag}</span>
+                        </div>
+                        <span className="model-desc">{m.description}</span>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div className="modal-actions">
+                <button
+                  className="primary-button"
+                  onClick={() => void handleSaveSettings()}
+                >
+                  Salva Impostazioni
+                </button>
+                <button
+                  className="secondary-button"
+                  onClick={() => setShowSettingsModal(false)}
+                >
+                  Chiudi
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </main>
   )

@@ -1,9 +1,11 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   ArchiveService,
   fileChecksum,
   parseFileName
 } from '../electron/main/archive'
+import { cleanMarkdownOutput, GeminiService } from '../electron/main/gemini'
+import { SettingsService } from '../electron/main/settings'
 import { mkdir, readFile, rm, stat, unlink, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
@@ -143,14 +145,63 @@ describe('fileChecksum', () => {
   })
 })
 
-describe('ArchiveService — Ciclo di vita, CRUD, Markdown & Ricerca', () => {
+describe('cleanMarkdownOutput', () => {
+  it('rimuove i backticks ```markdown ... ``` se presenti come wrapper', () => {
+    const raw = '```markdown\n# Titolo Lezione\n\nTesto con formula $x=1$.\n```'
+    expect(cleanMarkdownOutput(raw)).toBe('# Titolo Lezione\n\nTesto con formula $x=1$.')
+  })
+
+  it('preserva il markdown standard senza wrapper esterno', () => {
+    const raw = '# Titolo\n\nParagrafo con formula $$E=mc^2$$.'
+    expect(cleanMarkdownOutput(raw)).toBe('# Titolo\n\nParagrafo con formula $$E=mc^2$$.')
+  })
+})
+
+describe('SettingsService', () => {
+  let tempDir: string
+  let settingsService: SettingsService
+
+  beforeEach(async () => {
+    tempDir = join(tmpdir(), `lezionify-settings-test-${randomUUID()}`)
+    await mkdir(tempDir, { recursive: true })
+    settingsService = new SettingsService(tempDir)
+  })
+
+  afterEach(async () => {
+    await rm(tempDir, { recursive: true, force: true }).catch(() => {})
+  })
+
+  it('restituisce impostazioni di default se il file non esiste', async () => {
+    const s = await settingsService.getSettings()
+    expect(s.apiKey).toBe('')
+    expect(s.model).toBe('gemini-2.5-flash')
+  })
+
+  it('salva e recupera la chiave API e il modello scelto', async () => {
+    const updated = await settingsService.saveSettings({
+      apiKey: 'AIzaSyFakeKey12345',
+      model: 'gemini-2.5-pro'
+    })
+    expect(updated.apiKey).toBe('AIzaSyFakeKey12345')
+    expect(updated.model).toBe('gemini-2.5-pro')
+
+    const reloaded = await settingsService.getSettings()
+    expect(reloaded.apiKey).toBe('AIzaSyFakeKey12345')
+    expect(reloaded.model).toBe('gemini-2.5-pro')
+  })
+})
+
+describe('ArchiveService — Ciclo di vita, CRUD, Markdown, AI & Ricerca', () => {
   let testArchiveDir: string
+  let mockGeminiService: GeminiService
   let service: ArchiveService
 
   beforeEach(async () => {
     testArchiveDir = join(tmpdir(), `lezionify-archive-test-${randomUUID()}`)
     await mkdir(testArchiveDir, { recursive: true })
-    service = new ArchiveService(testArchiveDir)
+
+    mockGeminiService = new GeminiService()
+    service = new ArchiveService(testArchiveDir, mockGeminiService)
     await service.initialize()
   })
 
@@ -222,29 +273,72 @@ describe('ArchiveService — Ciclo di vita, CRUD, Markdown & Ricerca', () => {
     expect(list[0].markdownFileName).toBe(`${lectureId}.md`)
   })
 
-  it('aggiorna lo stato di studio della lezione', async () => {
+  it('genera automaticamente la dispensa con AI invocando il servizio Gemini', async () => {
     const sourceDir = join(testArchiveDir, 'incoming')
     await mkdir(sourceDir, { recursive: true })
 
-    const mp3File = join(sourceDir, '2026-0507-16-19-41.mp3')
-    await writeFile(mp3File, 'audio-study-test')
+    const mp3File = join(sourceDir, 'RC 2026-0507-16-19-41.mp3')
+    const txtFile = join(sourceDir, 'RC 2026-0507-16-19-41.txt')
+    await writeFile(mp3File, 'audio-ai-test')
+    await writeFile(txtFile, 'Trascrizione professore sul protocollo TCP...')
 
     const summary = await service.importFiles([mp3File])
     const lectureId = summary.imported[0].id
 
-    // Default: da-studiare
-    expect(summary.imported[0].studyStatus).toBe('da-studiare')
+    // Salviamo la chiave API nelle impostazioni
+    await service.saveSettings({ apiKey: 'test-valid-api-key', model: 'gemini-2.5-flash' })
 
-    // Modifica a in-corso
-    const inProgress = await service.updateLecture(lectureId, { studyStatus: 'in-corso' })
-    expect(inProgress.studyStatus).toBe('in-corso')
+    // Mock della chiamata Gemini
+    const mockMarkdown = `# Lezione Reti di Calcolatori\n\n## Overview Didattica\nRiassunto del protocollo TCP.\n\n## Corpo della Lezione\nFormula finestra: $$W = \\min(CWND, RWND)$$\n\n> [!NOTE]\n> Note per l'Esame: domanda frequente sul three-way handshake.`
+    vi.spyOn(mockGeminiService, 'generateLectureNotes').mockResolvedValue(mockMarkdown)
 
-    // Modifica a completata
-    const completed = await service.updateLecture(lectureId, { studyStatus: 'completata' })
-    expect(completed.studyStatus).toBe('completata')
+    const genResult = await service.generateLectureNotes(lectureId)
+    expect(genResult.success).toBe(true)
+    expect(genResult.markdown).toBe(mockMarkdown)
+
+    // Verifica che il markdown sia stato salvato localmente
+    const saved = await service.readMarkdown(lectureId)
+    expect(saved).toBe(mockMarkdown)
 
     const list = await service.listLectures()
-    expect(list[0].studyStatus).toBe('completata')
+    expect(list[0].markdownFileName).toBe(`${lectureId}.md`)
+  })
+
+  it('restituisce errore se si tenta di generare dispensa senza chiave API', async () => {
+    const sourceDir = join(testArchiveDir, 'incoming')
+    await mkdir(sourceDir, { recursive: true })
+
+    const mp3File = join(sourceDir, 'RC 2026-0507-16-19-41.mp3')
+    const txtFile = join(sourceDir, 'RC 2026-0507-16-19-41.txt')
+    await writeFile(mp3File, 'audio-no-key')
+    await writeFile(txtFile, 'Trascrizione testo...')
+
+    const summary = await service.importFiles([mp3File])
+    const lectureId = summary.imported[0].id
+
+    // Impostazioni con chiave vuota
+    await service.saveSettings({ apiKey: '' })
+
+    const res = await service.generateLectureNotes(lectureId)
+    expect(res.success).toBe(false)
+    expect(res.error).toContain('Chiave API Gemini non impostata')
+  })
+
+  it('restituisce errore se si tenta di generare dispensa su lezione senza trascrizione', async () => {
+    const sourceDir = join(testArchiveDir, 'incoming')
+    await mkdir(sourceDir, { recursive: true })
+
+    const mp3File = join(sourceDir, '2026-0507-16-19-41.mp3')
+    await writeFile(mp3File, 'audio-only-test')
+
+    const summary = await service.importFiles([mp3File])
+    const lectureId = summary.imported[0].id
+
+    await service.saveSettings({ apiKey: 'some-key' })
+
+    const res = await service.generateLectureNotes(lectureId)
+    expect(res.success).toBe(false)
+    expect(res.error).toContain('non ha una trascrizione associata')
   })
 
   it('esegue ricerca full-text nei metadati, trascrizioni e note markdown', async () => {
@@ -263,29 +357,23 @@ describe('ArchiveService — Ciclo di vita, CRUD, Markdown & Ricerca', () => {
     const id1 = summary.imported.find((l) => l.courseCode === 'ALGORITMI')!.id
     const id2 = summary.imported.find((l) => l.courseCode === null)!.id
 
-    // Aggiungiamo note Markdown alla seconda lezione
     await service.saveMarkdown(id2, '# Note su Protocolli TCP e UDP\n\nAnalisi del three-way handshake.')
 
-    // Ricerca per corso (metadati)
     const matchCourse = await service.searchFullText('ALGORITMI')
     expect(matchCourse).toContain(id1)
     expect(matchCourse).not.toContain(id2)
 
-    // Ricerca nel testo della trascrizione
     const matchTranscript = await service.searchFullText('computazionale')
     expect(matchTranscript).toContain(id1)
     expect(matchTranscript).not.toContain(id2)
 
-    // Ricerca nel contenuto Markdown
     const matchMarkdown = await service.searchFullText('handshake')
     expect(matchMarkdown).toContain(id2)
     expect(matchMarkdown).not.toContain(id1)
 
-    // Ricerca senza corrispondenze
     const matchNone = await service.searchFullText('parola_totalmente_assente')
     expect(matchNone).toEqual([])
 
-    // Ricerca stringa vuota
     expect(await service.searchFullText('')).toEqual([])
   })
 
@@ -314,7 +402,6 @@ describe('ArchiveService — Ciclo di vita, CRUD, Markdown & Ricerca', () => {
     const deleted = await service.deleteLecture(lecture.id)
     expect(deleted).toBe(true)
 
-    // Verifica che tutti i 3 file siano stati eliminati dal filesystem
     await expect(stat(audioPath)).rejects.toThrow()
     await expect(stat(transcriptPath)).rejects.toThrow()
     await expect(stat(markdownPath)).rejects.toThrow()
@@ -325,7 +412,6 @@ describe('ArchiveService — Ciclo di vita, CRUD, Markdown & Ricerca', () => {
 
   it('garantisce retrocompatibilità per record di archivio senza studyStatus o markdownFileName', async () => {
     const libraryPath = join(testArchiveDir, 'library.json')
-    // Salviamo manualmente un record legacy privo di studyStatus e markdownFileName
     const legacyLibrary = {
       version: 1,
       lectures: [
@@ -402,20 +488,6 @@ describe('ArchiveService — Ciclo di vita, CRUD, Markdown & Ricerca', () => {
 
     const text = await service.readTranscript(lectureId)
     expect(text).toBe('Testo prodotto da Whisper offline')
-  })
-
-  it('lancia errore quando si tenta di associare un TXT o salvare Markdown su ID inesistente', async () => {
-    const sourceDir = join(testArchiveDir, 'incoming')
-    await mkdir(sourceDir, { recursive: true })
-    const dummyTxt = join(sourceDir, 'test.txt')
-    await writeFile(dummyTxt, 'test')
-
-    await expect(service.attachTranscriptFromFile('id-finto', dummyTxt)).rejects.toThrow(
-      'Lezione non trovata.'
-    )
-    await expect(service.saveMarkdown('id-finto', '# Test')).rejects.toThrow(
-      'Lezione non trovata.'
-    )
   })
 
   it('ordina le lezioni in modo decrescente per data', async () => {

@@ -12,7 +12,17 @@ import {
 } from 'node:fs/promises'
 import * as path from 'node:path'
 import { app, dialog } from 'electron'
-import type { ImportSummary, Lecture, SkippedImport, UpdateLecturePayload } from '../../shared/archive'
+import type {
+  AppSettings,
+  GenerationResult,
+  ImportSummary,
+  Lecture,
+  SkippedImport,
+  TestApiKeyResult,
+  UpdateLecturePayload
+} from '../../shared/archive'
+import { GeminiService } from './gemini'
+import { SettingsService } from './settings'
 
 const AUDIO_EXTENSION = '.mp3'
 const LIBRARY_VERSION = 1
@@ -75,8 +85,10 @@ export class ArchiveService {
   private readonly transcriptDirectory: string
   private readonly markdownDirectory: string
   private readonly libraryPath: string
+  private readonly settingsService: SettingsService
+  private readonly geminiService: GeminiService
 
-  constructor(customRootDirectory?: string) {
+  constructor(customRootDirectory?: string, customGeminiService?: GeminiService) {
     this.rootDirectory =
       customRootDirectory ??
       (app && typeof app.getPath === 'function'
@@ -86,6 +98,8 @@ export class ArchiveService {
     this.transcriptDirectory = path.join(this.rootDirectory, 'transcripts')
     this.markdownDirectory = path.join(this.rootDirectory, 'markdown')
     this.libraryPath = path.join(this.rootDirectory, 'library.json')
+    this.settingsService = new SettingsService(this.rootDirectory)
+    this.geminiService = customGeminiService ?? new GeminiService()
   }
 
   async initialize(): Promise<void> {
@@ -281,7 +295,6 @@ export class ArchiveService {
     const matchingIds: string[] = []
 
     for (const lecture of library.lectures) {
-      // Verifica nei metadati
       const matchMeta =
         lecture.sourceAudioFileName.toLowerCase().includes(trimmed) ||
         (lecture.courseCode && lecture.courseCode.toLowerCase().includes(trimmed)) ||
@@ -293,7 +306,6 @@ export class ArchiveService {
         continue
       }
 
-      // Verifica nel testo della trascrizione
       if (lecture.transcriptFileName) {
         try {
           const transcriptContent = await readFile(
@@ -309,7 +321,6 @@ export class ArchiveService {
         }
       }
 
-      // Verifica nel contenuto del file Markdown
       if (lecture.markdownFileName) {
         try {
           const mdContent = await readFile(
@@ -327,6 +338,63 @@ export class ArchiveService {
     }
 
     return matchingIds
+  }
+
+  async getSettings(): Promise<AppSettings> {
+    return this.settingsService.getSettings()
+  }
+
+  async saveSettings(settings: Partial<AppSettings>): Promise<AppSettings> {
+    return this.settingsService.saveSettings(settings)
+  }
+
+  async testApiKey(apiKey: string): Promise<TestApiKeyResult> {
+    return this.geminiService.testApiKey(apiKey)
+  }
+
+  async generateLectureNotes(id: string): Promise<GenerationResult> {
+    const library = await this.readLibrary()
+    const lecture = library.lectures.find((item) => item.id === id)
+    if (!lecture) {
+      return { success: false, error: 'Lezione non trovata.' }
+    }
+
+    if (!lecture.transcriptFileName) {
+      return {
+        success: false,
+        error: 'Questa lezione non ha una trascrizione associata. Associa prima un file TXT.'
+      }
+    }
+
+    const transcript = await this.readTranscript(id)
+    if (!transcript || !transcript.trim()) {
+      return { success: false, error: 'Il file di trascrizione è vuoto.' }
+    }
+
+    const settings = await this.settingsService.getSettings()
+    if (!settings.apiKey || !settings.apiKey.trim()) {
+      return {
+        success: false,
+        error: 'Chiave API Gemini non impostata. Inseriscila nelle Impostazioni (⚙️).'
+      }
+    }
+
+    try {
+      const generatedMarkdown = await this.geminiService.generateLectureNotes({
+        apiKey: settings.apiKey,
+        model: settings.model,
+        transcript,
+        courseCode: lecture.courseCode,
+        recordedAt: lecture.recordedAt,
+        sourceAudioFileName: lecture.sourceAudioFileName
+      })
+
+      await this.saveMarkdown(id, generatedMarkdown)
+      return { success: true, markdown: generatedMarkdown }
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : 'Errore durante la generazione della dispensa.'
+      return { success: false, error: msg }
+    }
   }
 
   async importFiles(filePaths: string[]): Promise<ImportSummary> {
@@ -405,7 +473,6 @@ export class ArchiveService {
       throw new Error('L’archivio locale ha un formato non valido.')
     }
 
-    // Normalizzazione retrocompatibile
     const normalizedLectures = parsedLibrary.lectures.map((lecture) => ({
       ...lecture,
       studyStatus: lecture.studyStatus ?? 'da-studiare',

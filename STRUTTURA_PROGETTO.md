@@ -2,7 +2,7 @@
 
 ## Stato attuale
 
-Il repository contiene l'applicazione desktop Electron con React e TypeScript aggiornata alla Milestone 2: archivio locale di MP3, trascrizioni TXT e note Markdown con rendering LaTeX/KaTeX, gestione degli stati di studio, esportazione contesto per Gemini esterno e ricerca full-text. Non usa ancora chiamate AI automatiche.
+Il repository contiene l'applicazione desktop Electron con React e TypeScript aggiornata alla Milestone 3: archivio locale di MP3 e trascrizioni TXT, viewer Markdown con formule KaTeX, player audio persistente e generazione automatica 1-click di dispense universitarie strutturate tramite chiamata diretta alle API di Google Gemini con il prompt e i vincoli Gems personalizzati.
 
 ## File presenti
 
