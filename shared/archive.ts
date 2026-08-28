@@ -45,6 +45,9 @@ export interface UpdateLecturePayload {
 
 export interface AppSettings {
   apiKey: string
+  apiKeys: string[]
+  activeKeyIndex: number
+  autoRotateOnQuota: boolean
   model: GeminiModel
 }
 

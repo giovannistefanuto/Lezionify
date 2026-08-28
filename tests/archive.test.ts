@@ -157,7 +157,7 @@ describe('cleanMarkdownOutput', () => {
   })
 })
 
-describe('SettingsService', () => {
+describe('SettingsService — Pool di Chiavi e Rotazione', () => {
   let tempDir: string
   let settingsService: SettingsService
 
@@ -174,20 +174,39 @@ describe('SettingsService', () => {
   it('restituisce impostazioni di default se il file non esiste', async () => {
     const s = await settingsService.getSettings()
     expect(s.apiKey).toBe('')
+    expect(s.apiKeys).toEqual([])
+    expect(s.activeKeyIndex).toBe(0)
+    expect(s.autoRotateOnQuota).toBe(true)
     expect(s.model).toBe('gemini-3.6-flash')
   })
 
-  it('salva e recupera la chiave API e il modello scelto', async () => {
+  it('salva e recupera il pool di chiavi API e il modello scelto', async () => {
     const updated = await settingsService.saveSettings({
-      apiKey: 'AIzaSyFakeKey12345',
-      model: 'gemini-2.5-pro'
+      apiKeys: ['AIzaSyKey1', 'AIzaSyKey2', 'AIzaSyKey3'],
+      activeKeyIndex: 1,
+      model: 'gemini-3.6-flash'
     })
-    expect(updated.apiKey).toBe('AIzaSyFakeKey12345')
-    expect(updated.model).toBe('gemini-2.5-pro')
+    expect(updated.apiKeys).toEqual(['AIzaSyKey1', 'AIzaSyKey2', 'AIzaSyKey3'])
+    expect(updated.activeKeyIndex).toBe(1)
+    expect(updated.apiKey).toBe('AIzaSyKey2')
+    expect(updated.model).toBe('gemini-3.6-flash')
 
     const reloaded = await settingsService.getSettings()
-    expect(reloaded.apiKey).toBe('AIzaSyFakeKey12345')
-    expect(reloaded.model).toBe('gemini-2.5-pro')
+    expect(reloaded.apiKeys).toEqual(['AIzaSyKey1', 'AIzaSyKey2', 'AIzaSyKey3'])
+    expect(reloaded.apiKey).toBe('AIzaSyKey2')
+  })
+
+  it('ruota correttamente le chiavi nel pool con rotateKey', async () => {
+    await settingsService.saveSettings({
+      apiKeys: ['AIzaSyKey1', 'AIzaSyKey2'],
+      activeKeyIndex: 0
+    })
+
+    const next1 = await settingsService.rotateKey()
+    expect(next1).toBe('AIzaSyKey2')
+
+    const next2 = await settingsService.rotateKey()
+    expect(next2).toBe('AIzaSyKey1')
   })
 })
 
@@ -258,14 +277,11 @@ describe('ArchiveService — Ciclo di vita, CRUD, Markdown, AI & Ricerca', () =>
     const summary = await service.importFiles([mp3File])
     const lectureId = summary.imported[0].id
 
-    // Inizialmente null
     expect(await service.readMarkdown(lectureId)).toBeNull()
 
-    // Salvataggio Markdown con LaTeX
     const mdContent = '# Teorema di Nyquist\n\nFormula: $$f_s \\ge 2 f_{max}$$\n'
     await service.saveMarkdown(lectureId, mdContent)
 
-    // Lettura
     const readMd = await service.readMarkdown(lectureId)
     expect(readMd).toBe(mdContent)
 
@@ -285,10 +301,8 @@ describe('ArchiveService — Ciclo di vita, CRUD, Markdown, AI & Ricerca', () =>
     const summary = await service.importFiles([mp3File])
     const lectureId = summary.imported[0].id
 
-    // Salviamo la chiave API nelle impostazioni
-    await service.saveSettings({ apiKey: 'test-valid-api-key', model: 'gemini-2.5-flash' })
+    await service.saveSettings({ apiKeys: ['test-valid-api-key'], model: 'gemini-3.6-flash' })
 
-    // Mock della chiamata Gemini
     const mockMarkdown = `# Lezione Reti di Calcolatori\n\n## Overview Didattica\nRiassunto del protocollo TCP.\n\n## Corpo della Lezione\nFormula finestra: $$W = \\min(CWND, RWND)$$\n\n> [!NOTE]\n> Note per l'Esame: domanda frequente sul three-way handshake.`
     vi.spyOn(mockGeminiService, 'generateLectureNotes').mockResolvedValue(mockMarkdown)
 
@@ -296,12 +310,48 @@ describe('ArchiveService — Ciclo di vita, CRUD, Markdown, AI & Ricerca', () =>
     expect(genResult.success).toBe(true)
     expect(genResult.markdown).toBe(mockMarkdown)
 
-    // Verifica che il markdown sia stato salvato localmente
     const saved = await service.readMarkdown(lectureId)
     expect(saved).toBe(mockMarkdown)
 
     const list = await service.listLectures()
     expect(list[0].markdownFileName).toBe(`${lectureId}.md`)
+  })
+
+  it('ruota automaticamente alla seconda chiave se la prima incontra errore di quota (RESOURCE_EXHAUSTED)', async () => {
+    const sourceDir = join(testArchiveDir, 'incoming')
+    await mkdir(sourceDir, { recursive: true })
+
+    const mp3File = join(sourceDir, 'RC 2026-0507-16-19-41.mp3')
+    const txtFile = join(sourceDir, 'RC 2026-0507-16-19-41.txt')
+    await writeFile(mp3File, 'audio-ai-test')
+    await writeFile(txtFile, 'Trascrizione professore...')
+
+    const summary = await service.importFiles([mp3File])
+    const lectureId = summary.imported[0].id
+
+    await service.saveSettings({
+      apiKeys: ['key-exhausted', 'key-working'],
+      activeKeyIndex: 0,
+      autoRotateOnQuota: true,
+      model: 'gemini-3.6-flash'
+    })
+
+    const mockMarkdown = `# Dispensa Generata con Chiave 2\n\nContenuto didattico.`
+    vi.spyOn(mockGeminiService, 'generateLectureNotes').mockImplementation(async (params) => {
+      if (params.apiKey === 'key-exhausted') {
+        throw new Error('RESOURCE_EXHAUSTED: quota exceeded for current key')
+      }
+      return mockMarkdown
+    })
+
+    const genResult = await service.generateLectureNotes(lectureId)
+    expect(genResult.success).toBe(true)
+    expect(genResult.markdown).toBe(mockMarkdown)
+
+    // Verifica che l'indice della chiave attiva sia stato aggiornato alla chiave funzionante
+    const updatedSettings = await service.getSettings()
+    expect(updatedSettings.activeKeyIndex).toBe(1)
+    expect(updatedSettings.apiKey).toBe('key-working')
   })
 
   it('restituisce errore se si tenta di generare dispensa senza chiave API', async () => {
@@ -316,12 +366,11 @@ describe('ArchiveService — Ciclo di vita, CRUD, Markdown, AI & Ricerca', () =>
     const summary = await service.importFiles([mp3File])
     const lectureId = summary.imported[0].id
 
-    // Impostazioni con chiave vuota
-    await service.saveSettings({ apiKey: '' })
+    await service.saveSettings({ apiKeys: [], apiKey: '' })
 
     const res = await service.generateLectureNotes(lectureId)
     expect(res.success).toBe(false)
-    expect(res.error).toContain('Chiave API Gemini non impostata')
+    expect(res.error).toContain('Nessuna chiave API Gemini configurata')
   })
 
   it('restituisce errore se si tenta di generare dispensa su lezione senza trascrizione', async () => {
@@ -334,7 +383,7 @@ describe('ArchiveService — Ciclo di vita, CRUD, Markdown, AI & Ricerca', () =>
     const summary = await service.importFiles([mp3File])
     const lectureId = summary.imported[0].id
 
-    await service.saveSettings({ apiKey: 'some-key' })
+    await service.saveSettings({ apiKeys: ['some-key'] })
 
     const res = await service.generateLectureNotes(lectureId)
     expect(res.success).toBe(false)

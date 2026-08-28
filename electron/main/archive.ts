@@ -372,29 +372,66 @@ export class ArchiveService {
     }
 
     const settings = await this.settingsService.getSettings()
-    if (!settings.apiKey || !settings.apiKey.trim()) {
+    const keysToTry: string[] = []
+    if (settings.apiKeys && settings.apiKeys.length > 0) {
+      const startIdx =
+        settings.activeKeyIndex >= 0 && settings.activeKeyIndex < settings.apiKeys.length
+          ? settings.activeKeyIndex
+          : 0
+      for (let i = 0; i < settings.apiKeys.length; i++) {
+        const idx = (startIdx + i) % settings.apiKeys.length
+        keysToTry.push(settings.apiKeys[idx])
+      }
+    } else if (settings.apiKey) {
+      keysToTry.push(settings.apiKey)
+    }
+
+    if (keysToTry.length === 0) {
       return {
         success: false,
-        error: 'Chiave API Gemini non impostata. Inseriscila nelle Impostazioni (⚙️).'
+        error: 'Nessuna chiave API Gemini configurata. Inseriscila nelle Impostazioni (⚙️).'
       }
     }
 
-    try {
-      const generatedMarkdown = await this.geminiService.generateLectureNotes({
-        apiKey: settings.apiKey,
-        model: settings.model,
-        transcript,
-        courseCode: lecture.courseCode,
-        recordedAt: lecture.recordedAt,
-        sourceAudioFileName: lecture.sourceAudioFileName
-      })
+    let lastError: string | null = null
 
-      await this.saveMarkdown(id, generatedMarkdown)
-      return { success: true, markdown: generatedMarkdown }
-    } catch (error) {
-      const msg = error instanceof Error ? error.message : 'Errore durante la generazione della dispensa.'
-      return { success: false, error: msg }
+    for (let i = 0; i < keysToTry.length; i++) {
+      const currentKey = keysToTry[i]
+      try {
+        const generatedMarkdown = await this.geminiService.generateLectureNotes({
+          apiKey: currentKey,
+          model: settings.model,
+          transcript,
+          courseCode: lecture.courseCode,
+          recordedAt: lecture.recordedAt,
+          sourceAudioFileName: lecture.sourceAudioFileName
+        })
+
+        await this.saveMarkdown(id, generatedMarkdown)
+        if (
+          settings.apiKeys.length > 1 &&
+          settings.apiKeys.indexOf(currentKey) !== settings.activeKeyIndex
+        ) {
+          await this.settingsService.saveSettings({
+            activeKeyIndex: settings.apiKeys.indexOf(currentKey)
+          })
+        }
+        return { success: true, markdown: generatedMarkdown }
+      } catch (error) {
+        lastError =
+          error instanceof Error ? error.message : 'Errore durante la generazione della dispensa.'
+        const isQuotaError =
+          lastError.includes('RESOURCE_EXHAUSTED') ||
+          lastError.includes('quota') ||
+          lastError.includes('429')
+        if (isQuotaError && settings.autoRotateOnQuota && i < keysToTry.length - 1) {
+          continue
+        }
+        break
+      }
     }
+
+    return { success: false, error: lastError ?? 'Errore imprevisto durante la generazione.' }
   }
 
   async importFiles(filePaths: string[]): Promise<ImportSummary> {

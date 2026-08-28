@@ -156,3 +156,14 @@ Non modificare manualmente la sezione `Registro`: aggiungi le nuove decisioni es
 - **Impatto:** L'interfaccia include il pannello Impostazioni per la chiave API, indicatore di progresso animato durante la generazione e salvataggio automatico del file Markdown renderizzato.
 - **Follow-up:** Valutare pipeline di trascrizione locale o automatica per file audio privi di TXT.
 - **File coinvolti:** electron/main/gemini.ts, electron/main/settings.ts, electron/main/archive.ts, electron/main/index.ts, electron/preload/index.ts, shared/archive.ts, src/App.tsx, src/styles.css, tests/archive.test.ts, package.json
+
+## D-0014 — Supporto Pool Multi-Chiave API e Rotazione Automatica su Quota Free Tier
+
+- **Data:** 2026-08-28
+- **Stato:** accettata
+- **Area:** ai
+- **Decisione:** Aggiunta la gestione di un pool multi-chiave API Gemini con precaricamento locale, selezione della chiave attiva, test individuale, eliminazione/aggiunta di chiavi e rotazione automatica (auto-failover) su superamento della quota temporanea (RESOURCE_EXHAUSTED).
+- **Motivazione:** Permette agli studenti di utilizzare simultaneamente piu chiavi del Free Tier di Google per generare dispense in serie senza interruzioni per limiti di rate limiting o quote per minuto.
+- **Impatto:** Le impostazioni AI ora mostrano l'elenco di tutte le chiavi nel pool con mascheratura sicura, stato di test in tempo reale e selezione flessibile.
+- **Follow-up:** Monitorare la stabilita della rotazione su generazioni sequenziali ad alto volume.
+- **File coinvolti:** electron/main/settings.ts, electron/main/archive.ts, shared/archive.ts, src/App.tsx, src/styles.css, tests/archive.test.ts

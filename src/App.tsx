@@ -99,13 +99,22 @@ export default function App() {
   const [notice, setNotice] = useState<string | null>(null)
 
   // App settings state
-  const [settings, setSettings] = useState<AppSettings>({ apiKey: '', model: 'gemini-3.6-flash' })
+  const [settings, setSettings] = useState<AppSettings>({
+    apiKey: '',
+    apiKeys: [],
+    activeKeyIndex: 0,
+    autoRotateOnQuota: true,
+    model: 'gemini-3.6-flash'
+  })
   const [showSettingsModal, setShowSettingsModal] = useState(false)
-  const [inputApiKey, setInputApiKey] = useState('')
+  const [inputApiKeys, setInputApiKeys] = useState<string[]>([])
+  const [activeKeyIdx, setActiveKeyIdx] = useState<number>(0)
+  const [autoRotate, setAutoRotate] = useState<boolean>(true)
   const [inputModel, setInputModel] = useState<GeminiModel>('gemini-3.6-flash')
-  const [isTestingKey, setIsTestingKey] = useState(false)
-  const [testKeyFeedback, setTestKeyFeedback] = useState<{ valid: boolean; error?: string } | null>(null)
-  const [showApiKeyText, setShowApiKeyText] = useState(false)
+  const [newKeyInput, setNewKeyInput] = useState('')
+  const [keyTestStates, setKeyTestStates] = useState<
+    Record<number, { isTesting: boolean; result?: { valid: boolean; error?: string } }>
+  >({})
 
   // AI generation state
   const [isGenerating, setIsGenerating] = useState(false)
@@ -157,7 +166,11 @@ export default function App() {
     try {
       const s = await window.archive.getSettings()
       setSettings(s)
-      setInputApiKey(s.apiKey)
+      setInputApiKeys(
+        s.apiKeys.length > 0 ? s.apiKeys : s.apiKey ? [s.apiKey] : []
+      )
+      setActiveKeyIdx(s.activeKeyIndex >= 0 ? s.activeKeyIndex : 0)
+      setAutoRotate(s.autoRotateOnQuota)
       setInputModel(s.model)
     } catch {
       // Ignora errore
@@ -387,9 +400,9 @@ export default function App() {
   // AI automatic generation
   async function handleGenerateLectureNotes(): Promise<void> {
     if (!selectedLecture) return
-    if (!settings.apiKey) {
-      setShowSettingsModal(true)
-      setNotice('Inserisci prima la tua chiave API Gemini nelle Impostazioni.')
+    if (!settings.apiKey && settings.apiKeys.length === 0) {
+      openSettingsModal()
+      setNotice('Aggiungi prima almeno una chiave API Gemini nel pool delle Impostazioni.')
       return
     }
 
@@ -413,31 +426,75 @@ export default function App() {
     }
   }
 
+  function openSettingsModal(): void {
+    setInputApiKeys(
+      settings.apiKeys.length > 0
+        ? [...settings.apiKeys]
+        : settings.apiKey
+          ? [settings.apiKey]
+          : []
+    )
+    setActiveKeyIdx(settings.activeKeyIndex >= 0 ? settings.activeKeyIndex : 0)
+    setAutoRotate(settings.autoRotateOnQuota)
+    setInputModel(settings.model)
+    setNewKeyInput('')
+    setKeyTestStates({})
+    setShowSettingsModal(true)
+  }
+
+  function handleAddKey(): void {
+    const trimmed = newKeyInput.trim()
+    if (!trimmed) return
+    if (inputApiKeys.includes(trimmed)) {
+      setNotice('Questa chiave API è già presente nel pool.')
+      return
+    }
+    const updated = [...inputApiKeys, trimmed]
+    setInputApiKeys(updated)
+    setNewKeyInput('')
+  }
+
+  function handleRemoveKey(idx: number): void {
+    const updated = inputApiKeys.filter((_, i) => i !== idx)
+    setInputApiKeys(updated)
+    if (activeKeyIdx >= updated.length) {
+      setActiveKeyIdx(Math.max(0, updated.length - 1))
+    }
+  }
+
+  async function handleTestKey(idx: number, key: string): Promise<void> {
+    setKeyTestStates((prev) => ({
+      ...prev,
+      [idx]: { isTesting: true }
+    }))
+    try {
+      const res = await window.archive.testApiKey(key)
+      setKeyTestStates((prev) => ({
+        ...prev,
+        [idx]: { isTesting: false, result: res }
+      }))
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Errore di connessione'
+      setKeyTestStates((prev) => ({
+        ...prev,
+        [idx]: { isTesting: false, result: { valid: false, error: msg } }
+      }))
+    }
+  }
+
   async function handleSaveSettings(): Promise<void> {
     try {
       const updated = await window.archive.saveSettings({
-        apiKey: inputApiKey.trim(),
+        apiKeys: inputApiKeys,
+        activeKeyIndex: activeKeyIdx,
+        autoRotateOnQuota: autoRotate,
         model: inputModel
       })
       setSettings(updated)
       setShowSettingsModal(false)
-      setNotice('Impostazioni API salvate correttamente.')
+      setNotice(`Impostazioni salvate: ${updated.apiKeys.length} chiavi API nel pool.`)
     } catch {
       setNotice('Errore durante il salvataggio delle impostazioni.')
-    }
-  }
-
-  async function handleTestApiKey(): Promise<void> {
-    setIsTestingKey(true)
-    setTestKeyFeedback(null)
-    try {
-      const res = await window.archive.testApiKey(inputApiKey.trim())
-      setTestKeyFeedback(res)
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Errore di test.'
-      setTestKeyFeedback({ valid: false, error: msg })
-    } finally {
-      setIsTestingKey(false)
     }
   }
 
@@ -567,15 +624,12 @@ export default function App() {
         <div className="sidebar-footer">
           <button
             className="settings-trigger-btn"
-            onClick={() => {
-              setInputApiKey(settings.apiKey)
-              setInputModel(settings.model)
-              setTestKeyFeedback(null)
-              setShowSettingsModal(true)
-            }}
+            onClick={openSettingsModal}
           >
             <span>⚙️ Impostazioni AI</span>
-            {!settings.apiKey && <span className="settings-warning-dot" title="Chiave API non configurata">•</span>}
+            {settings.apiKeys.length === 0 && !settings.apiKey && (
+              <span className="settings-warning-dot" title="Nessuna chiave API configurata">•</span>
+            )}
           </button>
           <div className="stats-lines">
             <p><strong>{completedCount}</strong> completate · <strong>{inProgressCount}</strong> in studio</p>
@@ -1183,62 +1237,133 @@ export default function App() {
         <div className="modal-overlay">
           <div className="modal-content settings-modal-content">
             <div className="modal-header">
-              <h3>⚙️ Impostazioni AI & Google Gemini</h3>
+              <h3>⚙️ Configurazione AI & Pool Chiavi Gemini</h3>
               <button className="modal-close" onClick={() => setShowSettingsModal(false)}>✕</button>
             </div>
             <p className="modal-description">
-              Configura la tua chiave API Google Gemini per abilitare la generazione automatica con 1 click.
+              Configura il tuo pool di chiavi API per Google Gemini. Lezionify utilizzerà la chiave attiva e ruoterà automaticamente alla successiva in caso di limite di quota sul Free Tier.
             </p>
 
             <div className="settings-form">
-              <label className="settings-field">
+              {/* Pool Header & List */}
+              <div className="settings-field">
                 <div className="field-label-row">
-                  <span>Chiave API Google Gemini:</span>
+                  <span>Pool Chiavi API ({inputApiKeys.length}):</span>
                   <a
                     href="https://aistudio.google.com/app/apikey"
                     target="_blank"
                     rel="noreferrer"
                     className="api-key-link"
                   >
-                    Ottieni chiave API (gratuita) ↗
+                    Ottieni nuova chiave (gratuita) ↗
                   </a>
                 </div>
-                <div className="api-input-wrap">
+
+                <div className="keys-pool-list">
+                  {inputApiKeys.length === 0 ? (
+                    <div className="keys-pool-empty">
+                      Nessuna chiave nel pool. Aggiungine una sotto per iniziare.
+                    </div>
+                  ) : (
+                    inputApiKeys.map((key, idx) => {
+                      const isActive = idx === activeKeyIdx
+                      const testState = keyTestStates[idx]
+                      const maskedKey = `${key.slice(0, 8)}••••••••${key.slice(-4)}`
+
+                      return (
+                        <div
+                          key={`${key}-${idx}`}
+                          className={`key-pool-item ${isActive ? 'is-active-key' : ''}`}
+                        >
+                          <label className="key-select-label">
+                            <input
+                              type="radio"
+                              name="active-api-key"
+                              checked={isActive}
+                              onChange={() => setActiveKeyIdx(idx)}
+                            />
+                            <div className="key-item-info">
+                              <div className="key-item-title">
+                                <strong>Chiave #{idx + 1}</strong>
+                                {isActive && <span className="active-key-badge">Attiva</span>}
+                              </div>
+                              <span className="key-masked-text">{maskedKey}</span>
+                            </div>
+                          </label>
+
+                          <div className="key-item-actions">
+                            <button
+                              type="button"
+                              className="key-action-btn test-btn"
+                              onClick={() => void handleTestKey(idx, key)}
+                              disabled={testState?.isTesting}
+                              title="Testa questa chiave"
+                            >
+                              {testState?.isTesting ? '⏳' : '🧪 Testa'}
+                            </button>
+
+                            <button
+                              type="button"
+                              className="key-action-btn delete-btn"
+                              onClick={() => handleRemoveKey(idx)}
+                              title="Elimina dal pool"
+                            >
+                              🗑️
+                            </button>
+                          </div>
+
+                          {testState?.result && (
+                            <div className={`key-test-feedback ${testState.result.valid ? 'is-valid' : 'is-error'}`}>
+                              {testState.result.valid ? '✅ Valida' : `❌ ${testState.result.error || 'Errore'}`}
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })
+                  )}
+                </div>
+
+                {/* Add new key input row */}
+                <div className="add-key-row">
                   <input
-                    type={showApiKeyText ? 'text' : 'password'}
-                    value={inputApiKey}
-                    onChange={(e) => setInputApiKey(e.target.value)}
-                    placeholder="AIzaSy..."
+                    type="text"
+                    value={newKeyInput}
+                    onChange={(e) => setNewKeyInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault()
+                        handleAddKey()
+                      }
+                    }}
+                    placeholder="Incolla nuova chiave (AIzaSy...)"
                     className="api-key-input"
                   />
                   <button
                     type="button"
-                    className="toggle-show-btn"
-                    onClick={() => setShowApiKeyText((prev) => !prev)}
+                    className="secondary-button"
+                    onClick={handleAddKey}
+                    disabled={!newKeyInput.trim()}
                   >
-                    {showApiKeyText ? 'Nascondi' : 'Mostra'}
+                    + Aggiungi
                   </button>
                 </div>
-              </label>
-
-              <div className="test-key-row">
-                <button
-                  type="button"
-                  className="secondary-button small"
-                  onClick={() => void handleTestApiKey()}
-                  disabled={isTestingKey || !inputApiKey.trim()}
-                >
-                  {isTestingKey ? 'Verifica in corso…' : '🧪 Testa Connessione'}
-                </button>
-                {testKeyFeedback && (
-                  <span className={`test-result ${testKeyFeedback.valid ? 'is-valid' : 'is-error'}`}>
-                    {testKeyFeedback.valid ? '✅ Connessione riuscita!' : `❌ ${testKeyFeedback.error}`}
-                  </span>
-                )}
               </div>
 
+              {/* Auto rotate checkbox */}
+              <label className="auto-rotate-checkbox-label">
+                <input
+                  type="checkbox"
+                  checked={autoRotate}
+                  onChange={(e) => setAutoRotate(e.target.checked)}
+                />
+                <span>
+                  <strong>Rotazione automatica del pool</strong> se la chiave attiva esaurisce la quota temporanea (Consigliato per Free Tier)
+                </span>
+              </label>
+
+              {/* Model selection */}
               <div className="settings-field">
-                <span>Modello Gemini:</span>
+                <span>Modello Gemini Predefinito:</span>
                 <div className="model-options-list">
                   {AVAILABLE_MODELS.map((m) => (
                     <label
