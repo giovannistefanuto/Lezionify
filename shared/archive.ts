@@ -62,6 +62,20 @@ export interface GenerationResult {
   error?: string
 }
 
+export interface BatchGenerationSummary {
+  total: number
+  succeeded: number
+  failed: number
+  results: { id: string; courseCode: string | null; success: boolean; error?: string }[]
+}
+
+export interface TranscribeAudioResult {
+  success: boolean
+  transcript?: string
+  markdown?: string
+  error?: string
+}
+
 export interface ArchiveApi {
   listLectures: () => Promise<Lecture[]>
   importFiles: () => Promise<ImportSummary | null>
@@ -78,4 +92,7 @@ export interface ArchiveApi {
   saveSettings: (settings: Partial<AppSettings>) => Promise<AppSettings>
   testApiKey: (apiKey: string) => Promise<TestApiKeyResult>
   generateLectureNotes: (lectureId: string) => Promise<GenerationResult>
+  generateAllMissingNotes: () => Promise<BatchGenerationSummary>
+  transcribeAudio: (lectureId: string) => Promise<TranscribeAudioResult>
+  printLectureNotes: () => Promise<void>
 }

@@ -20,7 +20,10 @@ const archiveApi: ArchiveApi = {
     ipcRenderer.invoke('archive:save-settings', settings),
   testApiKey: (apiKey: string) => ipcRenderer.invoke('archive:test-api-key', apiKey),
   generateLectureNotes: (lectureId: string) =>
-    ipcRenderer.invoke('archive:generate-lecture-notes', lectureId)
+    ipcRenderer.invoke('archive:generate-lecture-notes', lectureId),
+  generateAllMissingNotes: () => ipcRenderer.invoke('archive:generate-all-missing'),
+  transcribeAudio: (lectureId: string) => ipcRenderer.invoke('archive:transcribe-audio', lectureId),
+  printLectureNotes: () => ipcRenderer.invoke('archive:print-notes')
 }
 
 contextBridge.exposeInMainWorld('archive', archiveApi)

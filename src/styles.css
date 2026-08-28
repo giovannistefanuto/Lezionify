@@ -1513,9 +1513,118 @@ h2 { margin: 0; font-size: 18px; letter-spacing: -.02em; }
   color: #63776e;
 }
 
+.ai-batch-header-btn {
+  background: linear-gradient(135deg, #1d6e4b, #2d8c63);
+  color: #ffffff;
+  border: 1px solid #1a5e40;
+  box-shadow: 0 3px 12px rgba(29, 110, 75, 0.3);
+  font-weight: 750;
+}
+
+.ai-batch-header-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #16563a, #237451);
+}
+
+.ai-audio-icon {
+  font-size: 36px;
+  margin-bottom: 8px;
+}
+
 @media (max-width: 980px) {
   .content { padding: 36px 28px; }
   .content-header { flex-direction: column; }
   .actions { justify-content: flex-start; }
   .detail-drawer { width: 100vw; }
+}
+
+/* Stili Ottimizzati per Stampa ed Esportazione PDF */
+@media print {
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+    min-width: unset !important;
+  }
+
+  .sidebar,
+  .content-header,
+  .summary-grid,
+  .lecture-section,
+  .notice-banner,
+  .persistent-audio-player,
+  .modal-overlay,
+  .drawer-tabs,
+  .card-header,
+  .drawer-close-btn,
+  .top-tags,
+  .detail-header,
+  .card-actions,
+  .actions {
+    display: none !important;
+  }
+
+  .app-shell {
+    display: block !important;
+    min-height: auto !important;
+  }
+
+  .detail-drawer {
+    position: static !important;
+    width: 100% !important;
+    height: auto !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+
+  .detail-body {
+    padding: 0 !important;
+    background: #ffffff !important;
+    overflow: visible !important;
+  }
+
+  .detail-card {
+    border: none !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+  }
+
+  .markdown-view-container {
+    border: none !important;
+    padding: 0 !important;
+  }
+
+  .markdown-rendered-content {
+    font-size: 11pt !important;
+    line-height: 1.6 !important;
+    color: #000000 !important;
+  }
+
+  .markdown-rendered-content h1 {
+    font-size: 18pt !important;
+    color: #111111 !important;
+    page-break-after: avoid;
+  }
+
+  .markdown-rendered-content h2,
+  .markdown-rendered-content h3 {
+    color: #222222 !important;
+    page-break-after: avoid;
+  }
+
+  .markdown-rendered-content pre {
+    background: #f4f4f4 !important;
+    color: #111111 !important;
+    border: 1px solid #cccccc !important;
+    page-break-inside: avoid;
+  }
+
+  .markdown-rendered-content blockquote {
+    border-left: 3px solid #666666 !important;
+    background: #fafafa !important;
+    color: #222222 !important;
+    page-break-inside: avoid;
+  }
+
+  .markdown-rendered-content .katex-display {
+    page-break-inside: avoid;
+  }
 }

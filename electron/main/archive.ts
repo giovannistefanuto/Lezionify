@@ -14,11 +14,13 @@ import * as path from 'node:path'
 import { app, dialog } from 'electron'
 import type {
   AppSettings,
+  BatchGenerationSummary,
   GenerationResult,
   ImportSummary,
   Lecture,
   SkippedImport,
   TestApiKeyResult,
+  TranscribeAudioResult,
   UpdateLecturePayload
 } from '../../shared/archive'
 import { GeminiService } from './gemini'
@@ -432,6 +434,133 @@ export class ArchiveService {
     }
 
     return { success: false, error: lastError ?? 'Errore imprevisto durante la generazione.' }
+  }
+
+  async generateAllMissingNotes(): Promise<BatchGenerationSummary> {
+    const library = await this.readLibrary()
+    const candidates = library.lectures.filter(
+      (l) => l.status === 'transcript-available' && !l.markdownFileName
+    )
+
+    const summary: BatchGenerationSummary = {
+      total: candidates.length,
+      succeeded: 0,
+      failed: 0,
+      results: []
+    }
+
+    for (const lecture of candidates) {
+      const res = await this.generateLectureNotes(lecture.id)
+      if (res.success) {
+        summary.succeeded++
+        summary.results.push({ id: lecture.id, courseCode: lecture.courseCode, success: true })
+      } else {
+        summary.failed++
+        summary.results.push({
+          id: lecture.id,
+          courseCode: lecture.courseCode,
+          success: false,
+          error: res.error
+        })
+      }
+    }
+
+    return summary
+  }
+
+  async transcribeAudio(id: string): Promise<TranscribeAudioResult> {
+    const library = await this.readLibrary()
+    const lecture = library.lectures.find((item) => item.id === id)
+    if (!lecture) {
+      return { success: false, error: 'Lezione non trovata.' }
+    }
+
+    const audioPath = path.join(this.audioDirectory, lecture.audioFileName)
+    try {
+      await stat(audioPath)
+    } catch {
+      return { success: false, error: 'File audio non trovato sul disco.' }
+    }
+
+    const settings = await this.settingsService.getSettings()
+    const keysToTry: string[] = []
+    if (settings.apiKeys && settings.apiKeys.length > 0) {
+      const startIdx =
+        settings.activeKeyIndex >= 0 && settings.activeKeyIndex < settings.apiKeys.length
+          ? settings.activeKeyIndex
+          : 0
+      for (let i = 0; i < settings.apiKeys.length; i++) {
+        const idx = (startIdx + i) % settings.apiKeys.length
+        keysToTry.push(settings.apiKeys[idx])
+      }
+    } else if (settings.apiKey) {
+      keysToTry.push(settings.apiKey)
+    }
+
+    if (keysToTry.length === 0) {
+      return {
+        success: false,
+        error: 'Nessuna chiave API Gemini configurata. Inseriscila nelle Impostazioni (⚙️).'
+      }
+    }
+
+    let lastError: string | null = null
+
+    for (let i = 0; i < keysToTry.length; i++) {
+      const currentKey = keysToTry[i]
+      try {
+        const result = await this.geminiService.transcribeAndGenerateFromAudio({
+          apiKey: currentKey,
+          model: settings.model,
+          audioFilePath: audioPath,
+          courseCode: lecture.courseCode,
+          recordedAt: lecture.recordedAt,
+          sourceAudioFileName: lecture.sourceAudioFileName
+        })
+
+        // Salvataggio trascrizione
+        const transcriptFileName = `${id}.txt`
+        await writeFile(path.join(this.transcriptDirectory, transcriptFileName), result.transcript, 'utf8')
+        lecture.transcriptFileName = transcriptFileName
+        lecture.sourceTranscriptFileName = 'Trascrizione Gemini AI'
+        lecture.status = 'transcript-available'
+
+        // Salvataggio markdown dispensa
+        const markdownFileName = `${id}.md`
+        await writeFile(path.join(this.markdownDirectory, markdownFileName), result.markdown, 'utf8')
+        lecture.markdownFileName = markdownFileName
+
+        await this.writeLibrary(library)
+
+        if (
+          settings.apiKeys.length > 1 &&
+          settings.apiKeys.indexOf(currentKey) !== settings.activeKeyIndex
+        ) {
+          await this.settingsService.saveSettings({
+            activeKeyIndex: settings.apiKeys.indexOf(currentKey)
+          })
+        }
+
+        return {
+          success: true,
+          transcript: result.transcript,
+          markdown: result.markdown
+        }
+      } catch (error) {
+        lastError =
+          error instanceof Error ? error.message : 'Errore durante la trascrizione audio.'
+        const isQuotaError =
+          lastError.includes('RESOURCE_EXHAUSTED') ||
+          lastError.includes('quota') ||
+          lastError.includes('429')
+        if (isQuotaError && settings.autoRotateOnQuota && i < keysToTry.length - 1) {
+          continue
+        }
+        break
+      }
+    }
+
+    return { success: false, error: lastError ?? 'Errore imprevisto durante la trascrizione audio.' }
   }
 
   async importFiles(filePaths: string[]): Promise<ImportSummary> {

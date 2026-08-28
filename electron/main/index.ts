@@ -84,6 +84,14 @@ function registerIpcHandlers(): void {
   ipcMain.handle('archive:generate-lecture-notes', (_event, id: string) =>
     archive.generateLectureNotes(id)
   )
+  ipcMain.handle('archive:generate-all-missing', () => archive.generateAllMissingNotes())
+  ipcMain.handle('archive:transcribe-audio', (_event, id: string) => archive.transcribeAudio(id))
+  ipcMain.handle('archive:print-notes', (event) => {
+    const win = BrowserWindow.fromWebContents(event.sender)
+    if (win) {
+      win.webContents.print({ silent: false, printBackground: true })
+    }
+  })
 }
 
 app.whenReady().then(async () => {

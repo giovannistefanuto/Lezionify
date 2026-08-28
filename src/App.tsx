@@ -119,6 +119,9 @@ export default function App() {
   // AI generation state
   const [isGenerating, setIsGenerating] = useState(false)
   const [generationError, setGenerationError] = useState<string | null>(null)
+  const [isBatchGenerating, setIsBatchGenerating] = useState(false)
+  const [isTranscribing, setIsTranscribing] = useState(false)
+  const [transcribeError, setTranscribeError] = useState<string | null>(null)
 
   // Selected lecture & drawer state
   const [selectedLectureId, setSelectedLectureId] = useState<string | null>(null)
@@ -149,6 +152,14 @@ export default function App() {
   const selectedLecture = useMemo(
     () => lectures.find((l) => l.id === selectedLectureId) ?? null,
     [lectures, selectedLectureId]
+  )
+
+  const missingNotesCount = useMemo(
+    () =>
+      lectures.filter(
+        (l) => l.status === 'transcript-available' && !l.markdownFileName
+      ).length,
+    [lectures]
   )
 
   async function refreshLibrary(): Promise<void> {
@@ -426,6 +437,77 @@ export default function App() {
     }
   }
 
+  async function handleGenerateAllMissing(): Promise<void> {
+    if (missingNotesCount === 0) return
+    if (!settings.apiKey && settings.apiKeys.length === 0) {
+      openSettingsModal()
+      setNotice('Aggiungi prima almeno una chiave API Gemini nel pool delle Impostazioni.')
+      return
+    }
+
+    setIsBatchGenerating(true)
+    setNotice(`Avviata generazione batch per ${missingNotesCount} lezioni...`)
+    try {
+      const summary = await window.archive.generateAllMissingNotes()
+      await refreshLibrary()
+      if (selectedLectureId) {
+        const md = await window.archive.readMarkdown(selectedLectureId)
+        if (md) setMarkdownText(md)
+      }
+      setNotice(
+        `⚡ Batch completato: ${summary.succeeded} dispense create con successo${
+          summary.failed > 0 ? `, ${summary.failed} fallite` : ''
+        }.`
+      )
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Errore durante la generazione batch.'
+      setNotice(`Errore batch: ${msg}`)
+    } finally {
+      setIsBatchGenerating(false)
+    }
+  }
+
+  async function handleTranscribeAudio(): Promise<void> {
+    if (!selectedLecture) return
+    if (!settings.apiKey && settings.apiKeys.length === 0) {
+      openSettingsModal()
+      setNotice('Aggiungi prima almeno una chiave API Gemini nel pool delle Impostazioni.')
+      return
+    }
+
+    setIsTranscribing(true)
+    setTranscribeError(null)
+    try {
+      const res = await window.archive.transcribeAudio(selectedLecture.id)
+      if (res.success) {
+        if (res.transcript) setTranscriptText(res.transcript)
+        if (res.markdown) {
+          setMarkdownText(res.markdown)
+          setActiveTab('markdown')
+        } else {
+          setActiveTab('transcript')
+        }
+        setNotice('🎙️ Trascrizione e dispensa generate direttamente dall’audio!')
+        await refreshLibrary()
+      } else {
+        setTranscribeError(res.error ?? 'Errore durante la trascrizione audio.')
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Errore di connessione durante la trascrizione.'
+      setTranscribeError(msg)
+    } finally {
+      setIsTranscribing(false)
+    }
+  }
+
+  async function handlePrintNotes(): Promise<void> {
+    try {
+      await window.archive.printLectureNotes()
+    } catch {
+      window.print()
+    }
+  }
+
   function openSettingsModal(): void {
     setInputApiKeys(
       settings.apiKeys.length > 0
@@ -646,10 +728,20 @@ export default function App() {
             <p className="subtitle">Genera dispense universitarie strutturate con formule LaTeX tramite Google Gemini con 1 click.</p>
           </div>
           <div className="actions">
-            <button className="secondary-button" disabled={isImporting} onClick={() => void handleImport('files')}>
+            {missingNotesCount > 0 && (
+              <button
+                className="primary-button ai-batch-header-btn"
+                disabled={isBatchGenerating || isImporting}
+                onClick={() => void handleGenerateAllMissing()}
+                title="Genera automaticamente tutte le dispense mancanti usando il pool di chiavi"
+              >
+                {isBatchGenerating ? '⚡ Generazione batch in corso…' : `⚡ Genera Tutte (${missingNotesCount})`}
+              </button>
+            )}
+            <button className="secondary-button" disabled={isImporting || isBatchGenerating} onClick={() => void handleImport('files')}>
               Seleziona file MP3
             </button>
-            <button className="primary-button" disabled={isImporting} onClick={() => void handleImport('folder')}>
+            <button className="primary-button" disabled={isImporting || isBatchGenerating} onClick={() => void handleImport('folder')}>
               {isImporting ? 'Importazione…' : 'Importa cartella'}
             </button>
           </div>
@@ -855,9 +947,18 @@ export default function App() {
                             </button>
                           )}
                           {markdownText && (
-                            <button className="secondary-button small" onClick={handleCopyMarkdown}>
-                              Copia Markdown
-                            </button>
+                            <>
+                              <button
+                                className="secondary-button small print-btn"
+                                onClick={() => void handlePrintNotes()}
+                                title="Stampa o salva in PDF con formule LaTeX"
+                              >
+                                🖨️ Stampa / PDF
+                              </button>
+                              <button className="secondary-button small" onClick={handleCopyMarkdown}>
+                                Copia Markdown
+                              </button>
+                            </>
                           )}
                         </div>
                       </div>
@@ -931,16 +1032,41 @@ export default function App() {
                               </>
                             ) : (
                               <>
-                                <h4>Trascrizione necessaria</h4>
+                                <div className="ai-audio-icon">🎙️</div>
+                                <h4>Trascrizione e Dispensa Diretta da Audio</h4>
                                 <p>
-                                  Per generare la dispensa con l'AI, associa prima un file di trascrizione `.txt` a questa lezione.
+                                  Questa lezione ha solo il file MP3. Gemini Multimodale può ascoltare direttamente l'audio per trascriverlo e generare la dispensa con formule LaTeX.
                                 </p>
-                                <button
-                                  className="primary-button small"
-                                  onClick={() => void handleAttachTranscript()}
-                                >
-                                  Associa file TXT
-                                </button>
+                                {transcribeError && (
+                                  <div className="ai-error-box">
+                                    <strong>Errore trascrizione:</strong>
+                                    <p>{transcribeError}</p>
+                                  </div>
+                                )}
+                                {isTranscribing ? (
+                                  <div className="ai-generating-box">
+                                    <div className="ai-pulse-spinner" />
+                                    <div className="ai-generating-text">
+                                      <h4>🎙️ Ascolto audio ed elaborazione in corso…</h4>
+                                      <p>Gemini sta trascrivendo il parlato ed estraendo la dispensa didattica strutturata.</p>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div className="ai-cta-buttons">
+                                    <button
+                                      className="primary-button large ai-main-btn"
+                                      onClick={() => void handleTranscribeAudio()}
+                                    >
+                                      🎙️ Trascrivi ed Elabora con Gemini AI
+                                    </button>
+                                    <button
+                                      className="secondary-button"
+                                      onClick={() => void handleAttachTranscript()}
+                                    >
+                                      📁 Associa file TXT
+                                    </button>
+                                  </div>
+                                )}
                               </>
                             )}
                           </div>
@@ -986,15 +1112,34 @@ export default function App() {
                               </button>
                             </>
                           ) : (
-                            <button
-                              className="primary-button small"
-                              onClick={() => void handleAttachTranscript()}
-                            >
-                              Associa file TXT
-                            </button>
+                            <div className="card-actions">
+                              <button
+                                className="ai-generate-header-btn"
+                                onClick={() => void handleTranscribeAudio()}
+                                disabled={isTranscribing}
+                              >
+                                🎙️ {isTranscribing ? 'Trascrizione…' : 'Trascrivi con AI'}
+                              </button>
+                              <button
+                                className="secondary-button small"
+                                onClick={() => void handleAttachTranscript()}
+                              >
+                                Associa TXT
+                              </button>
+                            </div>
                           )}
                         </div>
                       </div>
+
+                      {isTranscribing && (
+                        <div className="ai-generating-box">
+                          <div className="ai-pulse-spinner" />
+                          <div className="ai-generating-text">
+                            <h4>🎙️ Trascrizione audio con Gemini in corso…</h4>
+                            <p>Analisi del parlato e sincronizzazione del testo.</p>
+                          </div>
+                        </div>
+                      )}
 
                       {transcriptText ? (
                         <div className="transcript-container">
@@ -1005,12 +1150,28 @@ export default function App() {
                           <pre className="transcript-text">{transcriptText}</pre>
                         </div>
                       ) : (
-                        <div className="transcript-empty">
-                          <p>Nessun file di trascrizione `.txt` associato a questo audio.</p>
-                          <p className="help-text">
-                            Puoi selezionare un file `.txt` dal computer per associarlo a questa lezione.
-                          </p>
-                        </div>
+                        !isTranscribing && (
+                          <div className="transcript-empty">
+                            <p>Nessun file di trascrizione `.txt` associato a questo audio.</p>
+                            <p className="help-text">
+                              Puoi avviare la <strong>Trascrizione Automatica con Gemini AI</strong> oppure associare un file `.txt` esistente.
+                            </p>
+                            <div className="ai-cta-buttons" style={{ marginTop: '14px' }}>
+                              <button
+                                className="primary-button small ai-main-btn"
+                                onClick={() => void handleTranscribeAudio()}
+                              >
+                                🎙️ Trascrivi con Gemini AI
+                              </button>
+                              <button
+                                className="secondary-button small"
+                                onClick={() => void handleAttachTranscript()}
+                              >
+                                📁 Seleziona file TXT
+                              </button>
+                            </div>
+                          </div>
+                        )
                       )}
                     </div>
                   </div>

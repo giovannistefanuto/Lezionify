@@ -167,3 +167,14 @@ Non modificare manualmente la sezione `Registro`: aggiungi le nuove decisioni es
 - **Impatto:** Le impostazioni AI ora mostrano l'elenco di tutte le chiavi nel pool con mascheratura sicura, stato di test in tempo reale e selezione flessibile.
 - **Follow-up:** Monitorare la stabilita della rotazione su generazioni sequenziali ad alto volume.
 - **File coinvolti:** electron/main/settings.ts, electron/main/archive.ts, shared/archive.ts, src/App.tsx, src/styles.css, tests/archive.test.ts
+
+## D-0015 — Implementazione Milestone 4 — Coda Batch, Trascrizione Audio Diretta ed Esportazione PDF
+
+- **Data:** 2026-08-28
+- **Stato:** accettata
+- **Area:** ai
+- **Decisione:** Integrati il comando di generazione batch per tutte le lezioni mancanti con rotazione del pool chiavi, la trascrizione ed elaborazione diretta da audio MP3 con Gemini Multimodale e la stampa/esportazione PDF ottimizzata con formule LaTeX KaTeX.
+- **Motivazione:** Permette allo studente di elaborare interi corsi in serie con un click, di trasformare file audio privi di TXT senza passare per Google Colab/Whisper e di esportare/stampare le dispense per lo studio offline.
+- **Impatto:** Interfaccia arricchita con pulsanti di generazione batch, trascrizione diretta da audio ed esportazione PDF con foglio di stile di stampa dedicato.
+- **Follow-up:** Valutare suddivisione semantica avanzata per lezioni con audio superiore alle 2 ore.
+- **File coinvolti:** electron/main/gemini.ts, electron/main/archive.ts, electron/main/index.ts, electron/preload/index.ts, shared/archive.ts, src/App.tsx, src/styles.css, tests/archive.test.ts, STRUTTURA_PROGETTO.md

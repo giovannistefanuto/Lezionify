@@ -1,4 +1,5 @@
 import { GoogleGenAI } from '@google/genai'
+import { readFile, stat } from 'node:fs/promises'
 import type { GeminiModel, TestApiKeyResult } from '../../shared/archive'
 
 export const GEMS_SYSTEM_INSTRUCTION = `Sei un assistente didattico universitario di alto livello per uno studente di Ingegneria Magistrale.
@@ -31,13 +32,34 @@ Usa rigorosamente Markdown strutturato:
 
 export function cleanMarkdownOutput(raw: string): string {
   let cleaned = raw.trim()
-  // Rimuove wrapping del tipo ```markdown ... ``` se l'LLM ha incapsulato l'intero output
   if (cleaned.startsWith('```markdown') && cleaned.endsWith('```')) {
     cleaned = cleaned.slice('```markdown'.length, -3).trim()
   } else if (cleaned.startsWith('```') && cleaned.endsWith('```')) {
     cleaned = cleaned.slice(3, -3).trim()
   }
   return cleaned
+}
+
+export function parseMultimodalAudioResponse(raw: string): { transcript: string; markdown: string } {
+  const transcriptSep = '=== TRASCRIZIONE GREZZA ==='
+  const dispensaSep = '=== DISPENSA DIDATTICA ==='
+
+  if (raw.includes(transcriptSep) && raw.includes(dispensaSep)) {
+    const afterTranscript = raw.split(transcriptSep)[1]
+    const transcriptPart = afterTranscript.split(dispensaSep)[0].trim()
+    const dispensaPart = raw.split(dispensaSep)[1].trim()
+
+    return {
+      transcript: transcriptPart,
+      markdown: cleanMarkdownOutput(dispensaPart)
+    }
+  }
+
+  // Fallback se l'LLM non ha inserito i separatori esatti
+  return {
+    transcript: 'Trascrizione generata dall’audio originale tramite Gemini AI.',
+    markdown: cleanMarkdownOutput(raw)
+  }
 }
 
 export class GeminiService {
@@ -49,7 +71,7 @@ export class GeminiService {
     try {
       const ai = new GoogleGenAI({ apiKey: apiKey.trim() })
       const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
+        model: 'gemini-3.6-flash',
         contents: 'Test di verifica connessione. Rispondi con OK.'
       })
 
@@ -58,7 +80,8 @@ export class GeminiService {
       }
       return { valid: false, error: 'Risposta non valida dall’API.' }
     } catch (error) {
-      const msg = error instanceof Error ? error.message : 'Errore sconosciuto durante la verifica della chiave.'
+      const msg =
+        error instanceof Error ? error.message : 'Errore sconosciuto durante la verifica della chiave.'
       return { valid: false, error: msg }
     }
   }
@@ -104,7 +127,7 @@ Genera la dispensa didattica strutturata per questa lezione seguendo rigorosamen
 
     const ai = new GoogleGenAI({ apiKey: apiKey.trim() })
     const response = await ai.models.generateContent({
-      model: model || 'gemini-2.5-flash',
+      model: model || 'gemini-3.6-flash',
       contents: prompt,
       config: {
         systemInstruction: GEMS_SYSTEM_INSTRUCTION
@@ -117,5 +140,84 @@ Genera la dispensa didattica strutturata per questa lezione seguendo rigorosamen
     }
 
     return cleanMarkdownOutput(rawText)
+  }
+
+  async transcribeAndGenerateFromAudio(params: {
+    apiKey: string
+    model: GeminiModel
+    audioFilePath: string
+    courseCode: string | null
+    recordedAt: string | null
+    sourceAudioFileName: string
+  }): Promise<{ transcript: string; markdown: string }> {
+    const { apiKey, model, audioFilePath, courseCode, recordedAt, sourceAudioFileName } = params
+
+    if (!apiKey || !apiKey.trim()) {
+      throw new Error('Chiave API Gemini mancante. Configurala nelle Impostazioni.')
+    }
+
+    const fileStats = await stat(audioFilePath)
+    if (!fileStats.isFile()) {
+      throw new Error('File audio non trovato o non valido.')
+    }
+
+    const course = courseCode ?? 'Corso universitario non specificato'
+    const date = recordedAt
+      ? new Date(recordedAt).toLocaleDateString('it-IT', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric'
+        })
+      : 'Data non specificata'
+
+    const prompt = `Ascolta attentamente questo file audio registrato in aula universitaria.
+File sorgente: ${sourceAudioFileName}
+Corso: ${course}
+Data: ${date}
+
+Esegui due compiti obbligatori:
+
+1. Trascrivi fedelmente e integralmente il parlato in italiano, delimitando questa sezione con:
+=== TRASCRIZIONE GREZZA ===
+[Trascrizione qui]
+
+2. Subito dopo, converti la lezione in una dispensa didattica strutturata e approfondita con formule LaTeX standard ($...$ e $$...$$) secondo i vincoli Gems, delimitando con:
+=== DISPENSA DIDATTICA ===
+[Dispensa in Markdown qui]`
+
+    const ai = new GoogleGenAI({ apiKey: apiKey.trim() })
+
+    // Caricamento audio: se < 20MB carichiamo in base64 inline, altrimenti tramite Files API
+    let audioPart: any
+    if (fileStats.size < 20 * 1024 * 1024) {
+      const buffer = await readFile(audioFilePath)
+      audioPart = {
+        inlineData: {
+          mimeType: 'audio/mp3',
+          data: buffer.toString('base64')
+        }
+      }
+    } else {
+      const uploadResult = await (ai.files as any).upload({
+        file: audioFilePath,
+        mimeType: 'audio/mp3'
+      })
+      audioPart = uploadResult
+    }
+
+    const response = await ai.models.generateContent({
+      model: model || 'gemini-3.6-flash',
+      contents: [audioPart, prompt],
+      config: {
+        systemInstruction: GEMS_SYSTEM_INSTRUCTION
+      }
+    })
+
+    const rawText = response.text
+    if (!rawText || !rawText.trim()) {
+      throw new Error('Gemini non ha restituito alcun testo dall’analisi audio.')
+    }
+
+    return parseMultimodalAudioResponse(rawText)
   }
 }
