@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="500" viewBox="0 0 800 500" role="img" aria-labelledby="title desc">
+  <title id="title">Segnaposto screenshot Strumenti di studio</title>
+  <desc id="desc">Riquadro da sostituire con una schermata anonimizzata degli strumenti di studio.</desc>
+  <rect width="800" height="500" rx="24" fill="#071b1b"/>
+  <rect x="25" y="25" width="750" height="450" rx="17" fill="#0d2c2b" stroke="#1b5550"/>
+  <text x="58" y="77" fill="#e9fffb" font-family="Segoe UI, sans-serif" font-size="22" font-weight="700">Ripasso attivo</text>
+  <rect x="58" y="111" width="684" height="238" rx="18" fill="#103a37" stroke="#247068"/>
+  <rect x="96" y="150" width="430" height="15" rx="7" fill="#34ddb1"/><rect x="96" y="190" width="570" height="10" rx="5" fill="#3b6662"/><rect x="96" y="216" width="530" height="10" rx="5" fill="#3b6662"/>
+  <rect x="96" y="276" width="126" height="40" rx="10" fill="#1bbba9"/><rect x="238" y="276" width="126" height="40" rx="10" fill="#173f3c"/>
+  <circle cx="190" cy="393" r="8" fill="#25d3be"/><circle cx="224" cy="393" r="8" fill="#315b57"/><circle cx="258" cy="393" r="8" fill="#315b57"/>
+  <text x="400" y="442" text-anchor="middle" fill="#78c6bf" font-family="Segoe UI, sans-serif" font-size="16">Quiz e flashcard · sostituire con study.png</text>
+</svg>

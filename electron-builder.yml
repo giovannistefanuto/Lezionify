@@ -1,0 +1,29 @@
+appId: com.lezionify.app
+productName: Lezionify
+copyright: Copyright © 2026 Lezionify
+
+directories:
+  output: dist
+  buildResources: resources
+
+files:
+  - out/**/*
+  - package.json
+
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+  icon: resources/icon.ico
+  artifactName: "${productName}-Setup-${version}.${ext}"
+
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: always
+  createStartMenuShortcut: true
+  shortcutName: Lezionify
+
+portable:
+  artifactName: "${productName}-Portable-${version}.${ext}"

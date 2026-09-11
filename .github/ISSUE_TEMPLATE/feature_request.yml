@@ -1,0 +1,23 @@
+name: Feature request
+description: Proponi un miglioramento coerente con l'approccio local-first
+title: '[Feature]: '
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problema da risolvere
+      description: Descrivi il bisogno prima della soluzione proposta.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Soluzione proposta
+    validations:
+      required: true
+  - type: textarea
+    id: privacy
+    attributes:
+      label: Impatto su privacy, dati e costi AI
+      description: Indica se la proposta invia dati fuori dal dispositivo o introduce costi.

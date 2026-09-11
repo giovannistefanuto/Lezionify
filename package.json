@@ -1,19 +1,51 @@
 {
   "name": "lezionify",
   "version": "0.1.0",
-  "description": "Archivio locale per lezioni registrate e trascrizioni.",
+  "description": "App desktop local-first per trasformare registrazioni universitarie in materiale di studio strutturato.",
+  "author": "Giovanni",
   "private": true,
+  "keywords": [
+    "electron",
+    "education",
+    "local-first",
+    "transcription",
+    "study-tools"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/giovannistefanuto/Lezionify.git"
+  },
+  "homepage": "https://github.com/giovannistefanuto/Lezionify#readme",
+  "bugs": {
+    "url": "https://github.com/giovannistefanuto/Lezionify/issues"
+  },
   "type": "module",
   "main": "out/main/index.js",
   "scripts": {
     "dev": "electron-vite dev",
     "build": "electron-vite build",
+    "package:win": "electron-vite build && electron-builder --win",
+    "package:portable": "electron-vite build && electron-builder --win portable",
+    "package:dir": "electron-vite build && electron-builder --dir",
     "typecheck": "tsc --noEmit --pretty false -p tsconfig.node.json && tsc --noEmit --pretty false -p tsconfig.web.json",
-    "test": "vitest run"
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write \"src/**/*.{ts,tsx}\" \"electron/**/*.ts\" \"shared/**/*.ts\"",
+    "test": "vitest run",
+    "test:hooks": "node tools/run_hook_regressions.cjs",
+    "test:qna-real": "node tools/run_real_qna.cjs",
+    "benchmark:gemini-transcription": "electron tools/run_gemini_benchmark_with_app_keys.cjs",
+    "audit:styles": "node tools/audit_styles.mjs",
+    "check": "npm run typecheck && npm run lint && npm test && npm run test:hooks && npm run build"
   },
   "dependencies": {
     "@google/genai": "^2.19.0",
     "katex": "^0.18.4",
+    "mermaid": "11.17.2",
+    "minisearch": "^7.2.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-markdown": "^10.1.0",
@@ -22,14 +54,21 @@
     "remark-math": "^6.0.0"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@types/katex": "^0.16.8",
     "@types/node": "^24.10.0",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
     "@vitejs/plugin-react": "^5.0.4",
-    "electron": "^39.0.0",
+    "electron": "^44.3.0",
+    "electron-builder": "^26.15.3",
     "electron-vite": "^5.0.0",
+    "eslint": "^10.9.1",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "globals": "^17.11.0",
+    "prettier": "^3.9.6",
     "typescript": "^5.9.3",
+    "typescript-eslint": "^8.68.0",
     "vite": "^7.2.0",
     "vitest": "^4.1.11"
   }
