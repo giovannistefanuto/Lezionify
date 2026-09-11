@@ -299,6 +299,7 @@ describe('ArchiveService — Ciclo di vita, CRUD, Batch & Trascrizione Audio', (
     await mkdir(testArchiveDir, { recursive: true })
 
     mockGeminiService = new GeminiService()
+    vi.spyOn(mockGeminiService, 'extractCourseLogistics').mockResolvedValue(null)
     service = new ArchiveService(testArchiveDir, mockGeminiService)
     await service.initialize()
   })

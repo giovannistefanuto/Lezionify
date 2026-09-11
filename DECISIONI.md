@@ -1377,3 +1377,14 @@ Non modificare manualmente la sezione `Registro`: aggiungi le nuove decisioni es
 - **Impatto:** Il progetto espone link coerenti al repository, alla workflow CI e alle issue; il prossimo commit viene pubblicato sul branch main remoto.
 - **Follow-up:** Aggiungere screenshot anonimizzati e controllare il primo run CI su GitHub.
 - **File coinvolti:** README.md, package.json, package-lock.json, docs/publishing/launch-checklist.md, docs/publishing/linkedin-post-draft.md
+
+## D-0125 — Test unitari senza rete e Actions aggiornate
+
+- **Data:** 2026-09-11
+- **Stato:** accettata
+- **Area:** test-ci
+- **Decisione:** Simulare anche l estrazione accessoria della logistica di corso nei test ArchiveService e usare actions/checkout e actions/setup-node v7 nella CI.
+- **Motivazione:** I test unitari non devono dipendere dalla latenza o raggiungibilita di Gemini; le Actions v4 usavano un runtime Node deprecato sul runner GitHub.
+- **Impatto:** La suite da 120 test non esegue piu la chiamata Gemini accessoria, passa con Node 22 e la workflow usa le versioni correnti delle Actions.
+- **Follow-up:** Verificare il nuovo run CI e chiudere le pull request Dependabot rese obsolete.
+- **File coinvolti:** tests/unit/archive.test.ts, .github/workflows/ci.yml, DECISIONI.md
