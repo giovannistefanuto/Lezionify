@@ -4105,3 +4105,14 @@ Non modificare manualmente la sezione `Registro`: aggiungi le nuove decisioni es
 - **Impatto:** npm run check completo superato: typecheck lint 625 Vitest in43file 24Python 41Node scenari Electron riavvio build e PDF reali. Link locali e manifesto lock verificati, tre screenshot sintetici ispezionati. Il sandbox impediva le rinomine della cache Vitest: riesecuzione normale riuscita senza modifica ai test. npm audit segnala19vulnerabilita di cui5alte 8moderate 6basse e0critiche; nessun aggiornamento forzato dipendenze o nuova chiamata AI. Nessun installer rigenerato o dato personale pubblicato.
 - **Follow-up:** Eseguire commit push e controllare il commit remoto e la CI Windows. Risolvere l audit in intervento dedicato con analisi dipendenze e ricollaudi. Restano limiti AI PDF senza testo Spotify transizioni e prototipo Balance. Report docs/quality/pubblicazione-github-2026-10-19.md.
 - **File coinvolti:** README.md, docs/README.md, STRUTTURA_PROGETTO.md, .gitignore, eslint.config.js, .github/workflows/ci.yml, docs/assets/screenshots, docs/quality/pubblicazione-github-2026-10-19.md, docs/research, sorgenti e test applicativi
+
+## D-0373 — Budget esplicito per il test PDFjs con worker reale
+
+- **Data:** 2026-10-19
+- **Stato:** accettata
+- **Area:** collaudo-ci
+- **Decisione:** Impostare30secondi soltanto sul test di estrazione PDFjs reale in courseRag.test.ts, mantenendo asserzioni timeout globale e limite applicativo90secondi. Documentare il primo esito CI e pubblicare la correzione senza retry o test saltati.
+- **Motivazione:** Il primo push3a2c023 supera installazione typecheck lint ma il test con worker reale scade sui5000ms predefiniti nella CI Windows. Lo stesso comando minimo passa in605ms suNode24 e443ms suNode22; i test usano lo stesso sorgente worker e la build ne ha hash identico. Avvio a freddo e carico del runner sono una spiegazione plausibile, senza attribuzione certa del rallentamento. Il segnale rosso resta la CI registrata, senza ritardi sintetici.
+- **Impatto:** Tutti625test in43file passano anche con runtime temporaneo Node22.23.3 e lint del file modificato passa. Nessuna modifica al runtime dell app alle dipendenze o ai criteri di estrazione, nessuna chiamata AI. Report con run39277009892 e limiti della diagnosi.
+- **Follow-up:** Verificare la nuova CI Windows sul commit correttivo; i controlli Electron build e PDF locali restano validi perche il runtime applicativo non cambia. Audit19segnalazioni resta intervento separato.
+- **File coinvolti:** tests/unit/courseRag.test.ts, tests/README.md, docs/quality/pubblicazione-github-2026-10-19.md

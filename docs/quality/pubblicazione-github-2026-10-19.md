@@ -52,6 +52,30 @@ file oltre 1 MB. Nessun archivio personale o risultato grezzo è incluso.
 I controlli usano dati sintetici e profili temporanei. Nessuna nuova richiesta
 AI, pubblicazione di lezioni o lettura delle credenziali dell'app è necessaria.
 
+### Prima CI remota e test PDF.js
+
+Il commit iniziale `3a2c023` è pubblicato su `main`, con README remoto identico
+alla copia locale. La [prima CI Windows](https://github.com/giovannistefanuto/Lezionify/actions/runs/39277009892)
+supera installazione, typecheck e lint ma fallisce il test di estrazione PDF.js
+reale in `courseRag.test.ts`: scade il timeout Vitest predefinito di 5 secondi.
+Non è un fallimento delle asserzioni sulle pagine o sul testo.
+
+Il comando minimo `npx vitest run tests/unit/courseRag.test.ts -t "estrae testo e pagine" --reporter=verbose`
+passa localmente: 605 ms con Node 24.11.1 e 443 ms con Node 22.23.3
+(quest'ultimo avviato tramite runtime npm temporaneo, senza dipendenze aggiunte).
+Entrambi i percorsi dei test usano il worker sorgente; la copia emessa dalla
+build ha inoltre lo stesso SHA-256. Non si attribuisce il rallentamento a
+Node 22 o a differenze del payload. Il carico e l'avvio a freddo nel runner
+condiviso restano una spiegazione plausibile, non una misura diretta.
+
+Il segnale rosso è la CI originale: non si aggiungono rallentamenti artificiali
+per simulare un problema già osservato in quell'ambiente. La correzione
+assegna 30 secondi **solo a questo test di integrazione con worker reale**,
+conservando tutte le asserzioni, il timeout globale e il limite applicativo
+di estrazione di 90 secondi. Nessun retry o test saltato. La suite completa
+con Node 22 passa: 625 test in 43 file, lint del file modificato superato.
+La nuova CI verifica la modifica nel runner Windows remoto.
+
 ## Audit delle dipendenze
 
 `npm audit --json` del 19 ottobre segnala **19 vulnerabilità: 5 alte,

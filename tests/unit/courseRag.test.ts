@@ -438,6 +438,7 @@ describe('orchestrazione delle richieste strutturate', () => {
   })
 })
 
+// A real PDF.js worker cold start can exceed Vitest's 5s default on shared Windows CI.
 it('estrae testo e pagine con PDFjs reale, incluse pagine grafiche senza testo', async () => {
   const objects = [
     '<< /Type /Catalog /Pages 2 0 R >>',
@@ -465,4 +466,4 @@ it('estrae testo e pagine con PDFjs reale, incluse pagine grafiche senza testo',
   expect(pages).toHaveLength(2)
   expect(pages[0].text).toContain('John Nash')
   expect(pages[1].text).toBe('')
-})
+}, 30_000)

@@ -1,5 +1,10 @@
 # Test
 
+Il test di estrazione PDF.js reale in `unit/courseRag.test.ts` ha un budget
+specifico di 30 secondi per l'avvio a freddo del worker nei runner Windows
+condivisi. Le asserzioni su testo e pagine e il timeout globale restano
+invariati. [Timeout CI osservato e collaudi Node 22](../docs/quality/pubblicazione-github-2026-10-19.md).
+
 Aggiornamento del 19 ottobre (D-0367–D-0370):
 `node tools/run_hook_regressions.cjs --memo-logs-export-only` esegue anteprime
 Memo con attesa e rotella, finestre strette, modale PDF e selezioni, log per
