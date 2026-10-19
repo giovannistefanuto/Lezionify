@@ -1,14 +1,17 @@
 # Checklist di pubblicazione
 
-## Prima del primo push pubblico
+Aggiornamento sorgenti del 19 ottobre 2026: [perimetro, verifiche e audit](../quality/pubblicazione-github-2026-10-19.md).
+La pubblicazione del codice non equivale a una release dell’app né a un audit privo di segnalazioni.
 
-- [ ] Sostituire i tre segnaposto del README con screenshot anonimizzati.
+## Controlli prima del push
+
+- [x] Sostituire i tre segnaposto del README con schermate Electron e dati sintetici.
 - [x] Creare il repository GitHub e inserire l'URL reale nel README.
 - [x] Aggiungere `repository`, `homepage` e issue tracker a `package.json`.
 - [ ] Controllare `git status --short` e aggiungere intenzionalmente i file, evitando `git add .` alla cieca.
-- [ ] Eseguire `npm run check` e `npm audit`.
-- [ ] Verificare che `.library-data/`, `local-artifacts/` e `benchmark_outputs/` siano ignorate.
-- [ ] Cercare chiavi, email, percorsi locali e contenuti universitari reali nel diff finale.
+- [x] Eseguire `npm run check` e `npm audit`, riportando separatamente gli esiti: quality gate positivo, audit con 19 segnalazioni.
+- [x] Verificare che `.library-data/`, `local-artifacts/` e `benchmark_outputs/` siano ignorate.
+- [x] Cercare chiavi, email, percorsi locali e contenuti universitari reali nei file candidati, mantenendo locali trascrizioni e script personali.
 - [ ] Aprire il README direttamente su GitHub e controllare immagini, Mermaid e link.
 - [ ] Attivare Private Vulnerability Reporting e Dependabot alerts nelle impostazioni del repository.
 

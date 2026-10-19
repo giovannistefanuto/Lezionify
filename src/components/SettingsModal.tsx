@@ -1,5 +1,12 @@
-import React, { useState } from 'react'
-import type { GeminiModel } from '../../shared/archive'
+import { StudyEstimateSettings } from './StudyEstimateSettings'
+import React, { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
+import type { GeminiModel, PublishingStatus } from '../../shared/archive'
+import { QnaImageLibrary } from './QnaImageLibrary'
+import { SpotifyPanel } from './SpotifyPanel'
+import { OfflineTranslationSettings } from './OfflineTranslationSettings'
+import { YoutubeLibrary } from './YoutubeLibrary'
+import type { ToolSettingsSection } from './ToolSettingsContext'
 
 export const AVAILABLE_MODELS: {
   value: GeminiModel
@@ -46,13 +53,18 @@ export const AVAILABLE_MODELS: {
 ]
 
 interface SettingsModalProps {
+  initialSection?: ToolSettingsSection
   show: boolean
   onClose: () => void
   inputApiKeys: string[]
+  inputApiKeyQuotaGroups: string[]
+  setQuotaGroupForKey: (idx: number, value: string) => void
   activeKeyIdx: number
   setActiveKeyIdx: (idx: number) => void
   autoRotate: boolean
   setAutoRotate: (val: boolean) => void
+  autoProcessOnImport: boolean
+  setAutoProcessOnImport: (val: boolean) => void
   inputModel: GeminiModel
   setInputModel: (model: GeminiModel) => void
   newKeyInput: string
@@ -63,16 +75,28 @@ interface SettingsModalProps {
   onRemoveKey: (idx: number) => void
   onTestKey: (idx: number, key: string) => void
   onSave: () => void
+  publishingEnabled: boolean
+  setPublishingEnabled: (value: boolean) => void
+  publishingRepoUrl: string
+  setPublishingRepoUrl: (value: string) => void
+  publishingToken: string
+  setPublishingToken: (value: string) => void
+  publishingStatus: PublishingStatus | null
 }
 
 export function SettingsModal({
+  initialSection,
   show,
   onClose,
   inputApiKeys,
+  inputApiKeyQuotaGroups,
+  setQuotaGroupForKey,
   activeKeyIdx,
   setActiveKeyIdx,
   autoRotate,
   setAutoRotate,
+  autoProcessOnImport,
+  setAutoProcessOnImport,
   inputModel,
   setInputModel,
   newKeyInput,
@@ -82,27 +106,91 @@ export function SettingsModal({
   onAddKey,
   onRemoveKey,
   onTestKey,
-  onSave
+  onSave,
+  publishingEnabled,
+  setPublishingEnabled,
+  publishingRepoUrl,
+  setPublishingRepoUrl,
+  publishingToken,
+  setPublishingToken,
+  publishingStatus
 }: SettingsModalProps) {
   const [showAdvanced, setShowAdvanced] = useState<boolean>(inputApiKeys.length >= 2)
+  const [section, setSection] = useState<'general' | ToolSettingsSection>(initialSection ?? 'general')
+  const panel = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (!show) return
+    const previous = document.activeElement as HTMLElement | null
+    panel.current?.focus()
+    return () => { if (previous?.isConnected) previous.focus({ preventScroll: true }) }
+  }, [show])
 
   if (!show) return null
 
-  return (
-    <div className="modal-overlay">
-      <div className="modal-content settings-modal-content">
+  return createPortal(
+    <div className="modal-overlay settings-modal-overlay" onKeyDownCapture={event => {
+      if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); onClose() }
+      if (event.key === 'Tab') {
+        const controls = [...(panel.current?.querySelectorAll<HTMLElement>('button:not(:disabled), input:not(:disabled), textarea:not(:disabled), select:not(:disabled), summary') ?? [])].filter(element => element.getClientRects().length)
+        const first = controls[0], last = controls.at(-1)
+        if (event.shiftKey && (document.activeElement === first || document.activeElement === panel.current)) { event.preventDefault(); last?.focus() }
+        else if (!event.shiftKey && (document.activeElement === last || document.activeElement === panel.current)) { event.preventDefault(); first?.focus() }
+      }
+    }}>
+      <div ref={panel} tabIndex={-1} role="dialog" aria-modal="true" aria-label="Impostazioni" className="modal-content settings-modal-content">
         <div className="modal-header">
-          <h3>⚙️ Configurazione AI & Pool Chiavi Gemini</h3>
+          <h3>⚙️ Impostazioni</h3>
           <button className="modal-close" onClick={onClose} aria-label="Chiudi impostazioni">
             ✕
           </button>
         </div>
         <p className="modal-description">
-          Configura il tuo pool di chiavi API per Google Gemini. Lezionify utilizzerà la chiave attiva e
-          ruoterà automaticamente alla successiva in caso di limite di quota sul Free Tier.
+          Configura Lezionify, il traduttore offline e la musica.
         </p>
-
-        <div className="settings-modal-body">
+        <nav className="tool-settings-nav" aria-label="Sezioni Impostazioni">
+          <button type="button" aria-pressed={section === 'general'} onClick={() => setSection('general')}>Generali</button>
+          <button type="button" aria-pressed={section === 'translation'} onClick={() => setSection('translation')}>Traduttore offline</button>
+          <button type="button" aria-pressed={section === 'music'} onClick={() => setSection('music')}>Musica</button>
+        </nav>
+        <div className="settings-modal-body" hidden={section !== 'general'}>
+          <StudyEstimateSettings />
+          <section className="publishing-settings" aria-labelledby="publishing-settings-title">
+            <h4 id="publishing-settings-title">Pubblicazione automatica su GitHub</h4>
+            <p>Condividi trascrizioni e dispense ITA nel tuo repository. Al salvataggio,
+              a ogni avvio e dopo l’elaborazione, Lezionify controlla GitHub e sincronizza
+              lezioni nuove e modifiche. Gli audio restano sul computer.</p>
+            <label className="auto-rotate-checkbox-label">
+              <input type="checkbox" checked={publishingEnabled}
+                onChange={event => setPublishingEnabled(event.target.checked)} />
+              <span>Attiva la sincronizzazione automatica</span>
+            </label>
+            <label className="publishing-field">
+              Repository GitHub
+              <input type="url" value={publishingRepoUrl}
+                onChange={event => setPublishingRepoUrl(event.target.value)}
+                placeholder="https://github.com/utente/lezionify-appunti"
+                autoComplete="off" spellCheck={false} />
+            </label>
+            <label className="publishing-field">
+              Token GitHub
+              <input type="password" value={publishingToken}
+                onChange={event => setPublishingToken(event.target.value)}
+                placeholder={publishingStatus?.configured ? 'Token salvato · lascia vuoto per conservarlo' : 'Incolla il token una volta'}
+                autoComplete="new-password" spellCheck={false} />
+            </label>
+            <p className="publishing-hint">Il token viene cifrato sul computer e non viene mostrato dopo il salvataggio.
+              Se il repository è pubblico, i testi saranno visibili a chiunque.</p>
+            <div className="publishing-status" role="status" aria-live="polite">
+              {!publishingStatus ? 'Caricamento dello stato…' : !publishingStatus.enabled ? 'Sincronizzazione disattivata.' :
+                publishingStatus.phase === 'checking' ? 'Verifica della connessione a GitHub e dei contenuti pubblicati…' :
+                publishingStatus.phase === 'publishing' ? 'Sincronizzazione delle lezioni in corso…' :
+                publishingStatus.connection === 'offline' ? 'GitHub non è raggiungibile. Riproverò automaticamente.' :
+                publishingStatus.lastError || (publishingStatus.unpublishedCount ?
+                  `${publishingStatus.unpublishedCount} lezioni nuove o modificate da sincronizzare.` :
+                  publishingStatus.lastCheckedAt ? 'Le lezioni sono aggiornate su GitHub.' : 'In attesa della prima verifica automatica.')}
+              {publishingStatus?.lastCheckedAt && <small>Ultima verifica: {new Date(publishingStatus.lastCheckedAt).toLocaleString('it-IT')}</small>}
+            </div>
+          </section>
           {/* Pool Header & List */}
           <div className="settings-field">
             <div className="field-label-row">
@@ -171,6 +259,35 @@ export function SettingsModal({
                           🗑️
                         </button>
                       </div>
+
+                      <label
+                        className="key-quota-group"
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 6,
+                          width: '100%',
+                          fontSize: 12,
+                          color: 'var(--text-secondary, #667085)'
+                        }}
+                      >
+                        Gruppo quota/progetto
+                        <input
+                          type="text"
+                          value={inputApiKeyQuotaGroups[idx] ?? 'default-project'}
+                          onChange={(event) =>
+                            setQuotaGroupForKey(idx, event.target.value)
+                          }
+                          onBlur={(event) => {
+                            if (!event.target.value.trim()) {
+                              setQuotaGroupForKey(idx, 'default-project')
+                            }
+                          }}
+                          aria-label={`Gruppo quota della chiave ${idx + 1}`}
+                          title="Usa lo stesso gruppo per chiavi create nello stesso progetto Google AI Studio"
+                          style={{ flex: 1, minWidth: 0 }}
+                        />
+                      </label>
 
                       {testState?.result && (
                         <div
@@ -242,6 +359,20 @@ export function SettingsModal({
                 </span>
               </label>
 
+              {/* Auto process on import checkbox */}
+              <label className="auto-rotate-checkbox-label" style={{ marginTop: '8px' }}>
+                <input
+                  type="checkbox"
+                  checked={autoProcessOnImport}
+                  onChange={(e) => setAutoProcessOnImport(e.target.checked)}
+                />
+                <span>
+                  <strong>Elaborazione automatica all’importazione</strong> (opzionale):
+                  avvia trascrizione, dispensa ITA e versione ENG in background per ogni lezione appena
+                  importata. Se disattivata, importa tutti gli audio e poi usa “Elabora tutto”.
+                </span>
+              </label>
+
               {/* Model selection */}
               <div className="settings-field" style={{ marginTop: '8px' }}>
                 <span style={{ fontWeight: 700, fontSize: '13.5px', color: 'var(--text-main, #1e3f32)' }}>
@@ -275,15 +406,21 @@ export function SettingsModal({
           )}
         </div>
 
+        {section === 'general' && <QnaImageLibrary />}
+        {section !== 'general' && <div className="settings-modal-body settings-tools-body">
+          {section === 'translation' && <OfflineTranslationSettings />}
+          {section === 'music' && <><SpotifyPanel configuration /><YoutubeLibrary configuration /></>}
+        </div>}
         <div className="modal-actions">
+          {section === 'general' &&
           <button className="primary-button" onClick={onSave} disabled={isSaving}>
             {isSaving ? 'Salvataggio…' : 'Salva Impostazioni'}
-          </button>
+          </button>}
           <button className="secondary-button" onClick={onClose}>
             Chiudi
           </button>
         </div>
       </div>
-    </div>
+    </div>, document.fullscreenElement ?? document.body
   )
 }

@@ -2,6 +2,7 @@ import { atomicWrite, readRecoverable } from './atomicFile'
 import { mkdir, stat } from 'node:fs/promises'
 import * as path from 'node:path'
 import type { Lecture } from '../../shared/archive'
+import { validateLectureTitles } from '../../shared/lectureTitles'
 import { AsyncMutex } from './asyncMutex'
 
 export const LIBRARY_VERSION = 1
@@ -86,9 +87,15 @@ export class LibraryRepository {
     return value.lectures.every((lecture) => {
       if (typeof lecture !== 'object' || lecture === null) return false
       const item = lecture as Partial<Lecture>
+      if (item.titleOverrides !== undefined) {
+        try { validateLectureTitles(item.titleOverrides) } catch { return false }
+      }
       return (
         typeof item.id === 'string' &&
         item.id.length > 0 &&
+        (item.isLaboratory === undefined || typeof item.isLaboratory === 'boolean') &&
+        (item.laboratorySource === undefined ||
+          (item.laboratorySource === 'schedule' && item.isLaboratory === true)) &&
         (typeof item.courseCode === 'string' || item.courseCode === null) &&
         (typeof item.recordedAt === 'string' || item.recordedAt === null) &&
         typeof item.sourceAudioFileName === 'string' &&
@@ -100,6 +107,19 @@ export class LibraryRepository {
           (typeof item.durationSeconds === 'number' &&
             Number.isFinite(item.durationSeconds) &&
             item.durationSeconds >= 0)) &&
+        (item.videoImport === undefined || (
+          typeof item.videoImport === 'object' && item.videoImport !== null &&
+          typeof item.videoImport.scheduledEndTime === 'string' &&
+          /^([01]\d|2[0-3]):[0-5]\d$/.test(item.videoImport.scheduledEndTime) &&
+          Array.isArray(item.videoImport.sources) &&
+          item.videoImport.sources.length > 0 && item.videoImport.sources.length <= 100 &&
+          item.videoImport.sources.every(source =>
+            source !== null && typeof source === 'object' &&
+            typeof source.name === 'string' && source.name.length > 0 &&
+            typeof source.checksum === 'string' && /^[a-f0-9]{64}$/.test(source.checksum) &&
+            typeof source.durationSeconds === 'number' && Number.isFinite(source.durationSeconds) && source.durationSeconds > 0
+          )
+        )) &&
         typeof item.checksum === 'string' &&
         typeof item.importedAt === 'string' &&
         (item.status === 'audio-only' ||
@@ -115,7 +135,14 @@ export class LibraryRepository {
   private cloneLibrary(library: LibraryFile): LibraryFile {
     return {
       version: library.version,
-      lectures: library.lectures.map((l) => ({ ...l }))
+      lectures: library.lectures.map((l) => ({
+        ...l,
+        ...(l.titleOverrides ? { titleOverrides: { ...l.titleOverrides } } : {}),
+        ...(l.videoImport ? { videoImport: {
+          ...l.videoImport,
+          sources: l.videoImport.sources.map(source => ({ ...source }))
+        } } : {})
+      }))
     }
   }
 }

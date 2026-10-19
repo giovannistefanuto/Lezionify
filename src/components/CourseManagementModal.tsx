@@ -197,7 +197,8 @@ export function CourseManagementModal({
       startDate: formStartDate,
       endDate: formEndDate,
       examDate: formExamDate,
-      schedule: formSchedule
+      schedule: formSchedule,
+      laboratorySchedule: courses.find(course => course.code === editingCourseCode)?.laboratorySchedule
     }
 
     try {

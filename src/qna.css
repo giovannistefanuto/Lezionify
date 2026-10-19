@@ -81,6 +81,7 @@
 
 /* Expanded Thread View */
 .qna-anchor-context {
+  flex-shrink: 0;
   padding: 12px 16px;
   background: var(--bg-secondary);
   border-bottom: 1px solid var(--border);
@@ -94,11 +95,39 @@
   margin-bottom: 4px;
 }
 .qna-context-quote {
+  line-height: 1.5;
+  overflow-wrap: anywhere;
   font-style: italic;
   color: var(--text-primary);
   border-left: 3px solid var(--primary-accent);
   padding-left: 8px;
 }
+.qna-context-quote > :first-child { margin-top: 0; }
+.qna-context-quote > :last-child { margin-bottom: 0; }
+.qna-context-quote.is-collapsed {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  max-height: 4.5em;
+  overflow: hidden;
+}
+.qna-context-quote.is-expanded {
+  max-height: 30vh;
+  overflow: auto;
+}
+.qna-anchor-toggle {
+  display: block;
+  margin-top: 4px;
+  padding: 2px 4px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--primary-accent);
+  font: inherit;
+  cursor: pointer;
+}
+.qna-anchor-toggle:hover { background: var(--bg-hover); }
+.qna-anchor-toggle:focus-visible { outline: 2px solid var(--primary-accent); }
 .qna-context-heading {
   margin-top: 8px;
   color: var(--text-secondary);
@@ -107,7 +136,9 @@
 
 .qna-messages-container {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
+  overflow-anchor: none;
   padding: 16px;
   display: flex;
   flex-direction: column;
@@ -120,6 +151,7 @@
   margin-top: 20px;
 }
 .qna-message {
+  flex-shrink: 0;
   max-width: 90%;
   padding: 12px;
   border-radius: 8px;
@@ -129,9 +161,10 @@
 .qna-message.user {
   align-self: flex-end;
   background: var(--primary-accent);
-  color: var(--white);
+  color: #ffffff;
   border-bottom-right-radius: 0;
 }
+[data-theme='dark'] .qna-message.user, .dark-theme .qna-message.user { color: #07100d; }
 .qna-message.ai {
   align-self: flex-start;
   background: var(--bg-secondary);

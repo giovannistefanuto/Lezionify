@@ -1,5 +1,6 @@
-import { useEffect, useState, useMemo, useCallback } from 'react'
+import { useEffect, useState, useMemo, useCallback, useRef } from 'react'
 import type { AppLogEntry } from '../../shared/archive'
+import { localLogDay } from '../../shared/appLogs'
 
 interface LogViewerModalProps {
   show: boolean
@@ -7,6 +8,17 @@ interface LogViewerModalProps {
 }
 
 type FilterCategory = 'all' | 'error' | 'warn' | 'ai' | 'system'
+const aiSources = new Set([
+  'gemini',
+  'qna',
+  'ai-notes',
+  'study-set',
+  'transcription',
+  'gemini-api',
+  'archive-pipeline',
+  'course-logistics',
+  'translation'
+])
 
 export function LogViewerModal({ show, onClose }: LogViewerModalProps) {
   const [logs, setLogs] = useState<AppLogEntry[]>([])
@@ -14,26 +26,69 @@ export function LogViewerModal({ show, onClose }: LogViewerModalProps) {
   const [activeFilter, setActiveFilter] = useState<FilterCategory>('all')
   const [searchQuery, setSearchQuery] = useState('')
   const [copyFeedback, setCopyFeedback] = useState(false)
-  const [expandedDetails, setExpandedDetails] = useState<Record<string, boolean>>({})
+  const [expandedDetails, setExpandedDetails] = useState<
+    Record<string, boolean>
+  >({})
+  const [previousDay, setPreviousDay] = useState<string | null>(null)
+  const [loadError, setLoadError] = useState('')
+  const pages = useRef(new Map<string, AppLogEntry[]>())
+  const previousDayRef = useRef<string | null>(null)
+  const requestVersion = useRef(0)
+  const fetching = useRef<number | null>(null)
+  const clearing = useRef(false)
+  const invalidateRequests = useCallback(() => {
+    requestVersion.current++
+  }, [])
 
-  const fetchLogs = useCallback(async () => {
-    if (!window.archive?.getAppLogs) return
-    setIsLoading(true)
+  const fetchLogs = useCallback(async (silent = false, older = false) => {
+    if (!window.archive?.getAppLogDay || fetching.current || clearing.current)
+      return
+    const version = ++requestVersion.current
+    fetching.current = version
+    if (!silent) setIsLoading(true)
     try {
-      const data = await window.archive.getAppLogs()
-      setLogs(data)
-    } catch (err) {
-      console.error('Errore nel recupero dei log:', err)
+      const day = older ? previousDayRef.current : localLogDay()
+      if (!day) return
+      const page = await window.archive.getAppLogDay(day)
+      if (version === requestVersion.current) {
+        pages.current.set(page.day, page.entries)
+        const earliest = [...pages.current.keys()].sort()[0]
+        if (page.day === earliest) {
+          previousDayRef.current = page.previousDay
+          setPreviousDay(page.previousDay)
+        }
+        const merged = [...pages.current.values()].flat()
+        setLogs(
+          [...new Map(merged.map((entry) => [entry.id, entry])).values()].sort(
+            (a, b) =>
+              a.timestamp.localeCompare(b.timestamp) || a.id.localeCompare(b.id)
+          )
+        )
+        setLoadError('')
+      }
+    } catch {
+      if (version === requestVersion.current)
+        setLoadError('Lettura dei log non riuscita. Riprova.')
     } finally {
-      setIsLoading(false)
+      if (fetching.current === version) fetching.current = null
+      if (version === requestVersion.current) setIsLoading(false)
     }
   }, [])
 
   useEffect(() => {
-    if (show) {
-      void fetchLogs()
+    if (!show) return
+    pages.current.clear()
+    previousDayRef.current = null
+    setPreviousDay(null)
+    setLogs([])
+    fetching.current = null
+    void fetchLogs()
+    const timer = window.setInterval(() => void fetchLogs(true), 2000)
+    return () => {
+      window.clearInterval(timer)
+      invalidateRequests()
     }
-  }, [show, fetchLogs])
+  }, [show, fetchLogs, invalidateRequests])
 
   useEffect(() => {
     if (!show) return
@@ -49,12 +104,21 @@ export function LogViewerModal({ show, onClose }: LogViewerModalProps) {
 
   const handleClearLogs = async () => {
     if (!window.archive?.clearAppLogs) return
-    if (!window.confirm('Sei sicuro di voler cancellare tutti i log salvati?')) return
+    if (!window.confirm('Sei sicuro di voler cancellare tutti i log salvati?'))
+      return
+    clearing.current = true
+    invalidateRequests()
+    setIsLoading(false)
     try {
       await window.archive.clearAppLogs()
+      pages.current.clear()
+      previousDayRef.current = null
+      setPreviousDay(null)
       setLogs([])
-    } catch (err) {
-      console.error('Errore cancellazione log:', err)
+    } catch {
+      setLoadError('Cancellazione dei log non riuscita. Riprova.')
+    } finally {
+      clearing.current = false
     }
   }
 
@@ -70,12 +134,12 @@ export function LogViewerModal({ show, onClose }: LogViewerModalProps) {
     } else if (activeFilter === 'warn') {
       list = list.filter((l) => l.level === 'warn')
     } else if (activeFilter === 'ai') {
-      list = list.filter((l) =>
-        ['gemini', 'qna', 'ai-notes', 'study-set', 'transcription', 'gemini-api'].includes(l.source)
-      )
+      list = list.filter((l) => aiSources.has(l.source))
     } else if (activeFilter === 'system') {
       list = list.filter((l) =>
-        ['system', 'storage', 'process', 'main-process', 'renderer'].includes(l.source)
+        ['system', 'storage', 'process', 'main-process', 'renderer'].includes(
+          l.source
+        )
       )
     }
 
@@ -96,11 +160,11 @@ export function LogViewerModal({ show, onClose }: LogViewerModalProps) {
   const counts = useMemo(() => {
     const errorCount = logs.filter((l) => l.level === 'error').length
     const warnCount = logs.filter((l) => l.level === 'warn').length
-    const aiCount = logs.filter((l) =>
-      ['gemini', 'qna', 'ai-notes', 'study-set', 'transcription', 'gemini-api'].includes(l.source)
-    ).length
+    const aiCount = logs.filter((l) => aiSources.has(l.source)).length
     const systemCount = logs.filter((l) =>
-      ['system', 'storage', 'process', 'main-process', 'renderer'].includes(l.source)
+      ['system', 'storage', 'process', 'main-process', 'renderer'].includes(
+        l.source
+      )
     ).length
     return {
       all: logs.length,
@@ -141,10 +205,15 @@ export function LogViewerModal({ show, onClose }: LogViewerModalProps) {
           <div className="log-viewer-title-group">
             <h3>📋 Log di Sistema & Diagnostica</h3>
             <span className="log-viewer-subtitle">
-              Monitora chiamate AI, rotazione chiavi, errori e attività interna
+              Tentativi Gemini, chiavi, modelli, attese e fallback · oggi e
+              giorni caricati · aggiornamento ogni 2 secondi
             </span>
           </div>
-          <button className="modal-close" onClick={onClose} title="Chiudi (Esc)">
+          <button
+            className="modal-close"
+            onClick={onClose}
+            title="Chiudi (Esc)"
+          >
             ✕
           </button>
         </div>
@@ -239,7 +308,18 @@ export function LogViewerModal({ show, onClose }: LogViewerModalProps) {
           )}
         </div>
 
-        <div className="log-entries-container">
+        <div
+          className="log-entries-container"
+          onScroll={(event) => {
+            const element = event.currentTarget
+            if (
+              element.scrollHeight - element.scrollTop - element.clientHeight <
+                40 &&
+              previousDayRef.current
+            )
+              void fetchLogs(false, true)
+          }}
+        >
           {filteredLogs.length === 0 ? (
             <div className="log-empty-state">
               <span className="log-empty-icon">📝</span>
@@ -247,16 +327,25 @@ export function LogViewerModal({ show, onClose }: LogViewerModalProps) {
             </div>
           ) : (
             filteredLogs.map((entry) => {
-              const dateStr = new Date(entry.timestamp).toLocaleTimeString('it-IT', {
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit',
-                fractionalSecondDigits: 3
-              })
+              const dateStr = new Date(entry.timestamp).toLocaleString(
+                'it-IT',
+                {
+                  day: '2-digit',
+                  month: '2-digit',
+                  year: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit',
+                  second: '2-digit',
+                  fractionalSecondDigits: 3
+                }
+              )
               const isExpanded = !!expandedDetails[entry.id]
 
               return (
-                <div key={entry.id} className={`log-entry-item level-${entry.level}`}>
+                <div
+                  key={entry.id}
+                  className={`log-entry-item level-${entry.level}`}
+                >
                   <div className="log-entry-header">
                     <span className="log-entry-time">{dateStr}</span>
                     <span className={`log-badge badge-${entry.level}`}>
@@ -272,7 +361,9 @@ export function LogViewerModal({ show, onClose }: LogViewerModalProps) {
                         className="log-details-toggle-btn"
                         onClick={() => toggleDetails(entry.id)}
                       >
-                        {isExpanded ? '▾ Nascondi dettagli' : '▸ Mostra dettagli tecnici'}
+                        {isExpanded
+                          ? '▾ Nascondi dettagli'
+                          : '▸ Mostra dettagli tecnici'}
                       </button>
                       {isExpanded && (
                         <pre className="log-details-block">{entry.details}</pre>
@@ -282,6 +373,29 @@ export function LogViewerModal({ show, onClose }: LogViewerModalProps) {
                 </div>
               )
             })
+          )}
+          {loadError && (
+            <p role="alert">
+              {loadError}{' '}
+              <button
+                onClick={() => void fetchLogs(false, Boolean(previousDay))}
+              >
+                Riprova
+              </button>
+            </p>
+          )}
+          {isLoading && <p role="status">Caricamento log…</p>}
+          {previousDay && (
+            <button
+              className="log-load-previous"
+              disabled={isLoading}
+              onClick={() => void fetchLogs(false, true)}
+            >
+              Carica il giorno precedente · {previousDay}
+            </button>
+          )}
+          {!previousDay && !isLoading && (
+            <p className="log-history-end">Fine dello storico disponibile.</p>
           )}
         </div>
       </div>

@@ -1,3 +1,5 @@
+import { validateLaboratorySchedule } from './laboratorySchedule'
+import { validateQnaImageIds } from '../../shared/qnaImages'
 import type {
   CourseDefinition,
   LectureHighlight,
@@ -66,6 +68,7 @@ export function validateQnaThread(value: unknown): asserts value is QnaThread {
     throw new Error('Conversazione Q&A non valida.')
   }
   if (value.contextHeading === undefined) value.contextHeading = null
+  validateQnaImageIds(value.attachmentIds)
   if (value.createdAt === undefined) value.createdAt = ''
   if (value.updatedAt === undefined) value.updatedAt = ''
   const validText = (text: unknown, max: number): text is string =>
@@ -85,6 +88,7 @@ export function validateQnaThread(value: unknown): asserts value is QnaThread {
     throw new Error('Conversazione Q&A non valida.')
   }
   for (const message of value.messages) {
+    if (isRecord(message)) validateQnaImageIds(message.attachmentIds)
     if (isRecord(message) && message.timestamp === undefined) {
       message.timestamp = ''
     }
@@ -141,12 +145,30 @@ export function validateScratchpad(value: unknown): asserts value is ScratchpadD
   ) {
     throw new Error('Quick Capture non valido.')
   }
+  const groups = value.groups ?? []
+  if (!Array.isArray(groups) || groups.length > 26) throw new Error('Gruppi Quick Capture non validi.')
+  const ids = new Set<string>()
+  const letters = new Set<string>()
+  const names = new Set<string>()
+  for (const group of groups) {
+    if (!isRecord(group) || typeof group.id !== 'string' || !group.id || group.id.length > 120 ||
+      ['all', ''].includes(group.id) || ids.has(group.id) || typeof group.name !== 'string' ||
+      !group.name.trim() || group.name.length > 80 || names.has(group.name.trim().toLocaleLowerCase()) ||
+      typeof group.shortcut !== 'string' || !/^[A-Z]$/.test(group.shortcut) || letters.has(group.shortcut) ||
+      typeof group.notes !== 'string' || group.notes.length > 1_000_000) {
+      throw new Error('Gruppo Quick Capture non valido.')
+    }
+    ids.add(group.id); letters.add(group.shortcut); names.add(group.name.trim().toLocaleLowerCase())
+  }
+  if (value.selectedGroupId !== undefined && value.selectedGroupId !== '' && value.selectedGroupId !== 'all' &&
+    !ids.has(value.selectedGroupId as string)) throw new Error('Gruppo selezionato non valido.')
   for (const todo of value.todos) {
     if (
       !isRecord(todo) ||
       typeof todo.id !== 'string' ||
       todo.id.length === 0 ||
       todo.id.length > 120 ||
+      (todo.groupId !== undefined && todo.groupId !== '' && !ids.has(todo.groupId as string)) ||
       typeof todo.text !== 'string' ||
       todo.text.length > 10_000 ||
       typeof todo.completed !== 'boolean' ||
@@ -217,6 +239,7 @@ export function validateCourse(value: unknown): asserts value is CourseDefinitio
   ) {
     throw new Error('Dati del corso non validi.')
   }
+  validateLaboratorySchedule(value.laboratorySchedule)
   const timePattern = /^(?:[01]\d|2[0-3]):[0-5]\d$/
   for (const slot of value.schedule) {
     if (
@@ -245,11 +268,12 @@ export function validateLectureUpdate(
   value: unknown
 ): asserts value is UpdateLecturePayload {
   if (!isRecord(value)) throw new Error('Aggiornamento lezione non valido.')
-  const allowed = new Set(['title', 'courseCode', 'recordedAt', 'studyStatus'])
+  const allowed = new Set(['title', 'courseCode', 'recordedAt', 'studyStatus', 'isLaboratory'])
   if (Object.keys(value).some((key) => !allowed.has(key))) {
     throw new Error('Aggiornamento lezione non valido.')
   }
   if (
+    (value.isLaboratory !== undefined && typeof value.isLaboratory !== 'boolean') ||
     (value.title !== undefined &&
       value.title !== null &&
       (typeof value.title !== 'string' || value.title.length > 500)) ||

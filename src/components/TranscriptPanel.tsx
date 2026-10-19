@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react'
 
-import type { Lecture } from '../../shared/archive'
+import type { GenerationProgress, Lecture } from '../../shared/archive'
+import { TranscriptionProgressBox } from './TranscriptionProgressBox'
 
 export function countTranscriptWords(transcript: string | null): number {
   return transcript?.match(/\S+/g)?.length ?? 0
@@ -25,6 +26,8 @@ interface TranscriptPanelProps {
   transcriptText: string | null
   isGenerating: boolean
   isTranscribing: boolean
+  generationProgress?: GenerationProgress | null
+  transcribeError?: string | null
   onGenerateLectureNotes: () => void
   onCopyTranscript: () => void
   onAttachTranscript: () => void
@@ -36,6 +39,8 @@ export function TranscriptPanel({
   transcriptText,
   isGenerating,
   isTranscribing,
+  generationProgress,
+  transcribeError,
   onGenerateLectureNotes,
   onCopyTranscript,
   onAttachTranscript,
@@ -107,13 +112,10 @@ export function TranscriptPanel({
       </div>
 
       {isTranscribing && (
-        <div className="ai-generating-box">
-          <div className="ai-pulse-spinner" />
-          <div className="ai-generating-text">
-            <h4>🎙️ Trascrizione audio con Gemini in corso…</h4>
-            <p>Analisi del parlato e sincronizzazione del testo.</p>
-          </div>
-        </div>
+        <TranscriptionProgressBox
+          progress={generationProgress}
+          error={transcribeError}
+        />
       )}
 
       {transcriptText ? (

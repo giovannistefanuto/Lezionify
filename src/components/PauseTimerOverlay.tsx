@@ -29,9 +29,10 @@ export function PauseTimerOverlay({
     if (show) {
       endTimeRef.current = Date.now() + totalSeconds * 1000
       setRemainingSeconds(totalSeconds)
-      setTimeout(() => {
-        returnBtnRef.current?.focus()
+      const focusTimer = setTimeout(() => {
+        if (!document.querySelector('[data-dictionary-overlay]')) returnBtnRef.current?.focus()
       }, 50)
+      return () => clearTimeout(focusTimer)
     }
   }, [show, totalSeconds])
 
@@ -59,6 +60,7 @@ export function PauseTimerOverlay({
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
+        if (document.querySelector('[data-dictionary-overlay]')) return
         e.preventDefault()
         e.stopPropagation()
         e.stopImmediatePropagation()
@@ -89,8 +91,8 @@ export function PauseTimerOverlay({
 
         <p className="pause-timer-subtext">
           {isExpired
-            ? 'Il tempo di riposo è terminato. Vuoi riprendere la concentrazione?'
-            : 'Prenditi il tempo per staccare gli occhi dallo schermo e riposare.'}
+            ? 'La pausa prevista è terminata. Il tempo di studio resta fermo finché scegli di riprendere, anche se resti lontano più a lungo.'
+            : 'Prenditi il tempo per riposare. Il tempo di studio resta fermo per tutta la pausa, anche dopo la scadenza.'}
         </p>
 
         {/* Cerchio SVG countdown pomodoro-style */}
@@ -136,33 +138,24 @@ export function PauseTimerOverlay({
         </div>
 
         <div className="pause-timer-actions">
-          {!isExpired ? (
+          <div className={isExpired ? 'pause-timer-expired-actions' : undefined}>
             <button
               ref={returnBtnRef}
               className="pause-timer-resume-btn"
               onClick={onReturnToStudy}
               autoFocus
             >
-              🟢 Torna a studiare adesso (Esc)
+              {isExpired ? '🟢 Sì, torniamo a studiare (Esc)' : '🟢 Torna a studiare adesso (Esc)'}
             </button>
-          ) : (
-            <div className="pause-timer-expired-actions">
-              <button
-                ref={returnBtnRef}
-                className="pause-timer-resume-btn"
-                onClick={onReturnToStudy}
-                autoFocus
-              >
-                🟢 Sì, torniamo a studiare (Esc)
-              </button>
+            {isExpired && (
               <button
                 className="pause-timer-quit-btn"
                 onClick={onQuit}
               >
                 🛑 No, ho finito per oggi
               </button>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
     </div>

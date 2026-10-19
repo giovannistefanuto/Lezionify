@@ -1,10 +1,14 @@
 # Checklist ufficiale delle modifiche
 
+> Questa checklist fotografa gli interventi conclusi a settembre. Per lo stato
+> attuale consultare il [report di pubblicazione del 19 ottobre](pubblicazione-github-2026-10-19.md),
+> il [backlog di prodotto](../product/idee-future-2026-10-13.md) e le decisioni successive.
+
 Elenco allineato a `DECISIONI.md` fino a **D-0119**. I riepiloghi storici e le priorità che duplicavano le stesse attività sono stati rimossi.
 
 **Stato all'11 settembre 2026:** **43 interventi completati**, **0 da completare**.
 
-**Verifiche correnti:** 120 test Vitest, 24 scenari React in Electron, collaudo Q&A Gemini reale, audit CSS, typecheck, lint e build superati.
+**Verifiche storiche dell’11 settembre:** 120 test Vitest, 24 scenari React in Electron, collaudo Q&A Gemini reale, audit CSS, typecheck, lint e build superati.
 
 ## Cose da fare
 

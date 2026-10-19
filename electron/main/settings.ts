@@ -1,8 +1,10 @@
+import { validateLaboratorySchedule } from './laboratorySchedule'
 import { copyFile, readFile, rename, stat, writeFile } from 'node:fs/promises'
 import * as path from 'node:path'
 import { safeStorage } from 'electron'
-import type { AppSettings, GeminiModel } from '../../shared/archive'
+import type { AppSettings, GeminiModel, PublishingSettings } from '../../shared/archive'
 import { AsyncMutex } from './asyncMutex'
+import { normalizeRepoUrl, validateBranch } from './publishing/publishGitClient'
 
 const VALID_MODELS: GeminiModel[] = [
   'gemini-3.8-flash',
@@ -20,10 +22,16 @@ const VALID_MODELS: GeminiModel[] = [
 const DEFAULT_SETTINGS: AppSettings = {
   apiKey: '',
   apiKeys: [],
+  apiKeyQuotaGroups: [],
   activeKeyIndex: 0,
   autoRotateOnQuota: true,
   model: 'gemini-3.6-flash',
-  courseConfigs: {}
+  courseConfigs: {},
+  // Il flusso principale è deliberato: dopo aver importato dal registratore
+  // l'utente avvia l'intera coda con “Elabora tutto”. L'automazione resta
+  // disponibile come opzione esplicita per chi la preferisce.
+  autoProcessOnImport: false,
+  publishing: { enabled: false, repoUrl: '', branch: 'main', autoPublishOnStartup: true }
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -37,16 +45,21 @@ function validateSettingsUpdate(
   const allowed = new Set([
     'apiKey',
     'apiKeys',
+    'apiKeyQuotaGroups',
     'activeKeyIndex',
     'autoRotateOnQuota',
     'model',
     'courses',
+    'archivedCourseCodes',
     'courseConfigs',
-    'lastSemesterReminderDismissed'
+    'lastSemesterReminderDismissed',
+    'autoProcessOnImport',
+    'publishing'
   ])
   if (Object.keys(value).some((key) => !allowed.has(key))) {
     throw new Error('Impostazioni non valide.')
   }
+  if (value.publishing !== undefined) validatePublishing(value.publishing)
   if (
     (value.apiKey !== undefined &&
       (typeof value.apiKey !== 'string' || value.apiKey.length > 10_000)) ||
@@ -56,6 +69,15 @@ function validateSettingsUpdate(
         value.apiKeys.some(
           (key) => typeof key !== 'string' || key.length > 10_000
         ))) ||
+    (value.apiKeyQuotaGroups !== undefined &&
+      (!Array.isArray(value.apiKeyQuotaGroups) ||
+        value.apiKeyQuotaGroups.length > 50 ||
+        value.apiKeyQuotaGroups.some(
+          (group) =>
+            typeof group !== 'string' ||
+            group.trim().length === 0 ||
+            group.length > 120
+        ))) ||
     (value.activeKeyIndex !== undefined &&
       (typeof value.activeKeyIndex !== 'number' ||
         !Number.isInteger(value.activeKeyIndex) ||
@@ -63,6 +85,8 @@ function validateSettingsUpdate(
         value.activeKeyIndex >= 50)) ||
     (value.autoRotateOnQuota !== undefined &&
       typeof value.autoRotateOnQuota !== 'boolean') ||
+    (value.autoProcessOnImport !== undefined &&
+      typeof value.autoProcessOnImport !== 'boolean') ||
     (value.model !== undefined &&
       (typeof value.model !== 'string' ||
         !VALID_MODELS.includes(value.model as GeminiModel))) ||
@@ -90,7 +114,15 @@ function validateSettingsUpdate(
       ) {
         throw new Error('Elenco dei corsi non valido.')
       }
+      validateLaboratorySchedule(course.laboratorySchedule)
     }
+  }
+  if (value.archivedCourseCodes !== undefined &&
+    (!Array.isArray(value.archivedCourseCodes) ||
+      value.archivedCourseCodes.length > 500 ||
+      value.archivedCourseCodes.some(code => typeof code !== 'string' ||
+        !code.trim() || code.length > 120))) {
+    throw new Error('Elenco dei corsi archiviati non valido.')
   }
   if (value.courseConfigs !== undefined) {
     if (
@@ -115,6 +147,26 @@ function validateSettingsUpdate(
       }
     }
   }
+}
+
+function validatePublishing(value: unknown): asserts value is PublishingSettings {
+  if (!isRecord(value) || Object.keys(value).some(key => ![
+    'enabled', 'repoUrl', 'githubToken', 'branch', 'autoPublishOnStartup'
+  ].includes(key)) || typeof value.enabled !== 'boolean' ||
+    typeof value.autoPublishOnStartup !== 'boolean' || typeof value.repoUrl !== 'string' ||
+    value.repoUrl.length > 500 || typeof value.branch !== 'string' ||
+    (value.githubToken !== undefined && (typeof value.githubToken !== 'string' ||
+      value.githubToken.length > 10_000 || Array.from(value.githubToken).some(char =>
+        char.charCodeAt(0) <= 32 || char.charCodeAt(0) === 127)))) {
+    throw new Error('Impostazioni di pubblicazione non valide.')
+  }
+  if (value.repoUrl.trim()) normalizeRepoUrl(value.repoUrl)
+  else if (value.enabled) throw new Error('Repository GitHub mancante.')
+  validateBranch(value.branch)
+}
+
+function publicPublishingDefaults(): PublishingSettings {
+  return { enabled: false, repoUrl: '', branch: 'main', autoPublishOnStartup: true }
 }
 
 function isEncryptionAvailable(): boolean {
@@ -185,10 +237,37 @@ export class SettingsService {
     }
 
     const activeApiKey = apiKeys[activeKeyIndex] ?? ''
+    const parsedQuotaGroups = Array.isArray(parsed.apiKeyQuotaGroups)
+      ? parsed.apiKeyQuotaGroups
+      : []
+    // Le impostazioni precedenti non avevano il metadato del progetto. Le
+    // trattiamo in modo prudente come appartenenti allo stesso progetto.
+    const apiKeyQuotaGroups = apiKeys.map((_, index) => {
+      const group = parsedQuotaGroups[index]
+      return typeof group === 'string' && group.trim()
+        ? group.trim()
+        : 'default-project'
+    })
+
+    let publishing = publicPublishingDefaults()
+    if (isRecord(parsed.publishing)) {
+      const { githubToken: encryptedToken, tokenEncrypted, ...configuration } = parsed.publishing
+      try {
+        validatePublishing(configuration)
+        let token = ''
+        // Never adopt plaintext tokens from settings.json.
+        if (tokenEncrypted === true && typeof encryptedToken === 'string' && isEncryptionAvailable()) {
+          try { token = safeStorage.decryptString(Buffer.from(encryptedToken, 'base64')) } catch { /* Fail closed. */ }
+        }
+        publishing = { ...configuration, repoUrl: configuration.repoUrl ? normalizeRepoUrl(configuration.repoUrl) : '',
+          githubToken: token, enabled: configuration.enabled && Boolean(token) }
+      } catch { /* Invalid legacy publishing configuration stays disabled. */ }
+    }
 
     return {
       apiKey: activeApiKey,
       apiKeys,
+      apiKeyQuotaGroups,
       activeKeyIndex,
       autoRotateOnQuota:
         typeof parsed.autoRotateOnQuota === 'boolean'
@@ -199,8 +278,19 @@ export class SettingsService {
           ? parsed.model
           : DEFAULT_SETTINGS.model,
       courses: parsed.courses || {},
+      archivedCourseCodes: Array.isArray(parsed.archivedCourseCodes)
+        ? [...new Set(parsed.archivedCourseCodes.filter(
+            (code): code is string => typeof code === 'string' &&
+              Boolean(code.trim()) && code.length <= 120
+          ).map(code => code.trim()))]
+        : [],
       courseConfigs: parsed.courseConfigs || {},
-      lastSemesterReminderDismissed: parsed.lastSemesterReminderDismissed
+      lastSemesterReminderDismissed: parsed.lastSemesterReminderDismissed,
+      autoProcessOnImport:
+        typeof parsed.autoProcessOnImport === 'boolean'
+          ? parsed.autoProcessOnImport
+          : DEFAULT_SETTINGS.autoProcessOnImport,
+      publishing
     }
   }
 
@@ -234,6 +324,19 @@ export class SettingsService {
     return this.saveMutex.runExclusive(() => this.saveSettingsUnlocked(updates))
   }
 
+  async setCourseArchived(code: string, archived: boolean): Promise<string[]> {
+    return this.saveMutex.runExclusive(async () => {
+      const current = await this.getSettings()
+      const codes = new Set(current.archivedCourseCodes || [])
+      if (archived) codes.add(code)
+      else codes.delete(code)
+      const archivedCourseCodes = [...codes].sort()
+      validateSettingsUpdate({ archivedCourseCodes })
+      await this.saveSettingsUnlocked({ archivedCourseCodes })
+      return archivedCourseCodes
+    })
+  }
+
   private async saveSettingsUnlocked(
     updates: Partial<AppSettings>
   ): Promise<AppSettings> {
@@ -253,6 +356,16 @@ export class SettingsService {
       }
     }
 
+    const providedQuotaGroups = Array.isArray(updates.apiKeyQuotaGroups)
+      ? updates.apiKeyQuotaGroups
+      : current.apiKeyQuotaGroups
+    const apiKeyQuotaGroups = apiKeys.map((_, index) => {
+      const group = providedQuotaGroups?.[index]
+      return typeof group === 'string' && group.trim()
+        ? group.trim()
+        : 'default-project'
+    })
+
     let activeKeyIndex =
       typeof updates.activeKeyIndex === 'number'
         ? updates.activeKeyIndex
@@ -269,6 +382,7 @@ export class SettingsService {
     const updated: AppSettings = {
       apiKey: activeApiKey,
       apiKeys,
+      apiKeyQuotaGroups,
       activeKeyIndex,
       autoRotateOnQuota:
         updates.autoRotateOnQuota !== undefined
@@ -280,6 +394,10 @@ export class SettingsService {
           : current.model,
       courses:
         updates.courses !== undefined ? updates.courses : current.courses,
+      archivedCourseCodes:
+        updates.archivedCourseCodes !== undefined
+          ? [...new Set(updates.archivedCourseCodes.map(code => code.trim()))].sort()
+          : current.archivedCourseCodes || [],
       courseConfigs:
         updates.courseConfigs !== undefined
           ? updates.courseConfigs
@@ -287,7 +405,27 @@ export class SettingsService {
       lastSemesterReminderDismissed:
         updates.lastSemesterReminderDismissed !== undefined
           ? updates.lastSemesterReminderDismissed
-          : current.lastSemesterReminderDismissed
+          : current.lastSemesterReminderDismissed,
+      autoProcessOnImport:
+        updates.autoProcessOnImport !== undefined
+          ? updates.autoProcessOnImport
+          : current.autoProcessOnImport !== undefined
+            ? current.autoProcessOnImport
+            : DEFAULT_SETTINGS.autoProcessOnImport,
+      publishing: updates.publishing ? {
+        ...updates.publishing,
+        repoUrl: updates.publishing.repoUrl ? normalizeRepoUrl(updates.publishing.repoUrl) : '',
+        githubToken: updates.publishing.githubToken ?? current.publishing?.githubToken ?? ''
+      } : current.publishing ?? publicPublishingDefaults()
+    }
+
+    const publishingToken = updated.publishing?.githubToken ?? ''
+    if (updated.publishing?.enabled && !publishingToken) {
+      if (updates.publishing?.githubToken === '') updated.publishing.enabled = false
+      else throw new Error('Inserisci un token GitHub per attivare la sincronizzazione automatica.')
+    }
+    if (publishingToken && !isEncryptionAvailable()) {
+      throw new Error('Crittografia non disponibile. Il token GitHub non può essere salvato.')
     }
 
     const backupPath = `${this.settingsPath}.bak`
@@ -298,7 +436,29 @@ export class SettingsService {
     }
 
     let keysEncrypted = false
-    const outputData: AppSettings & { keysEncrypted?: boolean } = { ...updated }
+    const outputData: Omit<AppSettings, 'publishing'> & {
+      keysEncrypted?: boolean
+      publishing?: PublishingSettings & { tokenEncrypted: boolean }
+    } = { ...updated, publishing: undefined }
+    let encryptedPublishingToken = ''
+    if (publishingToken) {
+      try { encryptedPublishingToken = safeStorage.encryptString(publishingToken).toString('base64') }
+      catch { throw new Error('Impossibile cifrare il token GitHub. Le impostazioni non sono state salvate.') }
+    }
+    outputData.publishing = {
+      ...updated.publishing!,
+      githubToken: encryptedPublishingToken,
+      tokenEncrypted: true
+    }
+    // Preserve an unreadable encrypted credential on unrelated settings updates.
+    if (!publishingToken && updates.publishing?.githubToken === undefined) {
+      try {
+        const disk = JSON.parse(await readFile(this.settingsPath, 'utf8'))
+        if (disk.publishing?.tokenEncrypted === true && typeof disk.publishing.githubToken === 'string') {
+          outputData.publishing.githubToken = disk.publishing.githubToken
+        }
+      } catch { /* Missing settings have no credential to preserve. */ }
+    }
 
     if (isEncryptionAvailable()) {
       keysEncrypted = true

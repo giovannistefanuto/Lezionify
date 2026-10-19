@@ -18,6 +18,7 @@ export function useStudyTracker({
   isEnabled = false
 }: UseStudyTrackerProps) {
   const [activeSeconds, setActiveSeconds] = useState(0)
+  const [previousStudy, setPreviousStudy] = useState<{ lectureId: string; sessionId: string; seconds: number } | null>(null)
   const [isPaused, setIsPaused] = useState(false)
   const [showFocusLock, setShowFocusLock] = useState(false)
   const [isZenMode, setIsZenMode] = useState(false)
@@ -123,6 +124,23 @@ export function useStudyTracker({
       void flushCurrentSession()
     }
   }, [isEnabled, activeLectureId, flushCurrentSession])
+
+  // Exclude the current session: its periodic snapshots are already persisted,
+  // while activeSeconds includes the whole session, including unsaved seconds.
+  useEffect(() => {
+    setPreviousStudy(null)
+    if (!isEnabled || !activeLectureId) return
+    let cancelled = false
+    const sessionId = sessionIdRef.current
+    void flushQueue.current.then(async () => {
+      // A failed save from a previous session makes a complete total unavailable.
+      if (Array.from(pendingSessions.current.values()).some(session =>
+        session.lectureId === activeLectureId && session.id !== sessionId)) return
+      const seconds = await window.archive.getLectureStudySeconds(activeLectureId, sessionId)
+      if (!cancelled) setPreviousStudy({ lectureId: activeLectureId, sessionId, seconds })
+    }).catch(() => { /* Keep unavailable distinct from zero recorded study. */ })
+    return () => { cancelled = true }
+  }, [isEnabled, activeLectureId, showFocusLock])
 
   // Rilevamento interazioni utente (inactivity guard: max 15 min di inattività)
   useEffect(() => {
@@ -311,6 +329,8 @@ export function useStudyTracker({
 
   return {
     activeSeconds,
+    lectureTotalSeconds: previousStudy?.lectureId === activeLectureId && previousStudy.sessionId === sessionIdRef.current
+      ? previousStudy.seconds + activeSeconds : null,
     isPaused,
     showFocusLock,
     isZenMode,

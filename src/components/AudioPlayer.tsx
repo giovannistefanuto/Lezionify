@@ -56,12 +56,20 @@ export function AudioPlayer({ audioUrl }: AudioPlayerProps) {
     const onPlay = () => {
       setIsPlaying(true)
       setPlaybackError(null)
+      window.dispatchEvent(new CustomEvent('lezionify:lecture-playback', { detail: { playing: true } }))
     }
-    const onPause = () => setIsPlaying(false)
-    const onEnded = () => setIsPlaying(false)
+    const onPause = () => {
+      setIsPlaying(false)
+      window.dispatchEvent(new CustomEvent('lezionify:lecture-playback', { detail: { playing: false } }))
+    }
+    const onEnded = () => {
+      setIsPlaying(false)
+      window.dispatchEvent(new CustomEvent('lezionify:lecture-playback', { detail: { playing: false } }))
+    }
     const onError = () => {
       setIsPlaying(false)
       setPlaybackError('Impossibile riprodurre questo file audio.')
+      window.dispatchEvent(new CustomEvent('lezionify:lecture-playback', { detail: { playing: false } }))
     }
 
     audio.addEventListener('timeupdate', updateTime)
@@ -80,6 +88,7 @@ export function AudioPlayer({ audioUrl }: AudioPlayerProps) {
       audio.removeEventListener('pause', onPause)
       audio.removeEventListener('ended', onEnded)
       audio.removeEventListener('error', onError)
+      window.dispatchEvent(new CustomEvent('lezionify:lecture-playback', { detail: { playing: false } }))
     }
   }, [audioUrl, playbackSpeed])
 

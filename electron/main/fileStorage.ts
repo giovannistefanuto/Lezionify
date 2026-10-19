@@ -387,6 +387,8 @@ export class FileStorageService {
       const raw = await readRecoverable(this.scratchpadPath)
       const parsed = JSON.parse(raw)
       return {
+        ...(parsed?.groups !== undefined ? { groups: parsed.groups } : {}),
+        ...(parsed?.selectedGroupId !== undefined ? { selectedGroupId: parsed.selectedGroupId } : {}),
         todos: Array.isArray(parsed?.todos) ? parsed.todos : [],
         notes: typeof parsed?.notes === 'string' ? parsed.notes : '',
         updatedAt: parsed?.updatedAt || new Date().toISOString()

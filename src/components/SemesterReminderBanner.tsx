@@ -9,8 +9,8 @@ export function isSemesterStartupPeriod(date = new Date()): { isStartup: boolean
   const month = date.getMonth() // 0-indexed: 0 = Jan, 8 = Sept, 9 = Oct, 1 = Feb, 2 = Mar
   const day = date.getDate()
 
-  // 1° Semestre: 20 Settembre (8, 20) -> 10 Ottobre (9, 10)
-  if ((month === 8 && day >= 20) || (month === 9 && day <= 10)) {
+  // 1° Semestre: 20 Settembre (8, 20) -> 3 Ottobre (9, 3); nascosto dal 4 Ottobre
+  if ((month === 8 && day >= 20) || (month === 9 && day < 4)) {
     return { isStartup: true, semesterName: '1° Semestre (Autunno/Inverno)' }
   }
 

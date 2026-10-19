@@ -1,9 +1,17 @@
 import { useEffect, useState, useRef } from 'react'
 
+function formatStudyTime(seconds: number): string {
+  const minutes = Math.floor(Math.max(0, seconds) / 60)
+  if (minutes === 0) return 'Meno di 1 min'
+  const hours = Math.floor(minutes / 60)
+  return hours > 0 ? `${hours} h ${minutes % 60} min` : `${minutes} min`
+}
+
 interface FocusLockModalProps {
   show: boolean
   courseCode: string | null
-  elapsedMinutes: number
+  sessionSeconds: number
+  lectureTotalSeconds: number | null
   onContinue: () => void
   onQuit: () => void
   onPause?: (minutes: number) => void
@@ -12,7 +20,8 @@ interface FocusLockModalProps {
 export function FocusLockModal({
   show,
   courseCode,
-  elapsedMinutes,
+  sessionSeconds,
+  lectureTotalSeconds,
   onContinue,
   onQuit,
   onPause
@@ -24,8 +33,8 @@ export function FocusLockModal({
     if (show) {
       setCountdown(15)
       // Autofocus sul tasto Continua a studiare
-      setTimeout(() => {
-        continueBtnRef.current?.focus()
+      const focusTimer = setTimeout(() => {
+        if (!document.querySelector('[data-dictionary-overlay]')) continueBtnRef.current?.focus()
       }, 50)
 
       const timer = setInterval(() => {
@@ -40,6 +49,7 @@ export function FocusLockModal({
 
       const handleEscapeDuringLock = (e: KeyboardEvent) => {
         if (e.key === 'Escape') {
+          if (document.querySelector('[data-dictionary-overlay]')) return
           e.preventDefault()
           e.stopPropagation()
           // Premere ESC durante il countdown ti riporta allo studio
@@ -50,6 +60,7 @@ export function FocusLockModal({
       window.addEventListener('keydown', handleEscapeDuringLock, { capture: true })
 
       return () => {
+        clearTimeout(focusTimer)
         clearInterval(timer)
         window.removeEventListener('keydown', handleEscapeDuringLock, { capture: true })
       }
@@ -77,11 +88,16 @@ export function FocusLockModal({
         <h2 className="focus-lock-title">Sessione di Studio in Corso</h2>
         
         <p className="focus-lock-status">
-          Sei concentrato da <strong>{Math.max(1, elapsedMinutes)} minuti</strong>
+          Stai studiando questa lezione
           {courseCode ? (
             <> su <span className="focus-lock-course">{courseCode}</span></>
           ) : null}.
         </p>
+
+        <div className="focus-lock-study-times">
+          <div><span>Totale della lezione</span><strong>{lectureTotalSeconds === null ? 'Non disponibile' : formatStudyTime(lectureTotalSeconds)}</strong></div>
+          <div><span>Sessione attuale</span><strong>{formatStudyTime(sessionSeconds)}</strong></div>
+        </div>
 
         <p className="focus-lock-subtext">
           Prenditi 15 secondi per respirare e decidere se fermarti davvero, fare una pausa o continuare il ritmo (il timer è fermo e questo tempo non viene conteggiato come studio).

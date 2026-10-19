@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback } from 'react'
+import { useState, useMemo, useEffect, useCallback, useRef } from 'react'
 import type { CourseStats, ImportSummary, Lecture } from '../../shared/archive'
 
 function importMessage(summary: ImportSummary): string {
@@ -27,6 +27,10 @@ function importMessage(summary: ImportSummary): string {
 
 export function useLectures() {
   const [lectures, setLectures] = useState<Lecture[]>([])
+  const [archivedCourseCodes, setArchivedCourseCodes] = useState<string[] | null>(null)
+  const [isSavingCourseArchive, setIsSavingCourseArchive] = useState(false)
+  const archiveRevision = useRef(0)
+  const archiveSavePending = useRef(false)
   const [selectedCourse, setSelectedCourse] = useState<string>('tutti')
   const [selectedStudyStatus, setSelectedStudyStatus] =
     useState<string>('tutti')
@@ -60,7 +64,12 @@ export function useLectures() {
     }
     setIsLoading(true)
     try {
-      setLectures(await window.archive.listLectures())
+      const revision = archiveRevision.current
+      const [list, archived] = await Promise.all([
+        window.archive.listLectures(), window.archive.getArchivedCourseCodes()
+      ])
+      setLectures(list)
+      if (revision === archiveRevision.current) setArchivedCourseCodes(archived)
       await refreshCourseStats()
     } catch (err) {
       console.error('Errore lettura archivio:', err)
@@ -73,8 +82,12 @@ export function useLectures() {
   const syncAndRefreshLibrary = useCallback(async (): Promise<void> => {
     setIsLoading(true)
     try {
-      const list = await window.archive.scanAndSyncLibrary()
+      const revision = archiveRevision.current
+      const [list, archived] = await Promise.all([
+        window.archive.scanAndSyncLibrary(), window.archive.getArchivedCourseCodes()
+      ])
       setLectures(list)
+      if (revision === archiveRevision.current) setArchivedCourseCodes(archived)
       await refreshCourseStats()
     } catch {
       await refreshLibrary()
@@ -96,6 +109,23 @@ export function useLectures() {
   useEffect(() => {
     void syncAndRefreshLibrary()
   }, [syncAndRefreshLibrary])
+
+  // Listen for background generation/transcription completion to keep library in sync
+  useEffect(() => {
+    if (!window.archive?.onGenerationProgress) return
+    const unsubscribe = window.archive.onGenerationProgress((progress) => {
+      if (progress.phase === 'completed') {
+        void refreshLibrary()
+        setNotice(`⚡ ${progress.message}`)
+      } else if (progress.phase === 'error' && progress.message) {
+        void refreshLibrary()
+        setNotice(`⚠️ ${progress.message}`)
+      }
+    })
+    return () => {
+      unsubscribe()
+    }
+  }, [refreshLibrary])
 
   // B-05: Auto-dismiss success notices after 5 seconds
   useEffect(() => {
@@ -153,9 +183,38 @@ export function useLectures() {
     return allCourses
   }, [lectures])
 
+  const archivedCourses = useMemo(() => new Set(archivedCourseCodes || []), [archivedCourseCodes])
+  const activeLectures = useMemo(() => archivedCourseCodes === null ? [] :
+    lectures.filter(lecture => !lecture.courseCode || !archivedCourses.has(lecture.courseCode)),
+    [lectures, archivedCourses, archivedCourseCodes])
+  const isSelectedCourseArchived = selectedCourse !== 'tutti' && archivedCourses.has(selectedCourse)
+
+  const handleCourseArchive = useCallback(async (code: string, archived: boolean): Promise<boolean> => {
+    if (archiveSavePending.current) return false
+    archiveSavePending.current = true
+    setIsSavingCourseArchive(true)
+    try {
+      const codes = await window.archive.setCourseArchived(code, archived)
+      archiveRevision.current++
+      setArchivedCourseCodes(codes)
+      if (archived) setSelectedCourse(current => current === code ? 'tutti' : current)
+      setNotice(archived ? '✅ Corso archiviato. Le lezioni restano disponibili in Corsi archiviati.' :
+        '✅ Corso ripristinato in Corsi attivi.')
+      await refreshCourseStats()
+      return true
+    } catch {
+      setNotice('❌ Impossibile salvare lo stato del corso. Riprova.')
+      return false
+    } finally {
+      archiveSavePending.current = false
+      setIsSavingCourseArchive(false)
+    }
+  }, [refreshCourseStats])
+
   const visibleLectures = useMemo(() => {
     const matches = new Set(searchMatchIds ?? [])
-    return lectures.filter((lecture) => {
+    const collection = isSelectedCourseArchived && selectedStudyStatus === 'tutti' ? lectures : activeLectures
+    const filtered = collection.filter((lecture) => {
       const course = lecture.courseCode ?? 'Senza corso'
       if (selectedCourse !== 'tutti' && course !== selectedCourse) return false
       if (
@@ -180,29 +239,38 @@ export function useLectures() {
 
       return true
     })
+    if (selectedCourse !== 'tutti') return filtered
+    const rank = (status: Lecture['studyStatus']) =>
+      status === 'in-corso' ? 0 : status === 'completata' ? 2 : 1
+    return filtered.sort((a, b) => rank(a.studyStatus) - rank(b.studyStatus))
   }, [
     lectures,
+    activeLectures,
+    isSelectedCourseArchived,
     selectedCourse,
     selectedStudyStatus,
     searchQuery,
     searchMatchIds
   ])
 
+  const activeCourseStats = useMemo(() => archivedCourseCodes === null ? [] : courseStats.filter(stats =>
+    !archivedCourses.has(stats.courseCode)), [courseStats, archivedCourses, archivedCourseCodes])
+
   const transcriptCount = useMemo(
     () =>
-      lectures.filter((lecture) => lecture.status === 'transcript-available')
+      activeLectures.filter((lecture) => lecture.status === 'transcript-available')
         .length,
-    [lectures]
+    [activeLectures]
   )
   const completedCount = useMemo(
     () =>
-      lectures.filter((lecture) => lecture.studyStatus === 'completata').length,
-    [lectures]
+      activeLectures.filter((lecture) => lecture.studyStatus === 'completata').length,
+    [activeLectures]
   )
   const inProgressCount = useMemo(
     () =>
-      lectures.filter((lecture) => lecture.studyStatus === 'in-corso').length,
-    [lectures]
+      activeLectures.filter((lecture) => lecture.studyStatus === 'in-corso').length,
+    [activeLectures]
   )
   const candidateLectures = useMemo(
     () =>
@@ -284,15 +352,14 @@ export function useLectures() {
     }
     setIsLoading(true)
     try {
-      const list = await window.archive.scanAndSyncLibrary()
-      setLectures(list)
+      await syncAndRefreshLibrary()
       setNotice('✅ Cartelle audio e trascrizioni sincronizzate con successo!')
     } catch {
       await refreshLibrary()
     } finally {
       setIsLoading(false)
     }
-  }, [refreshLibrary])
+  }, [refreshLibrary, syncAndRefreshLibrary])
 
   const handleOpenCourseInfo = useCallback(
     async (courseCode: string): Promise<void> => {
@@ -309,6 +376,11 @@ export function useLectures() {
 
   return {
     lectures,
+    activeLectures,
+    archivedCourseCodes: archivedCourseCodes || [],
+    isSelectedCourseArchived,
+    isSavingCourseArchive,
+    handleCourseArchive,
     setLectures,
     selectedCourse,
     setSelectedCourse,
@@ -321,7 +393,7 @@ export function useLectures() {
     isImporting,
     notice,
     setNotice,
-    courseStats,
+    courseStats: activeCourseStats,
     selectedCourseInfo,
     setSelectedCourseInfo,
     existingCourses,

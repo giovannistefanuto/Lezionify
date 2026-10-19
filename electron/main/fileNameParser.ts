@@ -41,10 +41,10 @@ export function parseFileName(sourceFileName: string): ParsedFileName | null {
   }
 }
 
-export async function fileChecksum(filePath: string): Promise<string> {
+export async function fileChecksum(filePath: string, signal?: AbortSignal): Promise<string> {
   return new Promise((resolve, reject) => {
     const hash = createHash('sha256')
-    const stream = createReadStream(filePath)
+    const stream = createReadStream(filePath, { signal })
     stream.on('error', reject)
     stream.on('data', (chunk) => hash.update(chunk))
     stream.on('end', () => resolve(hash.digest('hex')))

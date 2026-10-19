@@ -1,0 +1,7 @@
+Creative Commons Attribution-ShareAlike 3.0 Unported (CC BY-SA 3.0)
+https://creativecommons.org/licenses/by-sa/3.0/legalcode
+
+Applies to eng-ita.json and ita-eng.json, adaptations of the FreeDict/WikDict
+dictionaries maintained/published by Karl Bartel, based on Wiktionary
+contributors via DBnary. See NOTICE.md and metadata in each dataset.
+The data is provided without warranties, as specified by the license.

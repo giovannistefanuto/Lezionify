@@ -11,6 +11,10 @@ import {
   SECTION_DEEP_SYSTEM_INSTRUCTION,
   TRANSLATION_SYSTEM_INSTRUCTION,
   callWithRetry,
+  formatTimecode,
+  extractInteractionText,
+  isNonSpeechTranscript,
+  trimOverlapWords,
   mapWithConcurrency,
   parseMultimodalAudioResponse,
   sliceTranscriptByCuts
@@ -24,6 +28,7 @@ import {
   buildTranscriptSearchResult,
   countTranscriptWords
 } from '../../src/components/TranscriptPanel'
+import { formatDurationSeconds } from '../../src/components/TranscriptionProgressBox'
 import { areMarkdownViewerPropsEqual } from '../../src/components/MarkdownViewer'
 import {
   isSafeMermaidSvg,
@@ -149,16 +154,16 @@ function deferred<T>() {
 
 it('la trascrizione lenta non blocca il salvataggio e non sovrascrive modifiche concorrenti', async () => {
   const { archive, gemini, lecture } = await fixture()
-  const remote = deferred<{ transcript: string; markdown: string }>()
+  const remote = deferred<string>()
   const started = deferred<void>()
-  vi.spyOn(gemini, 'transcribeAndGenerateFromAudio').mockImplementation(() => {
+  vi.spyOn(gemini, 'transcribeAudioFile').mockImplementation(() => {
     started.resolve()
     return remote.promise
   })
   const job = archive.transcribeAudio(lecture.id)
   await started.promise
   await archive.updateLecture(lecture.id, { studyStatus: 'completata' })
-  remote.resolve({ transcript: 'trascrizione', markdown: '# Dispensa' })
+  remote.resolve('trascrizione')
   expect((await job).success).toBe(false)
   expect((await archive.listLectures())[0].studyStatus).toBe('completata')
   expect(await archive.readTranscript(lecture.id)).toBeNull()
@@ -166,11 +171,11 @@ it('la trascrizione lenta non blocca il salvataggio e non sovrascrive modifiche 
 
 it('salva il timer durante una trascrizione e mantiene separato il job IPC', async () => {
   const { archive, gemini, lecture } = await fixture()
-  const remote = deferred<{ transcript: string; markdown: string }>()
+  const remote = deferred<string>()
   const started = deferred<void>()
   const progress: { jobId: string; lectureId: string }[] = []
   archive.setProgressCallback((event) => progress.push(event))
-  vi.spyOn(gemini, 'transcribeAndGenerateFromAudio').mockImplementation(() => {
+  vi.spyOn(gemini, 'transcribeAudioFile').mockImplementation(() => {
     started.resolve()
     return remote.promise
   })
@@ -192,7 +197,7 @@ it('salva il timer durante una trascrizione e mantiene separato il job IPC', asy
   ).resolves.toBeUndefined()
   expect((await archive.getStudyAnalytics()).todaySeconds).toBe(30)
 
-  remote.resolve({ transcript: 'trascrizione', markdown: '# Dispensa' })
+  remote.resolve('trascrizione')
   expect((await transcription).success).toBe(true)
   expect(progress.length).toBeGreaterThan(0)
   expect(progress.every((event) => event.jobId === 'job-timer-test')).toBe(true)
@@ -472,6 +477,26 @@ it('non segnala il primo avvio come corruzione e non esegue stat per ogni log', 
   expect(statSpy).not.toHaveBeenCalled()
 })
 
+it('conserva gli ultimi 5000 eventi diagnostici anche dopo il riavvio', async () => {
+  const logger = AppLogger.getInstance()
+  await logger.flush()
+  const entries = Array.from({ length: 5001 }, (_, index) => ({
+    id: `log-${index}`, timestamp: '2026-10-12T10:00:00Z', level: 'info',
+    source: 'gemini-api', message: `Tentativo sintetico ${index}`
+  }))
+  await fs.promises.writeFile(join(root, 'app.log'), entries.map(entry => JSON.stringify(entry)).join('\n') + '\n')
+  logger.init(root)
+  expect(logger.getLogs()).toHaveLength(5000)
+  expect(logger.getLogs()[0].id).toBe('log-1')
+  logger.info('gemini-api', 'Nuovo tentativo sintetico')
+  expect(logger.getLogs()).toHaveLength(5000)
+  expect(logger.getLogs()[0].id).toBe('log-2')
+  await logger.flush()
+  logger.init(root)
+  expect(logger.getLogs()).toHaveLength(5000)
+  expect(logger.getLogs().at(-1)?.message).toBe('Nuovo tentativo sintetico')
+})
+
 it('valida lo schema completo e ripristina library.json dal backup', async () => {
   const repository = new LibraryRepository(root)
   await repository.initialize()
@@ -661,6 +686,50 @@ it('accetta soltanto diagrammi Mermaid didattici senza direttive interattive', (
   ).toThrow('non è supportato')
 })
 
+it('consente gli stili Mermaid statici ma rifiuta CSS e direttive arbitrarie', () => {
+  const diagram = `flowchart TD
+    A["Computer Tradizionale"] --> B["Dati digitali"]
+    C["Robot Intelligente"] --> D["Mondo fisico"]
+    style A fill:#f9f,stroke:#333,stroke-width:2px
+    style C fill:#bbf,stroke:#333,stroke-width:2px`
+  expect(validateMermaidSource(diagram)).toBe(diagram)
+  expect(() =>
+    validateMermaidSource('flowchart TD\nA-->B\nstyle A fill:url(javascript:alert(1))')
+  ).toThrow('direttiva non consentita')
+  expect(() =>
+    validateMermaidSource('flowchart TD\nA-->B\nstyle A fill:#fff,stroke-width:100px')
+  ).toThrow('direttiva non consentita')
+  expect(() =>
+    validateMermaidSource('flowchart TD\nA-->B\nstyle A fill:#fff;click A "https://example.com"')
+  ).toThrow('direttiva non consentita')
+  expect(() =>
+    validateMermaidSource('flowchart TD\nA-->B\nlinkStyle 0 stroke:#333')
+  ).toThrow('direttiva non consentita')
+  expect(() =>
+    validateMermaidSource('sequenceDiagram\nA->>B: ciao\nstyle A fill:#fff')
+  ).toThrow('direttiva non consentita')
+})
+
+it('consente classDef statiche nei flowchart senza aprire al CSS arbitrario', () => {
+  const diagram = `flowchart TD
+    subgraph Ambiente ["Ambiente (Environment)"]
+      S["Stato"]
+      R["Ricompensa"]
+    end
+    A["Azione"] --> S
+    classDef default fill:#f9f,stroke:#333,stroke-width:2px;`
+  expect(validateMermaidSource(diagram)).toBe(diagram)
+  expect(() =>
+    validateMermaidSource('flowchart TD\nA-->B\nclassDef default fill:url(javascript:alert(1));')
+  ).toThrow('direttiva non consentita')
+  expect(() =>
+    validateMermaidSource('flowchart TD\nA-->B\nclassDef default fill:#fff;click A "https://example.com"')
+  ).toThrow('direttiva non consentita')
+  expect(() =>
+    validateMermaidSource('sequenceDiagram\nA->>B: ciao\nclassDef default fill:#fff;')
+  ).toThrow('direttiva non consentita')
+})
+
 it('rifiuta SVG Mermaid con contenuto eseguibile', () => {
   expect(isSafeMermaidSvg('<svg><path /></svg>')).toBe(true)
   expect(isSafeMermaidSvg('<svg onload="alert(1)"></svg>')).toBe(false)
@@ -677,4 +746,290 @@ it('istruisce generazione e traduzione a preservare Mermaid in italiano e ingles
   expect(TRANSLATION_SYSTEM_INSTRUCTION).toContain(
     'Translate only human-readable labels'
   )
+})
+
+it('formatTimecode formatta correttamente secondi in mm:ss e hh:mm:ss', () => {
+  expect(formatTimecode(0)).toBe('00:00')
+  expect(formatTimecode(75)).toBe('01:15')
+  expect(formatTimecode(754)).toBe('12:34')
+  expect(formatTimecode(3665)).toBe('01:01:05')
+  expect(formatTimecode(4529)).toBe('01:15:29')
+})
+
+it('extractInteractionText estrae testo da formati diretti e annidati dell API', () => {
+  expect(extractInteractionText({ output_text: 'Testo diretto' })).toBe('Testo diretto')
+  expect(
+    extractInteractionText({
+      outputs: [{ text: 'Primo frammento' }, { text: 'Secondo frammento' }]
+    })
+  ).toBe('Primo frammento\n\nSecondo frammento')
+  expect(
+    extractInteractionText({
+      steps: [
+        { type: 'user_input', text: 'Ignora input' },
+        { type: 'model_output', content: [{ raw: { transcript: 'Trascrizione raw' } }] }
+      ]
+    })
+  ).toBe('Trascrizione raw')
+  expect(extractInteractionText(null)).toBeNull()
+  expect(extractInteractionText({})).toBeNull()
+})
+
+it('isNonSpeechTranscript riconosce testo vuoto o contenente solo rumore/tag', () => {
+  expect(isNonSpeechTranscript('')).toBe(true)
+  expect(isNonSpeechTranscript('   ')).toBe(true)
+  expect(isNonSpeechTranscript('[coughing] [applause]')).toBe(true)
+  expect(isNonSpeechTranscript('<noise> rumore silenzio')).toBe(true)
+  expect(isNonSpeechTranscript('Lezione di Reinforcement Learning sui processi di Markov')).toBe(false)
+})
+
+it('trimOverlapWords rimuove la duplicazione di parole tra chunk sovrapposti', () => {
+  const left = 'Oggi parliamo di reinforcement learning applicato alla robotica'
+  const right = 'learning applicato alla robotica con algoritmi di policy gradient'
+  const trimmed = trimOverlapWords(left, right, 10)
+  expect(trimmed).toBe('con algoritmi di policy gradient')
+
+  const noOverlap = 'Altro argomento completamente disgiunto'
+  expect(trimOverlapWords(left, noOverlap, 10)).toBe(noOverlap)
+})
+
+it('la pipeline automatica esegue trascrizione dispensa ITA e ENG in sequenza all importazione', async () => {
+  const gemini = new GeminiService()
+  const archive = new ArchiveService(root, gemini, true)
+  await archive.initialize()
+  await archive.saveSettings({
+    apiKeys: ['test-key'],
+    autoProcessOnImport: true
+  })
+  const audio = join(root, 'RL 2026-0507-16-19-41.mp3')
+  await writeFile(audio, 'fake audio content')
+
+  const sequence: string[] = []
+  vi.spyOn(archive, 'transcribeAudio').mockImplementation(async (id) => {
+    sequence.push(`transcribe:${id}`)
+    const lib = await (archive as any).repository.readLibrary()
+    const l = lib.lectures.find((item: any) => item.id === id)
+    if (l) {
+      l.transcriptFileName = `${id}.txt`
+      l.status = 'transcript-available'
+      await (archive as any).repository.writeLibrary(lib)
+    }
+    return { success: true, transcript: 'Trascrizione completata' }
+  })
+  vi.spyOn(archive, 'generateLectureNotes').mockImplementation(async (id) => {
+    sequence.push(`notes:${id}`)
+    const lib = await (archive as any).repository.readLibrary()
+    const l = lib.lectures.find((item: any) => item.id === id)
+    if (l) {
+      l.markdownFileName = `${id}.md`
+      await (archive as any).repository.writeLibrary(lib)
+    }
+    return { success: true, markdown: '# Dispensa' }
+  })
+
+  vi.spyOn(archive, 'translateLectureNotes').mockImplementation(async (id) => {
+    sequence.push(`english:${id}`)
+    const lib = await (archive as any).repository.readLibrary()
+    lib.lectures.find((item: any) => item.id === id).markdownEnFileName = `${id}_en.md`
+    await (archive as any).repository.writeLibrary(lib)
+    return { success: true, markdown: '# English notes' }
+  })
+  const importRes = await archive.importFiles([audio])
+  expect(importRes.imported).toHaveLength(1)
+  const importedId = importRes.imported[0].id
+
+  await archive.waitForAutoProcessing()
+
+  expect(sequence).toEqual([`transcribe:${importedId}`, `notes:${importedId}`, `english:${importedId}`])
+  archive.destroy()
+})
+
+it('la pipeline automatica rispetta autoProcessOnImport impostato a false', async () => {
+  const gemini = new GeminiService()
+  const archive = new ArchiveService(root, gemini, true)
+  await archive.initialize()
+  await archive.saveSettings({
+    apiKeys: ['test-key'],
+    autoProcessOnImport: false
+  })
+  const audio = join(root, 'RL 2026-0507-16-19-42.mp3')
+  await writeFile(audio, 'fake audio content')
+
+  const transcribeSpy = vi.spyOn(archive, 'transcribeAudio')
+  const notesSpy = vi.spyOn(archive, 'generateLectureNotes')
+
+  await archive.importFiles([audio])
+  await archive.waitForAutoProcessing()
+
+  expect(transcribeSpy).not.toHaveBeenCalled()
+  expect(notesSpy).not.toHaveBeenCalled()
+  archive.destroy()
+})
+
+it('la pipeline automatica salta l esecuzione se non ci sono chiavi API configurate', async () => {
+  const gemini = new GeminiService()
+  const archive = new ArchiveService(root, gemini, true)
+  await archive.initialize()
+  await archive.saveSettings({
+    apiKey: '',
+    apiKeys: [],
+    autoProcessOnImport: true
+  })
+  const audio = join(root, 'RL 2026-0507-16-19-43.mp3')
+  await writeFile(audio, 'fake audio content')
+
+  const progressEvents: any[] = []
+  archive.setProgressCallback((event) => progressEvents.push(event))
+  const transcribeSpy = vi.spyOn(archive, 'transcribeAudio')
+
+  await archive.importFiles([audio])
+  await archive.waitForAutoProcessing()
+
+  expect(transcribeSpy).not.toHaveBeenCalled()
+  expect(
+    progressEvents.some(
+      (e) => e.phase === 'error' && e.message.includes('chiave API Gemini')
+    )
+  ).toBe(true)
+  archive.destroy()
+})
+
+it('garantisce che styles.css nasconda rigorosamente gli elementi con hidden e i tab-pane inattivi', async () => {
+  const cssContent = await fs.promises.readFile('src/styles.css', 'utf-8')
+  expect(cssContent).toMatch(/\[hidden\]\s*\{\s*display:\s*none\s*!important;?\s*\}/)
+  expect(cssContent).toMatch(/\.tab-pane\[hidden\]\s*\{\s*display:\s*none\s*!important;?\s*\}/)
+})
+
+it('importa lezioni da registratore USB, restituisce i percorsi e permette l eliminazione sicura dal supporto preservando la copia locale', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'lezionify-usb-import-test-'))
+  const usbMockDir = await mkdtemp(join(tmpdir(), 'mock-usb-record-'))
+  const archive = new ArchiveService(root)
+  await archive.initialize()
+
+  const usbAudio1 = join(usbMockDir, 'REC001.mp3')
+  const usbTxt1 = join(usbMockDir, 'REC001.txt')
+  const usbAudio2 = join(usbMockDir, 'REC002.mp3')
+  await writeFile(usbAudio1, 'fake mp3 content 1')
+  await writeFile(usbTxt1, 'fake transcript 1')
+  await writeFile(usbAudio2, 'fake mp3 content 2')
+
+  // Importa solo REC001
+  const importResult = await archive.importUsbRecorderFiles([
+    {
+      fullPath: usbAudio1,
+      action: 'import',
+      courseCode: 'TEST101',
+      title: 'Lezione 1'
+    },
+    {
+      fullPath: usbAudio2,
+      action: 'discard',
+      courseCode: null,
+      title: null
+    }
+  ])
+
+  expect(importResult.importedCount).toBe(1)
+  expect(importResult.importedFilePaths).toEqual([usbAudio1])
+  expect(importResult.importedLectures.length).toBe(1)
+
+  const importedLecture = importResult.importedLectures[0]
+  const localAudioPath = join(root, 'audio', importedLecture.audioFileName)
+  expect(fs.existsSync(localAudioPath)).toBe(true)
+  expect(fs.existsSync(usbAudio1)).toBe(true)
+  expect(fs.existsSync(usbTxt1)).toBe(true)
+
+  // Elimina dal registratore USB
+  const deleteResult = await archive.deleteUsbRecorderFiles(importResult.importedFilePaths)
+  expect(deleteResult.deletedCount).toBe(1)
+  expect(deleteResult.failedCount).toBe(0)
+  expect(deleteResult.errors).toHaveLength(0)
+
+  // File eliminato dal registratore USB (incluso il .txt associato)
+  expect(fs.existsSync(usbAudio1)).toBe(false)
+  expect(fs.existsSync(usbTxt1)).toBe(false)
+  // Il secondo file scartato non è stato toccato
+  expect(fs.existsSync(usbAudio2)).toBe(true)
+
+  // FONDAMENTALE: La copia locale in Lezionify è ancora al sicuro e intatta!
+  expect(fs.existsSync(localAudioPath)).toBe(true)
+
+  // Test protezione di sicurezza: rifiuta tentativi di eliminare percorsi all'interno della cartella di Lezionify
+  const blockedDelete = await archive.deleteUsbRecorderFiles([localAudioPath])
+  expect(blockedDelete.deletedCount).toBe(0)
+  expect(blockedDelete.failedCount).toBe(1)
+  expect(blockedDelete.errors[0]).toContain('Percorso locale protetto')
+  expect(fs.existsSync(localAudioPath)).toBe(true)
+
+  archive.destroy()
+  await rm(usbMockDir, { recursive: true, force: true }).catch(() => {})
+})
+
+it('formatDurationSeconds formatta correttamente secondi, minuti e casi limite', () => {
+  expect(formatDurationSeconds()).toBe('Calcolo…')
+  expect(formatDurationSeconds(undefined)).toBe('Calcolo…')
+  expect(formatDurationSeconds(-5)).toBe('Calcolo…')
+  expect(formatDurationSeconds(Number.NaN)).toBe('Calcolo…')
+  expect(formatDurationSeconds(0)).toBe('0s')
+  expect(formatDurationSeconds(42)).toBe('42s')
+  expect(formatDurationSeconds(60)).toBe('1m 00s')
+  expect(formatDurationSeconds(65)).toBe('1m 05s')
+  expect(formatDurationSeconds(125)).toBe('2m 05s')
+  expect(formatDurationSeconds(3600)).toBe('60m 00s')
+})
+
+it('la trascrizione audio emette progressi con metadati dettagliati (chunk, ETA, intervallo)', async () => {
+  const { archive, gemini, lecture } = await fixture()
+  const events: any[] = []
+  archive.setProgressCallback((event) => events.push(event))
+
+  vi.spyOn(gemini, 'transcribeAudioFile').mockImplementation(async (params) => {
+    if (params.onProgress) {
+      params.onProgress('Divisione audio completata: 3 parti da circa 15 min.', 10, {
+        totalChunks: 3,
+        currentChunk: 1,
+        chunkTimeInterval: '00:00:00 - 00:15:00',
+        etaSeconds: 90,
+        elapsedSeconds: 5,
+        stageDetail: 'Preparazione chunk'
+      })
+      params.onProgress('Parte 1 di 3: trascrizione Gemini ASR in corso…', 35, {
+        totalChunks: 3,
+        currentChunk: 1,
+        chunkTimeInterval: '00:00:00 - 00:15:00',
+        etaSeconds: 60,
+        elapsedSeconds: 30,
+        stageDetail: 'Gemini ASR'
+      })
+      params.onProgress('Parte 1 di 3 completata (1250 parole trascritte)', 40, {
+        totalChunks: 3,
+        currentChunk: 1,
+        chunkTimeInterval: '00:00:00 - 00:15:00',
+        etaSeconds: 45,
+        elapsedSeconds: 45,
+        stageDetail: 'Parte 1 completata'
+      })
+    }
+    return 'Trascrizione di test completata.'
+  })
+
+  const result = await archive.transcribeAudio(lecture.id)
+  expect(result.success).toBe(true)
+
+  const transcribingEvents = events.filter((e) => e.phase === 'transcribing')
+  expect(transcribingEvents.length).toBeGreaterThanOrEqual(3)
+
+  const firstEvent = transcribingEvents[0]
+  expect(firstEvent.totalChunks).toBe(3)
+  expect(firstEvent.currentChunk).toBe(1)
+  expect(firstEvent.chunkTimeInterval).toBe('00:00:00 - 00:15:00')
+  expect(firstEvent.etaSeconds).toBe(90)
+  expect(firstEvent.elapsedSeconds).toBe(5)
+  expect(firstEvent.stageDetail).toBe('Preparazione chunk')
+
+  const lastEvent = transcribingEvents[2]
+  expect(lastEvent.stageDetail).toBe('Parte 1 completata')
+  expect(lastEvent.etaSeconds).toBe(45)
+
+  archive.destroy()
 })

@@ -1,4 +1,4 @@
-import React, { isValidElement, useRef, useEffect, useCallback } from 'react'
+import React, { isValidElement, useRef, useEffect, useCallback, useMemo } from 'react'
 import ReactMarkdown from 'react-markdown'
 import type { Components } from 'react-markdown'
 import remarkMath from 'remark-math'
@@ -7,16 +7,18 @@ import remarkGfm from 'remark-gfm'
 
 import type { LectureHighlight } from '../../shared/archive'
 import { MermaidDiagram } from './MermaidDiagram'
+import { normalizeDisplayMath } from '../utils/markdownMath'
 
 export interface MarkdownViewerProps {
   content: string
+  allowImages?: boolean
   highlights?: LectureHighlight[]
   isHighlightMode?: boolean
   onAddHighlight?: (startOffset: number, endOffset: number, text: string) => void
   onRemoveHighlightAtOffset?: (offset: number) => boolean
 }
 
-type AlertType = 'note' | 'tip' | 'important' | 'warning' | 'caution' | 'critical'
+type AlertType = 'note' | 'tip' | 'important' | 'warning' | 'caution' | 'critical' | 'key-concept'
 
 const ALERT_CONFIG: Record<AlertType, { label: string; icon: string }> = {
   note: { label: 'Nota', icon: 'ℹ️' },
@@ -24,11 +26,15 @@ const ALERT_CONFIG: Record<AlertType, { label: string; icon: string }> = {
   important: { label: 'Importante', icon: '📌' },
   warning: { label: 'Attenzione', icon: '⚠️' },
   caution: { label: 'Avvertenza', icon: '🛑' },
-  critical: { label: 'Critico', icon: '🚨' }
+  critical: { label: 'Critico', icon: '🚨' },
+  'key-concept': { label: 'Concetto chiave', icon: '📌' }
 }
 
+const ALERT_MARKER = /^\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION|CRITICAL|CONCETTO\s+CHIAVE|KEY\s+CONCEPT)\](?:\r?\n|\s+)?/i
+
 function AlertBlockquote({ children }: { children?: React.ReactNode }) {
-  const childArray = React.Children.toArray(children)
+  // ReactMarkdown inserts whitespace text nodes between block elements.
+  const childArray = React.Children.toArray(children).filter(child => typeof child !== 'string' || child.trim())
   if (childArray.length === 0) {
     return <blockquote>{children}</blockquote>
   }
@@ -48,12 +54,12 @@ function AlertBlockquote({ children }: { children?: React.ReactNode }) {
     return <blockquote>{children}</blockquote>
   }
 
-  const match = firstText.match(/^\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION|CRITICAL)\](?:\r?\n|\s+)?/i)
+  const match = firstText.match(ALERT_MARKER)
   if (!match) {
     return <blockquote>{children}</blockquote>
   }
 
-  const alertType = match[1].toLowerCase() as AlertType
+  const alertType: AlertType = /^(CONCETTO|KEY)/i.test(match[1]) ? 'key-concept' : match[1].toLowerCase() as AlertType
   const alertInfo = ALERT_CONFIG[alertType] || ALERT_CONFIG.note
 
   const remainingFirstText = firstText.slice(match[0].length)
@@ -74,10 +80,10 @@ function AlertBlockquote({ children }: { children?: React.ReactNode }) {
   }
 
   return (
-    <div className={`markdown-alert markdown-alert-${alertType}`}>
+    <div className={`markdown-alert markdown-alert-${alertType === 'key-concept' ? 'important' : alertType}`}>
       <div className="markdown-alert-header">
         <span className="markdown-alert-icon">{alertInfo.icon}</span>
-        <span className="markdown-alert-title">{alertInfo.label}</span>
+        <span className="markdown-alert-title">{/^KEY/i.test(match[1]) ? 'Key concept' : alertInfo.label}</span>
       </div>
       <div className="markdown-alert-body">{newChildren}</div>
     </div>
@@ -112,12 +118,19 @@ const MarkdownPre: NonNullable<Components['pre']> = ({
   const child = React.Children.count(children) === 1
     ? React.Children.toArray(children)[0]
     : null
-  if (React.isValidElement(child) && child.type === MermaidDiagram) return child
+  if (React.isValidElement<{ className?: string }>(child) &&
+    (child.type === MermaidDiagram || /\blanguage-mermaid\b/.test(child.props.className ?? ''))) return child
   return <pre {...props}>{children}</pre>
 }
 
 const MARKDOWN_COMPONENTS: Components = {
   blockquote: AlertBlockquote,
+  p: ({ children }) => {
+    const first = React.Children.toArray(children)[0]
+    return typeof first === 'string' && ALERT_MARKER.test(first)
+      ? <AlertBlockquote><p>{children}</p></AlertBlockquote>
+      : <p>{children}</p>
+  },
   code: MarkdownCode,
   pre: MarkdownPre
 }
@@ -248,6 +261,7 @@ function getOffsetFromClick(
 
 function RawMarkdownViewer({
   content,
+  allowImages,
   highlights,
   isHighlightMode,
   onAddHighlight,
@@ -255,6 +269,7 @@ function RawMarkdownViewer({
 }: MarkdownViewerProps) {
   const containerRef = useRef<HTMLDivElement | null>(null)
   const highlightOwnerRef = useRef(Symbol('markdown-viewer-highlight'))
+  const renderedContent = useMemo(() => normalizeDisplayMath(content), [content])
 
   // Sincronizzazione con la CSS Custom Highlight API
   useEffect(() => {
@@ -337,11 +352,12 @@ function RawMarkdownViewer({
       onMouseUp={handleMouseUp}
     >
       <ReactMarkdown
+        disallowedElements={allowImages === false ? ['img'] : undefined}
         remarkPlugins={REMARK_PLUGINS}
         rehypePlugins={REHYPE_PLUGINS}
         components={MARKDOWN_COMPONENTS}
       >
-        {content}
+        {renderedContent}
       </ReactMarkdown>
     </div>
   )
@@ -353,6 +369,7 @@ export function areMarkdownViewerPropsEqual(
 ): boolean {
   return (
     prev.content === next.content &&
+    prev.allowImages === next.allowImages &&
     prev.highlights === next.highlights &&
     prev.isHighlightMode === next.isHighlightMode &&
     prev.onAddHighlight === next.onAddHighlight &&

@@ -49,6 +49,7 @@ export function useLectureContent({
 }: UseLectureContentProps) {
   const currentLecture = useRef(selectedLecture?.id)
   currentLecture.current = selectedLecture?.id
+  const previousLectureIdRef = useRef<string | null>(null)
   const [activeTab, setActiveTab] = useState<
     'markdown' | 'transcript' | 'study' | 'info'
   >('markdown')
@@ -99,6 +100,7 @@ export function useLectureContent({
   // Load selected lecture content with cache & race condition fix
   useEffect(() => {
     if (!selectedLecture) {
+      previousLectureIdRef.current = null
       setTranscriptText(null)
       setMarkdownText(null)
       setMarkdownEnText(null)
@@ -110,29 +112,43 @@ export function useLectureContent({
       return
     }
 
+    const isDifferentLecture =
+      previousLectureIdRef.current !== selectedLecture.id
+    previousLectureIdRef.current = selectedLecture.id
+
     let cancelled = false
 
     setEditCourseCode(selectedLecture.courseCode ?? '')
     setEditRecordedAt(selectedLecture.recordedAt ?? '')
-    setIsEditingMetadata(false)
-    setShowDeleteConfirm(false)
-    setShowPasteModal(false)
-    setStudySetError(null)
+    if (isDifferentLecture) {
+      setIsEditingMetadata(false)
+      setShowDeleteConfirm(false)
+      setShowPasteModal(false)
+      setStudySetError(null)
+    }
 
     // Check fast cache first for instant 0ms display
     const cached = lectureContentCache.get(selectedLecture.id)
-    if (cached) {
+    const isStale =
+      cached &&
+      ((Boolean(selectedLecture.markdownFileName) && !cached.markdown) ||
+        (Boolean(selectedLecture.transcriptFileName) && !cached.transcript) ||
+        (Boolean(selectedLecture.markdownEnFileName) && !cached.markdownEn))
+
+    if (cached && !isStale) {
       cacheLecture(selectedLecture.id, cached)
       setTranscriptText(cached.transcript)
       setMarkdownText(cached.markdown)
       setMarkdownEnText(cached.markdownEn)
       setStudySet(cached.studySet)
-      if (cached.markdown) {
-        setActiveTab('markdown')
-      } else if (cached.transcript) {
-        setActiveTab('transcript')
-      } else {
-        setActiveTab('info')
+      if (isDifferentLecture) {
+        if (cached.markdown) {
+          setActiveTab('markdown')
+        } else if (cached.transcript) {
+          setActiveTab('transcript')
+        } else {
+          setActiveTab('info')
+        }
       }
       setIsLoadingContent(false)
     } else {
@@ -168,7 +184,7 @@ export function useLectureContent({
         setMarkdownText(markdown)
         setMarkdownEnText(markdownEn)
         setStudySet(loadedStudySet)
-        if (!cached) {
+        if (isDifferentLecture && !cached) {
           if (markdown) {
             setActiveTab('markdown')
           } else if (transcript) {
@@ -244,8 +260,8 @@ export function useLectureContent({
   )
 
   const handleStudyStatusChange = useCallback(
-    async (newStatus: StudyStatus): Promise<void> => {
-      if (!selectedLecture) return
+    async (newStatus: StudyStatus): Promise<boolean> => {
+      if (!selectedLecture) return false
       const previousStatus = selectedLecture.studyStatus
       // Optimistic update
       onUpdateLectureInState(selectedLecture.id, { studyStatus: newStatus })
@@ -254,6 +270,7 @@ export function useLectureContent({
           studyStatus: newStatus
         })
         await onRefreshLibrary()
+        return true
       } catch (err) {
         console.error('Study status update error:', err)
         // Rollback
@@ -261,6 +278,7 @@ export function useLectureContent({
           studyStatus: previousStatus
         })
         onNotice('Impossibile aggiornare lo stato di studio.')
+        return false
       }
     },
     [selectedLecture, onRefreshLibrary, onUpdateLectureInState, onNotice]

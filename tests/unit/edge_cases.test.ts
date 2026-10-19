@@ -34,28 +34,28 @@ describe('Edge Cases — AppLogger & Sensitive Data Masking', () => {
     expect(maskSensitiveData(normalText)).toBe(normalText)
   })
 
-  it('gestisce il ring buffer a 500 elementi con politica FIFO in caso di overflow', async () => {
+  it('gestisce il ring buffer a 5000 elementi con politica FIFO in caso di overflow', async () => {
     const tempDir = join(tmpdir(), `lezionify-edge-logger-${randomUUID()}`)
     await mkdir(tempDir, { recursive: true })
 
     const logger = AppLogger.getInstance()
     logger.init(tempDir)
 
-    // Inserisce 550 log per testare l'evizione FIFO dei primi 50
-    for (let i = 1; i <= 550; i++) {
+    // Inserisce 5050 log per testare l'evizione FIFO dei primi 50
+    for (let i = 1; i <= 5050; i++) {
       logger.info('stress-test', `Messaggio #${i}`)
     }
 
     const logs = logger.getLogs()
-    expect(logs.length).toBe(500)
+    expect(logs.length).toBe(5000)
     // Il primo log deve essere il messaggio #51 (i primi 50 scartati)
     expect(logs[0].message).toBe('Messaggio #51')
-    // L'ultimo log deve essere il messaggio #550
-    expect(logs[logs.length - 1].message).toBe('Messaggio #550')
+    // L'ultimo log deve essere il messaggio #5050
+    expect(logs[logs.length - 1].message).toBe('Messaggio #5050')
 
     await logger.flush()
     await rm(tempDir, { recursive: true, force: true })
-  })
+  }, 60_000)
 
   it('resiste a file app.log con linee corrotte o JSON malformato durante init', async () => {
     const tempDir = join(tmpdir(), `lezionify-corrupt-log-${randomUUID()}`)
@@ -90,6 +90,7 @@ describe('Edge Cases — AppLogger & Sensitive Data Masking', () => {
     expect(loaded[0].id).toBe('valid-1')
     expect(loaded[1].id).toBe('valid-2')
 
+    await logger.flush()
     await rm(tempDir, { recursive: true, force: true })
   })
 

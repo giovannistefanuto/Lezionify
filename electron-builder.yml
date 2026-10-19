@@ -10,6 +10,10 @@ files:
   - out/**/*
   - package.json
 
+asarUnpack:
+  - "node_modules/ffmpeg-static/**"
+  - "out/main/translation-runtime/**"
+
 win:
   target:
     - target: nsis

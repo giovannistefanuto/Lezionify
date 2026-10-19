@@ -2,6 +2,10 @@
 
 Questo documento descrive in dettaglio la progettazione tecnica, l'analisi dei rischi e delle prestazioni, e le scelte architetturali per l'implementazione della **Chat Globale di Corso** in Lezionify.
 
+> Aggiornamento del 17 ottobre 2026: proposta storica, superata per il comportamento
+> effettivo da [Chat di corso e fonti locali](rag-corso-2026-10-17.md).
+> Le stime di token e latenza qui sotto non sono risultati misurati.
+
 ---
 
 ## 🎯 Obiettivo del Modulo
@@ -113,5 +117,5 @@ export interface CourseQnaThread {
 ---
 
 ## 📌 Stato del Documento
-- **Stato**: `Progettato & Validato` (Pronto per l'implementazione futura su richiesta dell'utente).
+- **Stato**: `Implementazione successiva disponibile` — leggere il documento del 17 ottobre e il consuntivo in DECISIONI.md.
 - **Data di stesura**: 29 Agosto 2026.

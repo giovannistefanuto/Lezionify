@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useRef, type Dispatch, type RefObject, type SetStateAction, type WheelEvent } from 'react'
+import { useCallback, useEffect, useRef, useState, type Dispatch, type RefObject, type SetStateAction } from 'react'
+import { usePaneZoom } from './usePaneZoom'
 
 interface KeyboardLockApi {
   lock?: (keys: string[]) => Promise<void>
@@ -22,6 +23,7 @@ interface FocusModeControllerOptions {
   contentRef: RefObject<HTMLDivElement | null>
   zoomLabelRef: RefObject<HTMLSpanElement | null>
   zoomLevelRef: RefObject<number>
+  hasContent: boolean
 }
 
 function keyboardApi(): KeyboardLockApi | undefined {
@@ -40,9 +42,18 @@ export function useFocusModeController({
   handleContinueFocus,
   contentRef,
   zoomLabelRef,
-  zoomLevelRef
+  zoomLevelRef,
+  hasContent
 }: FocusModeControllerOptions) {
   const intentionalFullscreenExitRef = useRef(false)
+  const [textZoom, setTextZoom] = useState(1)
+  const changeTextZoom = useCallback((delta: number) => {
+    const next = Math.min(4, Math.max(0.5, zoomLevelRef.current + delta))
+    zoomLevelRef.current = next
+    setTextZoom(next)
+    if (zoomLabelRef.current) zoomLabelRef.current.innerText = `${Math.round(next * 100)}%`
+  }, [zoomLevelRef, zoomLabelRef])
+  usePaneZoom(contentRef, changeTextZoom, isFullScreen && hasContent)
 
   const leaveFullscreen = useCallback(async () => {
     if (!document.fullscreenElement) return
@@ -80,6 +91,7 @@ export function useFocusModeController({
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return
+      if (document.querySelector('[data-dictionary-overlay], .settings-modal-overlay, .music-backdrop')) return
       event.preventDefault()
       event.stopPropagation()
       if (pauseTimerActive) {
@@ -125,7 +137,7 @@ export function useFocusModeController({
 
   const enterFocusMode = useCallback(async () => {
     zoomLevelRef.current = 1
-    if (contentRef.current) contentRef.current.style.zoom = '1'
+    setTextZoom(1)
     if (zoomLabelRef.current) zoomLabelRef.current.innerText = '100%'
 
     try {
@@ -144,24 +156,7 @@ export function useFocusModeController({
     } catch (error) {
       console.warn('Keyboard lock API:', error)
     }
-  }, [contentRef, setIsFullScreen, zoomLabelRef, zoomLevelRef])
+  }, [setIsFullScreen, zoomLabelRef, zoomLevelRef])
 
-  const handlePinchZoom = useCallback(
-    (event: WheelEvent) => {
-      if (!event.ctrlKey) return
-      event.preventDefault()
-      const nextZoom = Math.min(
-        Math.max(zoomLevelRef.current - event.deltaY * 0.005, 0.5),
-        4
-      )
-      zoomLevelRef.current = nextZoom
-      if (contentRef.current) contentRef.current.style.zoom = String(nextZoom)
-      if (zoomLabelRef.current) {
-        zoomLabelRef.current.innerText = `${Math.round(nextZoom * 100)}%`
-      }
-    },
-    [contentRef, zoomLabelRef, zoomLevelRef]
-  )
-
-  return { enterFocusMode, exitFocusMode, handlePinchZoom, handleQuitFromPause }
+  return { enterFocusMode, exitFocusMode, changeTextZoom, textZoom, handleQuitFromPause }
 }

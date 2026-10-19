@@ -1,0 +1,37 @@
+html:has(.pdf-export-document), body:has(.pdf-export-document) { min-width: 0; background: white; color: #202020; overflow: visible; }
+.pdf-export-document { font-family: Georgia, 'Times New Roman', serif; font-size: 11pt; line-height: 1.5; width: 100%; }
+.pdf-export-document * { box-sizing: border-box; }
+.pdf-export-document h1 { font-size: 23pt; }
+.pdf-export-document h2 { font-size: 17pt; }
+.pdf-export-document h3 { font-size: 13pt; }
+.pdf-export-document h1, .pdf-export-document h2, .pdf-export-document h3, .pdf-export-document h4 { break-after: avoid; color: #172d27; }
+.pdf-export-cover, .pdf-export-lecture { break-before: page; }
+.pdf-export-document > :first-child { break-before: auto; }
+.pdf-export-lecture header { border-bottom: 1px solid #aaa; margin-bottom: 22px; break-inside: avoid; }
+.pdf-export-lecture header p, .pdf-export-cover > p { color: #555; font-family: Arial, sans-serif; font-size: 10pt; }
+.pdf-export-document .markdown-body { color: #202020; font-size: 11pt; line-height: 1.5; }
+.pdf-export-document p { orphans: 3; widows: 3; }
+.pdf-export-document table { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 9pt; }
+.pdf-export-document th, .pdf-export-document td { border: 1px solid #bbb; padding: 6px; overflow-wrap: anywhere; }
+.pdf-export-document thead { display: table-header-group; }
+.pdf-export-document tr { break-inside: avoid; }
+.pdf-export-document pre { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 9pt; background: #f5f5f5; padding: 12px; }
+.pdf-export-document blockquote { margin: 16px 0; padding: 8px 16px; border-left: 3px solid #999; }
+.pdf-export-document .katex-display { overflow: visible; break-inside: avoid; font-size: 0.95em; }
+.pdf-export-document .markdown-alert, .pdf-export-document .mermaid-diagram { break-inside: avoid; }
+.pdf-export-document .mermaid-diagram { margin: 8px 0; padding: 0; border: 1px solid #ddd; border-radius: 0; background: white; overflow: visible; }
+.pdf-export-document .mermaid-diagram-header { padding: 3px 6px; font-size: 8pt; }
+/* The print renderer compacts graph spacing before producing the SVG.
+   Preserve its proportions and natural size; only oversized diagrams fit the page. */
+.pdf-export-document .mermaid-diagram-canvas { min-height: 0; padding: 4px; overflow: visible; }
+.pdf-export-document .mermaid-diagram-canvas svg { display: block; max-width: 100%; max-height: 230mm; margin: auto; }
+.pdf-export-document .mermaid-source-toggle { display: none; }
+.pdf-export-document .mermaid-source-code { display: block; }
+.pdf-export-document .markdown-rendered-content .mermaid-source-code { max-height: none; overflow: visible; }
+.pdf-export-document .mermaid-diagram-error { min-height: 0; padding: 8px; }
+.pdf-export-document a { color: #155747; }
+.pdf-export-document img { max-width: 100%; }
+.pdf-export-missing { padding: 16px; border: 1px solid #bbb; color: #555; }
+.pdf-export-notes { break-before: page; break-inside: avoid; height: 250mm; }
+.pdf-export-notes h2 { margin: 0 0 8mm; color: #202020; }
+.pdf-notes-grid { display: block; }

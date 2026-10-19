@@ -12,7 +12,9 @@ export default tseslint.config(
       'coverage/**',
       '*.tsbuildinfo',
       '.library-data/**',
-      'tools/**'
+      'local-artifacts/**',
+      'tools/**',
+      '*.cjs'
     ]
   },
   js.configs.recommended,
@@ -32,6 +34,13 @@ export default tseslint.config(
       'react-hooks/exhaustive-deps': 'warn',
       '@typescript-eslint/no-explicit-any': 'off',
       '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }]
+    }
+  },
+  {
+    // Electron starts this standalone Node worker as CommonJS.
+    files: ['resources/course-rag/pdf-worker.cjs'],
+    rules: {
+      '@typescript-eslint/no-require-imports': 'off'
     }
   },
   {

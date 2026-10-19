@@ -75,3 +75,85 @@ npm run benchmark:gemini-transcription -- --audio local-artifacts/asr/2026-09-10
 ```
 
 Con `--print-texts` il comando stampa integralmente prima il riferimento e poi la trascrizione Gemini. Senza questa opzione i testi restano nei rispettivi file per evitare output terminale eccessivo.
+
+## Test limite: audio intero in una richiesta
+
+E stato ripetuto lo stesso benchmark inviando i 1.023,05 secondi e 23,42 MiB come un solo file a `gemini-3.5-transcribe`, sempre in modalita verbatim, lingua `en-US`, senza timestamp, diarizzazione o vocabolario derivato dal riferimento.
+
+- La richiesta e riuscita al primo tentativo con la prima chiave, senza rotazione o rate limit.
+- L'elaborazione remota ha richiesto circa 67 secondi; il benchmark completo, comprese metriche e scritture locali, circa 76 secondi.
+- La trascrizione contiene 1.807 parole e arriva allo stesso punto finale dell'audio: non risultano troncamenti.
+- L'output a uno e a tre chunk ha una similarita sequenziale diretta del 96,874%.
+
+| Metrica | 3 chunk | 1 chunk | Differenza favorevole a 1 chunk |
+|---|---:|---:|---:|
+| Parole Gemini | 1.808 | 1.807 | -1 |
+| Sostituzioni | 120 | 124 | -4 |
+| Cancellazioni | 77 | 70 | +7 |
+| Inserimenti | 60 | 52 | +8 |
+| WER vs Large-v3 | 14,082% | 13,479% | 0,603 punti |
+| CER vs Large-v3 | 9,292% | 8,523% | 0,769 punti |
+| Similarita sequenziale | 89,623% | 89,813% | 0,190 punti |
+| F1 bag-of-words | 92,486% | 92,401% | -0,085 punti |
+
+Il vantaggio numerico deriva soprattutto da meno cancellazioni e inserimenti, mentre le sostituzioni aumentano leggermente e il lessico complessivo resta sostanzialmente equivalente. Il chunk unico recupera quasi tutta la frase iniziale (`You try to verify this?`), rende `image Jacobian`, `skew-symmetric matrix`, `LS matrix`, `visual servoing algorithm`, `base frame`, `perspective transformation` e `chain rule`, e non introduce discontinuita da ricongiungimento.
+
+Restano errori reali: `a bit more` diventa ancora `before tomorrow`, `I don't know` viene omesso e alcune frasi sono grammaticalmente incomplete. Inoltre il test a tre chunk conserva in qualche punto parole brevi che il chunk unico perde, per esempio `for a point`. Il riferimento Large-v3 contiene a sua volta errori tecnici, quindi il piccolo miglioramento di WER non equivale a un miglioramento assoluto della fedelta.
+
+### Esito operativo
+
+Per audio compatibili con il limite del modello, il chunk unico diventa il candidato preferito per i prossimi collaudi: usa una sola richiesta invece di tre, elimina i rischi ai confini, ha completato questo campione senza retry e migliora moderatamente WER e CER. Il chunking resta necessario come fallback per file oltre il limite, errori persistenti sul file intero o esigenze di ripresa piu granulare. Prima di adottarlo nell'app servono almeno una ground truth manuale e una seconda lezione completa, idealmente piu lunga e con rumore diverso.
+
+Gli output locali di questo test sono in `benchmark_outputs/gemini_transcription_one_chunk/`, esclusi da Git.
+
+## Hardening successivo al test limite
+
+La pipeline e stata rinforzata prima di usarla come possibile alternativa operativa a Colab:
+
+- il chunk unico e ora il default e, se la richiesta viene rifiutata, la risposta risulta incompleta o ogni chiave incontra un errore transitorio, il programma riprova automaticamente con tre segmenti;
+- la validazione anti-troncamento non accetta piu soltanto cinque parole: usa una soglia conservativa di 40 parole al minuto, configurabile con `--min-words-per-minute`, e nei benchmark non scende sotto il 50% delle parole attese dal riferimento per la durata del segmento;
+- la deadline `--max-total-wait` comprende tempo di richieste, elaborazione remota e attese, ed e condivisa anche con il fallback;
+- un checkpoint viene riutilizzato solo se firma di pipeline, prompt, modalita, audio, modello, lingua, vocabolario e policy di validazione coincidono e se l'hash del testo salvato e ancora corretto;
+- il ricongiungimento elimina soltanto overlap testuali esatti, evitando che una somiglianza approssimata cancelli frasi legittime;
+- oltre a WER e CER normalizzati, il report misura CER grezzo, errori di formattazione, punteggiatura, numeri e simboli;
+- il riferimento Whisper e facoltativo: senza `--reference` il comando produce comunque una trascrizione validata, quindi puo essere usato come flusso autonomo;
+- i client SDK vengono chiusi dopo ogni tentativo e il launcher gestisce anche la chiusura anticipata dello stdin senza stampare credenziali;
+- le risposte parziali rifiutate vengono conservate con hash in file separati, ma non sono mai riutilizzate come segmenti validi;
+- quattordici test Python offline coprono le regressioni principali e fanno parte del quality gate locale e della CI.
+
+Il comando operativo minimo usa l'audio intero e non richiede un riferimento:
+
+```powershell
+npm run benchmark:gemini-transcription -- --audio percorso/della/lezione.mp3 --output-dir benchmark_outputs/nome-lezione
+```
+
+Il riferimento resta utile per un benchmark comparativo, ma Large-v3 non va interpretato come ground truth. La differenza osservata tra una singola esecuzione a uno e tre chunk resta indicativa: per stimare la variabilita del modello servono piu ripetizioni o una ground truth manuale.
+
+## Collaudo su lezione OR completa da 87 minuti
+
+La seconda lezione `OR 2025-1106-11-17-35.MP3` dura 5.222,48 secondi (87,04 minuti), quindi non puo essere inviata come chunk unico entro il limite documentato di un'ora. La modalita automatica l'ha divisa in sei pezzi cercando il punto piu silenzioso entro +/-60 secondi da ogni multiplo di 15 minuti. I punti scelti sono 926,55, 1.796,25, 2.697,35, 3.598,75 e 4.502,85 secondi. Ogni derivato e un WAV PCM indipendente, mono, 16 kHz e 16 bit, con due secondi di margine per lato; l'MP3 originale resta invariato.
+
+I primi tentativi sui frammenti MP3 avevano prodotto risposte HTTP completate ma vuote. Il [report storico](gemini-35-transcribe-report-2026-09-11.md) ha permesso di collegare il sintomo a una segnalazione gia presente sul forum Google. La ripetizione con WAV ha escluso un errore generale della pipeline: i tre segmenti contenenti la lezione sono riusciti, mentre i pezzi di rumore prima e dopo la lezione hanno continuato a produrre output vuoto o soli eventi non vocali.
+
+| Segmento | Intervallo audio | Esito | Parole accettate |
+|---|---:|---|---:|
+| 1 | 0:00-15:29 | rumore, nessun parlato secondo 3 chiavi | 0 |
+| 2 | 15:25-29:58 | soli tag `cough`/`snort` o output vuoto secondo 3 chiavi | 0 |
+| 3 | 29:54-44:59 | trascrizione valida al primo tentativo | 1.736 |
+| 4 | 44:55-60:01 | trascrizione valida al primo tentativo | 1.572 |
+| 5 | 59:57-75:05 | trascrizione valida al primo tentativo | 1.562 |
+| 6 | 75:01-87:02 | rumore, nessun parlato secondo 3 chiavi | 0 |
+
+Il risultato finale contiene 4.865 parole: cinque parole duplicate sono state eliminate grazie all'overlap esatto tra i segmenti 3 e 4. Le tre chiamate riuscite sui circa 15 minuti di lezione hanno richiesto all'incirca 28-33 secondi ciascuna. Il run WAV ha usato dodici chiavi distinte: tre successi e nove riscontri non vocali, senza `429`, chiavi invalide o errori di quota; le chiavi 13-15 non sono state usate. Gli otto tentativi MP3 precedenti restano archiviati nel checkpoint come audit separato.
+
+La lettura manuale mostra un testo coerente con la lezione di Operations Research. Sono riconosciuti correttamente termini come `cutting plane`, `dual simplex`, `Gomory`, `Chvátal`, `Farkas`, `convex hull` e `floor function`, insieme a formule lineari espresse in testo. Non e pero una trascrizione perfettamente verbatim: compaiono frasi grammaticalmente incomplete, almeno un probabile `simplex` al posto di `CPLEX`, una grafia tronca di Chvátal e una chiusura sospesa (`However, if you are`). Senza riferimento per questa lezione non e possibile calcolare WER o stabilire ascoltando soltanto il testo se ogni omissione provenga dal modello o dall'audio.
+
+### Hardening emerso dal collaudo
+
+- i chunk lunghi vengono ricodificati in WAV standard per evitare header/metadati MP3 incoerenti nei tagli lossless;
+- una risposta incompleta rimette il segmento in coda, permettendo di provare prima tutti gli altri pezzi;
+- un segmento puo essere accettato come non parlato soltanto dopo tre risposte non vocali da chiavi diverse e soltanto se un altro segmento della stessa registrazione contiene parlato confermato;
+- la firma del checkpoint comprende anche questa policy e conserva in `prior_attempts` l'audit delle strategie precedenti incompatibili;
+- gli output vuoti legittimi producono file di segmento vuoti e tracciati, non buchi non spiegati nella pipeline.
+
+Gli artefatti sono in `benchmark_outputs/gemini_or_full/`, esclusi da Git. Questo test dimostra che la pipeline completa e riprendibile funziona anche quando la registrazione contiene circa mezz'ora di rumore prima della lezione e dodici minuti dopo; non sostituisce ancora il confronto con una ground truth manuale.

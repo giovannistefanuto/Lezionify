@@ -14,6 +14,9 @@ import {
   GeminiService
 } from '../../electron/main/gemini'
 import { SettingsService } from '../../electron/main/settings'
+import { normalizeGeminiError } from '../../electron/main/ai/geminiErrors'
+import { GeminiError } from '../../electron/main/ai/geminiErrors'
+import { GeminiRequestManager } from '../../electron/main/ai/geminiRequestManager'
 import { mkdir, readFile, rm, stat, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
@@ -256,6 +259,7 @@ describe('SettingsService — Pool di Chiavi e Rotazione', () => {
     expect(s.apiKeys).toEqual([])
     expect(s.activeKeyIndex).toBe(0)
     expect(s.autoRotateOnQuota).toBe(true)
+    expect(s.autoProcessOnImport).toBe(false)
     expect(s.model).toBe('gemini-3.6-flash')
   })
 
@@ -273,6 +277,31 @@ describe('SettingsService — Pool di Chiavi e Rotazione', () => {
     const reloaded = await settingsService.getSettings()
     expect(reloaded.apiKeys).toEqual(['AIzaSyKey1', 'AIzaSyKey2', 'AIzaSyKey3'])
     expect(reloaded.apiKey).toBe('AIzaSyKey2')
+  })
+
+  it('assegna prudentemente le chiavi legacy allo stesso gruppo quota', async () => {
+    await settingsService.saveSettings({
+      apiKeys: ['AIzaSyKey1', 'AIzaSyKey2'],
+      activeKeyIndex: 0
+    })
+
+    expect((await settingsService.getSettings()).apiKeyQuotaGroups).toEqual([
+      'default-project',
+      'default-project'
+    ])
+  })
+
+  it('persiste i gruppi quota configurati per le chiavi', async () => {
+    const updated = await settingsService.saveSettings({
+      apiKeys: ['AIzaSyKey1', 'AIzaSyKey2', 'AIzaSyKey3'],
+      apiKeyQuotaGroups: ['project-alpha', 'project-alpha', 'project-beta']
+    })
+
+    expect(updated.apiKeyQuotaGroups).toEqual([
+      'project-alpha',
+      'project-alpha',
+      'project-beta'
+    ])
   })
 
   it('ruota correttamente le chiavi nel pool con rotateKey', async () => {
@@ -321,6 +350,71 @@ describe('ArchiveService — Ciclo di vita, CRUD, Batch & Trascrizione Audio', (
     expect((await stat(join(testArchiveDir, 'markdown'))).isDirectory()).toBe(
       true
     )
+  })
+
+  it.each(['notes', 'transcription', 'translation'] as const)(
+    'propaga il 403 strutturato nello stage %s preservando le fonti', async (stage) => {
+      const incoming = join(testArchiveDir, 'incoming')
+      await mkdir(incoming, { recursive: true })
+      const audio = join(incoming, '2026-0507-16-19-41.mp3')
+      await writeFile(audio, 'synthetic-audio')
+      await writeFile(join(incoming, '2026-0507-16-19-41.txt'), 'synthetic transcript')
+      const { imported } = await service.importFiles([audio])
+      const id = imported[0].id
+      await service.saveSettings({ apiKeys: ['synthetic-key'], autoProcessOnImport: false })
+      await service.saveMarkdown(id, '# Synthetic notes')
+      const failure = normalizeGeminiError(new Error('403 forbidden sensitive-provider-payload'))
+      vi.spyOn(mockGeminiService, 'generateLectureNotes').mockRejectedValue(failure)
+      vi.spyOn(mockGeminiService, 'transcribeAudioFile').mockRejectedValue(failure)
+      vi.spyOn(mockGeminiService, 'translateToEnglish').mockRejectedValue(failure)
+      const result = stage === 'notes' ? await service.generateLectureNotes(id)
+        : stage === 'transcription' ? await service.transcribeAudio(id)
+        : await service.translateLectureNotes(id)
+      expect(result).toMatchObject({ success: false, failureKind: 'authentication',
+        error: 'Accesso negato: verifica i permessi o la fatturazione del progetto Google Cloud.' })
+      expect(result.error).not.toContain('sensitive-provider-payload')
+      expect(await service.readTranscript(id)).toBe('synthetic transcript')
+      expect(await service.readMarkdown(id)).toBe('# Synthetic notes')
+      expect(await readFile(join(testArchiveDir, 'audio', imported[0].audioFileName), 'utf8')).toBe('synthetic-audio')
+    })
+
+  it('i return locali distinguono lezione assente e input mancante', async () => {
+    for (const operation of [service.generateLectureNotes.bind(service), service.transcribeAudio.bind(service), service.translateLectureNotes.bind(service)]) {
+      expect(await operation('missing')).toMatchObject({ failureKind: 'not_found' })
+    }
+    const audio = join(testArchiveDir, '2026-0507-16-19-41.mp3')
+    await writeFile(audio, 'synthetic')
+    const { imported } = await service.importFiles([audio])
+    expect(await service.generateLectureNotes(imported[0].id)).toMatchObject({ failureKind: 'input' })
+    expect(await service.translateLectureNotes(imported[0].id)).toMatchObject({ failureKind: 'input' })
+  })
+
+  it.each(['transcription', 'translation'] as const)('una sorgente modificata nello stage %s restituisce source_changed senza salvarne la derivazione', async (stage) => {
+    const incoming = join(testArchiveDir, 'incoming')
+    await mkdir(incoming, { recursive: true })
+    const audio = join(incoming, '2026-0507-16-19-41.mp3')
+    await writeFile(audio, 'synthetic original audio')
+    await writeFile(join(incoming, '2026-0507-16-19-41.txt'), 'synthetic raw transcript')
+    const { imported } = await service.importFiles([audio])
+    const item = imported[0]
+    await service.saveSettings({ apiKeys: ['synthetic-key'], autoProcessOnImport: false })
+    await service.saveMarkdown(item.id, '# Original notes')
+    if (stage === 'transcription') {
+      vi.spyOn(mockGeminiService, 'transcribeAudioFile').mockImplementation(async () => {
+        await writeFile(join(testArchiveDir, 'audio', item.audioFileName), 'synthetic changed audio')
+        return 'stale derived transcript'
+      })
+    } else {
+      vi.spyOn(mockGeminiService, 'translateToEnglish').mockImplementation(async () => {
+        await service.saveMarkdown(item.id, '# Changed notes')
+        return 'stale derived translation'
+      })
+    }
+    const result = stage === 'transcription' ? await service.transcribeAudio(item.id)
+      : await service.translateLectureNotes(item.id)
+    expect(result).toMatchObject({ success: false, failureKind: 'source_changed' })
+    expect(await service.readTranscript(item.id)).toBe('synthetic raw transcript')
+    expect(await service.readMarkdownEn(item.id)).toBeNull()
   })
 
   it('importa file MP3 e associa automaticamente il TXT omonimo', async () => {
@@ -440,28 +534,24 @@ describe('ArchiveService — Ciclo di vita, CRUD, Batch & Trascrizione Audio', (
 
     vi.spyOn(
       mockGeminiService,
-      'transcribeAndGenerateFromAudio'
-    ).mockResolvedValue({
-      transcript: 'Trascrizione audio estratta da Gemini Multimodale.',
-      markdown: '# Dispensa da Audio\n\n## Overview\nContenuto estratto.'
-    })
+      'transcribeAudioFile'
+    ).mockResolvedValue('Trascrizione audio estratta da Gemini.')
 
     const result = await service.transcribeAudio(lectureId)
     expect(result.success).toBe(true)
     expect(result.transcript).toContain('Trascrizione audio estratta')
-    expect(result.markdown).toContain('# Dispensa da Audio')
 
-    // Verifica che i file siano stati scritti e lo stato aggiornato
+    // Verifica che il file TXT sia stato scritto e lo stato aggiornato a transcript-available
     const list = await service.listLectures()
     expect(list[0].status).toBe('transcript-available')
     expect(list[0].transcriptFileName).toBe(`${lectureId}.txt`)
-    expect(list[0].markdownFileName).toBe(`${lectureId}.md`)
+    expect(list[0].markdownFileName).toBeNull()
 
     const readTxt = await service.readTranscript(lectureId)
-    expect(readTxt).toBe('Trascrizione audio estratta da Gemini Multimodale.')
+    expect(readTxt).toBe('Trascrizione audio estratta da Gemini.')
   })
 
-  it('ruota automaticamente alla seconda chiave se la prima incontra errore di quota (RESOURCE_EXHAUSTED)', async () => {
+  it('affida al gestore Gemini l intero pool di chiavi senza una seconda rotazione esterna', async () => {
     const sourceDir = join(testArchiveDir, 'incoming')
     await mkdir(sourceDir, { recursive: true })
 
@@ -481,22 +571,20 @@ describe('ArchiveService — Ciclo di vita, CRUD, Batch & Trascrizione Audio', (
     })
 
     const mockMarkdown = `# Dispensa Generata con Chiave 2\n\nContenuto didattico.`
-    vi.spyOn(mockGeminiService, 'generateLectureNotes').mockImplementation(
-      async (params) => {
-        if (params.apiKey === 'key-exhausted') {
-          throw new Error('RESOURCE_EXHAUSTED: quota exceeded for current key')
-        }
-        return mockMarkdown
-      }
-    )
+    const generateSpy = vi
+      .spyOn(mockGeminiService, 'generateLectureNotes')
+      .mockResolvedValue(mockMarkdown)
 
     const genResult = await service.generateLectureNotes(lectureId)
     expect(genResult.success).toBe(true)
     expect(genResult.markdown).toBe(mockMarkdown)
 
-    const updatedSettings = await service.getSettings()
-    expect(updatedSettings.activeKeyIndex).toBe(1)
-    expect(updatedSettings.apiKey).toBe('key-working')
+    expect(generateSpy).toHaveBeenCalledTimes(1)
+    expect(generateSpy.mock.calls[0][0].keys.map((key) => key.key)).toEqual([
+      'key-exhausted',
+      'key-working'
+    ])
+    expect(generateSpy.mock.calls[0][0].apiKey).toBeUndefined()
   })
 
   it('esegue ricerca full-text nei metadati, trascrizioni e note markdown', async () => {
@@ -1131,7 +1219,7 @@ describe('ScratchpadService & Quick Capture Data Persistence', () => {
 })
 
 describe('ArchiveService — QnA Key Rotation & Diagnostic Status', () => {
-  it('ruota automaticamente la chiave API in caso di quota 429 ed emette aggiornamenti di stato', async () => {
+  it('delega una sola richiesta logica al gestore centrale e riflette la chiave realmente usata', async () => {
     const root = join(tmpdir(), `lezionify-qna-test-${randomUUID()}`)
     await mkdir(root, { recursive: true })
     const service = new ArchiveService(root)
@@ -1148,15 +1236,31 @@ describe('ArchiveService — QnA Key Rotation & Diagnostic Status', () => {
       statusUpdates.push(st)
     })
 
-    let attempts = 0
+    let logicalRequests = 0
     vi.spyOn(
       service['geminiService'],
       'generateQnaResponse'
     ).mockImplementation(async function* (params: any) {
-      attempts++
-      if (params.apiKey === 'key-exhausted-429') {
-        throw new Error('429 RESOURCE_EXHAUSTED: Quota exceeded')
-      }
+      logicalRequests++
+      expect(params.keys.map((item: any) => item.id)).toEqual(['key-0', 'key-1'])
+      params.onAttempt({
+        attempt: 1,
+        keyIndex: 0,
+        keyId: 'key-0',
+        keyAlias: 'Chiave 1',
+        quotaGroup: 'default-project',
+        model: 'gemini-3.5-flash-lite'
+      })
+      params.onRetry(1, 2_000, 'Quota temporaneamente esaurita.')
+      params.onAttempt({
+        attempt: 2,
+        keyIndex: 1,
+        keyId: 'key-1',
+        keyAlias: 'Chiave 2',
+        quotaGroup: 'default-project-2',
+        model: 'gemini-3.5-flash-lite'
+      })
+      params.onAttempt({ attempt: 3, keyIndex: 1, keyId: 'key-1', keyAlias: 'Chiave 2', quotaGroup: 'default-project-2', model: 'gemini-3.7-flash' })
       yield 'Spiegazione del '
       yield 'criterio.'
     })
@@ -1174,15 +1278,59 @@ describe('ArchiveService — QnA Key Rotation & Diagnostic Status', () => {
     )
     expect(res.success).toBe(true)
     expect(res.text).toBe('Spiegazione del criterio.')
-    expect(attempts).toBe(2)
+    expect(logicalRequests).toBe(1)
 
     expect(statusUpdates.some((u) => u.phase === 'connecting')).toBe(true)
     expect(statusUpdates.some((u) => u.phase === 'rotating_key')).toBe(true)
+    expect(statusUpdates.some((u) => u.phase === 'fallback_model')).toBe(true)
+    expect(statusUpdates.filter((u) => u.phase === 'connecting').every((u) => u.model === 'gemini-3.5-flash-lite')).toBe(true)
     expect(statusUpdates.some((u) => u.phase === 'streaming')).toBe(true)
     expect(statusUpdates.some((u) => u.phase === 'completed')).toBe(true)
 
     const newSettings = await service.getSettings()
     expect(newSettings.activeKeyIndex).toBe(1)
+    expect(newSettings.model).toBe('gemini-3.6-flash')
+    await rm(root, { recursive: true, force: true })
+  })
+
+  it('rispetta autoRotateOnQuota=false passando al gestore solo la chiave attiva', async () => {
+    const root = join(tmpdir(), `lezionify-qna-no-rotate-${randomUUID()}`)
+    await mkdir(root, { recursive: true })
+    const service = new ArchiveService(root)
+    await service.initialize()
+    await service.saveSettings({
+      apiKeys: ['key-one', 'key-two'],
+      activeKeyIndex: 1,
+      autoRotateOnQuota: false,
+      model: 'gemini-3.6-flash'
+    })
+
+    const spy = vi.spyOn(service['geminiService'], 'generateQnaResponse')
+      .mockImplementation(async function* (params: any) {
+        expect(params.keys).toHaveLength(1)
+        expect(params.keys[0]).toMatchObject({ key: 'key-two', id: 'key-1' })
+        params.onAttempt({
+          attempt: 1,
+          keyIndex: 0,
+          keyId: 'key-1',
+          keyAlias: 'Chiave 2',
+          quotaGroup: 'default-project',
+          model: 'gemini-3.6-flash'
+        })
+        yield 'ok'
+      })
+
+    const result = await service.generateQnaResponse(
+      'non-existent-id',
+      {
+        id: 'thread-no-rotate',
+        quote: 'Testo selezionato',
+        messages: [{ role: 'user', text: 'Domanda?' }]
+      },
+      false
+    )
+    expect(result).toEqual({ success: true, text: 'ok' })
+    expect(spy).toHaveBeenCalledTimes(1)
     await rm(root, { recursive: true, force: true })
   })
 })
@@ -1397,6 +1545,32 @@ describe('Bilingual ITA/ENG Lectures & Batch Translation', () => {
     return lecture
   }
 
+  it('mantiene il gruppo legacy prudente e distingue i progetti non identificati da quelli configurati', async () => {
+    await service.saveSettings({ apiKeys: ['synthetic-a', 'synthetic-b', 'synthetic-c', 'synthetic-d'],
+      apiKeyQuotaGroups: ['default-project', 'default-project', 'project-known', 'project-known'], activeKeyIndex: 1 })
+    const keys = await service.getManagedKeys()
+    expect(keys.map(key => key.id)).toEqual(['key-1', 'key-2', 'key-3', 'key-0'])
+    expect(keys.map(key => key.quotaGroup)).toEqual(['default-project', 'project-known', 'project-known', 'default-project'])
+    expect(keys.map(key => key.quotaGroupKnown)).toEqual([false, true, true, false])
+  })
+
+  it('il pool caricato dalle impostazioni legacy prova la seconda chiave prima di degradare il modello', async () => {
+    await service.saveSettings({ apiKeys: ['synthetic-one', 'synthetic-two'], apiKeyQuotaGroups: ['default-project', 'default-project'], activeKeyIndex: 0 })
+    let time = 1_000_000
+    const manager = new GeminiRequestManager(undefined, undefined, { now: () => time, sleep: async ms => { time += ms } })
+    const calls: string[] = []
+    const result = await manager.execute({ jobId: 'settings-to-translation', purpose: 'translation', keys: await service.getManagedKeys(), preferredModel: 'full', fallbackModels: ['lite'],
+      call: async (key, model) => {
+        calls.push(`${key}:${model}`)
+        if (key === 'synthetic-one') throw new GeminiError({ category: 'quota_exhausted', isDailyQuota: true, isRetryable: false, sanitizedMessage: 'Quota' })
+        return 'ok'
+      }
+    })
+    expect(result).toBe('ok')
+    expect(calls).toEqual(['synthetic-one:full', 'synthetic-two:full'])
+    expect((await service.getSettings()).apiKeyQuotaGroups).toEqual(['default-project', 'default-project'])
+  })
+
   it('getTranslationCandidates restituisce solo lezioni con ITA e prive di ENG', async () => {
     const l1 = await createLectureWithMarkdown('L1', '# Lezione 1 in Italiano')
     const l2 = await createLectureWithMarkdown('L2', '# Lezione 2 in Italiano')
@@ -1460,6 +1634,27 @@ describe('Bilingual ITA/ENG Lectures & Batch Translation', () => {
     expect(updated?.markdownEnFileName).toBeNull()
   })
 
+  it('una traduzione incompleta non sovrascrive l’inglese precedente o le fonti e resta ritentabile', async () => {
+    const italian = '# 1. Fonte italiana\n\nTesto e $x^2$.'
+    const lecture = await createLectureWithMarkdown('L-incomplete', italian)
+    const first = await service.translateLectureNotes(lecture.id)
+    expect(first.success).toBe(true)
+    const before = (await service.listLectures()).find(item => item.id === lecture.id)!
+    const audioBefore = await readFile(join(testArchiveDir, 'audio', before.audioFileName!))
+    const transcriptBefore = await service.readTranscript(lecture.id)
+    vi.mocked(mockGeminiService.translateToEnglish).mockRejectedValueOnce(new GeminiError({
+      category: 'invalid_output', isRetryable: false, isDailyQuota: false,
+      sanitizedMessage: 'Traduzione non salvata: risposta incompleta. Riprova la traduzione.'
+    }))
+    expect(await service.translateLectureNotes(lecture.id)).toMatchObject({ success: false, failureKind: 'input', error: expect.stringContaining('Riprova') })
+    expect(await service.readMarkdownEn(lecture.id)).toBe(first.markdown)
+    expect(await service.readMarkdown(lecture.id)).toBe(italian)
+    expect(await service.readTranscript(lecture.id)).toBe(transcriptBefore)
+    expect(await readFile(join(testArchiveDir, 'audio', before.audioFileName!))).toEqual(audioBefore)
+    expect((await service.listLectures()).find(item => item.id === lecture.id)?.markdownEnFileName).toBe(before.markdownEnFileName)
+    expect((await service.translateLectureNotes(lecture.id)).success).toBe(true)
+  })
+
   it('translateSelectedNotes esegue la traduzione batch delle lezioni selezionate', async () => {
     const l1 = await createLectureWithMarkdown('B1', '# Dispensa B1')
     const l2 = await createLectureWithMarkdown('B2', '# Dispensa B2')
@@ -1471,6 +1666,55 @@ describe('Bilingual ITA/ENG Lectures & Batch Translation', () => {
 
     expect(await service.readMarkdownEn(l1.id)).not.toBeNull()
     expect(await service.readMarkdownEn(l2.id)).not.toBeNull()
+  })
+
+  it('delega retry e rotazione al gestore una sola volta per traduzione', async () => {
+    const lecture = await createLectureWithMarkdown('ROT1', '# Dispensa da tradurre')
+    await service.saveSettings({
+      apiKeys: ['key-a', 'key-b', 'key-c'],
+      apiKeyQuotaGroups: ['project-a', 'project-a', 'project-b'],
+      activeKeyIndex: 0
+    })
+    const translateSpy = vi
+      .spyOn(mockGeminiService, 'translateToEnglish')
+      .mockRejectedValueOnce(
+        normalizeGeminiError(new Error('503 Service Unavailable'))
+      )
+
+    const result = await service.translateLectureNotes(lecture.id, 'batch-1')
+
+    expect(result).toEqual({
+      success: false,
+      failureKind: 'provider_unavailable',
+      error: 'Server Google temporaneamente sovraccarico o non disponibile. Riprova tra poco.'
+    })
+    expect(translateSpy).toHaveBeenCalledTimes(1)
+    expect(translateSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        keys: expect.arrayContaining([
+          expect.objectContaining({ quotaGroup: 'project-a' }),
+          expect.objectContaining({ quotaGroup: 'project-b' })
+        ]),
+        jobId: `translation:batch-1:${lecture.id}`
+      })
+    )
+  })
+
+  it('il riepilogo batch conserva titolo e causa delle traduzioni fallite', async () => {
+    const lecture = await createLectureWithMarkdown('ERR1', '# Dispensa che fallisce')
+    vi.spyOn(mockGeminiService, 'translateToEnglish').mockRejectedValueOnce(
+      normalizeGeminiError(new Error('429 daily quota exceeded'))
+    )
+
+    const summary = await service.translateSelectedNotes([lecture.id])
+
+    expect(summary).toMatchObject({ total: 1, succeeded: 0, failed: 1 })
+    expect(summary.results[0]).toMatchObject({
+      id: lecture.id,
+      title: expect.any(String),
+      success: false,
+      error: 'Quota giornaliera del modello o del progetto esaurita su Google AI Studio.'
+    })
   })
 
   it('deleteLecture elimina sia il markdown ITA sia il markdown ENG e gli highlights EN', async () => {

@@ -1,4 +1,8 @@
-import React, { useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
+import { MusicButton } from './MusicButton'
+import type { CourseDefinition } from '../../shared/archive'
+import { formatCourseDisplayName } from '../utils/courseFormat'
 
 interface SidebarProps {
   mainView: 'archive' | 'dashboard'
@@ -10,6 +14,10 @@ interface SidebarProps {
   totalLecturesCount: number
   coursesWithCounts: string[]
   getCourseLecturesCount: (course: string) => number
+  courses?: CourseDefinition[]
+  archivedCourseCodes?: string[]
+  isSavingCourseArchive?: boolean
+  onCourseArchive?: (course: string, archived: boolean) => void
   onOpenSettings: () => void
   hasConfiguredKey: boolean
   searchQuery: string
@@ -21,8 +29,11 @@ interface SidebarProps {
   theme: 'light' | 'dark'
   onToggleTheme: () => void
   onOpenCourseManagement: () => void
+  onOpenCourseChat?: () => void
   onOpenQuickCapture?: () => void
   onOpenLogViewer?: () => void
+  onOpenUsbRecorder?: () => void
+  isUsbConnected?: boolean
 }
 
 export function Sidebar({
@@ -35,6 +46,10 @@ export function Sidebar({
   totalLecturesCount,
   coursesWithCounts,
   getCourseLecturesCount,
+  courses: courseDefinitions = [],
+  archivedCourseCodes = [],
+  isSavingCourseArchive = false,
+  onCourseArchive,
   onOpenSettings,
   hasConfiguredKey,
   searchQuery,
@@ -46,35 +61,138 @@ export function Sidebar({
   theme,
   onToggleTheme,
   onOpenCourseManagement,
+  onOpenCourseChat,
   onOpenQuickCapture,
-  onOpenLogViewer
+  onOpenLogViewer,
+  onOpenUsbRecorder,
+  isUsbConnected
 }: SidebarProps) {
   
   const [collapsedFolders, setCollapsedFolders] = useState<Record<string, boolean>>({})
+  const [courseMenu, setCourseMenu] = useState<{
+    course: string; x: number; y: number; trigger: HTMLButtonElement
+  } | null>(null)
+  const menuRef = useRef<HTMLDivElement>(null)
+  const archivedCourses = useMemo(() => new Set(archivedCourseCodes), [archivedCourseCodes])
+
+  useEffect(() => {
+    if (!courseMenu) return
+    menuRef.current?.querySelector<HTMLButtonElement>('button')?.focus()
+    const dismiss = () => setCourseMenu(null)
+    const outside = (event: PointerEvent) => {
+      if (!menuRef.current?.contains(event.target as Node)) dismiss()
+    }
+    const keyboard = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' || event.key === 'Tab') {
+        dismiss()
+        if (event.key === 'Escape') {
+          event.preventDefault()
+          courseMenu.trigger.focus()
+        }
+      }
+    }
+    document.addEventListener('pointerdown', outside)
+    document.addEventListener('keydown', keyboard)
+    window.addEventListener('resize', dismiss)
+    window.addEventListener('scroll', dismiss, true)
+    window.addEventListener('blur', dismiss)
+    return () => {
+      document.removeEventListener('pointerdown', outside)
+      document.removeEventListener('keydown', keyboard)
+      window.removeEventListener('resize', dismiss)
+      window.removeEventListener('scroll', dismiss, true)
+      window.removeEventListener('blur', dismiss)
+    }
+  }, [courseMenu])
+
+  const openCourseMenu = (course: string, trigger: HTMLButtonElement, x: number, y: number) => {
+    if (!onCourseArchive || isSavingCourseArchive ||
+      (course === 'Senza corso' && !courseDefinitions.some(c => c.code === course))) return
+    setCourseMenu({ course, trigger,
+      x: Math.max(8, Math.min(x, window.innerWidth - 248)),
+      y: Math.max(8, Math.min(y, window.innerHeight - 105)) })
+  }
 
   const toggleFolder = (folder: string) => {
     setCollapsedFolders(prev => ({ ...prev, [folder]: !prev[folder] }))
   }
 
-  // Build a simple 1-level folder tree by splitting courseCode on " / " or " - "
+  // Build a simple 1-level folder tree by splitting courseCode on " / " or " - " (excluding course format codes)
   const courseTree = useMemo(() => {
     const tree: Record<string, string[]> = {}
     
-    coursesWithCounts.forEach(course => {
-      const match = course.match(/^(.*?)\s*(\/|-)\s*(.*)$/)
-      if (match && match[1].trim()) {
-        const folder = match[1].trim()
-        if (!tree[folder]) tree[folder] = []
-        tree[folder].push(course)
-      } else {
-        const folder = 'Altri Corsi'
-        if (!tree[folder]) tree[folder] = []
-        tree[folder].push(course)
+    const allCourses = [...new Set([...coursesWithCounts,
+      ...courseDefinitions.map(course => course.code), ...archivedCourseCodes])].sort()
+    allCourses.filter(course => !archivedCourses.has(course)).forEach((course) => {
+      let folder = ''
+      if (course.includes('/')) {
+        const parts = course.split('/')
+        if (parts[0].trim()) {
+          folder = parts[0].trim()
+        }
+      } else if (
+        course.includes(' - ') &&
+        !course.startsWith('(') &&
+        !course.match(/^[A-Za-z0-9_-]{1,8}\s*-\s*/)
+      ) {
+        const parts = course.split(' - ')
+        if (parts[0].trim()) {
+          folder = parts[0].trim()
+        }
       }
+
+      if (!tree[folder]) tree[folder] = []
+      tree[folder].push(course)
     })
     
-    return tree
-  }, [coursesWithCounts])
+    return { active: tree, archived: allCourses.filter(course => archivedCourses.has(course)) }
+  }, [coursesWithCounts, courseDefinitions, archivedCourseCodes, archivedCourses])
+
+  const renderCourse = (course: string, folder = '') => {
+    let rawTitle = course
+    if (folder && (course.startsWith(folder + '/') || course.startsWith(folder + ' - '))) {
+      rawTitle = course.substring(folder.length + (course.includes('/') ? 1 : 3)).trim()
+    }
+    const displayTitle = formatCourseDisplayName(rawTitle, courseDefinitions)
+    return (
+      <button
+        className={`course-button child-course ${selectedCourse === course ? 'is-active' : ''}`}
+        key={course}
+        onClick={() => {
+          setSelectedCourse(course)
+          if (archivedCourses.has(course)) setSelectedStudyStatus('tutti')
+          if (mainView !== 'archive') setMainView('archive')
+        }}
+        onContextMenu={event => {
+          event.preventDefault()
+          openCourseMenu(course, event.currentTarget, event.clientX, event.clientY)
+        }}
+        onKeyDown={event => {
+          if (event.key === 'ContextMenu' || (event.shiftKey && event.key === 'F10')) {
+            event.preventDefault()
+            const rect = event.currentTarget.getBoundingClientRect()
+            openCourseMenu(course, event.currentTarget, rect.left, rect.bottom)
+          }
+        }}
+        aria-haspopup={onCourseArchive && course !== 'Senza corso' ? 'menu' : undefined}
+        title={displayTitle}
+      >
+        <span className="course-name-trunc">{displayTitle}</span>
+        <span className="course-count-badge">{getCourseLecturesCount(course)}</span>
+      </button>
+    )
+  }
+
+  const renderFolder = (key: string, label: string, children: React.ReactNode) => (
+    <div key={key} className="folder-group">
+      <button className="folder-toggle" aria-expanded={!collapsedFolders[key]}
+        onClick={() => toggleFolder(key)}>
+        <span className="folder-icon" aria-hidden="true">{collapsedFolders[key] ? '📁' : '📂'}</span>
+        <span className="folder-name">{label}</span>
+      </button>
+      {!collapsedFolders[key] && <div className="folder-children">{children}</div>}
+    </div>
+  )
 
   return (
     <aside className={`sidebar ${isCollapsed ? 'is-collapsed' : ''}`}>
@@ -100,6 +218,29 @@ export function Sidebar({
           {/* Action Toolbar */}
           <div className="sidebar-action-bar">
             <div className="sidebar-action-group">
+              {onOpenUsbRecorder && (
+                <button
+                  className="settings-gear-btn"
+                  onClick={onOpenUsbRecorder}
+                  title={
+                    isUsbConnected
+                      ? 'Registratore USB Connesso (D:\\RECORD)'
+                      : 'Acquisizione Registratore USB'
+                  }
+                  aria-label="Apri registratore USB"
+                >
+                  🎙️
+                  {isUsbConnected && (
+                    <span
+                      className="usb-indicator-dot"
+                      title="Registratore collegato"
+                    />
+                  )}
+                </button>
+              )}
+
+              {onOpenCourseChat && <button className="settings-gear-btn" onClick={onOpenCourseChat}
+                title="Chat del corso" aria-label="Apri chat del corso">💬</button>}
               {onOpenQuickCapture && (
                 <button
                   className="settings-gear-btn"
@@ -115,7 +256,7 @@ export function Sidebar({
                 <button
                   className="settings-gear-btn"
                   onClick={onOpenLogViewer}
-                  title="Log di Sistema & Diagnostica (Ctrl+L)"
+                  title="Log di Sistema & Diagnostica (Ctrl+Shift+L)"
                   aria-label="Apri log di sistema"
                 >
                   📜
@@ -125,7 +266,7 @@ export function Sidebar({
               <button
                 className="settings-gear-btn"
                 onClick={onOpenSettings}
-                title="Impostazioni AI"
+                title="Impostazioni"
                 aria-label="Apri impostazioni"
               >
                 ⚙️
@@ -227,6 +368,7 @@ export function Sidebar({
                   key={st}
                   className={`study-filter-btn ${selectedStudyStatus === st ? 'is-active' : ''}`}
                   onClick={() => {
+                    if (archivedCourses.has(selectedCourse)) setSelectedCourse('tutti')
                     setSelectedStudyStatus(st)
                     if (mainView !== 'archive') setMainView('archive')
                   }}
@@ -257,59 +399,24 @@ export function Sidebar({
                 if (mainView !== 'archive') setMainView('archive')
               }}
             >
-              Tutte le lezioni <span>{totalLecturesCount}</span>
+              <span>Tutte le lezioni</span>
+              <span className="course-count-badge">{totalLecturesCount}</span>
             </button>
 
             <nav aria-label="Corsi" className="course-tree">
-              {Object.keys(courseTree).length === 0 ? (
-                <p className="empty-courses">I corsi compariranno qui.</p>
-              ) : (
-                Object.entries(courseTree)
-                  .sort(([a], [b]) => a.localeCompare(b))
-                  .map(([folder, courses]) => (
-                    <div key={folder} className="folder-group">
-                      <button className="folder-toggle" onClick={() => toggleFolder(folder)}>
-                        <span className="folder-icon">
-                          {collapsedFolders[folder] ? '📁' : '📂'}
-                        </span>
-                        <span className="folder-name">{folder}</span>
-                      </button>
-
-                      {!collapsedFolders[folder] && (
-                        <div className="folder-children">
-                          {courses.map((course) => {
-                            let displayTitle = course
-                            if (
-                              course.startsWith(folder + '/') ||
-                              course.startsWith(folder + ' - ')
-                            ) {
-                              displayTitle = course
-                                .substring(
-                                  folder.length + (course.includes('/') ? 1 : 3)
-                                )
-                                .trim()
-                            }
-
-                            return (
-                              <button
-                                className={`course-button child-course ${selectedCourse === course ? 'is-active' : ''}`}
-                                key={course}
-                                onClick={() => {
-                                  setSelectedCourse(course)
-                                  if (mainView !== 'archive') setMainView('archive')
-                                }}
-                              >
-                                <span className="course-name-trunc" title={displayTitle}>
-                                  {displayTitle}
-                                </span>
-                                <span>{getCourseLecturesCount(course)}</span>
-                              </button>
-                            )
-                          })}
-                        </div>
-                      )}
-                    </div>
-                  ))
+              {renderFolder('active', 'Corsi attivi',
+                Object.keys(courseTree.active).length === 0 ?
+                  <p className="empty-courses">Nessun corso attivo.</p> :
+                  Object.entries(courseTree.active)
+                    .sort(([a], [b]) => a.localeCompare(b))
+                    .map(([folder, folderCourses]) => folder ?
+                      renderFolder(`active:${folder}`, folder,
+                        folderCourses.map(course => renderCourse(course, folder))) :
+                      folderCourses.map(course => renderCourse(course)))
+              )}
+              {renderFolder('archived', 'Corsi archiviati', courseTree.archived.length === 0 ?
+                <p className="empty-courses">Nessun corso archiviato.</p> :
+                courseTree.archived.map(course => renderCourse(course))
               )}
             </nav>
           </div>
@@ -352,7 +459,7 @@ export function Sidebar({
             <button
               className="sidebar-icon-btn"
               onClick={onOpenLogViewer}
-              title="Log di Sistema (Ctrl+L)"
+              title="Log di Sistema (Ctrl+Shift+L)"
               aria-label="Log di Sistema"
             >
               📜
@@ -361,8 +468,8 @@ export function Sidebar({
           <button
             className="sidebar-icon-btn"
             onClick={onOpenSettings}
-            title="Impostazioni AI"
-            aria-label="Impostazioni AI"
+            title="Impostazioni"
+            aria-label="Impostazioni"
             style={{ position: 'relative' }}
           >
             ⚙️
@@ -381,6 +488,20 @@ export function Sidebar({
             {theme === 'dark' ? '☀️' : '🌙'}
           </button>
         </div>
+      )}
+      <MusicButton compact={isCollapsed} />
+      {courseMenu && !isCollapsed && createPortal(
+        <div className="course-context-menu" ref={menuRef} role="menu"
+          aria-label={`Azioni corso ${formatCourseDisplayName(courseMenu.course, courseDefinitions)}`}
+          style={{ left: courseMenu.x, top: courseMenu.y }}>
+          <p className="course-context-title">{formatCourseDisplayName(courseMenu.course, courseDefinitions)}</p>
+          <button role="menuitem" disabled={isSavingCourseArchive} onClick={() => {
+            onCourseArchive?.(courseMenu.course, !archivedCourses.has(courseMenu.course))
+            setCourseMenu(null)
+          }}>
+            {archivedCourses.has(courseMenu.course) ? 'Ripristina corso' : 'Archivia corso'}
+          </button>
+        </div>, document.body
       )}
     </aside>
   )

@@ -1,1 +1,2 @@
 google-genai>=2.23,<3
+miniaudio==1.71

@@ -1,4 +1,7 @@
+import { useStudyEstimate } from '../hooks/useStudyEstimate'
+import { toLocalDateTimeInput } from '../../shared/calendarDate'
 import React, { useState, useEffect } from 'react'
+import { lectureTitle } from '../../shared/lectureTitles'
 import {
   findNextChronologicalLecture,
   type GenerationProgress,
@@ -12,10 +15,18 @@ import { FocusLockModal } from './FocusLockModal'
 import { PauseTimerOverlay } from './PauseTimerOverlay'
 import { FocusReminders } from './FocusReminders'
 import { TranscriptPanel } from './TranscriptPanel'
+import { TranscriptionProgressBox } from './TranscriptionProgressBox'
 import { useQna } from '../hooks/useQna'
 import { useStudyTracker } from '../hooks/useStudyTracker'
+import { useFocusStudyStatus } from '../hooks/useFocusStudyStatus'
 import { useHighlights } from '../hooks/useHighlights'
 import { useFocusModeController } from '../hooks/useFocusModeController'
+import { FocusWorkspace } from './FocusWorkspace'
+import { ResizableQnaPane } from './ResizableQnaPane'
+import { useReadingPosition } from '../hooks/useReadingPosition'
+import type { LanguageReadingPoint } from '../utils/sectionAlignment'
+import { PdfExportButton } from './PdfExportButton'
+import { countLectureWords, relativeLectureLength } from '../../shared/lectureLength'
 
 const StudySetTab = React.lazy(() =>
   import('./StudySetTab').then((module) => ({ default: module.StudySetTab }))
@@ -36,6 +47,7 @@ function formatStudyTimer(totalSeconds: number): string {
 }
 
 interface LectureDrawerProps {
+  isReturningToList?: boolean
   selectedLecture: Lecture | null
   allLectures?: Lecture[]
   onSelectLecture?: (id: string) => void
@@ -65,7 +77,7 @@ interface LectureDrawerProps {
   setShowDeleteConfirm: (val: boolean) => void
   existingCourses: string[]
   settingsModel: string
-  onStudyStatusChange: (status: StudyStatus) => void
+  onStudyStatusChange: (status: StudyStatus) => void | Promise<boolean>
   onGenerateLectureNotes: () => void
   onPrintNotes: () => void
   onCopyMarkdown: (overrideText?: string) => void
@@ -91,6 +103,7 @@ interface LectureDrawerProps {
 }
 
 export function LectureDrawer({
+  isReturningToList = false,
   selectedLecture,
   allLectures,
   onSelectLecture,
@@ -141,7 +154,30 @@ export function LectureDrawer({
   translationError = null,
   onTranslateLectureNotes
 }: LectureDrawerProps) {
+  const [wordCountResult, setWordCountResult] = useState<{
+    lectureId: string; courseCode: string | null; counts: Record<string, number | null>
+  } | null>(null)
+  useEffect(() => {
+    let cancelled = false
+    setWordCountResult(null)
+    if (selectedLecture?.courseCode && window.archive.getLectureWordCounts) {
+      void window.archive.getLectureWordCounts(selectedLecture.id).then(counts => {
+        if (!cancelled) setWordCountResult({ lectureId: selectedLecture.id, courseCode: selectedLecture.courseCode, counts })
+      }).catch(() => { if (!cancelled) setWordCountResult(null) })
+    }
+    return () => { cancelled = true }
+  }, [selectedLecture, allLectures, markdownText])
+  const lectureWords = React.useMemo(() => markdownText !== null && !isLoadingContent ? countLectureWords(markdownText) : null, [markdownText, isLoadingContent])
+  const wordCounts = wordCountResult?.lectureId === selectedLecture?.id && wordCountResult?.courseCode === selectedLecture?.courseCode ? wordCountResult?.counts : null
+  const lengthPercent = wordCounts && selectedLecture && Object.hasOwn(wordCounts, selectedLecture.id)
+    ? relativeLectureLength(lectureWords, { ...wordCounts, [selectedLecture.id]: lectureWords }) : null
   const [isFullScreen, setIsFullScreen] = useState(false)
+  useFocusStudyStatus({
+    lectureId: selectedLecture?.id ?? null,
+    studyStatus: selectedLecture?.studyStatus,
+    isFocusMode: isFullScreen,
+    onStudyStatusChange
+  })
   const [showRegenerateConfirm, setShowRegenerateConfirm] = useState(false)
   const [showTechDetails, setShowTechDetails] = useState(false)
 
@@ -149,6 +185,37 @@ export function LectureDrawer({
   const contentRef = React.useRef<HTMLDivElement>(null)
   const standardContentRef = React.useRef<HTMLDivElement>(null)
   const zoomLabelRef = React.useRef<HTMLSpanElement>(null)
+  const detailBodyRef = React.useRef<HTMLDivElement>(null)
+  const markdownHeaderRef = React.useRef<HTMLDivElement>(null)
+  const [floatingFocus, setFloatingFocus] = useState<{ lectureId: string; visible: boolean } | null>(null)
+  const selectedLectureId = selectedLecture?.id
+  const currentLectureId = React.useRef(selectedLectureId)
+  currentLectureId.current = selectedLectureId
+
+  useEffect(() => {
+    const root = detailBodyRef.current
+    const header = markdownHeaderRef.current
+    if (!root || !header || isFullScreen || activeTab !== 'markdown' || !markdownText || !selectedLectureId) return
+
+    const lectureId = selectedLectureId
+    const updateVisibility = () => {
+      const visible = header.getBoundingClientRect().bottom <= root.getBoundingClientRect().top
+      setFloatingFocus(previous => previous?.lectureId === lectureId && previous.visible === visible
+        ? previous : { lectureId, visible })
+    }
+    const observer = new ResizeObserver(updateVisibility)
+    observer.observe(root)
+    observer.observe(header)
+    root.addEventListener('scroll', updateVisibility, { passive: true })
+    window.addEventListener('resize', updateVisibility)
+    const frame = requestAnimationFrame(updateVisibility)
+    return () => {
+      observer.disconnect()
+      root.removeEventListener('scroll', updateVisibility)
+      window.removeEventListener('resize', updateVisibility)
+      cancelAnimationFrame(frame)
+    }
+  }, [selectedLectureId, activeTab, markdownText, isLoadingContent, isFullScreen])
 
   // Calcolo della prossima lezione in ordine cronologico della stessa materia
   const nextLecture = React.useMemo(() => {
@@ -162,9 +229,6 @@ export function LectureDrawer({
   useEffect(() => {
     if (keepFocusOnNextLectureRef.current) {
       keepFocusOnNextLectureRef.current = false
-      if (contentRef.current) {
-        contentRef.current.scrollTop = 0
-      }
       setShowRegenerateConfirm(false)
       setShowTechDetails(false)
       setFabStyle(null)
@@ -180,8 +244,12 @@ export function LectureDrawer({
   }, [selectedLecture?.id])
 
   const handleCompleteAndAdvance = React.useCallback(
-    (inFocus = false) => {
-      onStudyStatusChange('completata')
+    async (inFocus = false) => {
+      const completedId = selectedLecture?.id
+      const isLastUnfinished = Boolean(selectedLecture?.courseCode && allLectures) && !allLectures?.some(item =>
+        item.id !== selectedLecture?.id && item.courseCode === selectedLecture?.courseCode && item.studyStatus !== 'completata')
+      const saved = await onStudyStatusChange('completata')
+      if (saved === false || completedId !== currentLectureId.current || isLastUnfinished) return
       if (nextLecture && onSelectLecture) {
         if (inFocus) {
           keepFocusOnNextLectureRef.current = true
@@ -189,7 +257,7 @@ export function LectureDrawer({
         onSelectLecture(nextLecture.id)
       }
     },
-    [nextLecture, onSelectLecture, onStudyStatusChange]
+    [nextLecture, onSelectLecture, onStudyStatusChange, selectedLecture, allLectures]
   )
 
   const handleGoToNextLecture = React.useCallback(
@@ -212,6 +280,7 @@ export function LectureDrawer({
 
   // Controlla la visibilità dell'intera Sidebar QnA
   const [isQnaSidebarOpen, setIsQnaSidebarOpen] = useState(false)
+  const [isQnaComposing, setIsQnaComposing] = useState(false)
 
   const {
     threads,
@@ -222,11 +291,15 @@ export function LectureDrawer({
     qnaStatuses,
     createThread,
     sendMessage,
-    deleteThread
+    deleteThread,
+    attachImages,
+    removeImage,
+    isAttachingImages
   } = useQna(selectedLecture?.id ?? null)
 
   const {
     activeSeconds,
+    lectureTotalSeconds,
     isPaused,
     showFocusLock,
     pauseTimerActive,
@@ -242,13 +315,14 @@ export function LectureDrawer({
     courseCode: selectedLecture?.courseCode ?? null,
     isFocusMode: isFullScreen,
     activeTab,
-    isEnabled: isFullScreen
+    isEnabled: isFullScreen && !isReturningToList
   })
 
   const {
     enterFocusMode,
     exitFocusMode,
-    handlePinchZoom,
+    changeTextZoom,
+    textZoom,
     handleQuitFromPause
   } = useFocusModeController({
     isFullScreen,
@@ -262,7 +336,8 @@ export function LectureDrawer({
     handleContinueFocus,
     contentRef,
     zoomLabelRef,
-    zoomLevelRef
+    zoomLevelRef,
+    hasContent: activeTab === 'markdown' && Boolean(markdownText)
   })
 
   const hasEnglishTranslation = Boolean(
@@ -272,6 +347,56 @@ export function LectureDrawer({
     activeLanguage === 'en' && hasEnglishTranslation ? 'en' : 'it'
   const currentMarkdown =
     effectiveLanguage === 'en' ? (markdownEnText ?? markdownText) : markdownText
+
+  useEffect(() => {
+    if (!selectedLecture || (!isFullScreen && activeTab !== 'markdown')) return
+    const trace = (stage: string, event: KeyboardEvent, outcome?: string) => {
+      if (!window.archive.languageShortcutDiagnosticsEnabled || !(event.ctrlKey || event.metaKey) ||
+        (event.key.toLowerCase() !== 'l' && event.code !== 'KeyL')) return
+      const target = event.target instanceof Element ? event.target : document.activeElement
+      void window.archive.logClientMessage?.('info', 'shortcut-language', `[DEBUG-ctrl-l] ${stage}`, JSON.stringify({
+        outcome, logicalL: event.key.toLowerCase() === 'l', physicalL: event.code === 'KeyL',
+        trusted: event.isTrusted, prevented: event.defaultPrevented, repeat: event.repeat,
+        composing: event.isComposing, shift: event.shiftKey, alt: event.altKey,
+        editable: Boolean(target?.closest('input, textarea, select, [contenteditable]:not([contenteditable="false"]), [role="textbox"]')),
+        dialog: Boolean(document.querySelector('[role="dialog"], [aria-modal="true"]')),
+        focus: isFullScreen, loading: isLoadingContent, generating: isGenerating, translating: isTranslating,
+        hasNotes: Boolean(markdownText), hasEnglish: hasEnglishTranslation,
+        callback: Boolean(onToggleLanguage), language: effectiveLanguage,
+        focusLock: showFocusLock, pause: pauseTimerActive
+      })).catch(() => {})
+    }
+    const capture = (event: KeyboardEvent) => trace('renderer-capture', event)
+    const handler = (event: KeyboardEvent) => {
+      if (event.defaultPrevented || event.isComposing || event.repeat || event.altKey || event.shiftKey ||
+        !(event.ctrlKey || event.metaKey) || event.key.toLowerCase() !== 'l') { trace('renderer-result', event, 'event-excluded'); return }
+      const target = event.target instanceof Element ? event.target : document.activeElement
+      if (showFocusLock || pauseTimerActive || target?.closest('input, textarea, select, [contenteditable]:not([contenteditable="false"]), [role="textbox"]') ||
+        document.querySelector('[role="dialog"], [aria-modal="true"]')) { trace('renderer-result', event, 'interaction-excluded'); return }
+      event.preventDefault()
+      if (isLoadingContent || isGenerating || isTranslating || !markdownText || !hasEnglishTranslation) { trace('renderer-result', event, 'notes-unavailable'); return }
+      onToggleLanguage?.(effectiveLanguage === 'it' ? 'en' : 'it')
+      trace('renderer-result', event, onToggleLanguage ? 'toggle-requested' : 'callback-missing')
+    }
+    window.addEventListener('keydown', capture, true)
+    document.addEventListener('keydown', handler)
+    return () => { window.removeEventListener('keydown', capture, true); document.removeEventListener('keydown', handler) }
+  }, [selectedLecture, isFullScreen, activeTab, isLoadingContent, isGenerating, isTranslating, markdownText, hasEnglishTranslation, effectiveLanguage, onToggleLanguage, showFocusLock, pauseTimerActive])
+
+  useEffect(() => {
+    if (!window.archive.languageShortcutDiagnosticsEnabled || !selectedLectureId) return
+    void window.archive.logClientMessage?.('info', 'shortcut-language', '[DEBUG-ctrl-l] language-state',
+      JSON.stringify({ language: effectiveLanguage, focus: isFullScreen })).catch(() => {})
+  }, [effectiveLanguage, isFullScreen, selectedLectureId])
+
+  const studyEstimate = useStudyEstimate({ lectureId: selectedLectureId ?? null, markdown: markdownText, english: markdownEnText,
+    enabled: isFullScreen && !isLoadingContent && !isGenerating && !isTranslating && !isReturningToList,
+    paused: isPaused || showFocusLock || pauseTimerActive, language: effectiveLanguage, rootRef: contentRef })
+
+  const readingKey = selectedLecture ? `notes:${selectedLecture.id}:${effectiveLanguage}` : null
+  const languageReadingPoint = React.useRef<LanguageReadingPoint | null>(null)
+  useReadingPosition(contentRef, readingKey, currentMarkdown, isFullScreen && !isLoadingContent, undefined, languageReadingPoint)
+  useReadingPosition(standardContentRef, readingKey, currentMarkdown, !isFullScreen && activeTab === 'markdown' && !isLoadingContent && !isGenerating, detailBodyRef, languageReadingPoint)
 
 
   const highlightKey = selectedLecture?.id
@@ -289,33 +414,7 @@ export function LectureDrawer({
   } = useHighlights(highlightKey)
 
   const handleToggleLanguage = (targetLang: 'it' | 'en') => {
-    const container = isFullScreen
-      ? contentRef.current
-      : standardContentRef.current
-    const scrollableHeight = container
-      ? Math.max(0, container.scrollHeight - container.clientHeight)
-      : 0
-    const ratio = scrollableHeight > 0 ? container!.scrollTop / scrollableHeight : 0
-
     onToggleLanguage?.(targetLang)
-
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        const targetContainer = isFullScreen
-          ? contentRef.current
-          : standardContentRef.current
-        if (targetContainer) {
-          const targetScrollableHeight = Math.max(
-            0,
-            targetContainer.scrollHeight - targetContainer.clientHeight
-          )
-          targetContainer.scrollTop = Math.min(
-            targetScrollableHeight,
-            Math.max(0, ratio * targetScrollableHeight)
-          )
-        }
-      })
-    })
   }
 
   const renderLanguageToggle = () => {
@@ -328,7 +427,7 @@ export function LectureDrawer({
           className={`lang-toggle-pill ${!hasEnglishTranslation ? 'no-translation' : ''}`}
           title={
             hasEnglishTranslation
-              ? `Lingua attiva: ${effectiveLanguage.toUpperCase()}. Clicca per passare a ${effectiveLanguage === 'it' ? 'Inglese (ENG)' : 'Italiano (ITA)'}`
+              ? `Lingua attiva: ${effectiveLanguage.toUpperCase()}. Clicca o premi Ctrl+L per passare a ${effectiveLanguage === 'it' ? 'Inglese (ENG)' : 'Italiano (ITA)'}. Mantiene il capitoletto; senza corrispondenza affidabile usa la percentuale del documento.`
               : isTranslating
                 ? 'Traduzione inglese in corso con Gemini...'
                 : 'Traduzione inglese non ancora generata. Clicca per tradurre.'
@@ -521,14 +620,15 @@ export function LectureDrawer({
 
     if (markdownText) {
       return (
-        <div className="focus-mode-overlay" onWheel={handlePinchZoom}>
+        <div className="focus-mode-overlay">
+          {isReturningToList && <p className="final-lecture-notice" role="status">Ultima lezione · Ritorno a Tutte le lezioni…</p>}
           <div className="focus-mode-toolbar">
             <div className="focus-toolbar-left">
               <span className="focus-course">
                 {selectedLecture.courseCode ?? 'Nessun corso'}
               </span>
               <span className="focus-title">
-                {selectedLecture.sourceAudioFileName}
+                {lectureTitle(selectedLecture, effectiveLanguage, currentMarkdown) || selectedLecture.sourceAudioFileName}
               </span>
               <span
                 ref={zoomLabelRef}
@@ -552,6 +652,9 @@ export function LectureDrawer({
               </span>
             </div>
             <div className="focus-toolbar-right">
+              {studyEstimate.label && <span className="study-estimate">{studyEstimate.label}</span>}
+              {studyEstimate.preference && <button type="button" onClick={studyEstimate.recalculate}
+                title="Azzera i campioni e riprendi la stima da questa posizione">Ricalcola da qui</button>}
               <FocusReminders />
               {renderLanguageToggle()}
               <button
@@ -587,12 +690,32 @@ export function LectureDrawer({
               </button>
             </div>
           </div>
-          <div className="focus-mode-layout">
+          <FocusWorkspace lectureId={selectedLecture.id} onTextZoom={changeTextZoom} textZoom={textZoom}
+            canSelectSlides={isQnaSidebarOpen && isQnaComposing}
+            exportRequest={{ kind: 'lecture', lectureId: selectedLecture.id, language: effectiveLanguage }}
+            onCloseQna={() => setIsQnaSidebarOpen(false)}
+            onAttachPages={async images => {
+              const threadId = activeThreadId ?? await createThread('Slide selezionate', '', 'Slide del PDF')
+              await attachImages(threadId, images)
+              setIsQnaSidebarOpen(true)
+            }}
+            qna={isQnaSidebarOpen ? (
+              <React.Suspense fallback={<p className="loading">Caricamento Q&amp;A…</p>}>
+                <QnaSidebar threads={threads} activeThreadId={activeThreadId} setActiveThreadId={setActiveThreadId}
+                  onCompositionChange={setIsQnaComposing}
+                  isGenerating={isGeneratingQna || isAttachingImages} qnaStatus={activeThreadId ? (qnaStatuses[activeThreadId] ?? null) : null}
+                  error={qnaError} onSendMessage={sendMessage} onDeleteThread={deleteThread}
+                  onClose={() => setIsQnaSidebarOpen(false)} onRemoveImage={removeImage} />
+              </React.Suspense>
+            ) : null}>
             <div
               ref={contentRef}
               className="focus-mode-content"
+              tabIndex={0}
+              aria-label="Testo della lezione: scorri o usa Ctrl e rotella per lo zoom"
               onMouseUp={handleMouseUp}
             >
+              <div className="focus-text-document" style={{ zoom: textZoom }}>
               <MarkdownViewer
                 content={currentMarkdown ?? ''}
                 highlights={highlights}
@@ -651,6 +774,7 @@ export function LectureDrawer({
                   )}
                 </div>
               )}
+              </div>
               {fabStyle && (
                 <button
                   className="floating-ask-btn"
@@ -668,33 +792,13 @@ export function LectureDrawer({
                 </button>
               )}
             </div>
-            {isQnaSidebarOpen && (
-              <React.Suspense
-                fallback={<p className="loading">Caricamento Q&amp;A…</p>}
-              >
-                <QnaSidebar
-                  threads={threads}
-                  activeThreadId={activeThreadId}
-                  setActiveThreadId={setActiveThreadId}
-                  isGenerating={isGeneratingQna}
-                  qnaStatus={
-                    activeThreadId
-                      ? (qnaStatuses[activeThreadId] ?? null)
-                      : null
-                  }
-                  error={qnaError}
-                  onSendMessage={sendMessage}
-                  onDeleteThread={deleteThread}
-                  onClose={() => setIsQnaSidebarOpen(false)}
-                />
-              </React.Suspense>
-            )}
-          </div>
+          </FocusWorkspace>
 
           <FocusLockModal
             show={showFocusLock}
             courseCode={selectedLecture.courseCode}
-            elapsedMinutes={Math.floor(activeSeconds / 60)}
+            sessionSeconds={activeSeconds}
+            lectureTotalSeconds={lectureTotalSeconds}
             onContinue={handleContinueFocus}
             onQuit={handleConfirmExitFocus}
             onPause={startPauseTimer}
@@ -713,6 +817,7 @@ export function LectureDrawer({
 
   return (
     <aside className="detail-drawer" aria-label="Dettaglio e studio lezione">
+      {isReturningToList && <p className="final-lecture-notice" role="status">Ultima lezione · Ritorno a Tutte le lezioni…</p>}
       <div className="detail-header">
         <div className="detail-header-left">
           <div className="top-tags">
@@ -742,7 +847,7 @@ export function LectureDrawer({
           </div>
 
           <h2>
-            {selectedLecture.title?.trim() ||
+            {lectureTitle(selectedLecture, effectiveLanguage, currentMarkdown) ||
               selectedLecture.sourceAudioFileName}
           </h2>
           <p className="detail-date">
@@ -767,34 +872,63 @@ export function LectureDrawer({
       </div>
 
       {/* Navigation Tabs */}
-      <nav className="drawer-tabs">
+      <nav className="drawer-tabs" role="tablist" aria-label="Sezioni della lezione">
         <button
+          type="button"
+          role="tab"
+          aria-selected={activeTab === 'markdown'}
           className={`tab-btn ${activeTab === 'markdown' ? 'is-active' : ''}`}
           onClick={() => setActiveTab('markdown')}
         >
           📝 Dispensa Didattica {markdownText && '•'}
         </button>
         <button
+          type="button"
+          role="tab"
+          aria-selected={activeTab === 'transcript'}
           className={`tab-btn ${activeTab === 'transcript' ? 'is-active' : ''}`}
           onClick={() => setActiveTab('transcript')}
         >
           📄 Trascrizione Grezza {transcriptText && '•'}
         </button>
         <button
+          type="button"
+          role="tab"
+          aria-selected={activeTab === 'study'}
           className={`tab-btn ${activeTab === 'study' ? 'is-active' : ''}`}
           onClick={() => setActiveTab('study')}
         >
           🎯 Quiz & Flashcard {studySet && '•'}
         </button>
         <button
+          type="button"
+          role="tab"
+          aria-selected={activeTab === 'info'}
           className={`tab-btn ${activeTab === 'info' ? 'is-active' : ''}`}
           onClick={() => setActiveTab('info')}
         >
           ⚙️ Info & Gestione
         </button>
+        {selectedLecture.markdownFileName && <span className="lecture-length-badge"
+          title="Parole della dispensa italiana, esclusi codice, diagrammi e formule. Il 100% è la dispensa più lunga dello stesso corso; il confronto non dipende dai filtri. Per confrontare una lezione serve un corso assegnato.">
+          {lectureWords === null ? 'Lunghezza non disponibile' : `${lectureWords.toLocaleString('it-IT')} parole · ${!selectedLecture.courseCode ? 'Assegna un corso per confrontare' : lengthPercent === null ? 'Confronto non disponibile' : `${lengthPercent}% di lunghezza`}`}
+        </span>}
       </nav>
 
-      <div className="detail-body">
+      <div className="detail-body" ref={detailBodyRef}>
+        {activeTab === 'markdown' && markdownText && !isLoadingContent &&
+          floatingFocus?.lectureId === selectedLecture.id && floatingFocus.visible && (
+          <div className="drawer-floating-focus">
+            <button
+              type="button"
+              className="secondary-button small print-btn"
+              onClick={enterFocusMode}
+              title="Modalità studio immersiva"
+            >
+              ⛶ Focus Mode
+            </button>
+          </div>
+        )}
         {copyFeedback && (
           <div className="copy-toast">
             {copyFeedback}
@@ -807,7 +941,7 @@ export function LectureDrawer({
             {/* TAB 1: MARKDOWN VIEWER & AI GENERATION */}
             <div className="tab-pane" hidden={activeTab !== 'markdown'}>
               <div className="detail-card markdown-card">
-                <div className="card-header">
+                <div className="card-header" ref={markdownHeaderRef}>
                   <div className="card-title-group">
                     <h3>Dispensa Strutturata (LaTeX / Markdown)</h3>
                   </div>
@@ -887,10 +1021,11 @@ export function LectureDrawer({
                         <button
                           className="secondary-button small print-btn"
                           onClick={onPrintNotes}
-                          title="Stampa o salva in PDF con formule LaTeX"
+                          title="Apri la finestra di stampa"
                         >
-                          🖨️ Stampa / PDF
+                          🖨️ Stampa
                         </button>
+                        <PdfExportButton key={`${selectedLecture.id}-${effectiveLanguage}`} request={{ kind: 'lecture', lectureId: selectedLecture.id, language: effectiveLanguage }} />
                         <button
                           className="secondary-button small"
                           onClick={() =>
@@ -920,6 +1055,22 @@ export function LectureDrawer({
                           {generationProgress?.message ??
                             "L'AI sta analizzando la trascrizione grezza, strutturando i concetti gerarchici e formattando le formule in LaTeX..."}
                         </p>
+                        {generationProgress?.delayMs && generationProgress.delayMs > 0 ? (
+                          <span
+                            style={{
+                              display: 'inline-block',
+                              marginTop: '6px',
+                              fontSize: '0.8rem',
+                              padding: '2px 8px',
+                              borderRadius: '12px',
+                              backgroundColor: 'rgba(234, 179, 8, 0.15)',
+                              color: '#ca8a04',
+                              border: '1px solid rgba(234, 179, 8, 0.3)'
+                            }}
+                          >
+                            ⏳ Limite di frequenza: attesa di {Math.round(generationProgress.delayMs / 1000)}s...
+                          </span>
+                        ) : null}
                       </div>
                     </div>
 
@@ -1102,16 +1253,18 @@ export function LectureDrawer({
                         )}
                       </div>
                       {isQnaSidebarOpen && (
+                        <ResizableQnaPane>
                         <React.Suspense
                           fallback={
                             <p className="loading">Caricamento Q&amp;A…</p>
                           }
                         >
                           <QnaSidebar
+                            onCompositionChange={setIsQnaComposing}
                             threads={threads}
                             activeThreadId={activeThreadId}
                             setActiveThreadId={setActiveThreadId}
-                            isGenerating={isGeneratingQna}
+                            isGenerating={isGeneratingQna || isAttachingImages}
                             qnaStatus={
                               activeThreadId
                                 ? (qnaStatuses[activeThreadId] ?? null)
@@ -1120,9 +1273,11 @@ export function LectureDrawer({
                             error={qnaError}
                             onSendMessage={sendMessage}
                             onDeleteThread={deleteThread}
+                            onRemoveImage={removeImage}
                             onClose={() => setIsQnaSidebarOpen(false)}
                           />
                         </React.Suspense>
+                        </ResizableQnaPane>
                       )}
                     </div>
                   ) : (
@@ -1169,25 +1324,17 @@ export function LectureDrawer({
                             </div>
                           )}
                           {isTranscribing ? (
-                            <div className="ai-generating-box">
-                              <div className="ai-pulse-spinner" />
-                              <div className="ai-generating-text">
-                                <h4>
-                                  🎙️ Ascolto audio ed elaborazione in corso…
-                                </h4>
-                                <p>
-                                  Gemini sta trascrivendo il parlato ed
-                                  estraendo la dispensa didattica strutturata.
-                                </p>
-                              </div>
-                            </div>
+                            <TranscriptionProgressBox
+                              progress={generationProgress}
+                              error={transcribeError}
+                            />
                           ) : (
                             <div className="ai-cta-buttons">
                               <button
                                 className="primary-button large ai-main-btn"
                                 onClick={onTranscribeAudio}
                               >
-                                🎙️ Trascrivi ed Elabora con Gemini AI
+                                🎙️ Trascrivi Audio con Gemini
                               </button>
                               <button
                                 className="secondary-button"
@@ -1212,6 +1359,8 @@ export function LectureDrawer({
                 transcriptText={transcriptText}
                 isGenerating={isGenerating}
                 isTranscribing={isTranscribing}
+                generationProgress={generationProgress}
+                transcribeError={transcribeError}
                 onGenerateLectureNotes={onGenerateLectureNotes}
                 onCopyTranscript={onCopyTranscript}
                 onAttachTranscript={onAttachTranscript}
@@ -1290,7 +1439,7 @@ export function LectureDrawer({
                       <input
                         type="datetime-local"
                         value={
-                          editRecordedAt ? editRecordedAt.slice(0, 16) : ''
+                          toLocalDateTimeInput(editRecordedAt)
                         }
                         onChange={(e) => setEditRecordedAt(e.target.value)}
                       />

@@ -28,3 +28,16 @@ __pycache__/
 # Local operating-system files
 Thumbs.db
 Desktop.ini
+
+# Personal transcription and one-off diagnostic scripts (kept locally).
+/TRASCRIZIONE_MANUALE.txt
+/deep-research-report (10).md
+/find_speech_start.cjs
+/test_chunk_1.cjs
+/test_durations.cjs
+/test_ffmpeg.js
+/test_snippet.cjs
+
+/gemini-3.5-transcribe-analisi-completa.md
+
+/tools/run_transcription_live_test.cjs

@@ -1,3 +1,7 @@
+import type { CourseRagApi } from './courseRag'
+import type { DictionaryDirection, DictionaryResult } from './dictionary'
+import type { PdfExportDocument, PdfExportRequest, PdfExportResult } from './pdfExport'
+
 export type LectureStatus = 'audio-only' | 'transcript-available'
 export type StudyStatus = 'da-studiare' | 'in-corso' | 'completata'
 export type GeminiModel =
@@ -14,7 +18,10 @@ export type GeminiModel =
 
 export interface Lecture {
   id: string
+  isLaboratory?: boolean
+  laboratorySource?: 'schedule'
   title?: string | null
+  titleOverrides?: LectureTitleUpdates
   courseCode: string | null
   recordedAt: string | null
   sourceAudioFileName: string
@@ -30,6 +37,10 @@ export interface Lecture {
   importedAt: string
   status: LectureStatus
   studyStatus: StudyStatus
+  videoImport?: {
+    sources: Array<{ name: string; checksum: string; durationSeconds: number }>
+    scheduledEndTime: string
+  }
 }
 
 export function getLectureDurationSeconds(lecture: Lecture): number {
@@ -50,12 +61,39 @@ export interface ImportSummary {
   skipped: SkippedImport[]
 }
 
+export interface VideoImportSelection {
+  sessionId: string
+  files: Array<{ id: string; name: string; byteSize: number }>
+}
+
+export interface VideoImportProgress {
+  sessionId: string
+  message: string
+  percent: number
+}
+
+export interface VideoImportReady {
+  durationSeconds: number
+  byteSize: number
+}
+
+export interface VideoImportDestination {
+  courseCode: string
+  date: string
+  startTime: string
+  endTime: string
+  title: string
+}
+
 export interface UpdateLecturePayload {
+  isLaboratory?: boolean
   title?: string | null
   courseCode?: string | null
   recordedAt?: string | null
   studyStatus?: StudyStatus
 }
+
+export type LectureTitleUpdates = Partial<Record<'it' | 'en', string>>
 
 export type DayOfWeek = 1 | 2 | 3 | 4 | 5 | 6 | 0 // 1 = Lun, 2 = Mar, 3 = Mer, 4 = Gio, 5 = Ven, 6 = Sab, 0 = Dom
 
@@ -79,9 +117,21 @@ export interface CourseDefinition {
   endDate: string // YYYY-MM-DD (Fine periodo lezioni del corso)
   examDate?: string // YYYY-MM-DD (Data appello esame)
   schedule: CourseTimeSlot[] // Slot orari settimanali
+  language?: 'it' | 'en' | 'auto' // Lingua prevalente delle lezioni
+  laboratorySchedule?: {
+    daysOfWeek?: DayOfWeek[]
+    dates?: Array<{
+      date: string // YYYY-MM-DD, appuntamento singolo
+      startTime: string
+      endTime: string
+      title?: string
+      room?: string
+    }>
+  }
 }
 
 export interface CourseScheduleMatch {
+  isLaboratory?: boolean
   lectureId: string
   lectureTitle: string
   recordedAt: string
@@ -100,21 +150,60 @@ export interface CourseConfig {
 export interface AppSettings {
   apiKey: string
   apiKeys: string[]
+  /**
+   * Gruppo di quota associato a ciascuna API key. Chiavi dello stesso progetto
+   * Google devono usare lo stesso gruppo, perché RPM e quote giornaliere sono
+   * condivisi dal progetto e non dalla singola chiave.
+   */
+  apiKeyQuotaGroups?: string[]
   activeKeyIndex: number
   autoRotateOnQuota: boolean
   model: GeminiModel
   courses?: Record<string, CourseDefinition>
+  /** Corsi esclusi dalle liste attive; assente nelle impostazioni precedenti. */
+  archivedCourseCodes?: string[]
   courseConfigs?: Record<string, CourseConfig>
   lastSemesterReminderDismissed?: string // YYYY-MM-DD
+  autoProcessOnImport?: boolean
+  publishing?: PublishingSettings
+}
+
+/** Token accepted on writes only; settings returned over IPC always omit it. */
+export interface PublishingSettings {
+  enabled: boolean
+  repoUrl: string
+  githubToken?: string
+  branch: string
+  autoPublishOnStartup: boolean
+}
+
+export interface PublishResult {
+  published: number
+  skipped: number
+  errors: string[]
+  commitHash?: string
+}
+
+export interface PublishingStatus {
+  configured: boolean
+  enabled: boolean
+  unpublishedCount: number
+  lastPublishAt: string | null
+  lastError: string | null
+  phase?: 'idle' | 'checking' | 'publishing' | 'synced' | 'error'
+  connection?: 'unknown' | 'online' | 'offline'
+  lastCheckedAt?: string | null
 }
 
 export interface QnaMessage {
+  attachmentIds?: string[]
   role: 'user' | 'ai'
   text: string
   timestamp: string
 }
 
 export interface QnaThread {
+  attachmentIds?: string[]
   id: string
   quote: string
   anchorString?: string
@@ -148,6 +237,7 @@ export interface TestApiKeyResult {
 }
 
 export interface GenerationResult {
+  failureKind?: PipelineFailureKind
   success: boolean
   markdown?: string
   error?: string
@@ -166,6 +256,7 @@ export interface BatchGenerationSummary {
 }
 
 export interface TranscribeAudioResult {
+  failureKind?: PipelineFailureKind
   success: boolean
   transcript?: string
   markdown?: string
@@ -179,9 +270,91 @@ export interface BatchTranslationSummary {
   results: {
     id: string
     courseCode: string | null
+    title?: string
     success: boolean
     error?: string
   }[]
+}
+
+/**
+ * Stato persistente dell'elaborazione completa dell'archivio. Le attività
+ * sono deliberate e tracciabili: non contengono mai chiavi API o contenuti
+ * delle lezioni.
+ */
+export type ArchivePipelineStage = 'transcription' | 'notes' | 'translation'
+
+export type ArchivePipelineTaskStatus =
+  | 'pending'
+  | 'running'
+  | 'succeeded'
+  | 'failed'
+  | 'blocked'
+  | 'skipped'
+
+export type ArchivePipelineRunStatus =
+  | 'idle'
+  | 'planning'
+  | 'running'
+  | 'paused'
+  | 'completed'
+  | 'completed_with_errors'
+  | 'stopped'
+
+export type PipelineFailureKind =
+  | 'input'
+  | 'not_found'
+  | 'source_changed'
+  | 'authentication'
+  | 'quota_exhausted'
+  | 'rate_limited'
+  | 'network'
+  | 'provider_unavailable'
+  | 'cancelled'
+  | 'unknown'
+
+export interface ArchivePipelineTask {
+  lectureId: string
+  stage: ArchivePipelineStage
+  status: ArchivePipelineTaskStatus
+  title: string
+  courseCode: string | null
+  startedAt?: string
+  completedAt?: string
+  error?: string
+  failureKind?: PipelineFailureKind
+}
+
+export interface ArchivePipelineStageSummary {
+  total: number
+  pending: number
+  running: number
+  succeeded: number
+  failed: number
+  blocked: number
+  skipped: number
+}
+
+export interface ArchivePipelineStatus {
+  version: 1
+  runId: string | null
+  trigger: 'manual' | 'import' | null
+  status: ArchivePipelineRunStatus
+  activeStage: ArchivePipelineStage | null
+  currentLectureId: string | null
+  currentLectureTitle: string | null
+  message: string
+  startedAt: string | null
+  updatedAt: string
+  completedAt: string | null
+  stopRequested: boolean
+  includeTranslation: boolean
+  tasks: ArchivePipelineTask[]
+  stageSummaries: Record<ArchivePipelineStage, ArchivePipelineStageSummary>
+}
+
+export interface ArchivePipelineStartResult {
+  started: boolean
+  status: ArchivePipelineStatus
 }
 
 export interface CourseStats {
@@ -231,6 +404,7 @@ export interface GenerationProgress {
   jobId: string
   lectureId: string
   phase:
+    | 'transcribing'
     | 'segmenting'
     | 'sections'
     | 'assembling'
@@ -239,6 +413,15 @@ export interface GenerationProgress {
     | 'error'
   message: string
   percent: number
+  totalChunks?: number
+  currentChunk?: number
+  chunkTimeInterval?: string
+  etaSeconds?: number
+  elapsedSeconds?: number
+  stageDetail?: string
+  attempt?: number
+  quotaGroupIndex?: number
+  delayMs?: number
 }
 
 export type StudySessionMode =
@@ -269,6 +452,11 @@ export interface CourseStudyBreakdown {
 }
 
 export interface StudyAnalytics {
+  courseLectureAverages: Array<{
+    courseCode: string
+    timedCompletedLectures: number
+    averageStudySeconds: number | null
+  }>
   todaySeconds: number
   todayByCourse: Record<string, number>
   weekDays: DailyStudySummary[]
@@ -279,7 +467,15 @@ export interface StudyAnalytics {
   courseBreakdown: CourseStudyBreakdown[]
 }
 
+export interface ScratchpadGroup {
+  id: string
+  name: string
+  shortcut: string
+  notes: string
+}
+
 export interface ScratchpadTodoItem {
+  groupId?: string
   id: string
   text: string
   completed: boolean
@@ -287,6 +483,8 @@ export interface ScratchpadTodoItem {
 }
 
 export interface ScratchpadData {
+  groups?: ScratchpadGroup[]
+  selectedGroupId?: string
   todos: ScratchpadTodoItem[]
   notes: string
   updatedAt: string
@@ -331,14 +529,109 @@ export interface AppLogEntry {
   details?: string
 }
 
-export interface ArchiveApi {
+export interface UsbRecorderAudioFile {
+  name: string
+  fullPath: string
+  byteSize: number
+  mtime: string
+  durationSeconds: number
+  checksum: string
+  alreadyImported: boolean
+  existingLectureId?: string
+  recordedAt: string | null
+  suggestedCourseCode: string | null
+  matchConfidence: number
+  matchReason: string
+  criteria: {
+    isDurationValid: boolean // >= 30 min (o durata considerata idonea a una lezione)
+    durationMinutes: number
+    hasScheduleMatch: boolean
+    isDuplicate: boolean
+  }
+  defaultAction: 'import' | 'discard'
+}
+
+export interface UsbRecorderInfo {
+  detected: boolean
+  driveLetter?: string
+  recordPath?: string
+  volumeName?: string
+  freeSpaceBytes?: number
+  totalSpaceBytes?: number
+  files: UsbRecorderAudioFile[]
+}
+
+export interface UsbImportItemSelection {
+  fullPath: string
+  action: 'import' | 'discard'
+  courseCode: string | null
+  title?: string | null
+  recordedAt?: string | null
+}
+
+export interface UsbImportResult {
+  importedCount: number
+  skippedCount: number
+  importedLectures: Lecture[]
+  importedFilePaths: string[]
+}
+
+export interface UsbDeleteFilesResult {
+  deletedCount: number
+  failedCount: number
+  errors: string[]
+}
+
+
+export interface FocusPdfDocument {
+  id: string
+  name: string
+  url: string
+}
+
+export interface ArchiveApi extends CourseRagApi {
+  languageShortcutDiagnosticsEnabled?: boolean
+  exportNotesPdf: (request: PdfExportRequest) => Promise<PdfExportResult>
+  getPdfExportDocument: (token: string) => Promise<PdfExportDocument>
+  pdfExportReady: (token: string, failed: boolean) => Promise<void>
+  getFocusPdf: (lectureId: string) => Promise<FocusPdfDocument | null>
+  selectFocusPdf: (lectureId: string) => Promise<FocusPdfDocument | null>
+  releaseFocusPdf: (id: string) => Promise<void>
   listLectures: () => Promise<Lecture[]>
+  getLectureWordCounts: (lectureId: string) => Promise<Record<string, number | null>>
+  lookupDictionary: (query: string, direction: DictionaryDirection) => Promise<DictionaryResult>
+  offlineTranslationStatus: () => Promise<import('./offlineTranslation').OfflineTranslationStatus>
+  ambientSoundStatus: () => Promise<import('./ambientSounds').AmbientSoundStatus>
+  installAmbientSounds: (soundIds?: string[]) => Promise<import('./ambientSounds').AmbientSoundStatus>
+  readAmbientSound: (id: string) => Promise<Uint8Array>
+  openCompilation: (videoId: string, start: number) => Promise<void>
+  spotifyConnection: () => Promise<import('./spotify').SpotifyConnection>
+  configureSpotify: (clientId: string) => Promise<import('./spotify').SpotifyConnection>
+  connectSpotify: () => Promise<import('./spotify').SpotifyConnection>
+  disconnectSpotify: () => Promise<import('./spotify').SpotifyConnection>
+  spotifyDevices: () => Promise<import('./spotify').SpotifyDevice[]>
+  spotifyPlayback: () => Promise<import('./spotify').SpotifyPlayback | null>
+  spotifyCommand: (command: import('./spotify').SpotifyCommand, deviceId: string, argument?: number) => Promise<void>
+  connectSpotifyLibrary: () => Promise<import('./spotify').SpotifyConnection>
+  selectSpotifyDevice: (deviceId: string) => Promise<import('./spotify').SpotifyConnection>
+  spotifyLibrary: (kind: import('./spotify').SpotifyLibraryKind, offset?: number) => Promise<import('./spotify').SpotifyLibraryPage>
+  playSpotifyItem: (uri: string, deviceId: string) => Promise<void>
+  openSpotifyItem: (uri: string) => Promise<void>
+  openSpotify: () => Promise<void>
+  installOfflineTranslation: () => Promise<import('./offlineTranslation').OfflineTranslationStatus>
+  translatePhrase: (text: string, direction: DictionaryDirection) => Promise<import('./offlineTranslation').OfflineTranslationResult>
   importFiles: () => Promise<ImportSummary | null>
   importFolder: () => Promise<ImportSummary | null>
+  selectVideos: () => Promise<VideoImportSelection | null>
+  convertVideos: (sessionId: string, orderedIds: string[]) => Promise<VideoImportReady>
+  saveVideoImport: (sessionId: string, destination: VideoImportDestination) => Promise<Lecture>
+  cancelVideoImport: (sessionId: string) => Promise<void>
+  onVideoImportProgress: (callback: (progress: VideoImportProgress) => void) => () => void
   readTranscript: (lectureId: string) => Promise<string | null>
   attachTranscript: (lectureId: string) => Promise<Lecture | null>
   readMarkdown: (lectureId: string) => Promise<string | null>
   saveMarkdown: (lectureId: string, content: string) => Promise<void>
+  renameLectureTitles: (lectureId: string, titles: LectureTitleUpdates) => Promise<Lecture>
   updateLecture: (
     lectureId: string,
     updates: UpdateLecturePayload
@@ -361,6 +654,10 @@ export interface ArchiveApi {
     jobId?: string
   ) => Promise<BatchTranslationSummary>
   getTranslationCandidates: () => Promise<Lecture[]>
+  getArchivePipelineStatus: () => Promise<ArchivePipelineStatus>
+  startArchivePipeline: () => Promise<ArchivePipelineStartResult>
+  resumeArchivePipeline: () => Promise<ArchivePipelineStartResult>
+  requestArchivePipelineStop: () => Promise<ArchivePipelineStatus>
   printLectureNotes: () => Promise<void>
   scanAndSyncLibrary: () => Promise<Lecture[]>
   openLibraryFolder: () => Promise<{
@@ -374,12 +671,17 @@ export interface ArchiveApi {
   generateStudySet: (lectureId: string) => Promise<GenerateStudySetResult>
   loadQnaThreads: (lectureId: string) => Promise<QnaThread[]>
   saveQnaThreads: (lectureId: string, threads: QnaThread[]) => Promise<void>
+  saveQnaImage: (lectureId: string, threadId: string, input: import('./qnaImages').QnaImageInput) => Promise<import('./qnaImages').QnaImage>
+  listQnaImages: () => Promise<import('./qnaImages').QnaImage[]>
+  readQnaImage: (id: string) => Promise<{ image: import('./qnaImages').QnaImage; data: string }>
+  deleteQnaImages: (selection: import('./qnaImages').QnaImageDeletion) => Promise<number>
   generateQnaResponse: (
     lectureId: string,
     thread: QnaThread,
     useFullContext: boolean
   ) => Promise<{ success: boolean; text?: string; error?: string }>
   saveStudySession: (session: StudySession) => Promise<void>
+  getLectureStudySeconds: (lectureId: string, excludedSessionId: string) => Promise<number>
   getStudyAnalytics: () => Promise<StudyAnalytics>
   addManualStudyTime: (
     courseCode: string,
@@ -387,6 +689,8 @@ export interface ArchiveApi {
     date?: string
   ) => Promise<void>
   getCourses: () => Promise<CourseDefinition[]>
+  getArchivedCourseCodes: () => Promise<string[]>
+  setCourseArchived: (code: string, archived: boolean) => Promise<string[]>
   saveCourse: (course: CourseDefinition, oldCode?: string) => Promise<void>
   deleteCourse: (
     code: string,
@@ -400,6 +704,11 @@ export interface ArchiveApi {
     lectureIds?: string[],
     minConfidence?: number
   ) => Promise<{ assigned: CourseScheduleMatch[]; skippedCount: number }>
+  detectUsbRecorder: () => Promise<UsbRecorderInfo>
+  importUsbRecorderFiles: (
+    items: UsbImportItemSelection[]
+  ) => Promise<UsbImportResult>
+  deleteUsbRecorderFiles: (filePaths: string[]) => Promise<UsbDeleteFilesResult>
   getScratchpad: () => Promise<ScratchpadData>
   saveScratchpad: (data: ScratchpadData) => Promise<void>
   getReminders: () => Promise<Reminder[]>
@@ -410,6 +719,7 @@ export interface ArchiveApi {
     highlights: LectureHighlight[]
   ) => Promise<void>
   getAppLogs: () => Promise<AppLogEntry[]>
+  getAppLogDay: (day?: string) => Promise<import('./appLogs').AppLogDay>
   clearAppLogs: () => Promise<void>
   logClientMessage: (
     level: LogLevel,
@@ -420,10 +730,15 @@ export interface ArchiveApi {
   onGenerationProgress: (
     callback: (progress: GenerationProgress) => void
   ) => () => void
+  onArchivePipelineProgress: (
+    callback: (status: ArchivePipelineStatus) => void
+  ) => () => void
   onQnaChunk: (
     callback: (data: { threadId: string; chunk: string }) => void
   ) => () => void
   onQnaStatus: (callback: (data: QnaStatusUpdate) => void) => () => void
+  publishLectures: () => Promise<PublishResult>
+  getPublishingStatus: () => Promise<PublishingStatus>
 }
 
 /**

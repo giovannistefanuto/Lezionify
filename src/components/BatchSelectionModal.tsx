@@ -1,5 +1,9 @@
 import React, { useState } from 'react'
-import type { GenerationProgress, Lecture } from '../../shared/archive'
+import type {
+  BatchTranslationSummary,
+  GenerationProgress,
+  Lecture
+} from '../../shared/archive'
 
 interface BatchSelectionModalProps {
   show: boolean
@@ -15,6 +19,7 @@ interface BatchSelectionModalProps {
   setSelectedTranslationBatchIds?: (ids: string[]) => void
   isBatchTranslating?: boolean
   onTranslateSelected?: () => void
+  translationSummary?: BatchTranslationSummary | null
   formatDate: (date: string | null) => string
 }
 
@@ -32,6 +37,7 @@ export function BatchSelectionModal({
   setSelectedTranslationBatchIds,
   isBatchTranslating = false,
   onTranslateSelected,
+  translationSummary = null,
   formatDate
 }: BatchSelectionModalProps) {
   const [activeTab, setActiveTab] = useState<'ita' | 'eng'>('ita')
@@ -234,6 +240,51 @@ export function BatchSelectionModal({
                     'Traduzione accademica Gemini in corso, mantenimento formule e tag...'}
                 </span>
               </div>
+            </div>
+          )}
+
+          {!isBatchTranslating && !isIta && translationSummary && (
+            <div
+              role="status"
+              className={`batch-translation-summary ${
+                translationSummary.failed > 0 ? 'has-failures' : 'is-success'
+              }`}
+              style={{
+                marginTop: 20,
+                padding: 14,
+                borderRadius: 8,
+                border: `1px solid ${
+                  translationSummary.failed > 0 ? '#f2b8b5' : '#bfe0cf'
+                }`,
+                background:
+                  translationSummary.failed > 0 ? '#fff7f6' : '#f0f7f3'
+              }}
+            >
+              <strong>
+                Traduzione completata: {translationSummary.succeeded} riuscite,{' '}
+                {translationSummary.failed} fallite.
+              </strong>
+              {translationSummary.failed > 0 && (
+                <ul style={{ margin: '10px 0 0', paddingLeft: 20 }}>
+                  {translationSummary.results
+                    .filter((result) => !result.success)
+                    .map((result) => {
+                      const lecture = candidateTranslationLectures.find(
+                        (candidate) => candidate.id === result.id
+                      )
+                      return (
+                        <li key={result.id} style={{ marginTop: 6 }}>
+                          <strong>
+                            {result.courseCode ?? 'CORSO'} —{' '}
+                            {result.title ?? lecture?.title ?? result.id}
+                          </strong>
+                          <br />
+                          {result.error ?? 'Errore sconosciuto durante la traduzione.'}
+                        </li>
+                      )
+                    })}
+                </ul>
+              )}
             </div>
           )}
 

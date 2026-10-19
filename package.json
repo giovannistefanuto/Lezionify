@@ -12,7 +12,7 @@
     "study-tools"
   ],
   "engines": {
-    "node": ">=22"
+    "node": ">=22.13.0"
   },
   "repository": {
     "type": "git",
@@ -35,17 +35,23 @@
     "lint:fix": "eslint . --fix",
     "format": "prettier --write \"src/**/*.{ts,tsx}\" \"electron/**/*.ts\" \"shared/**/*.ts\"",
     "test": "vitest run",
+    "test:benchmark": "python -m unittest discover -s tests/python -p \"test_*.py\"",
     "test:hooks": "node tools/run_hook_regressions.cjs",
+    "test:pdf-export": "node tools/run_pdf_export_regressions.cjs",
     "test:qna-real": "node tools/run_real_qna.cjs",
+    "test:qna-benchmark": "node --test tests/node/qna-benchmark.node.mjs tests/node/qna-private.node.mjs",
+    "benchmark:qna": "node tools/qna_benchmark.mjs",
     "benchmark:gemini-transcription": "electron tools/run_gemini_benchmark_with_app_keys.cjs",
     "audit:styles": "node tools/audit_styles.mjs",
-    "check": "npm run typecheck && npm run lint && npm test && npm run test:hooks && npm run build"
+    "check": "npm run typecheck && npm run lint && npm test && npm run test:benchmark && npm run test:qna-benchmark && npm run test:hooks && npm run build && npm run test:pdf-export"
   },
   "dependencies": {
     "@google/genai": "^2.19.0",
+    "ffmpeg-static": "^5.3.0",
     "katex": "^0.18.4",
     "mermaid": "11.17.2",
     "minisearch": "^7.2.0",
+    "pdfjs-dist": "6.4.299",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-markdown": "^10.1.0",
@@ -54,6 +60,7 @@
     "remark-math": "^6.0.0"
   },
   "devDependencies": {
+    "@browsermt/bergamot-translator": "0.4.9",
     "@eslint/js": "^10.0.1",
     "@types/katex": "^0.16.8",
     "@types/node": "^24.10.0",

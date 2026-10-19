@@ -1,0 +1,184 @@
+.quick-capture-deck {
+  width: min(1120px, 94vw);
+  padding: 28px;
+  border-radius: 20px;
+  background: var(--bg-surface);
+  color: var(--text-main);
+  transform: none;
+  box-sizing: border-box;
+}
+.memo-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 22px;
+}
+.memo-heading h2 {
+  margin: 4px 0;
+  font-size: 30px;
+  letter-spacing: -0.7px;
+}
+.memo-heading p,
+.memo-empty {
+  margin: 6px 0;
+  color: var(--text-muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+.memo-eyebrow {
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: var(--text-muted);
+  font-weight: 700;
+}
+.memo-progress {
+  border: 1px solid var(--border-subtle);
+  border-radius: 20px;
+  padding: 8px 14px;
+  white-space: nowrap;
+  font-size: 13px;
+}
+.quick-capture-deck button,
+.quick-capture-deck select,
+.capture-toolbar input {
+  font: inherit;
+  color: var(--text-main);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: 7px;
+  padding: 6px 10px;
+}
+.quick-capture-deck button {
+  cursor: pointer;
+}
+.quick-capture-deck button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.quick-capture-deck :focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 3px;
+}
+.memo-main-toolbar {
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.memo-main-toolbar nav button[aria-pressed='true'] {
+  background: var(--bg-hover);
+  font-weight: 700;
+}
+.capture-group {
+  margin: 24px 0 0;
+}
+.capture-group h3 {
+  font-size: 16px;
+  overflow-wrap: anywhere;
+}
+.capture-fields {
+  gap: 18px;
+  height: auto;
+  min-height: 320px;
+  max-height: none;
+  background: transparent;
+}
+.capture-fields .postit-card {
+  transform: none;
+  border: 1px solid var(--border-subtle);
+  box-shadow: none;
+  border-radius: 14px;
+  background: var(--bg-content);
+  min-width: 0;
+}
+.capture-fields .postit-header {
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.capture-fields .postit-title {
+  color: var(--text-main);
+  font-size: 15px;
+}
+.capture-fields .postit-input-row {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: 9px;
+}
+.capture-fields .postit-input {
+  min-width: 0;
+}
+.capture-fields .postit-todo-list {
+  min-height: 150px;
+  max-height: 340px;
+}
+.capture-fields .todo-item-row {
+  display: flex;
+  gap: 8px;
+  padding: 9px 4px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.memo-activity-preview {
+  flex: 1;
+  min-width: 50px;
+}
+.memo-activity-preview input {
+  width: 100%;
+  box-sizing: border-box;
+  text-overflow: ellipsis;
+}
+.capture-fields .todo-checkbox {
+  flex: 0 0 24px;
+  padding: 0;
+  height: 24px;
+  border-radius: 7px;
+}
+.capture-fields .todo-checkbox.checked {
+  color: white;
+  background: var(--primary);
+}
+.capture-fields .todo-delete-btn {
+  opacity: 1;
+  flex-shrink: 0;
+  color: var(--text-muted);
+  padding: 2px 7px;
+}
+.capture-fields select {
+  width: 100px;
+  min-width: 70px;
+  font-size: 11px;
+}
+.capture-fields .postit-textarea {
+  color: var(--text-main);
+  min-height: 215px;
+  line-height: 1.7;
+  background: transparent;
+}
+.memo-full-text {
+  position: fixed;
+  z-index: 10000000;
+  width: min(520px, calc(100vw - 24px));
+  max-height: 200px;
+  overflow: auto;
+  box-sizing: border-box;
+  padding: 14px 18px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  border-radius: 10px;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-surface);
+  color: var(--text-main);
+  box-shadow: 0 12px 40px #0003;
+  font-size: 14px;
+  line-height: 1.6;
+  pointer-events: none;
+}
+@media (max-width: 760px) {
+  .quick-capture-deck {
+    padding: 16px;
+  }
+  .capture-fields {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .capture-fields select {
+    width: 80px;
+  }
+}

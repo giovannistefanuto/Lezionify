@@ -19,6 +19,7 @@ import argparse
 import csv
 import difflib
 import hashlib
+import io
 import json
 import math
 import os
@@ -27,20 +28,24 @@ import re
 import sys
 import time
 import unicodedata
+import wave
 from collections import Counter
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Callable, Iterable, Sequence, TypeVar
+from typing import Any, Callable, Sequence, TypeVar
 
 try:
     from google import genai
     from google.genai import types
-except ImportError as exc:  # pragma: no cover - dipende dalla macchina
-    raise SystemExit(
-        "SDK mancante o incompleto. Installa: python -m pip install "
-        "'google-genai>=2.23,<3'"
-    ) from exc
+except ImportError:  # pragma: no cover - i test puri non richiedono l'SDK
+    genai = None
+    types = None
+
+try:
+    import miniaudio
+except ImportError:  # pragma: no cover - richiesto solo dal chunking sul silenzio
+    miniaudio = None
 
 
 DEFAULT_PROMPT = """Trascrivi integralmente e fedelmente l'audio allegato.
@@ -54,6 +59,25 @@ la trascrizione."""
 
 WORD_RE = re.compile(r"[^\W_]+(?:['’][^\W_]+)?", re.UNICODE)
 T = TypeVar("T")
+PIPELINE_VERSION = 2
+PUNCTUATION_RE = re.compile(r"[.,!?;:…]")
+SYMBOL_RE = re.compile(r"(?:\d+(?:[.,]\d+)?)|[-+*/=<>≤≥±×÷]")
+
+
+class IncompleteTranscriptError(RuntimeError):
+    """Risposta formalmente valida ma troppo corta, troncata o incompleta."""
+
+    def __init__(self, message: str, partial_text: str | None = None) -> None:
+        super().__init__(message)
+        self.partial_text = partial_text
+
+
+class RequestRejectedError(RuntimeError):
+    """Richiesta rifiutata in modo potenzialmente risolvibile con chunk minori."""
+
+
+class ConfigurationError(RuntimeError):
+    """Errore permanente di modello o configurazione."""
 
 
 @dataclass(frozen=True)
@@ -91,6 +115,10 @@ class Metrics:
     wer_percent: float
     word_accuracy_percent: float
     cer_percent: float
+    raw_cer_percent: float
+    formatting_token_error_rate_percent: float
+    punctuation_error_rate_percent: float
+    symbol_error_rate_percent: float
     sequence_similarity_percent: float
     bag_of_words_f1_percent: float
 
@@ -108,6 +136,34 @@ def atomic_write_text(path: Path, text: str) -> None:
 
 def atomic_write_json(path: Path, value: Any) -> None:
     atomic_write_text(path, json.dumps(value, ensure_ascii=False, indent=2) + "\n")
+
+
+def atomic_write_csv(path: Path, rows: Sequence[dict[str, str]]) -> None:
+    buffer = io.StringIO(newline="")
+    writer = csv.DictWriter(
+        buffer,
+        fieldnames=["operation", "reference", "gemini", "reference_context"],
+    )
+    writer.writeheader()
+    writer.writerows(rows)
+    atomic_write_text(path, buffer.getvalue())
+
+
+def load_checkpoint(path: Path) -> dict[str, Any]:
+    if not path.is_file():
+        return {}
+    try:
+        loaded = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    if not isinstance(loaded, dict):
+        return {}
+    for list_field in ("request_events", "rejected_outputs"):
+        if not isinstance(loaded.get(list_field), list):
+            loaded[list_field] = []
+    if not isinstance(loaded.get("completed"), dict):
+        loaded["completed"] = {}
+    return loaded
 
 
 def sha256_file(path: Path) -> str:
@@ -171,15 +227,27 @@ def parse_mp3_frames(data: bytes) -> tuple[bytes, list[Mp3Frame]]:
     return id3_prefix, frames
 
 
-def split_mp3_losslessly(audio_path: Path, output_dir: Path, chunks: int, overlap_seconds: float) -> tuple[float, list[dict[str, Any]]]:
+def split_mp3_at_boundaries(
+    audio_path: Path,
+    output_dir: Path,
+    boundaries: Sequence[float],
+    overlap_seconds: float,
+) -> tuple[float, list[dict[str, Any]]]:
     data = audio_path.read_bytes()
     id3_prefix, frames = parse_mp3_frames(data)
     duration = frames[-1].end_seconds
+    normalized_boundaries = [0.0, *boundaries, duration]
+    if any(
+        right <= left
+        for left, right in zip(normalized_boundaries, normalized_boundaries[1:])
+    ):
+        raise ValueError("I confini dei segmenti MP3 non sono strettamente crescenti.")
+    chunks = len(normalized_boundaries) - 1
     output_dir.mkdir(parents=True, exist_ok=True)
     manifest: list[dict[str, Any]] = []
     for index in range(chunks):
-        logical_start = duration * index / chunks
-        logical_end = duration * (index + 1) / chunks
+        logical_start = normalized_boundaries[index]
+        logical_end = normalized_boundaries[index + 1]
         physical_start = max(0.0, logical_start - (overlap_seconds if index else 0.0))
         physical_end = min(duration, logical_end + (overlap_seconds if index < chunks - 1 else 0.0))
         selected = [frame for frame in frames if frame.end_seconds > physical_start and frame.start_seconds < physical_end]
@@ -203,6 +271,179 @@ def split_mp3_losslessly(audio_path: Path, output_dir: Path, chunks: int, overla
     return duration, manifest
 
 
+def split_mp3_losslessly(
+    audio_path: Path,
+    output_dir: Path,
+    chunks: int,
+    overlap_seconds: float,
+) -> tuple[float, list[dict[str, Any]]]:
+    data = audio_path.read_bytes()
+    _, frames = parse_mp3_frames(data)
+    duration = frames[-1].end_seconds
+    boundaries = [duration * index / chunks for index in range(1, chunks)]
+    return split_mp3_at_boundaries(audio_path, output_dir, boundaries, overlap_seconds)
+
+
+def choose_quiet_boundary(
+    powers: Sequence[float],
+    bin_seconds: float,
+    target_seconds: float,
+    search_seconds: float,
+    smoothing_seconds: float = 0.8,
+) -> tuple[float, float]:
+    if not powers or bin_seconds <= 0:
+        raise ValueError("Profilo energetico vuoto o risoluzione non valida.")
+    smoothing_bins = max(1, round(smoothing_seconds / bin_seconds))
+    half_window = smoothing_bins // 2
+    prefix = [0.0]
+    for power in powers:
+        prefix.append(prefix[-1] + max(0.0, float(power)))
+    start_index = max(0, math.floor((target_seconds - search_seconds) / bin_seconds))
+    end_index = min(len(powers) - 1, math.ceil((target_seconds + search_seconds) / bin_seconds))
+    candidates: list[tuple[float, float]] = []
+    for index in range(start_index, end_index + 1):
+        left = max(0, index - half_window)
+        right = min(len(powers), left + smoothing_bins)
+        left = max(0, right - smoothing_bins)
+        average_power = (prefix[right] - prefix[left]) / max(1, right - left)
+        center_seconds = (index + 0.5) * bin_seconds
+        candidates.append((average_power, center_seconds))
+    if not candidates:
+        raise ValueError("Nessun candidato disponibile nella finestra di ricerca del silenzio.")
+    minimum_power = min(power for power, _ in candidates)
+    quiet_limit = minimum_power * 2.0 if minimum_power > 0 else 0.0
+    quiet_candidates = [
+        (power, seconds)
+        for power, seconds in candidates
+        if power <= quiet_limit
+    ]
+    selected_power, selected_seconds = min(
+        quiet_candidates,
+        key=lambda item: (abs(item[1] - target_seconds), item[0]),
+    )
+    dbfs = 10.0 * math.log10(max(selected_power, 1.0) / (32768.0**2))
+    return selected_seconds, round(dbfs, 2)
+
+
+def detect_silence_boundaries(
+    audio_path: Path,
+    duration_seconds: float,
+    target_seconds: float = 15 * 60,
+    search_seconds: float = 60.0,
+) -> list[dict[str, float]]:
+    if miniaudio is None:
+        raise ConfigurationError(
+            "Per il taglio intelligente installa le dipendenze con: "
+            "python -m pip install -r tools/requirements-gemini-transcription.txt"
+        )
+    sample_rate = 8000
+    bin_seconds = 0.1
+    frames_per_bin = round(sample_rate * bin_seconds)
+    powers: list[float] = []
+    stream = miniaudio.stream_file(
+        str(audio_path),
+        output_format=miniaudio.SampleFormat.SIGNED16,
+        nchannels=1,
+        sample_rate=sample_rate,
+        frames_to_read=frames_per_bin,
+    )
+    for samples in stream:
+        if samples:
+            powers.append(sum(int(sample) ** 2 for sample in samples) / len(samples))
+    if not powers:
+        raise RuntimeError("Miniaudio non ha prodotto campioni per la ricerca dei silenzi.")
+    selections: list[dict[str, float]] = []
+    target = target_seconds
+    minimum_final_chunk = target_seconds * 0.5
+    while target < duration_seconds - minimum_final_chunk:
+        selected, dbfs = choose_quiet_boundary(
+            powers,
+            bin_seconds,
+            target,
+            search_seconds,
+        )
+        if selections and selected <= selections[-1]["selected_seconds"]:
+            selected = target
+        selections.append(
+            {
+                "target_seconds": round(target, 3),
+                "selected_seconds": round(selected, 3),
+                "offset_seconds": round(selected - target, 3),
+                "window_dbfs": dbfs,
+            }
+        )
+        target += target_seconds
+    return selections
+
+
+def write_wav_chunks(
+    audio_path: Path,
+    output_dir: Path,
+    duration_seconds: float,
+    boundaries: Sequence[float],
+    overlap_seconds: float,
+) -> list[dict[str, Any]]:
+    if miniaudio is None:
+        raise ConfigurationError(
+            "Per creare chunk WAV installa le dipendenze con: "
+            "python -m pip install -r tools/requirements-gemini-transcription.txt"
+        )
+    output_dir.mkdir(parents=True, exist_ok=True)
+    sample_rate = 16000
+    normalized_boundaries = [0.0, *boundaries, duration_seconds]
+    chunks = len(normalized_boundaries) - 1
+    manifest: list[dict[str, Any]] = []
+    for index in range(chunks):
+        logical_start = normalized_boundaries[index]
+        logical_end = normalized_boundaries[index + 1]
+        audio_start = max(0.0, logical_start - (overlap_seconds if index else 0.0))
+        audio_end = min(
+            duration_seconds,
+            logical_end + (overlap_seconds if index < chunks - 1 else 0.0),
+        )
+        start_frame = round(audio_start * sample_rate)
+        frames_remaining = max(1, round((audio_end - audio_start) * sample_rate))
+        chunk_path = output_dir / f"chunk_{index + 1:02d}_of_{chunks:02d}.wav"
+        temporary = chunk_path.with_suffix(".wav.tmp")
+        try:
+            with wave.open(str(temporary), "wb") as output:
+                output.setnchannels(1)
+                output.setsampwidth(2)
+                output.setframerate(sample_rate)
+                stream = miniaudio.stream_file(
+                    str(audio_path),
+                    output_format=miniaudio.SampleFormat.SIGNED16,
+                    nchannels=1,
+                    sample_rate=sample_rate,
+                    frames_to_read=4096,
+                    seek_frame=start_frame,
+                )
+                for samples in stream:
+                    if frames_remaining <= 0:
+                        break
+                    selected = samples[:frames_remaining]
+                    output.writeframesraw(selected.tobytes())
+                    frames_remaining -= len(selected)
+            os.replace(temporary, chunk_path)
+        finally:
+            if temporary.exists():
+                temporary.unlink()
+        manifest.append(
+            {
+                "index": index + 1,
+                "path": str(chunk_path),
+                "mime_type": "audio/wav",
+                "logical_start_seconds": round(logical_start, 3),
+                "logical_end_seconds": round(logical_end, 3),
+                "audio_start_seconds": round(audio_start, 3),
+                "audio_end_seconds": round(audio_end, 3),
+                "sha256": sha256_file(chunk_path),
+                "bytes": chunk_path.stat().st_size,
+            }
+        )
+    return manifest
+
+
 def normalize_words(text: str) -> list[str]:
     normalized = unicodedata.normalize("NFKC", text).casefold().replace("’", "'")
     return WORD_RE.findall(normalized)
@@ -210,6 +451,16 @@ def normalize_words(text: str) -> list[str]:
 
 def normalized_characters(text: str) -> str:
     return " ".join(normalize_words(text))
+
+
+def normalized_raw_text(text: str) -> str:
+    """Preserva maiuscole, punteggiatura e simboli normalizzando gli spazi."""
+    return re.sub(r"\s+", " ", unicodedata.normalize("NFKC", text)).strip()
+
+
+def formatting_tokens(text: str) -> list[str]:
+    normalized = unicodedata.normalize("NFKC", text)
+    return re.findall(r"[^\W_]+(?:['’][^\W_]+)?|\d+(?:[.,]\d+)?|[.,!?;:…]|[-+*/=<>≤≥±×÷]", normalized, re.UNICODE)
 
 
 def edit_counts(reference: Sequence[str], candidate: Sequence[str]) -> tuple[int, int, int]:
@@ -278,6 +529,16 @@ def calculate_metrics(reference: str, candidate: str) -> Metrics:
     ref_chars = normalized_characters(reference)
     cand_chars = normalized_characters(candidate)
     character_distance = levenshtein_distance(ref_chars, cand_chars)
+    ref_raw = normalized_raw_text(reference)
+    cand_raw = normalized_raw_text(candidate)
+    raw_character_distance = levenshtein_distance(ref_raw, cand_raw)
+    ref_formatting = formatting_tokens(reference)
+    cand_formatting = formatting_tokens(candidate)
+    formatting_distance = sum(edit_counts(ref_formatting, cand_formatting))
+    ref_punctuation = "".join(PUNCTUATION_RE.findall(reference))
+    cand_punctuation = "".join(PUNCTUATION_RE.findall(candidate))
+    ref_symbols = " ".join(SYMBOL_RE.findall(reference))
+    cand_symbols = " ".join(SYMBOL_RE.findall(candidate))
     overlap = sum((Counter(ref_words) & Counter(cand_words)).values())
     precision = overlap / max(1, len(cand_words))
     recall = overlap / denominator
@@ -291,6 +552,10 @@ def calculate_metrics(reference: str, candidate: str) -> Metrics:
         wer_percent=round(wer, 3),
         word_accuracy_percent=round(max(0.0, 100.0 - wer), 3),
         cer_percent=round(100.0 * character_distance / max(1, len(ref_chars)), 3),
+        raw_cer_percent=round(100.0 * raw_character_distance / max(1, len(ref_raw)), 3),
+        formatting_token_error_rate_percent=round(100.0 * formatting_distance / max(1, len(ref_formatting)), 3),
+        punctuation_error_rate_percent=round(100.0 * levenshtein_distance(ref_punctuation, cand_punctuation) / max(1, len(ref_punctuation)), 3),
+        symbol_error_rate_percent=round(100.0 * levenshtein_distance(ref_symbols, cand_symbols) / max(1, len(ref_symbols)), 3),
         sequence_similarity_percent=round(100.0 * difflib.SequenceMatcher(None, ref_words, cand_words, autojunk=False).ratio(), 3),
         bag_of_words_f1_percent=round(100.0 * bag_f1, 3),
     )
@@ -322,15 +587,10 @@ def merge_with_overlap(parts: Sequence[str], max_words: int = 100) -> tuple[str,
         left = normalize_words(merged)
         right = normalize_words(next_part)
         best_count = 0
-        best_score = 0.0
         limit = min(max_words, len(left), len(right))
         for count in range(2, limit + 1):
             if left[-count:] == right[:count]:
-                best_count, best_score = count, 1.0
-            elif count >= 6:
-                score = difflib.SequenceMatcher(None, left[-count:], right[:count], autojunk=False).ratio()
-                if score >= 0.84 and (score > best_score or count > best_count):
-                    best_count, best_score = count, score
+                best_count = count
         suffix = trim_prefix_words(next_part.strip(), best_count)
         merged = merged.rstrip() + ("\n\n" + suffix if suffix else "")
         removed.append(best_count)
@@ -374,7 +634,15 @@ def classify_error(error: Exception) -> ErrorInfo:
 
 
 class RotatingGeminiPool:
-    def __init__(self, api_keys: Sequence[str], all_keys_wait: float, max_total_wait: float, request_timeout: float) -> None:
+    def __init__(
+        self,
+        api_keys: Sequence[str],
+        all_keys_wait: float,
+        max_total_wait: float,
+        request_timeout: float,
+        deadline: float | None = None,
+        max_transient_attempts: int | None = None,
+    ) -> None:
         unique = list(dict.fromkeys(key.strip() for key in api_keys if key.strip()))
         if not unique:
             raise ValueError("Nessuna chiave API disponibile.")
@@ -386,7 +654,23 @@ class RotatingGeminiPool:
         self.request_timeout = request_timeout
         self.total_wait = 0.0
         self.attempts = 0
+        self.transient_attempts = 0
+        self.max_transient_attempts = max_transient_attempts
         self.events: list[dict[str, Any]] = []
+        self.deadline = deadline if deadline is not None else (
+            time.monotonic() + max_total_wait if max_total_wait > 0 else None
+        )
+
+    def _remaining_seconds(self) -> float | None:
+        if self.deadline is None:
+            return None
+        remaining = self.deadline - time.monotonic()
+        if remaining <= 0:
+            raise TimeoutError(
+                f"Deadline globale superata ({self.max_total_wait:.0f}s); "
+                "i checkpoint consentono di riprendere senza perdere segmenti."
+            )
+        return remaining
 
     def _next_available(self) -> KeyState | None:
         now = time.time()
@@ -405,9 +689,10 @@ class RotatingGeminiPool:
             raise RuntimeError(f"Tutte le chiavi sono state disabilitate ({reasons}).")
         earliest = max(0.0, min(state.cooldown_until for state in usable) - time.time())
         delay = max(self.all_keys_wait, earliest)
-        if self.max_total_wait and self.total_wait + delay > self.max_total_wait:
+        remaining = self._remaining_seconds()
+        if remaining is not None and delay > remaining:
             raise TimeoutError(
-                f"Attesa cumulativa massima superata ({self.max_total_wait:.0f}s); "
+                f"Deadline globale superata ({self.max_total_wait:.0f}s); "
                 "i checkpoint consentono di riprendere senza perdere segmenti."
             )
         safe_log(f"  Tutte le chiavi sono in pausa; attendo {delay:.1f}s prima di riprovare.")
@@ -416,6 +701,7 @@ class RotatingGeminiPool:
 
     def call(self, operation: Callable[[Any, int], T], label: str) -> T:
         while True:
+            remaining = self._remaining_seconds()
             state = self._next_available()
             if state is None:
                 self._wait_for_pool()
@@ -423,14 +709,21 @@ class RotatingGeminiPool:
             self.attempts += 1
             started_at = datetime.now(timezone.utc).isoformat()
             safe_log(f"  {label}: tentativo {self.attempts}, chiave {state.index + 1}/{len(self.states)}.")
-            client = genai.Client(
-                api_key=self._keys[state.index],
-                http_options=types.HttpOptions(
-                    timeout=int(self.request_timeout * 1000),
-                    retry_options=types.HttpRetryOptions(attempts=1),
-                ),
-            )
+            if genai is None or types is None:
+                raise ConfigurationError(
+                    "SDK mancante o incompleto. Installa: python -m pip install "
+                    "'google-genai>=2.23,<3'"
+                )
+            effective_timeout = self.request_timeout if remaining is None else min(self.request_timeout, remaining)
+            client = None
             try:
+                client = genai.Client(
+                    api_key=self._keys[state.index],
+                    http_options=types.HttpOptions(
+                        timeout=max(1, int(effective_timeout * 1000)),
+                        retry_options=types.HttpRetryOptions(attempts=1),
+                    ),
+                )
                 result = operation(client, state.index)
                 state.transient_failures = 0
                 self.events.append(
@@ -443,6 +736,30 @@ class RotatingGeminiPool:
                 )
                 return result
             except KeyboardInterrupt:
+                raise
+            except IncompleteTranscriptError as error:
+                self.events.append(
+                    {
+                        "at": started_at,
+                        "operation": label,
+                        "key_index": state.index + 1,
+                        "outcome": "rejected",
+                        "category": type(error).__name__,
+                        "reason": str(error),
+                    }
+                )
+                state.cooldown_until = time.time() + self.all_keys_wait
+                raise
+            except (RequestRejectedError, ConfigurationError) as error:
+                self.events.append(
+                    {
+                        "at": started_at,
+                        "operation": label,
+                        "key_index": state.index + 1,
+                        "outcome": "rejected",
+                        "category": type(error).__name__,
+                    }
+                )
                 raise
             except Exception as error:
                 info = classify_error(error)
@@ -469,10 +786,26 @@ class RotatingGeminiPool:
                     exponent = min(state.quota_failures - 1, 6)
                     state.cooldown_until = now + (info.retry_after_seconds or min(60.0, 2.0**exponent)) + random.uniform(0.25, 1.5)
                 elif info.category in ("unsupported_model", "bad_request"):
-                    raise RuntimeError(f"Richiesta non recuperabile per questo modello: {info.safe_message}") from error
+                    if info.category == "unsupported_model":
+                        raise ConfigurationError(f"Modello non disponibile: {info.safe_message}") from error
+                    raise RequestRejectedError(f"Richiesta rifiutata: {info.safe_message}") from error
                 else:
                     state.transient_failures += 1
+                    self.transient_attempts += 1
+                    if (
+                        self.max_transient_attempts is not None
+                        and self.transient_attempts >= self.max_transient_attempts
+                    ):
+                        raise RequestRejectedError(
+                            "Errori transitori ripetuti sul file intero; provo il fallback a segmenti."
+                        ) from error
                     state.cooldown_until = now + min(60.0, 2.0 ** min(state.transient_failures, 6)) + random.uniform(0.25, 1.5)
+            finally:
+                if client is not None:
+                    try:
+                        client.close()
+                    except Exception:
+                        pass
 
     def summary(self) -> list[dict[str, Any]]:
         now = time.time()
@@ -481,6 +814,7 @@ class RotatingGeminiPool:
                 "key_index": state.index + 1,
                 "disabled": state.disabled_reason is not None,
                 "disabled_reason": state.disabled_reason,
+                "cooldown_until_epoch": round(state.cooldown_until, 3),
                 "cooldown_remaining_seconds": round(max(0.0, state.cooldown_until - now), 1),
                 "quota_failures": state.quota_failures,
                 "transient_failures": state.transient_failures,
@@ -488,8 +822,44 @@ class RotatingGeminiPool:
             for state in self.states
         ]
 
+    def restore(
+        self,
+        saved_states: Any,
+        request_events: Any,
+    ) -> None:
+        if isinstance(saved_states, list):
+            by_index = {
+                item.get("key_index"): item
+                for item in saved_states
+                if isinstance(item, dict)
+            }
+            for state in self.states:
+                saved = by_index.get(state.index + 1)
+                if not isinstance(saved, dict):
+                    continue
+                reason = saved.get("disabled_reason")
+                state.disabled_reason = str(reason) if reason else None
+                state.quota_failures = int(saved.get("quota_failures", 0) or 0)
+                state.transient_failures = int(saved.get("transient_failures", 0) or 0)
+                absolute_cooldown = saved.get("cooldown_until_epoch")
+                if isinstance(absolute_cooldown, (int, float)):
+                    state.cooldown_until = max(0.0, float(absolute_cooldown))
+        if isinstance(request_events, list):
+            for event in reversed(request_events):
+                if not isinstance(event, dict):
+                    continue
+                key_index = event.get("key_index")
+                if isinstance(key_index, int) and 1 <= key_index <= len(self.states):
+                    self.cursor = key_index % len(self.states)
+                    break
 
-def wait_until_file_active(client: Any, uploaded: Any, timeout_seconds: float = 300.0) -> Any:
+
+def wait_until_file_active(
+    client: Any,
+    uploaded: Any,
+    timeout_seconds: float = 300.0,
+    global_deadline: float | None = None,
+) -> Any:
     name = getattr(uploaded, "name", None)
     if not name:
         raise RuntimeError("Upload completato senza identificatore file.")
@@ -501,20 +871,82 @@ def wait_until_file_active(client: Any, uploaded: Any, timeout_seconds: float = 
             raise RuntimeError("Elaborazione remota del file audio fallita.")
         if "PROCESSING" not in state and "UNSPECIFIED" not in state:
             return current
-        if time.monotonic() >= deadline:
+        if time.monotonic() >= deadline or (
+            global_deadline is not None and time.monotonic() >= global_deadline
+        ):
             raise TimeoutError("Timeout durante l'elaborazione remota del file audio.")
         time.sleep(2)
         current = client.files.get(name=name)
 
 
-def transcribe_once(client: Any, chunk_path: Path, model: str, language: str | None, vocabulary: Sequence[str]) -> str:
+def extract_interaction_text(response: Any) -> str | None:
+    direct = getattr(response, "output_text", None)
+    if direct and str(direct).strip():
+        return str(direct)
+    fragments: list[str] = []
+    containers = list(getattr(response, "outputs", None) or [])
+    containers.extend(
+        step
+        for step in (getattr(response, "steps", None) or [])
+        if str(getattr(step, "type", "")).casefold() != "user_input"
+    )
+    for output in containers:
+        text = getattr(output, "text", None)
+        if text and str(text).strip():
+            fragments.append(str(text).strip())
+            continue
+        for content in getattr(output, "content", None) or []:
+            content_text = getattr(content, "text", None)
+            if content_text and str(content_text).strip():
+                fragments.append(str(content_text).strip())
+            raw = getattr(content, "raw", None)
+            if isinstance(raw, dict):
+                for key in ("text", "transcript", "transcription"):
+                    raw_text = raw.get(key)
+                    if isinstance(raw_text, str) and raw_text.strip():
+                        fragments.append(raw_text.strip())
+        raw_output = getattr(output, "raw", None)
+        if isinstance(raw_output, dict):
+            for key in ("text", "transcript", "transcription"):
+                raw_text = raw_output.get(key)
+                if isinstance(raw_text, str) and raw_text.strip():
+                    fragments.append(raw_text.strip())
+    return "\n".join(fragments) if fragments else None
+
+
+def interaction_shape(response: Any) -> str:
+    descriptions: list[str] = []
+    for step in getattr(response, "steps", None) or []:
+        step_type = str(getattr(step, "type", type(step).__name__))
+        content_types = [
+            str(getattr(content, "type", type(content).__name__))
+            for content in (getattr(step, "content", None) or [])
+        ]
+        raw = getattr(step, "raw", None)
+        raw_keys = sorted(str(key) for key in raw) if isinstance(raw, dict) else []
+        descriptions.append(
+            f"{step_type}(content={content_types}, raw_keys={raw_keys})"
+        )
+    status = str(getattr(response, "status", "unknown"))
+    return f"status={status}, steps=[{'; '.join(descriptions)}]"
+
+
+def transcribe_once(
+    client: Any,
+    chunk_path: Path,
+    model: str,
+    language: str | None,
+    vocabulary: Sequence[str],
+    global_deadline: float | None = None,
+) -> str:
     uploaded = None
     try:
-        uploaded = client.files.upload(file=str(chunk_path), config={"mime_type": "audio/mpeg"})
-        uploaded = wait_until_file_active(client, uploaded)
+        mime_type = "audio/wav" if chunk_path.suffix.casefold() == ".wav" else "audio/mpeg"
+        uploaded = client.files.upload(file=str(chunk_path), config={"mime_type": mime_type})
+        uploaded = wait_until_file_active(client, uploaded, global_deadline=global_deadline)
         if model == "gemini-3.5-transcribe":
             uri = getattr(uploaded, "uri", None)
-            mime_type = getattr(uploaded, "mime_type", None) or "audio/mpeg"
+            mime_type = getattr(uploaded, "mime_type", None) or mime_type
             if not uri:
                 raise RuntimeError("Il file remoto non espone un URI utilizzabile.")
             transcription_config: dict[str, Any] = {"mode": {"type": "verbatim"}}
@@ -527,16 +959,35 @@ def transcribe_once(client: Any, chunk_path: Path, model: str, language: str | N
                 input=[{"type": "audio", "uri": uri, "mime_type": mime_type}],
                 generation_config={"transcription_config": transcription_config},
             )
-            text = getattr(response, "output_text", None)
+            text = extract_interaction_text(response)
+            status = str(getattr(response, "status", "")).casefold()
+            if status and "completed" not in status:
+                raise IncompleteTranscriptError(
+                    f"Interazione terminata con stato non completo: {status}.",
+                    str(text) if text else None,
+                )
         else:
             response = client.models.generate_content(
                 model=model,
                 contents=[uploaded, DEFAULT_PROMPT],
                 config=types.GenerateContentConfig(temperature=0.0, max_output_tokens=32768),
             )
+            finish_reasons = {
+                str(getattr(candidate, "finish_reason", "")).upper()
+                for candidate in (getattr(response, "candidates", None) or [])
+            }
+            if any("MAX_TOKENS" in reason or "SAFETY" in reason for reason in finish_reasons):
+                partial_text = getattr(response, "text", None)
+                raise IncompleteTranscriptError(
+                    f"Generazione non completa: {', '.join(sorted(finish_reasons))}.",
+                    str(partial_text) if partial_text else None,
+                )
             text = getattr(response, "text", None)
         if not text or not str(text).strip():
-            raise RuntimeError("Il modello ha restituito una trascrizione vuota.")
+            detail = interaction_shape(response) if model == "gemini-3.5-transcribe" else ""
+            raise IncompleteTranscriptError(
+                f"Il modello ha restituito una trascrizione vuota. {detail}".strip()
+            )
         return str(text)
     finally:
         if uploaded is not None and getattr(uploaded, "name", None):
@@ -625,15 +1076,24 @@ def disagreement_rows(reference: str, candidate: str, limit: int = 80) -> list[d
     return rows
 
 
-def markdown_report(model: str, duration: float, metrics: Metrics, removed_overlap: Sequence[int], preserved: Sequence[tuple[str, int]], missing: Sequence[tuple[str, int]], output_dir: Path) -> str:
-    return f"""# Benchmark trascrizione Gemini — {model}
+def markdown_report(
+    model: str,
+    duration: float,
+    metrics: Metrics | None,
+    removed_overlap: Sequence[int],
+    preserved: Sequence[tuple[str, int]],
+    missing: Sequence[tuple[str, int]],
+    output_dir: Path,
+) -> str:
+    if metrics is None:
+        comparison = """## Confronto
 
-- Data UTC: {datetime.now(timezone.utc).isoformat()}
-- Audio: {duration:.2f} s ({duration / 60:.2f} min)
-- Segmenti: {len(removed_overlap)}
-- Parole rimosse nel ricongiungimento overlap: {list(removed_overlap)}
-
-## Metriche rispetto a Whisper Large-v3
+Nessun riferimento e stato fornito: la trascrizione e stata prodotta e validata,
+ma le metriche comparative non sono disponibili.
+"""
+        comparison_files = ""
+    else:
+        comparison = f"""## Metriche rispetto al riferimento
 
 | Metrica | Valore |
 |---|---:|
@@ -642,174 +1102,718 @@ def markdown_report(model: str, duration: float, metrics: Metrics, removed_overl
 | Sostituzioni | {metrics.substitutions} |
 | Cancellazioni | {metrics.deletions} |
 | Inserimenti | {metrics.insertions} |
-| WER | {metrics.wer_percent:.3f}% |
+| WER normalizzato | {metrics.wer_percent:.3f}% |
 | Accuratezza parole (1-WER, minimo 0) | {metrics.word_accuracy_percent:.3f}% |
-| CER | {metrics.cer_percent:.3f}% |
+| CER normalizzato | {metrics.cer_percent:.3f}% |
+| CER grezzo (maiuscole e punteggiatura incluse) | {metrics.raw_cer_percent:.3f}% |
+| Errore token di formattazione | {metrics.formatting_token_error_rate_percent:.3f}% |
+| Errore sequenza punteggiatura | {metrics.punctuation_error_rate_percent:.3f}% |
+| Errore numeri e simboli | {metrics.symbol_error_rate_percent:.3f}% |
 | Similarita sequenziale | {metrics.sequence_similarity_percent:.3f}% |
 | F1 bag-of-words | {metrics.bag_of_words_f1_percent:.3f}% |
 
-Queste metriche misurano l'accordo con Large-v3, non la verita assoluta. Una divergenza puo essere un errore di Gemini oppure una correzione di un errore di Whisper; i casi tecnici vanno verificati sull'audio.
+Queste metriche misurano l'accordo con il riferimento, non la verita assoluta.
+Una divergenza puo essere un errore di Gemini oppure una correzione di un errore
+del riferimento; i casi tecnici vanno verificati sull'audio.
 
 ## Audit euristico dei termini lunghi
 
 Presenti in entrambi: {', '.join(f'`{term}` ({count})' for term, count in preserved) or 'nessuno'}
 
 Presenti nel riferimento ma non in Gemini: {', '.join(f'`{term}` ({count})' for term, count in missing) or 'nessuno'}
+"""
+        comparison_files = """- `reference.txt`: copia locale del riferimento usato nel confronto
+- `disagreements.csv`: prime divergenze allineate con contesto
+"""
+    return f"""# Trascrizione Gemini — {model}
+
+- Data UTC: {datetime.now(timezone.utc).isoformat()}
+- Audio: {duration:.2f} s ({duration / 60:.2f} min)
+- Segmenti: {len(removed_overlap)}
+- Parole rimosse nel ricongiungimento overlap: {list(removed_overlap)}
+
+{comparison}
 
 ## File prodotti
 
 - `gemini_transcript.txt`: concatenazione finale
-- `reference.txt`: copia locale del riferimento usato nel confronto
 - `metrics.json`: metriche machine-readable
-- `disagreements.csv`: prime divergenze allineate con contesto
-- `segments/`: risposte grezze e pulite per ogni segmento
+{comparison_files}- `segments/`: risposte grezze e pulite per ogni segmento
+- `segments/*.rejected.*.raw.txt`: eventuali risposte incomplete conservate ma escluse
 - `checkpoint.json`: stato per riprendere un'esecuzione interrotta
 
 Cartella risultati: `{output_dir}`
 """
 
 
-def run_model(args: argparse.Namespace, model: str, keys: Sequence[str], reference_text: str, duration: float, chunk_manifest: Sequence[dict[str, Any]], vocabulary: Sequence[str], language: str | None) -> dict[str, Any]:
-    model_dir = args.output_dir / model.replace("/", "_")
-    segment_dir = model_dir / "segments"
-    segment_dir.mkdir(parents=True, exist_ok=True)
-    checkpoint_path = model_dir / "checkpoint.json"
-    checkpoint: dict[str, Any] = {}
-    if checkpoint_path.exists() and not args.force:
-        try:
-            checkpoint = json.loads(checkpoint_path.read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError):
-            checkpoint = {}
-    expected_signature = {
+def build_run_signature(
+    args: argparse.Namespace,
+    model: str,
+    vocabulary: Sequence[str],
+    language: str | None,
+) -> dict[str, Any]:
+    return {
+        "pipeline_version": PIPELINE_VERSION,
         "audio_sha256": args.audio_sha256,
         "model": model,
         "chunks": args.chunks,
         "overlap_seconds": args.overlap_seconds,
+        "chunking_strategy": getattr(args, "chunking_strategy", "manual"),
+        "boundaries_sha256": getattr(args, "boundaries_sha256", None),
         "language": language,
+        "transcription_mode": "verbatim",
+        "prompt_sha256": hashlib.sha256(DEFAULT_PROMPT.encode("utf-8")).hexdigest(),
+        "minimum_words_per_minute": args.min_words_per_minute,
+        "non_speech_consensus": getattr(args, "non_speech_consensus", 3),
         "vocabulary_sha256": hashlib.sha256("\n".join(vocabulary).encode()).hexdigest(),
     }
-    if any(checkpoint.get(key) != value for key, value in expected_signature.items()):
-        checkpoint = {**expected_signature, "completed": {}}
+
+
+def initialize_checkpoint(
+    checkpoint: dict[str, Any],
+    expected_signature: dict[str, Any],
+) -> dict[str, Any]:
+    if all(checkpoint.get(key) == value for key, value in expected_signature.items()):
+        return checkpoint
+    policy_only_upgrade = (
+        "non_speech_consensus" not in checkpoint
+        and all(
+            checkpoint.get(key) == value
+            for key, value in expected_signature.items()
+            if key != "non_speech_consensus"
+        )
+    )
+    if policy_only_upgrade:
+        checkpoint["non_speech_consensus"] = expected_signature["non_speech_consensus"]
+        return checkpoint
+    legacy_keys = (
+        "audio_sha256",
+        "model",
+        "chunks",
+        "overlap_seconds",
+        "language",
+        "vocabulary_sha256",
+    )
+    is_trusted_legacy = (
+        "pipeline_version" not in checkpoint
+        and isinstance(checkpoint.get("completed"), dict)
+        and all(checkpoint.get(key) == expected_signature.get(key) for key in legacy_keys)
+    )
+    if is_trusted_legacy:
+        checkpoint.update(expected_signature)
+        return checkpoint
+    replacement = {**expected_signature, "completed": {}}
+    if checkpoint:
+        prior_attempt = {
+            "archived_at": datetime.now(timezone.utc).isoformat(),
+            "signature": {
+                key: checkpoint.get(key)
+                for key in expected_signature
+                if key in checkpoint
+            },
+            "request_events": checkpoint.get("request_events", []),
+            "rejected_outputs": checkpoint.get("rejected_outputs", []),
+            "last_failure_at": checkpoint.get("last_failure_at"),
+        }
+        replacement["prior_attempts"] = [
+            *(checkpoint.get("prior_attempts", []) if isinstance(checkpoint.get("prior_attempts"), list) else []),
+            prior_attempt,
+        ]
+    return replacement
+
+
+def saved_segment_is_valid(
+    saved: Any,
+    chunk: dict[str, Any],
+    clean_path: Path,
+    minimum_words: int = 0,
+) -> bool:
+    if not isinstance(saved, dict) or not clean_path.is_file():
+        return False
+    if saved.get("chunk_sha256") != chunk.get("sha256"):
+        return False
+    expected_hash = saved.get("clean_sha256")
+    if not isinstance(expected_hash, str) or sha256_file(clean_path) != expected_hash:
+        return False
+    expected_words = saved.get("words")
+    actual_words = len(normalize_words(clean_path.read_text(encoding="utf-8")))
+    if saved.get("accepted_as_non_speech") is True:
+        return expected_words == 0 and actual_words == 0
+    return (
+        isinstance(expected_words, int)
+        and expected_words == actual_words
+        and actual_words >= minimum_words
+    )
+
+
+def is_non_speech_transcript(text: str | None) -> bool:
+    if not text or not text.strip():
+        return True
+    without_tags = re.sub(r"<[^>]+>|\[[^]]+\]", " ", text)
+    words = normalize_words(without_tags)
+    non_speech_words = {
+        "applause",
+        "applausi",
+        "cough",
+        "coughing",
+        "music",
+        "musica",
+        "noise",
+        "rumore",
+        "silence",
+        "silenzio",
+        "snort",
+    }
+    return not words or all(word in non_speech_words for word in words)
+
+
+def minimum_words_for_chunk(
+    chunk: dict[str, Any],
+    words_per_minute: float,
+    reference_words: int = 0,
+    total_duration_seconds: float = 0.0,
+) -> int:
+    duration_seconds = max(
+        0.0,
+        float(chunk["audio_end_seconds"]) - float(chunk["audio_start_seconds"]),
+    )
+    duration_floor = math.ceil(duration_seconds * max(0.0, words_per_minute) / 60.0)
+    reference_floor = (
+        math.ceil(reference_words * duration_seconds / total_duration_seconds * 0.5)
+        if reference_words > 0 and total_duration_seconds > 0
+        else 0
+    )
+    return max(5, duration_floor, reference_floor)
+
+
+def preserve_rejected_transcript(
+    segment_dir: Path,
+    index: int,
+    text: str,
+    checkpoint: dict[str, Any],
+    reason: str,
+) -> None:
+    timestamp = datetime.now(timezone.utc)
+    rejected_path = segment_dir / (
+        f"segment_{index:02d}.rejected.{timestamp.strftime('%Y%m%dT%H%M%S%fZ')}.raw.txt"
+    )
+    atomic_write_text(rejected_path, text.rstrip() + "\n")
+    checkpoint.setdefault("rejected_outputs", []).append(
+        {
+            "segment": index,
+            "file": rejected_path.name,
+            "sha256": sha256_file(rejected_path),
+            "words": len(normalize_words(text)),
+            "reason": reason,
+            "saved_at": timestamp.isoformat(),
+        }
+    )
+
+
+def run_model(
+    args: argparse.Namespace,
+    model: str,
+    keys: Sequence[str],
+    reference_text: str | None,
+    duration: float,
+    chunk_manifest: Sequence[dict[str, Any]],
+    vocabulary: Sequence[str],
+    language: str | None,
+    deadline: float | None = None,
+) -> dict[str, Any]:
+    model_dir = args.output_dir / model.replace("/", "_")
+    segment_dir = model_dir / "segments"
+    segment_dir.mkdir(parents=True, exist_ok=True)
+    checkpoint_path = model_dir / "checkpoint.json"
+    checkpoint = load_checkpoint(checkpoint_path) if not args.force else {}
+    expected_signature = build_run_signature(args, model, vocabulary, language)
+    checkpoint = initialize_checkpoint(checkpoint, expected_signature)
     completed = checkpoint.setdefault("completed", {})
-    pool = RotatingGeminiPool(keys, args.all_keys_wait, args.max_total_wait, args.request_timeout)
-    texts: list[str] = []
+    pool = RotatingGeminiPool(
+        keys,
+        args.all_keys_wait,
+        args.max_total_wait,
+        args.request_timeout,
+        deadline=deadline,
+        max_transient_attempts=(
+            len(keys) if args.chunks == 1 and args.fallback_chunks >= 2 else None
+        ),
+    )
+    pool.restore(checkpoint.get("key_pool"), checkpoint.get("request_events"))
+    reference_word_count = len(normalize_words(reference_text)) if reference_text is not None else 0
+    non_speech_evidence = checkpoint.setdefault("non_speech_evidence", {})
+    for chunk in chunk_manifest:
+        index = int(chunk["index"])
+        key = str(index)
+        if key in non_speech_evidence:
+            continue
+        matching_events = [
+            event
+            for event in checkpoint.get("request_events", [])
+            if event.get("operation") == f"trascrizione segmento {index}"
+            and event.get("outcome") == "rejected"
+            and event.get("category") == "IncompleteTranscriptError"
+            and (
+                not event.get("reason")
+                or "vuota" in str(event.get("reason")).casefold()
+                or "stato non completo" in str(event.get("reason")).casefold()
+            )
+        ]
+        rejected_files = [
+            segment_dir / str(item.get("file"))
+            for item in checkpoint.get("rejected_outputs", [])
+            if item.get("segment") == index
+        ]
+        rejected_are_non_speech = all(
+            path.is_file() and is_non_speech_transcript(path.read_text(encoding="utf-8"))
+            for path in rejected_files
+        )
+        if matching_events and rejected_are_non_speech:
+            non_speech_evidence[key] = {
+                "key_indices": sorted(
+                    {
+                        int(event["key_index"])
+                        for event in matching_events
+                        if isinstance(event.get("key_index"), int)
+                    }
+                ),
+                "attempts": len(matching_events),
+            }
+    pending_chunks: list[dict[str, Any]] = []
     for chunk in chunk_manifest:
         index = int(chunk["index"])
         clean_path = segment_dir / f"segment_{index:02d}.txt"
         raw_path = segment_dir / f"segment_{index:02d}.raw.txt"
         saved = completed.get(str(index))
-        if saved and saved.get("chunk_sha256") == chunk["sha256"] and clean_path.exists():
-            safe_log(f"Segmento {index}/{args.chunks}: riuso checkpoint valido.")
-            texts.append(clean_path.read_text(encoding="utf-8"))
-            continue
-        safe_log(
-            f"Segmento {index}/{args.chunks}: {chunk['audio_start_seconds']:.1f}s-"
-            f"{chunk['audio_end_seconds']:.1f}s ({chunk['bytes'] / 1024 / 1024:.2f} MiB)."
+        minimum_words = minimum_words_for_chunk(
+            chunk,
+            args.min_words_per_minute,
+            reference_words=reference_word_count,
+            total_duration_seconds=duration,
         )
-        chunk_path = Path(chunk["path"])
-        raw = pool.call(lambda client, _key_index: transcribe_once(client, chunk_path, model, language, vocabulary), f"trascrizione segmento {index}")
-        clean = strip_model_wrappers(raw)
-        if len(normalize_words(clean)) < 5:
-            raise RuntimeError(f"Il segmento {index} ha prodotto troppo poco testo; non viene accettato come completato.")
-        atomic_write_text(raw_path, raw.rstrip() + "\n")
-        atomic_write_text(clean_path, clean.rstrip() + "\n")
-        completed[str(index)] = {
-            "chunk_sha256": chunk["sha256"],
-            "raw_sha256": sha256_file(raw_path),
-            "clean_sha256": sha256_file(clean_path),
-            "words": len(normalize_words(clean)),
-            "completed_at": datetime.now(timezone.utc).isoformat(),
-        }
-        checkpoint["key_pool"] = pool.summary()
-        checkpoint.setdefault("request_events", []).extend(pool.events)
-        pool.events.clear()
-        atomic_write_json(checkpoint_path, checkpoint)
-        texts.append(clean)
-        if args.request_spacing > 0 and index < len(chunk_manifest):
-            time.sleep(args.request_spacing)
+        if saved_segment_is_valid(saved, chunk, clean_path, minimum_words):
+            safe_log(f"Segmento {index}/{args.chunks}: riuso checkpoint valido.")
+            continue
+        evidence = non_speech_evidence.get(str(index), {})
+        has_confirmed_speech = any(
+            isinstance(item, dict)
+            and int(item.get("words", 0)) >= 5
+            and item.get("accepted_as_non_speech") is not True
+            for item in completed.values()
+        )
+        if (
+            has_confirmed_speech
+            and args.non_speech_consensus > 0
+            and len(evidence.get("key_indices", [])) >= args.non_speech_consensus
+        ):
+            atomic_write_text(raw_path, "")
+            atomic_write_text(clean_path, "")
+            completed[str(index)] = {
+                "chunk_sha256": chunk["sha256"],
+                "raw_sha256": sha256_file(raw_path),
+                "clean_sha256": sha256_file(clean_path),
+                "words": 0,
+                "accepted_as_non_speech": True,
+                "non_speech_key_indices": evidence["key_indices"],
+                "completed_at": datetime.now(timezone.utc).isoformat(),
+            }
+            safe_log(
+                f"Segmento {index}/{args.chunks}: riuso {len(evidence['key_indices'])} "
+                "riscontri concordi di assenza di parlato."
+            )
+            continue
+        pending_chunks.append(chunk)
+
+    atomic_write_json(checkpoint_path, checkpoint)
+
+    retry_round = 0
+    while pending_chunks:
+        retry_round += 1
+        retry_queue: list[dict[str, Any]] = []
+        for chunk in pending_chunks:
+            index = int(chunk["index"])
+            clean_path = segment_dir / f"segment_{index:02d}.txt"
+            raw_path = segment_dir / f"segment_{index:02d}.raw.txt"
+            minimum_words = minimum_words_for_chunk(
+                chunk,
+                args.min_words_per_minute,
+                reference_words=reference_word_count,
+                total_duration_seconds=duration,
+            )
+            round_note = f", giro {retry_round}" if retry_round > 1 else ""
+            safe_log(
+                f"Segmento {index}/{args.chunks}{round_note}: {chunk['audio_start_seconds']:.1f}s-"
+                f"{chunk['audio_end_seconds']:.1f}s ({chunk['bytes'] / 1024 / 1024:.2f} MiB)."
+            )
+            chunk_path = Path(chunk["path"])
+
+            def transcribe_validated(client: Any, _key_index: int) -> tuple[str, str, int]:
+                raw_text = transcribe_once(
+                    client,
+                    chunk_path,
+                    model,
+                    language,
+                    vocabulary,
+                    global_deadline=deadline,
+                )
+                clean_text = strip_model_wrappers(raw_text)
+                words = len(normalize_words(clean_text))
+                if words < minimum_words:
+                    raise IncompleteTranscriptError(
+                        f"Il segmento {index} contiene {words} parole, meno della soglia "
+                        f"di {minimum_words} per "
+                        f"{float(chunk['audio_end_seconds']) - float(chunk['audio_start_seconds']):.1f}s.",
+                        raw_text,
+                    )
+                return raw_text, clean_text, words
+
+            try:
+                raw, clean, word_count = pool.call(
+                    transcribe_validated,
+                    f"trascrizione segmento {index}",
+                )
+            except IncompleteTranscriptError as error:
+                if error.partial_text:
+                    preserve_rejected_transcript(
+                        segment_dir,
+                        index,
+                        error.partial_text,
+                        checkpoint,
+                        str(error),
+                    )
+                evidence = non_speech_evidence.setdefault(str(index), {"key_indices": [], "attempts": 0})
+                evidence["attempts"] = int(evidence.get("attempts", 0)) + 1
+                last_event = pool.events[-1] if pool.events else {}
+                key_index = last_event.get("key_index")
+                if is_non_speech_transcript(error.partial_text) and isinstance(key_index, int):
+                    evidence["key_indices"] = sorted(
+                        {*evidence.get("key_indices", []), key_index}
+                    )
+                checkpoint["key_pool"] = pool.summary()
+                checkpoint.setdefault("request_events", []).extend(pool.events)
+                pool.events.clear()
+                checkpoint["last_failure_at"] = datetime.now(timezone.utc).isoformat()
+                if args.chunks == 1:
+                    atomic_write_json(checkpoint_path, checkpoint)
+                    raise
+                has_confirmed_speech = any(
+                    isinstance(item, dict)
+                    and int(item.get("words", 0)) >= 5
+                    and item.get("accepted_as_non_speech") is not True
+                    for item in completed.values()
+                )
+                enough_non_speech_votes = (
+                    args.non_speech_consensus > 0
+                    and len(evidence.get("key_indices", [])) >= args.non_speech_consensus
+                )
+                if has_confirmed_speech and enough_non_speech_votes:
+                    raw_non_speech = error.partial_text or ""
+                    atomic_write_text(raw_path, raw_non_speech.rstrip() + ("\n" if raw_non_speech else ""))
+                    atomic_write_text(clean_path, "")
+                    completed[str(index)] = {
+                        "chunk_sha256": chunk["sha256"],
+                        "raw_sha256": sha256_file(raw_path),
+                        "clean_sha256": sha256_file(clean_path),
+                        "words": 0,
+                        "accepted_as_non_speech": True,
+                        "non_speech_key_indices": evidence["key_indices"],
+                        "completed_at": datetime.now(timezone.utc).isoformat(),
+                    }
+                    atomic_write_json(checkpoint_path, checkpoint)
+                    safe_log(
+                        f"  Segmento {index}: nessun parlato confermato da "
+                        f"{len(evidence['key_indices'])} chiavi; lo considero completato senza testo."
+                    )
+                    continue
+                atomic_write_json(checkpoint_path, checkpoint)
+                retry_queue.append(chunk)
+                safe_log(
+                    f"  Segmento {index}: risposta incompleta ({error}); "
+                    "lo rimetto in coda dopo aver provato gli altri segmenti."
+                )
+                continue
+            except Exception:
+                checkpoint["key_pool"] = pool.summary()
+                checkpoint.setdefault("request_events", []).extend(pool.events)
+                pool.events.clear()
+                checkpoint["last_failure_at"] = datetime.now(timezone.utc).isoformat()
+                atomic_write_json(checkpoint_path, checkpoint)
+                raise
+
+            atomic_write_text(raw_path, raw.rstrip() + "\n")
+            atomic_write_text(clean_path, clean.rstrip() + "\n")
+            completed[str(index)] = {
+                "chunk_sha256": chunk["sha256"],
+                "raw_sha256": sha256_file(raw_path),
+                "clean_sha256": sha256_file(clean_path),
+                "words": word_count,
+                "completed_at": datetime.now(timezone.utc).isoformat(),
+            }
+            checkpoint["key_pool"] = pool.summary()
+            checkpoint.setdefault("request_events", []).extend(pool.events)
+            pool.events.clear()
+            atomic_write_json(checkpoint_path, checkpoint)
+            if args.request_spacing > 0 and (retry_queue or len(completed) < len(chunk_manifest)):
+                if deadline is None:
+                    time.sleep(args.request_spacing)
+                else:
+                    remaining = deadline - time.monotonic()
+                    if remaining <= 0 or args.request_spacing > remaining:
+                        raise TimeoutError(
+                            f"Deadline globale superata ({args.max_total_wait:.0f}s); "
+                            "i checkpoint consentono di riprendere senza perdere segmenti."
+                        )
+                    time.sleep(args.request_spacing)
+        pending_chunks = retry_queue
+    texts = [
+        (segment_dir / f"segment_{int(chunk['index']):02d}.txt").read_text(encoding="utf-8")
+        for chunk in chunk_manifest
+    ]
     merged, removed = merge_with_overlap(texts)
     transcript_path = model_dir / "gemini_transcript.txt"
     reference_path = model_dir / "reference.txt"
+    disagreements_path = model_dir / "disagreements.csv"
     atomic_write_text(transcript_path, merged)
-    atomic_write_text(reference_path, reference_text.rstrip() + "\n")
-    metrics = calculate_metrics(reference_text, merged)
-    preserved, missing = technical_term_audit(reference_text, merged)
-    disagreements = disagreement_rows(reference_text, merged)
+    metrics: Metrics | None = None
+    preserved: list[tuple[str, int]] = []
+    missing: list[tuple[str, int]] = []
+    disagreements: list[dict[str, str]] = []
+    if reference_text is not None:
+        atomic_write_text(reference_path, reference_text.rstrip() + "\n")
+        metrics = calculate_metrics(reference_text, merged)
+        preserved, missing = technical_term_audit(reference_text, merged)
+        disagreements = disagreement_rows(reference_text, merged)
+        atomic_write_csv(disagreements_path, disagreements)
+    else:
+        for stale_comparison in (reference_path, disagreements_path):
+            if stale_comparison.is_file():
+                stale_comparison.unlink()
     previous_pool = checkpoint.get("key_pool", [])
     final_pool = pool.summary() if pool.attempts else previous_pool
-    atomic_write_json(model_dir / "metrics.json", {**asdict(metrics), "model": model, "key_pool": final_pool})
-    with (model_dir / "disagreements.csv").open("w", encoding="utf-8", newline="") as stream:
-        writer = csv.DictWriter(stream, fieldnames=["operation", "reference", "gemini", "reference_context"])
-        writer.writeheader()
-        writer.writerows(disagreements)
+    metrics_payload = (
+        {**asdict(metrics), "model": model, "reference_provided": True, "key_pool": final_pool}
+        if metrics is not None
+        else {
+            "model": model,
+            "reference_provided": False,
+            "transcript_words": len(normalize_words(merged)),
+            "metrics": None,
+            "key_pool": final_pool,
+        }
+    )
+    atomic_write_json(model_dir / "metrics.json", metrics_payload)
     atomic_write_text(model_dir / "REPORT.md", markdown_report(model, duration, metrics, removed, preserved, missing, model_dir))
     checkpoint["finished_at"] = datetime.now(timezone.utc).isoformat()
-    checkpoint["metrics"] = asdict(metrics)
+    checkpoint["metrics"] = asdict(metrics) if metrics is not None else None
     if pool.attempts:
         checkpoint["key_pool"] = pool.summary()
         checkpoint.setdefault("request_events", []).extend(pool.events)
     atomic_write_json(checkpoint_path, checkpoint)
-    safe_log(
-        f"{model}: WER {metrics.wer_percent:.2f}%, CER {metrics.cer_percent:.2f}%, "
-        f"similarita sequenziale {metrics.sequence_similarity_percent:.2f}%."
-    )
+    if metrics is not None:
+        safe_log(
+            f"{model}: WER {metrics.wer_percent:.2f}%, CER {metrics.cer_percent:.2f}%, "
+            f"CER grezzo {metrics.raw_cer_percent:.2f}%, "
+            f"similarita sequenziale {metrics.sequence_similarity_percent:.2f}%."
+        )
+    else:
+        safe_log(f"{model}: trascrizione completata e validata ({len(normalize_words(merged))} parole).")
     if args.print_texts:
-        print("\n===== RIFERIMENTO WHISPER LARGE-V3 =====\n")
-        print(reference_text.rstrip())
+        if reference_text is not None:
+            print("\n===== TESTO DI RIFERIMENTO =====\n")
+            print(reference_text.rstrip())
         print(f"\n===== TRASCRIZIONE {model} =====\n")
         print(merged.rstrip())
-    return {"model": model, "metrics": asdict(metrics), "output_dir": str(model_dir)}
+    return {
+        "model": model,
+        "chunks": args.chunks,
+        "metrics": asdict(metrics) if metrics is not None else None,
+        "output_dir": str(model_dir),
+    }
 
 
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Trascrive un MP3 con Gemini e lo confronta con Whisper Large-v3.")
+    parser = argparse.ArgumentParser(
+        description="Trascrive un MP3 con Gemini e, facoltativamente, lo confronta con un riferimento."
+    )
     parser.add_argument("--audio", type=Path, required=True)
-    parser.add_argument("--reference", type=Path, required=True)
+    parser.add_argument("--reference", type=Path, help="Testo di riferimento facoltativo per le metriche.")
     parser.add_argument("--output-dir", type=Path, default=Path("benchmark_outputs/gemini_transcription"))
     parser.add_argument("--models", default="gemini-3.5-transcribe", help="Modelli separati da virgola; es. gemini-3.5-transcribe,gemini-3.8-flash")
-    parser.add_argument("--chunks", type=int, default=3)
+    parser.add_argument(
+        "--chunks",
+        type=int,
+        default=0,
+        help="0 sceglie automaticamente: file intero se compatibile, altrimenti tagli sul silenzio.",
+    )
+    parser.add_argument(
+        "--fallback-chunks",
+        type=int,
+        default=3,
+        help="Se il chunk unico e rifiutato o incompleto, riprova con N segmenti; 0 disabilita.",
+    )
     parser.add_argument("--overlap-seconds", type=float, default=2.0)
+    parser.add_argument(
+        "--smart-chunk-minutes",
+        type=float,
+        default=15.0,
+        help="Durata obiettivo dei chunk automatici per audio lunghi.",
+    )
+    parser.add_argument(
+        "--silence-search-seconds",
+        type=float,
+        default=60.0,
+        help="Cerca il punto piu silenzioso entro +/- questi secondi dal taglio ideale.",
+    )
+    parser.add_argument(
+        "--single-request-max-minutes",
+        type=float,
+        default=55.0,
+        help="Durata massima prudenziale per provare una singola richiesta.",
+    )
     parser.add_argument("--language", default="auto", help="Codice BCP-47, auto oppure none.")
     parser.add_argument("--vocabulary", type=Path, help="Un termine tecnico per riga (facoltativo, max 1000).")
     parser.add_argument("--all-keys-wait", type=float, default=30.0)
     parser.add_argument("--request-spacing", type=float, default=2.0)
     parser.add_argument("--request-timeout", type=float, default=600.0, help="Timeout in secondi per una singola richiesta SDK.")
-    parser.add_argument("--max-total-wait", type=float, default=0.0, help="Secondi massimi di attesa; 0 continua finche possibile.")
+    parser.add_argument(
+        "--max-total-wait",
+        type=float,
+        default=0.0,
+        help="Deadline globale in secondi, incluse richieste e attese; 0 continua finche possibile.",
+    )
+    parser.add_argument(
+        "--min-words-per-minute",
+        type=float,
+        default=40.0,
+        help="Soglia conservativa anti-troncamento proporzionale alla durata; 0 lascia solo il minimo di 5 parole.",
+    )
+    parser.add_argument(
+        "--non-speech-consensus",
+        type=int,
+        default=3,
+        help=(
+            "Accetta un segmento senza testo dopo N risposte non vocali da chiavi diverse, "
+            "ma solo se un altro segmento contiene parlato; 0 disabilita."
+        ),
+    )
     parser.add_argument("--keys-stdin", action="store_true", help=argparse.SUPPRESS)
     parser.add_argument("--print-texts", action="store_true")
     parser.add_argument("--force", action="store_true", help="Ignora i checkpoint e ricalcola tutti i segmenti.")
     parser.add_argument("--prepare-only", action="store_true", help="Taglia e valida l'audio senza chiamare Gemini.")
     args = parser.parse_args(argv)
-    if args.chunks < 1 or args.chunks > 100:
-        parser.error("--chunks deve essere compreso tra 1 e 100")
+    if args.chunks < 0 or args.chunks > 100:
+        parser.error("--chunks deve essere compreso tra 0 e 100")
+    if args.fallback_chunks < 0 or args.fallback_chunks > 100 or args.fallback_chunks == 1:
+        parser.error("--fallback-chunks deve essere 0 oppure compreso tra 2 e 100")
     if args.overlap_seconds < 0 or args.overlap_seconds > 30:
         parser.error("--overlap-seconds deve essere compreso tra 0 e 30")
+    if args.smart_chunk_minutes < 2 or args.smart_chunk_minutes > 55:
+        parser.error("--smart-chunk-minutes deve essere compreso tra 2 e 55")
+    if args.silence_search_seconds < 0 or args.silence_search_seconds > 300:
+        parser.error("--silence-search-seconds deve essere compreso tra 0 e 300")
+    if args.single_request_max_minutes < 2 or args.single_request_max_minutes > 60:
+        parser.error("--single-request-max-minutes deve essere compreso tra 2 e 60")
+    if args.all_keys_wait <= 0:
+        parser.error("--all-keys-wait deve essere maggiore di 0")
+    if args.request_spacing < 0:
+        parser.error("--request-spacing non puo essere negativo")
+    if args.request_timeout <= 0:
+        parser.error("--request-timeout deve essere maggiore di 0")
+    if args.max_total_wait < 0:
+        parser.error("--max-total-wait non puo essere negativo")
+    if args.min_words_per_minute < 0:
+        parser.error("--min-words-per-minute non puo essere negativo")
+    if args.non_speech_consensus != 0 and not 2 <= args.non_speech_consensus <= 10:
+        parser.error("--non-speech-consensus deve essere 0 oppure compreso tra 2 e 10")
     return args
+
+
+def prepare_audio(
+    args: argparse.Namespace,
+    chunks: int,
+) -> tuple[argparse.Namespace, float, list[dict[str, Any]]]:
+    strategy_args = argparse.Namespace(**vars(args))
+    _, frames = parse_mp3_frames(args.audio.read_bytes())
+    duration = frames[-1].end_seconds
+    use_smart_boundaries = chunks == 0 or (
+        chunks == 1 and duration > args.single_request_max_minutes * 60
+    )
+    silence_boundaries: list[dict[str, float]] = []
+    if use_smart_boundaries and duration > args.single_request_max_minutes * 60:
+        safe_log(
+            f"Audio lungo {duration / 60:.2f} min: cerco silenzi attorno a tagli "
+            f"ogni {args.smart_chunk_minutes:.1f} min (+/-{args.silence_search_seconds:.0f}s)."
+        )
+        silence_boundaries = detect_silence_boundaries(
+            args.audio,
+            duration,
+            target_seconds=args.smart_chunk_minutes * 60,
+            search_seconds=args.silence_search_seconds,
+        )
+        selected_boundaries = [item["selected_seconds"] for item in silence_boundaries]
+        effective_chunks = len(selected_boundaries) + 1
+        chunking_strategy = "silence-aware-wav-16khz-mono"
+        chunk_dir = args.output_dir / "audio_chunks" / f"chunks_{effective_chunks:02d}_silence_wav"
+        chunk_manifest = write_wav_chunks(
+            args.audio,
+            chunk_dir,
+            duration,
+            selected_boundaries,
+            args.overlap_seconds,
+        )
+    else:
+        effective_chunks = 1 if chunks == 0 else chunks
+        chunking_strategy = "single" if effective_chunks == 1 else "equal-duration"
+        chunk_dir = args.output_dir / "audio_chunks" / f"chunks_{effective_chunks:02d}"
+        duration, chunk_manifest = split_mp3_losslessly(
+            args.audio,
+            chunk_dir,
+            effective_chunks,
+            args.overlap_seconds,
+        )
+    strategy_args.chunks = effective_chunks
+    strategy_args.chunking_strategy = chunking_strategy
+    strategy_args.boundaries_sha256 = hashlib.sha256(
+        json.dumps(silence_boundaries, sort_keys=True).encode("utf-8")
+    ).hexdigest()
+    manifest_payload = {
+        "source_name": args.audio.name,
+        "source_sha256": args.audio_sha256,
+        "duration_seconds": round(duration, 3),
+        "chunking_strategy": chunking_strategy,
+        "silence_boundaries": silence_boundaries,
+        "chunks": chunk_manifest,
+    }
+    atomic_write_json(
+        args.output_dir / f"audio_manifest_{effective_chunks:02d}_chunks.json",
+        manifest_payload,
+    )
+    atomic_write_json(args.output_dir / "audio_manifest.json", manifest_payload)
+    safe_log(
+        f"Audio validato: {duration:.2f}s ({duration / 60:.2f} min), "
+        f"{effective_chunks} segmenti ({chunking_strategy})."
+    )
+    return strategy_args, duration, chunk_manifest
 
 
 def main(argv: Sequence[str] | None = None) -> int:
     args = parse_args(argv)
+    deadline = time.monotonic() + args.max_total_wait if args.max_total_wait > 0 else None
     args.audio = args.audio.resolve()
-    args.reference = args.reference.resolve()
+    args.reference = args.reference.resolve() if args.reference is not None else None
+    args.vocabulary = args.vocabulary.resolve() if args.vocabulary is not None else None
     args.output_dir = args.output_dir.resolve()
     if not args.audio.is_file():
         raise SystemExit(f"Audio non trovato: {args.audio}")
-    if not args.reference.is_file():
+    if args.audio.suffix.casefold() != ".mp3":
+        raise SystemExit("Il benchmark lossless accetta soltanto file MP3.")
+    if args.reference is not None and not args.reference.is_file():
         raise SystemExit(f"Riferimento non trovato: {args.reference}")
-    reference_text = args.reference.read_text(encoding="utf-8-sig")
+    if args.vocabulary is not None and not args.vocabulary.is_file():
+        raise SystemExit(f"Vocabolario non trovato: {args.vocabulary}")
+    reference_text = args.reference.read_text(encoding="utf-8-sig") if args.reference is not None else None
     args.audio_sha256 = sha256_file(args.audio)
-    chunk_dir = args.output_dir / "audio_chunks"
-    duration, chunk_manifest = split_mp3_losslessly(args.audio, chunk_dir, args.chunks, args.overlap_seconds)
-    atomic_write_json(
-        args.output_dir / "audio_manifest.json",
-        {
-            "source_name": args.audio.name,
-            "source_sha256": args.audio_sha256,
-            "duration_seconds": round(duration, 3),
-            "chunks": chunk_manifest,
-        },
-    )
-    safe_log(f"Audio validato: {duration:.2f}s ({duration / 60:.2f} min), {args.chunks} segmenti lossless.")
+    strategy_args, duration, chunk_manifest = prepare_audio(args, args.chunks)
     if args.prepare_only:
         safe_log(f"Preparazione completata in {args.output_dir}.")
         return 0
@@ -821,13 +1825,69 @@ def main(argv: Sequence[str] | None = None) -> int:
         )
     safe_log(f"Pool caricato: {len(keys)} chiavi (valori non mostrati).")
     vocabulary = load_vocabulary(args.vocabulary)
-    language = detect_language(reference_text) if args.language.casefold() == "auto" else (None if args.language.casefold() == "none" else args.language)
+    language = (
+        detect_language(reference_text)
+        if args.language.casefold() == "auto" and reference_text is not None
+        else (None if args.language.casefold() in ("auto", "none") else args.language)
+    )
     safe_log(f"Lingua: {language or 'rilevamento automatico'}; vocabolario esplicito: {len(vocabulary)} termini.")
     models = list(dict.fromkeys(model.strip() for model in args.models.split(",") if model.strip()))
+    if not models:
+        raise SystemExit("Specifica almeno un modello con --models.")
     results = []
     for model in models:
         safe_log(f"\n=== Modello {model} ===")
-        results.append(run_model(args, model, keys, reference_text, duration, chunk_manifest, vocabulary, language))
+        try:
+            result = run_model(
+                strategy_args,
+                model,
+                keys,
+                reference_text,
+                duration,
+                chunk_manifest,
+                vocabulary,
+                language,
+                deadline=deadline,
+            )
+        except (IncompleteTranscriptError, RequestRejectedError) as error:
+            if strategy_args.chunks != 1 or args.fallback_chunks < 2:
+                raise
+            failed_checkpoint_path = (
+                args.output_dir / model.replace("/", "_") / "checkpoint.json"
+            )
+            failed_checkpoint = load_checkpoint(failed_checkpoint_path)
+            fallback_audit = {
+                "from_chunks": 1,
+                "to_chunks": args.fallback_chunks,
+                "reason": type(error).__name__,
+                "triggered_at": datetime.now(timezone.utc).isoformat(),
+                "initial_request_events": failed_checkpoint.get("request_events", []),
+                "initial_rejected_outputs": failed_checkpoint.get("rejected_outputs", []),
+            }
+            safe_log(
+                f"Chunk unico non affidabile ({error}). "
+                f"Fallback automatico a {args.fallback_chunks} segmenti."
+            )
+            fallback_args, fallback_duration, fallback_manifest = prepare_audio(
+                args,
+                args.fallback_chunks,
+            )
+            result = run_model(
+                fallback_args,
+                model,
+                keys,
+                reference_text,
+                fallback_duration,
+                fallback_manifest,
+                vocabulary,
+                language,
+                deadline=deadline,
+            )
+            result["fallback"] = fallback_audit
+            fallback_checkpoint = load_checkpoint(failed_checkpoint_path)
+            fallback_checkpoint["fallback"] = fallback_audit
+            atomic_write_json(failed_checkpoint_path, fallback_checkpoint)
+        results.append(result)
     atomic_write_json(args.output_dir / "summary.json", {"results": results})
     safe_log(f"\nBenchmark completato. Riepilogo: {args.output_dir / 'summary.json'}")
     return 0

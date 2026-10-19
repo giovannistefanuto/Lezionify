@@ -54,11 +54,17 @@ app.whenReady().then(() => {
     }
     console.log(`Chiavi Gemini caricate in memoria: ${uniqueKeys.length} (valori non mostrati).`)
     const scriptPath = path.join(__dirname, 'gemini_transcription_benchmark.py')
-    const child = spawn('python', [scriptPath, '--keys-stdin', ...forwardedArgs], {
+    const pythonExecutable = process.env.LEZIONIFY_PYTHON || 'python'
+    const child = spawn(pythonExecutable, [scriptPath, '--keys-stdin', ...forwardedArgs], {
       cwd: path.join(__dirname, '..'),
       stdio: ['pipe', 'inherit', 'inherit'],
       windowsHide: true,
       env: { ...process.env, PYTHONUTF8: '1' },
+    })
+    child.stdin.once('error', (error) => {
+      if (error.code !== 'EPIPE') {
+        console.error(`Impossibile passare le chiavi a Python: ${error.message}`)
+      }
     })
     child.stdin.end(JSON.stringify(uniqueKeys))
     child.once('error', (error) => {

@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
 import type {
   AppSettings,
+  BatchTranslationSummary,
   GenerationProgress,
   Lecture
 } from '../../shared/archive'
@@ -52,6 +53,8 @@ export function useGeminiGeneration({
   const [selectedBatchIds, setSelectedBatchIds] = useState<string[]>([])
   const [selectedTranslationBatchIds, setSelectedTranslationBatchIds] =
     useState<string[]>([])
+  const [translationBatchSummary, setTranslationBatchSummary] =
+    useState<BatchTranslationSummary | null>(null)
 
   useEffect(() => {
     setGenerationProgress(null)
@@ -66,8 +69,16 @@ export function useGeminiGeneration({
       if (
         progress.lectureId === currentLecture.current &&
         activeProgressJobIds.current.has(progress.jobId)
-      )
+      ) {
         setGenerationProgress(progress)
+        if (progress.phase === 'completed') {
+          setTimeout(() => {
+            setGenerationProgress((prev) =>
+              prev?.jobId === progress.jobId ? null : prev
+            )
+          }, 3000)
+        }
+      }
     })
     return () => {
       unsubscribe()
@@ -131,6 +142,7 @@ export function useGeminiGeneration({
     setSelectedBatchIds(readyIds)
     const translationIds = candidateTranslationLectures.map((l) => l.id)
     setSelectedTranslationBatchIds(translationIds)
+    setTranslationBatchSummary(null)
     setShowSelectionModal(true)
   }, [candidateLectures, candidateTranslationLectures])
 
@@ -204,6 +216,7 @@ export function useGeminiGeneration({
     }
 
     setIsBatchTranslating(true)
+    setTranslationBatchSummary(null)
     const jobId = crypto.randomUUID()
     activeProgressJobIds.current.add(jobId)
     onNotice(
@@ -225,11 +238,12 @@ export function useGeminiGeneration({
             onSetMarkdownEnText(enMd)
         }
       }
-      setShowSelectionModal(false)
+      setTranslationBatchSummary(summary)
+      const firstFailure = summary.results.find((result) => !result.success)
       onNotice(
         `🌐 Traduzione completata: ${summary.succeeded} dispense tradotte in inglese${
           summary.failed > 0 ? `, ${summary.failed} fallite` : ''
-        }.`
+        }.${firstFailure?.error ? ` Prima causa: ${firstFailure.error}` : ''}`
       )
     } catch (err) {
       const msg =
@@ -315,19 +329,11 @@ export function useGeminiGeneration({
     try {
       const res = await window.archive.transcribeAudio(selectedLecture.id, jobId)
       if (res.success) {
-        if (res.transcript)
-          if (currentLecture.current === selectedLecture?.id)
-            onSetTranscriptText(res.transcript)
-        if (res.markdown) {
-          if (currentLecture.current === selectedLecture?.id)
-            onSetMarkdownText(res.markdown)
-          if (currentLecture.current === selectedLecture?.id)
-            onSetActiveTab('markdown')
-        } else {
-          if (currentLecture.current === selectedLecture?.id)
-            onSetActiveTab('transcript')
+        if (res.transcript && currentLecture.current === selectedLecture?.id) {
+          onSetTranscriptText(res.transcript)
+          onSetActiveTab('transcript')
         }
-        onNotice('🎙️ Trascrizione e dispensa generate direttamente dall’audio!')
+        onNotice('🎙️ Trascrizione generata direttamente dall’audio!')
         await onRefreshLibrary()
       } else {
         if (currentLecture.current === selectedLecture.id)
@@ -352,7 +358,6 @@ export function useGeminiGeneration({
     onOpenSettingsModal,
     onNotice,
     onSetTranscriptText,
-    onSetMarkdownText,
     onSetActiveTab,
     onRefreshLibrary
   ])
@@ -373,6 +378,7 @@ export function useGeminiGeneration({
     setSelectedBatchIds,
     selectedTranslationBatchIds,
     setSelectedTranslationBatchIds,
+    translationBatchSummary,
     handleGenerateLectureNotes,
     handleTranslateLectureNotes,
     openSelectionModal,

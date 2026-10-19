@@ -6,3 +6,9 @@ This repository is publicly available for portfolio, educational review, and
 evaluation purposes. No permission is granted to copy, modify, distribute,
 sublicense, or sell substantial portions of the software without prior written
 permission from the copyright holder.
+
+Exception for third-party dictionary data: public/dictionaries/eng-ita.json
+and public/dictionaries/ita-eng.json are separately licensed under Creative
+Commons Attribution-ShareAlike 3.0 Unported. Their attribution, source and
+license notices are in public/dictionaries/NOTICE.md and in each dataset.
+The restrictions above do not apply to these dictionary datasets.

@@ -1,3 +1,4 @@
+import { captureGroups } from '../utils/quickCapture'
 import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import type {
   CourseStats,
@@ -12,6 +13,7 @@ import {
 } from '../../shared/calendarDate'
 
 interface DashboardProps {
+  archivedCourseCodes?: string[]
   courseStats: CourseStats[]
   selectedCourseInfo: { courseCode: string; markdown: string | null } | null
   setSelectedCourseInfo: (
@@ -90,7 +92,8 @@ function formatHoursMinutes(totalSeconds: number): string {
 }
 
 export function Dashboard({
-  courseStats,
+  courseStats: allCourseStats,
+  archivedCourseCodes,
   selectedCourseInfo,
   setSelectedCourseInfo,
   onOpenCourseInfo,
@@ -101,12 +104,17 @@ export function Dashboard({
   onOpenQuickCapture,
   scratchpadData
 }: DashboardProps) {
+  const courseStats = useMemo(() => {
+    const archived = new Set(archivedCourseCodes ?? settings.archivedCourseCodes ?? [])
+    return allCourseStats.filter(course => !archived.has(course.courseCode))
+  }, [allCourseStats, archivedCourseCodes, settings.archivedCourseCodes])
   const [editingConfigFor, setEditingConfigFor] = useState<string | null>(null)
   const [draftExamDate, setDraftExamDate] = useState('')
   const [draftExpectedHours, setDraftExpectedHours] = useState('')
 
   // Study Analytics State
   const [analytics, setAnalytics] = useState<StudyAnalytics | null>(null)
+  const analyticsRevision = React.useRef(0)
   const [storedScratchpad, setStoredScratchpad] = useState<ScratchpadData | null>(null)
   const scratchpad = scratchpadData ?? storedScratchpad
   const [showManualModal, setShowManualModal] = useState(false)
@@ -129,10 +137,11 @@ export function Dashboard({
   }, [courseStats, manualCourse, showManualModal])
 
   const loadAnalytics = useCallback(async () => {
+    const revision = ++analyticsRevision.current
     if (window.archive?.getStudyAnalytics) {
       try {
         const data = await window.archive.getStudyAnalytics()
-        setAnalytics(data)
+        if (revision === analyticsRevision.current) setAnalytics(data)
       } catch (err) {
         console.error(
           'Errore nel caricamento delle statistiche di studio:',
@@ -141,6 +150,8 @@ export function Dashboard({
       }
     }
   }, [])
+
+  const invalidateAnalytics = useCallback(() => { analyticsRevision.current++ }, [])
 
   const loadScratchpad = useCallback(async () => {
     if (window.archive?.getScratchpad) {
@@ -154,9 +165,14 @@ export function Dashboard({
   }, [])
 
   useEffect(() => {
+    setAnalytics(null)
     void loadAnalytics()
+    return invalidateAnalytics
+  }, [loadAnalytics, invalidateAnalytics, courseStats])
+
+  useEffect(() => {
     void loadScratchpad()
-  }, [loadAnalytics, loadScratchpad])
+  }, [loadScratchpad])
 
   // Calcolo countdown per tutti gli esami configurati
   const examCountdowns = useMemo(() => {
@@ -661,6 +677,7 @@ export function Dashboard({
 
         <div className="dashboard-grid">
           {courseStats.map((stats) => {
+            const studyAverage = analytics?.courseLectureAverages?.find(item => item.courseCode === stats.courseCode)
             const courseDef = settings.courses?.[stats.courseCode]
             const config = settings.courseConfigs?.[stats.courseCode]
             const total = stats.totalLectures || 1
@@ -838,6 +855,18 @@ export function Dashboard({
                   </strong>
                 </div>
 
+                <div className="lecture-study-average" title="Somma di tutte le sessioni per ciascuna lezione completata, divisa per il numero di lezioni completate con tempo registrato. Il tempo manuale generico del corso è escluso.">
+                  <div className="hours-row">
+                    <span>⏱️ Studio medio / lezione:</span>
+                    <strong>{studyAverage?.averageStudySeconds != null
+                      ? formatHoursMinutes(studyAverage.averageStudySeconds)
+                      : analytics ? 'Dati insufficienti' : 'Caricamento…'}</strong>
+                  </div>
+                  <small>{studyAverage?.timedCompletedLectures
+                    ? `Su ${studyAverage.timedCompletedLectures} ${studyAverage.timedCompletedLectures === 1 ? 'lezione completata' : 'lezioni completate'} con tempo registrato`
+                    : 'Completa una lezione con tempo di studio registrato'}</small>
+                </div>
+
                 <div className="pipeline-stats">
                   <div className="pipeline-stat-box pipeline-audio-box">
                     <span className="val">
@@ -866,7 +895,7 @@ export function Dashboard({
         {/* --- SEZIONE SCRATCHPAD & NOTE RAPIDE --- */}
         {scratchpad &&
           (scratchpad.todos.length > 0 ||
-            scratchpad.notes.trim().length > 0) && (
+            captureGroups(scratchpad).some(group => group.notes.trim().length > 0)) && (
             <div className="dashboard-scratchpad-section">
               <div className="study-analytics-header">
                 <div className="study-analytics-title">
@@ -905,7 +934,7 @@ export function Dashboard({
                         <span className="dash-todo-check">
                           {todo.completed ? '✓' : '☐'}
                         </span>
-                        <span className="dash-todo-text">{todo.text}</span>
+                        <span className="dash-todo-text">{todo.groupId && `${scratchpad.groups?.find(group => group.id === todo.groupId)?.name ?? 'Senza tag'}: `}{todo.text}</span>
                       </div>
                     ))}
                     {scratchpad.todos.length === 0 && (
@@ -919,8 +948,8 @@ export function Dashboard({
                     <strong>💡 Idee & Note Sparse</strong>
                   </div>
                   <div className="dash-notes-preview">
-                    {scratchpad.notes.trim() ? (
-                      <pre className="dash-notes-pre">{scratchpad.notes}</pre>
+                    {captureGroups(scratchpad).some(group => group.notes.trim()) ? (
+                      <pre className="dash-notes-pre">{captureGroups(scratchpad).filter(group => group.notes.trim()).map(group => `${group.name}\n${group.notes}`).join('\n\n')}</pre>
                     ) : (
                       <p className="empty-hint">Nessuna nota registrata.</p>
                     )}

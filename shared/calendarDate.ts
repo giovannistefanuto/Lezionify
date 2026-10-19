@@ -8,6 +8,24 @@ export function formatLocalCalendarDate(date = new Date()): string {
   ].join('-')
 }
 
+export function formatLocalCalendarDateTime(date: Date): string {
+  return `${formatLocalCalendarDate(date)}T${[
+    date.getHours(),
+    date.getMinutes(),
+    date.getSeconds()
+  ]
+    .map((value) => String(value).padStart(2, '0'))
+    .join(':')}`
+}
+
+export function toLocalDateTimeInput(value: string | null | undefined): string {
+  if (!value) return ''
+  const date = new Date(value)
+  return Number.isFinite(date.getTime())
+    ? formatLocalCalendarDateTime(date).slice(0, 16)
+    : ''
+}
+
 export function parseLocalCalendarDate(value: string): Date | null {
   const match = CALENDAR_DATE.exec(value)
   if (!match) return null

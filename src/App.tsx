@@ -7,16 +7,24 @@ import {
   useRef,
   useCallback
 } from 'react'
-import type { StudyStatus } from '../shared/archive'
+import { ToolSettingsContext, type ToolSettingsSection } from './components/ToolSettingsContext'
+import { AmbientSoundProvider } from './components/AmbientSoundContext'
+import type { StudyStatus, VideoImportSelection } from '../shared/archive'
 import { Sidebar } from './components/Sidebar'
 import { LectureList } from './components/LectureList'
 import { SemesterReminderBanner } from './components/SemesterReminderBanner'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { useLectures } from './hooks/useLectures'
 import { useSettings } from './hooks/useSettings'
-import { useLectureContent } from './hooks/useLectureContent'
+import { useLectureContent, invalidateLectureContentCache } from './hooks/useLectureContent'
 import { useGeminiGeneration } from './hooks/useGeminiGeneration'
+import { useArchivePipeline } from './hooks/useArchivePipeline'
 import { useQuickCapture } from './hooks/useQuickCapture'
+import { useDictionaryShortcut } from './hooks/useDictionaryShortcut'
+import { useFinalLectureReturn } from './hooks/useFinalLectureReturn'
+
+const CourseChat = lazy(() => import('./components/CourseChat').then(module => ({ default: module.CourseChat })))
+const DictionaryOverlay = lazy(() => import('./components/DictionaryOverlay').then(module => ({ default: module.DictionaryOverlay })))
 
 const LectureDrawer = lazy(() =>
   import('./components/LectureDrawer').then((module) => ({
@@ -31,11 +39,6 @@ const Dashboard = lazy(() =>
 const SettingsModal = lazy(() =>
   import('./components/SettingsModal').then((module) => ({
     default: module.SettingsModal
-  }))
-)
-const BatchSelectionModal = lazy(() =>
-  import('./components/BatchSelectionModal').then((module) => ({
-    default: module.BatchSelectionModal
   }))
 )
 const PasteModal = lazy(() =>
@@ -58,6 +61,12 @@ const LogViewerModal = lazy(() =>
     default: module.LogViewerModal
   }))
 )
+const UsbRecorderModal = lazy(() =>
+  import('./components/UsbRecorderModal').then((module) => ({
+    default: module.UsbRecorderModal
+  }))
+)
+const VideoImportModal = lazy(() => import('./components/VideoImportModal').then(module => ({ default: module.VideoImportModal })))
 
 function LazyFallback() {
   return <p className="loading">Caricamento…</p>
@@ -98,15 +107,71 @@ const STUDY_STATUS_LABELS: Record<
 }
 
 export default function App() {
+  const [courseChatOpen, setCourseChatOpen] = useState(false)
+  const [courseChatLoaded, setCourseChatLoaded] = useState(false)
+  const dictionary = useDictionaryShortcut()
+  const [toolSettingsSection, setToolSettingsSection] = useState<ToolSettingsSection | undefined>()
   const [mainView, setMainView] = useState<'archive' | 'dashboard'>('archive')
   const [selectedLectureId, setSelectedLectureId] = useState<string | null>(
     null
   )
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
   const [showCourseModal, setShowCourseModal] = useState(false)
+  const [showUsbModal, setShowUsbModal] = useState(false)
+  const [videoSelection, setVideoSelection] = useState<VideoImportSelection | null>(null)
+  const [isSelectingVideos, setIsSelectingVideos] = useState(false)
+  const [isUsbConnected, setIsUsbConnected] = useState(false)
   const [dismissedSemesterReminder, setDismissedSemesterReminder] =
     useState(false)
   const searchInputRef = useRef<HTMLInputElement | null>(null)
+
+  // Rilevamento automatico e reattivo del registratore USB
+  const lastAutoPromptedSignatureRef = useRef<string | null>(null)
+
+  useEffect(() => {
+    let isCancelled = false
+    const checkUsb = async () => {
+      try {
+        const info = await window.archive?.detectUsbRecorder?.()
+        if (isCancelled || !info) return
+        if (info.detected) {
+          setIsUsbConnected(true)
+          const newFiles = info.files.filter((f) => !f.alreadyImported)
+          if (newFiles.length > 0) {
+            const signature = `${info.recordPath}_${newFiles
+              .map((f) => `${f.name}:${f.byteSize}`)
+              .join(';')}`
+            if (lastAutoPromptedSignatureRef.current !== signature) {
+              lastAutoPromptedSignatureRef.current = signature
+              setShowUsbModal(true)
+            }
+          }
+        } else {
+          setIsUsbConnected(false)
+          lastAutoPromptedSignatureRef.current = null
+        }
+      } catch (e) {
+        console.error('Verifica registratore USB fallita:', e)
+      }
+    }
+
+    void checkUsb()
+
+    const onFocus = () => {
+      void checkUsb()
+    }
+    window.addEventListener('focus', onFocus)
+
+    const interval = setInterval(() => {
+      void checkUsb()
+    }, 5000)
+
+    return () => {
+      isCancelled = true
+      window.removeEventListener('focus', onFocus)
+      clearInterval(interval)
+    }
+  }, [])
 
   // Theme state (light / dark) with persistence
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
@@ -130,6 +195,11 @@ export default function App() {
   // 1. Lectures collection and library management hook
   const {
     lectures,
+    activeLectures,
+    archivedCourseCodes,
+    isSelectedCourseArchived,
+    isSavingCourseArchive,
+    handleCourseArchive,
     selectedCourse,
     setSelectedCourse,
     selectedStudyStatus,
@@ -170,16 +240,27 @@ export default function App() {
     showSettingsModal,
     setShowSettingsModal,
     inputApiKeys,
+    inputApiKeyQuotaGroups,
+    setQuotaGroupForKey,
     activeKeyIdx,
     setActiveKeyIdx,
     autoRotate,
     setAutoRotate,
+    autoProcessOnImport,
+    setAutoProcessOnImport,
     inputModel,
     setInputModel,
     newKeyInput,
     setNewKeyInput,
     keyTestStates,
     isSavingSettings,
+    publishingEnabled,
+    setPublishingEnabled,
+    publishingRepoUrl,
+    setPublishingRepoUrl,
+    publishingToken,
+    setPublishingToken,
+    publishingStatus,
     loadSettings,
     openSettingsModal,
     handleAddKey,
@@ -188,6 +269,12 @@ export default function App() {
     handleSaveSettings,
     saveCourseConfig
   } = useSettings((msg) => setNotice(msg))
+  useEffect(() => { if (!showSettingsModal) setToolSettingsSection(undefined) }, [showSettingsModal])
+
+  const courseDefinitions = useMemo(
+    () => Object.values(settings.courses || {}),
+    [settings.courses]
+  )
 
   const [showLogModal, setShowLogModal] = useState(false)
 
@@ -230,8 +317,8 @@ export default function App() {
         if (isSidebarCollapsed) setIsSidebarCollapsed(false)
         setTimeout(() => searchInputRef.current?.focus(), 50)
       }
-      // Ctrl+L or Cmd+L → toggle system log modal
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'l') {
+      // Ctrl+Shift+L or Cmd+Shift+L → toggle system log modal
+      if (!e.defaultPrevented && !e.isComposing && !e.repeat && !e.altKey && e.shiftKey && (e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'l') {
         e.preventDefault()
         setShowLogModal((prev) => !prev)
       }
@@ -285,28 +372,31 @@ export default function App() {
     onClearSelectedLecture: () => setSelectedLectureId(null)
   })
 
+  const finalLecture = useFinalLectureReturn({
+    lecture: selectedLecture,
+    lectures,
+    saveStatus: handleStudyStatusChange,
+    onReturn: () => {
+      setSelectedLectureId(null)
+      setSelectedCourse('tutti')
+      setSelectedStudyStatus('tutti')
+      setSearchQuery('')
+      setSelectedCourseInfo(null)
+      setMainView('archive')
+    }
+  })
+
   // 4. Gemini AI generation hook
   const {
     isGenerating,
     generationProgress,
     generationError,
-    isBatchGenerating,
     isTranscribing,
     transcribeError,
     isTranslating,
     translationError,
-    isBatchTranslating,
-    showSelectionModal,
-    setShowSelectionModal,
-    selectedBatchIds,
-    setSelectedBatchIds,
-    selectedTranslationBatchIds,
-    setSelectedTranslationBatchIds,
     handleGenerateLectureNotes,
     handleTranslateLectureNotes,
-    openSelectionModal,
-    handleGenerateSelected,
-    handleTranslateSelected,
     handleTranscribeAudio
   } = useGeminiGeneration({
     selectedLecture,
@@ -323,10 +413,22 @@ export default function App() {
     onSetActiveTab: setActiveTab
   })
 
+  const {
+    pipelineStatus,
+    startPipeline,
+    resumePipeline,
+    stopPipeline
+  } = useArchivePipeline({
+    onRefreshLibrary: refreshLibrary,
+    onNotice: setNotice
+  })
+
   // 5. Quick capture (Brain Dump / Post-it overlay) hook
   const quickCapture = useQuickCapture()
 
   return (
+    <ToolSettingsContext.Provider value={{ isOpen: showSettingsModal, open: section => { setToolSettingsSection(section); openSettingsModal() } }}>
+    <AmbientSoundProvider>
     <main className={`app-shell ${theme === 'dark' ? 'dark-theme' : ''}`}>
       <Sidebar
         mainView={mainView}
@@ -343,11 +445,20 @@ export default function App() {
         }}
         selectedStudyStatus={selectedStudyStatus}
         setSelectedStudyStatus={setSelectedStudyStatus}
-        totalLecturesCount={lectures.length}
+        totalLecturesCount={activeLectures.length}
         coursesWithCounts={coursesWithCounts}
         getCourseLecturesCount={(c) =>
           lectures.filter((l) => (l.courseCode ?? 'Senza corso') === c).length
         }
+        courses={courseDefinitions}
+        archivedCourseCodes={archivedCourseCodes}
+        isSavingCourseArchive={isSavingCourseArchive}
+        onCourseArchive={(code, archived) => {
+          void handleCourseArchive(code, archived).then(saved => {
+            if (saved && archived) setSelectedLectureId(current =>
+              lectures.find(lecture => lecture.id === current)?.courseCode === code ? null : current)
+          })
+        }}
         onOpenSettings={openSettingsModal}
         hasConfiguredKey={Boolean(
           settings.apiKey || settings.apiKeys.length > 0
@@ -361,9 +472,17 @@ export default function App() {
         theme={theme}
         onToggleTheme={toggleTheme}
         onOpenCourseManagement={() => setShowCourseModal(true)}
+        onOpenCourseChat={() => { setCourseChatLoaded(true); setCourseChatOpen(true) }}
         onOpenQuickCapture={quickCapture.toggleOpen}
         onOpenLogViewer={() => setShowLogModal(true)}
+        onOpenUsbRecorder={() => setShowUsbModal(true)}
+        isUsbConnected={isUsbConnected}
       />
+
+      {courseChatLoaded && <Suspense fallback={<LazyFallback />}><CourseChat open={courseChatOpen}
+        courses={[...new Set([...courseDefinitions.map(course => course.code), ...coursesWithCounts.filter(course => course !== 'Senza corso')])]}
+        initialCourse={selectedCourse} onClose={() => setCourseChatOpen(false)}
+        onOpenLecture={(id, kind) => { setMainView('archive'); const lecture = lectures.find(item => item.id === id); if (lecture?.courseCode) setSelectedCourse(lecture.courseCode); setSelectedLectureId(id); setActiveTab(kind === 'transcript' ? 'transcript' : 'markdown'); setCourseChatOpen(false) }} /></Suspense>}
 
       <div className="main-content-wrapper">
         {!dismissedSemesterReminder && (
@@ -377,17 +496,56 @@ export default function App() {
           <ErrorBoundary fallbackTitle="Errore nel caricamento dell'archivio lezioni">
             <LectureList
               selectedCourse={selectedCourse}
-              isBatchGenerating={isBatchGenerating}
-              isImporting={isImporting}
-              onOpenSelectionModal={openSelectionModal}
+              isArchivedCourse={isSelectedCourseArchived}
+              courses={courseDefinitions}
+              isImporting={isImporting || isSelectingVideos || Boolean(videoSelection)}
+              pipelineStatus={pipelineStatus}
+              onStartPipeline={() => {
+                if (!settings.apiKey && settings.apiKeys.length === 0) {
+                  openSettingsModal()
+                  setNotice(
+                    'Aggiungi prima almeno una chiave API Gemini nel pool delle Impostazioni.'
+                  )
+                  return
+                }
+                void startPipeline()
+              }}
+              onResumePipeline={() => {
+                if (!settings.apiKey && settings.apiKeys.length === 0) {
+                  openSettingsModal()
+                  setNotice(
+                    'Aggiungi prima almeno una chiave API Gemini nel pool delle Impostazioni.'
+                  )
+                  return
+                }
+                void resumePipeline()
+              }}
+              onStopPipeline={() => void stopPipeline()}
               onManualSync={() => void handleManualSync()}
               onImportFiles={() => void handleImport('files')}
               onImportFolder={() => void handleImport('folder')}
+              onImportVideos={() => {
+                setIsSelectingVideos(true)
+                void window.archive.selectVideos().then(selection => setVideoSelection(selection)).catch(() => setNotice('❌ Impossibile selezionare i video. Verifica che i file siano accessibili.')).finally(() => setIsSelectingVideos(false))
+              }}
               notice={notice}
               onDismissNotice={() => setNotice(null)}
               visibleLectures={visibleLectures}
               selectedLectureId={selectedLectureId}
               onSelectLecture={(id) => setSelectedLectureId(id)}
+              onRenameLecture={async (id, titles) => {
+                const updated = await window.archive.renameLectureTitles(id, titles)
+                invalidateLectureContentCache(id)
+                updateLectureInState(id, updated)
+              }}
+              onSetLaboratory={async (id, isLaboratory) => {
+                try {
+                  const updated = await window.archive.updateLecture(id, { isLaboratory })
+                  updateLectureInState(id, updated)
+                } catch {
+                  setNotice('❌ Impossibile salvare la scelta Laboratorio. Riprova.')
+                }
+              }}
               isLoading={isLoading}
               selectedStudyStatus={selectedStudyStatus}
               formatDate={formatDate}
@@ -406,6 +564,7 @@ export default function App() {
             <ErrorBoundary fallbackTitle="Errore nel caricamento delle statistiche">
               <Dashboard
                 courseStats={courseStats}
+                archivedCourseCodes={archivedCourseCodes}
                 selectedCourseInfo={selectedCourseInfo}
                 setSelectedCourseInfo={setSelectedCourseInfo}
                 onOpenCourseInfo={(code) => void handleOpenCourseInfo(code)}
@@ -414,11 +573,7 @@ export default function App() {
                 saveCourseConfig={saveCourseConfig}
                 onOpenCourseManagement={() => setShowCourseModal(true)}
                 onOpenQuickCapture={quickCapture.toggleOpen}
-                scratchpadData={{
-                  todos: quickCapture.todos,
-                  notes: quickCapture.notes,
-                  updatedAt: ''
-                }}
+                scratchpadData={quickCapture.data}
               />
             </ErrorBoundary>
           </Suspense>
@@ -430,6 +585,7 @@ export default function App() {
           <ErrorBoundary fallbackTitle="Errore nel pannello della lezione">
             <LectureDrawer
               selectedLecture={selectedLecture}
+              isReturningToList={finalLecture.isReturning}
               allLectures={lectures}
               onSelectLecture={(id) => setSelectedLectureId(id)}
               onClose={() => setSelectedLectureId(null)}
@@ -458,7 +614,7 @@ export default function App() {
               setShowDeleteConfirm={setShowDeleteConfirm}
               existingCourses={existingCourses}
               settingsModel={settings.model}
-              onStudyStatusChange={(st) => void handleStudyStatusChange(st)}
+              onStudyStatusChange={finalLecture.changeStatus}
               onGenerateLectureNotes={() => void handleGenerateLectureNotes()}
               onPrintNotes={() => void handlePrintNotes()}
               onCopyMarkdown={handleCopyMarkdown}
@@ -484,12 +640,19 @@ export default function App() {
       )}
 
       <Suspense fallback={null}>
+        {dictionary.isOpen && <DictionaryOverlay onClose={dictionary.close} />}
         {showCourseModal && (
           <CourseManagementModal
             isOpen
-            onClose={() => setShowCourseModal(false)}
+            onClose={() => {
+              setShowCourseModal(false)
+              void loadSettings()
+            }}
             lectures={lectures}
-            onRefreshLibrary={refreshLibrary}
+            onRefreshLibrary={async () => {
+              await refreshLibrary()
+              await loadSettings()
+            }}
             onNotice={setNotice}
           />
         )}
@@ -497,41 +660,34 @@ export default function App() {
         {showSettingsModal && (
           <SettingsModal
             show
-            onClose={() => setShowSettingsModal(false)}
+            onClose={() => { setShowSettingsModal(false); setToolSettingsSection(undefined) }}
+            initialSection={toolSettingsSection}
             inputApiKeys={inputApiKeys}
+            inputApiKeyQuotaGroups={inputApiKeyQuotaGroups}
+            setQuotaGroupForKey={setQuotaGroupForKey}
             activeKeyIdx={activeKeyIdx}
             setActiveKeyIdx={setActiveKeyIdx}
             autoRotate={autoRotate}
             setAutoRotate={setAutoRotate}
+            autoProcessOnImport={autoProcessOnImport}
+            setAutoProcessOnImport={setAutoProcessOnImport}
             inputModel={inputModel}
             setInputModel={setInputModel}
             newKeyInput={newKeyInput}
             setNewKeyInput={setNewKeyInput}
             keyTestStates={keyTestStates}
             isSaving={isSavingSettings}
+            publishingEnabled={publishingEnabled}
+            setPublishingEnabled={setPublishingEnabled}
+            publishingRepoUrl={publishingRepoUrl}
+            setPublishingRepoUrl={setPublishingRepoUrl}
+            publishingToken={publishingToken}
+            setPublishingToken={setPublishingToken}
+            publishingStatus={publishingStatus}
             onAddKey={handleAddKey}
             onRemoveKey={handleRemoveKey}
             onTestKey={(idx, key) => void handleTestKey(idx, key)}
             onSave={() => void handleSaveSettings()}
-          />
-        )}
-
-        {showSelectionModal && (
-          <BatchSelectionModal
-            show
-            onClose={() => setShowSelectionModal(false)}
-            candidateLectures={candidateLectures}
-            selectedBatchIds={selectedBatchIds}
-            setSelectedBatchIds={setSelectedBatchIds}
-            isBatchGenerating={isBatchGenerating}
-            generationProgress={generationProgress}
-            onGenerateSelected={() => void handleGenerateSelected()}
-            candidateTranslationLectures={candidateTranslationLectures}
-            selectedTranslationBatchIds={selectedTranslationBatchIds}
-            setSelectedTranslationBatchIds={setSelectedTranslationBatchIds}
-            isBatchTranslating={isBatchTranslating}
-            onTranslateSelected={() => void handleTranslateSelected()}
-            formatDate={formatDate}
           />
         )}
 
@@ -546,24 +702,35 @@ export default function App() {
         )}
 
         {quickCapture.isOpen && (
-          <QuickCaptureOverlay
-            isOpen
-            onClose={quickCapture.closeOverlay}
-            todos={quickCapture.todos}
-            notes={quickCapture.notes}
-            onAddTodo={quickCapture.addTodo}
-            onToggleTodo={quickCapture.toggleTodo}
-            onUpdateTodoText={quickCapture.updateTodoText}
-            onDeleteTodo={quickCapture.deleteTodo}
-            onClearCompletedTodos={quickCapture.clearCompletedTodos}
-            onUpdateNotes={quickCapture.updateNotes}
-          />
+          <QuickCaptureOverlay capture={quickCapture} />
         )}
 
         {showLogModal && (
           <LogViewerModal show onClose={() => setShowLogModal(false)} />
         )}
+
+        {showUsbModal && (
+          <UsbRecorderModal
+            isOpen
+            onClose={() => setShowUsbModal(false)}
+            onRefreshLibrary={refreshLibrary}
+            onNotice={setNotice}
+            courses={Object.values(settings.courses || {})}
+          />
+        )}
+        {videoSelection && <VideoImportModal
+          selection={videoSelection}
+          courses={Object.values(settings.courses || {}).filter(course => !archivedCourseCodes.includes(course.code))}
+          onClose={() => setVideoSelection(null)}
+          onImported={lecture => {
+            setSelectedCourse(lecture.courseCode ?? 'tutti')
+            setNotice('✅ Audio dei video importato. Usa “Elabora tutto” per trascrizione, dispensa e traduzione.')
+            void refreshLibrary().catch(() => setNotice('⚠️ Audio salvato. Aggiorna l’archivio per visualizzare la lezione.'))
+          }}
+        />}
       </Suspense>
     </main>
+    </AmbientSoundProvider>
+    </ToolSettingsContext.Provider>
   )
 }

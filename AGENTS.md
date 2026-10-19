@@ -40,3 +40,53 @@ Non richiedono una voce: correzioni puramente tipografiche, formattazione senza 
 - Conserva sempre l'audio originale e la trascrizione grezza: il materiale generato dall'AI e' una derivazione, non la fonte primaria.
 - Mantieni `IDEA_INIZIALE.md` come punto di partenza storico. Le scelte successive vanno in `DECISIONI.md`; aggiorna `STRUTTURA_PROGETTO.md` quando cambia la struttura reale del repository.
 - Prima di aggiungere una dipendenza, verifica se risolve un bisogno concreto e registra la scelta.
+
+## Comando LISTA_ORDINE
+
+Quando l'utente invia `LISTA_ORDINE`, avvia direttamente l'implementazione e il
+collaudo della prima voce non completata nella sezione `Coda LISTA_ORDINE` di
+`docs/product/idee-future-2026-10-13.md`, seguendo l'ordine numerico della coda.
+Il comando autorizza una sola voce per invocazione, senza richiedere una nuova
+conferma per iniziare. Leggi la descrizione completa della voce e le decisioni
+successive prima di intervenire; riusa il lavoro e le ricerche gia' disponibili.
+
+Per ogni invocazione consulta `docs/product/guida-skill-codex.md` e segui
+questa sequenza. Leggi i relativi `SKILL.md` e comunica quali skill usi e
+per quale scopo prima di applicarle.
+
+1. **Chiarisci se serve:** usa `grilling` ("grill me") quando restano scelte
+   di prodotto, requisiti o compromessi da concordare. Recupera prima i fatti
+   dal codice e dai documenti; chiedi solo le scelte ancora aperte e attendi
+   le risposte secondo la skill. Se la voce e' gia' definita e autorizzata,
+   procedi direttamente senza una nuova intervista.
+2. **Scegli il metodo:** seleziona e applica le skill utili alla voce fra
+   quelle della guida e le altre disponibili nella sessione. Usa scelta
+   rapida e percorsi della guida, rispettando le condizioni di ciascuna skill.
+   Una modifica semplice puo' seguire il percorso diretto con verifiche
+   proporzionate. Mantieni il perimetro di una sola voce.
+3. **Prepara il contesto per la ripresa:** dopo implementazione, verifiche e
+   aggiornamenti documentali, usa sempre `handoff`. Questa istruzione registra
+   la richiesta esplicita dell'utente di usarla a fine `LISTA_ORDINE`, senza
+   una nuova conferma. Salva il riepilogo in `%TEMP%` secondo la skill e
+   restituisci il percorso completo in chat. Includi stato, riferimenti alle
+   decisioni e ai file, verifiche e limiti, blocchi, prossimo passo e skill
+   suggerite, rimandando ai documenti esistenti e omettendo dati sensibili.
+   Se la voce resta bloccata, prepara comunque il riepilogo del lavoro svolto
+   e dell'azione necessaria per riprenderla, mantenendo la casella aperta.
+   `handoff` prepara una nuova sessione con contesto essenziale: non svuota
+   automaticamente la chat corrente e non avvia un'altra voce. Se la skill
+   non e' disponibile, segnala il limite e fornisci un riepilogo di ripresa
+   equivalente, senza dichiarare di averla eseguita.
+
+- Verifica lo stato reale nel codice e nei collaudi: una ricerca o un prototipo
+  non equivalgono all'implementazione della funzione.
+- Completa implementazione e verifiche pertinenti, registra la decisione con
+  `tools/append_decision.py` e aggiorna la casella nella coda e nella descrizione
+  della voce solo dopo il completamento. Riporta esito e prossima voce in chat.
+- Se la voce risulta gia' implementata e verificata, allinea lo stato e passa
+  alla prima ancora aperta. Se e' parzialmente implementata, completala.
+- Se mancano informazioni, credenziali o un'azione necessaria dell'utente,
+  avanza sulle parti indipendenti e segnala il blocco concreto; non segnare la
+  voce come completata e non saltarla automaticamente.
+- Mantieni le regole local-first e le chiamate AI esplicite e tracciabili.
+  Non modificare l'ordine e non avviare altre voci senza una richiesta dell'utente.

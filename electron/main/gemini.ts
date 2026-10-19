@@ -1,11 +1,49 @@
-import { GoogleGenAI, type Part } from '@google/genai'
-import { readFile, stat } from 'node:fs/promises'
+import { GoogleGenAI, createPartFromUri } from '@google/genai'
+import { stat } from 'node:fs/promises'
+import { setTimeout as delay } from 'node:timers/promises'
 import type {
   GeminiModel,
   LectureStudySet,
   TestApiKeyResult,
   QnaThread
 } from '../../shared/archive'
+import {
+  GeminiRequestManager,
+  type KeyConfig,
+  type RequestAttemptInfo
+} from './ai/geminiRequestManager'
+import {
+  AiJobStore,
+  type LectureNotesCheckpoint,
+  type AsrJobCheckpoint
+} from './ai/aiJobStore'
+import { GeminiError, normalizeGeminiError } from './ai/geminiErrors'
+import { CLEANUP_BUDGET_MS } from './ai/geminiPolicy'
+import { getQnaModelFallbackChain } from '../../shared/qnaModelPolicy'
+import { logger } from './logger'
+import { prepareTranslation } from './ai/translationIntegrity'
+import { prepareTranslationPlan, translationPlanSchema, validateTranslationPlan } from './ai/translationPlan'
+
+export function toKeyConfigs(apiKey?: string, keys?: KeyConfig[]): KeyConfig[] {
+  if (keys && keys.length > 0) return keys
+  if (apiKey && apiKey.trim()) {
+    return [{ key: apiKey.trim(), quotaGroup: 'unknown-project' }]
+  }
+  return []
+}
+
+export function getModelFallbackChain(preferredModel?: string): { preferred: string; fallbacks: string[] } {
+  const candidatePool = [
+    'gemini-3.7-flash',
+    'gemini-3.5-flash',
+    'gemini-3.8-flash',
+    'gemini-3.5-flash-lite',
+    'gemini-3.1-flash-lite'
+  ]
+  const preferred = preferredModel || 'gemini-3.7-flash'
+  const fallbacks = candidatePool.filter((m) => m !== preferred)
+  return { preferred, fallbacks }
+}
 
 export const GEMS_SYSTEM_INSTRUCTION = `Sei un assistente didattico universitario per uno studente di Ingegneria Magistrale.
 
@@ -20,7 +58,7 @@ Operational Constraints (Vincoli Operativi):
 - Terminologia: Usa l'Italiano come lingua principale. Includi SEMPRE la traduzione inglese per i termini tecnici alla prima occorrenza (es. 'Automa a Stati Finiti (Finite Automaton)').
 - Formule Matematiche: Scrivi SEMPRE ogni formula o simbolo matematico rigorosamente in formato LaTeX standard: $...$ per formule inline (es. $f(x) = x^2$) e $$...$$ per equazioni o blocchi isolati (es. $$\\sum_{i=1}^n x_i$$).
 - Codice: Usa blocchi di codice con syntax highlighting opportuno (\`\`\`c, \`\`\`python, \`\`\`java, ecc.).
-- Schemi Mermaid: Quando una relazione, un processo, una sequenza, uno stato o una gerarchia richiederebbero diversi paragrafi per essere compresi, aggiungi uno schema in un blocco \`\`\`mermaid. Usalo solo quando ha reale valore didattico, mai come decorazione. Sono ammessi esclusivamente flowchart, sequenceDiagram, stateDiagram-v2, classDiagram, erDiagram e mindmap. Usa identificatori semplici, etichette testuali tra virgolette, accTitle e accDescr nella lingua della dispensa. Non usare frontmatter, direttive click, link, HTML, classDef, style, linkStyle, theme o configurazioni init.
+- Schemi Mermaid: Quando una relazione, un processo, una sequenza, uno stato o una gerarchia richiederebbero diversi paragrafi per essere compresi, aggiungi uno schema in un blocco \`\`\`mermaid. Usalo solo quando ha reale valore didattico, mai come decorazione. Sono ammessi esclusivamente flowchart, sequenceDiagram, stateDiagram-v2, classDiagram, erDiagram e mindmap. Usa identificatori semplici, etichette testuali tra virgolette, accTitle e accDescr nella lingua della dispensa. Nei flowchart puoi usare solo direttive di stile statiche nei formati style ID fill:#hex,stroke:#hex,stroke-width:2px e classDef ID fill:#hex,stroke:#hex,stroke-width:2px;, con colori esadecimali e spessore tra 0 e 12px. Non usare frontmatter, direttive click, link, HTML, linkStyle, theme o configurazioni init.
 
 Output Format (Formato Richiesto):
 Usa rigorosamente Markdown strutturato:
@@ -66,7 +104,7 @@ Operational Constraints (Vincoli Operativi):
 - Esercizi: Se viene svolto un esercizio, ricostruisci i passaggi logici. Se necessario integrare passaggi lacunosi per far tornare i calcoli, dichiara: "Nota: Passaggio integrato con chiarezza didattica".
 - Terminologia: Italiano con traduzione inglese tra parentesi alla prima occorrenza (es. 'Automa a Stati Finiti (Finite Automaton)').
 - Nessuna duplicazione di sezioni d'esame: NON inserire box o sezioni dedicate all'esame in questa parte (verranno gestite a livello globale).
-- Schemi Mermaid: Se chiariscono davvero un processo, una sequenza, uno stato, una struttura o una gerarchia, inserisci un blocco \`\`\`mermaid usando solo flowchart, sequenceDiagram, stateDiagram-v2, classDiagram, erDiagram o mindmap. Usa identificatori semplici, etichette tra virgolette, accTitle e accDescr in italiano. Non usare frontmatter, click, link, HTML, classDef, style, linkStyle, temi o configurazioni init. Non aggiungere schemi puramente decorativi.
+- Schemi Mermaid: Se chiariscono davvero un processo, una sequenza, uno stato, una struttura o una gerarchia, inserisci un blocco \`\`\`mermaid usando solo flowchart, sequenceDiagram, stateDiagram-v2, classDiagram, erDiagram o mindmap. Usa identificatori semplici, etichette tra virgolette, accTitle e accDescr in italiano. Nei flowchart puoi usare solo direttive di stile statiche nei formati style ID fill:#hex,stroke:#hex,stroke-width:2px e classDef ID fill:#hex,stroke:#hex,stroke-width:2px;, con colori esadecimali e spessore tra 0 e 12px. Non usare frontmatter, click, link, HTML, linkStyle, temi o configurazioni init. Non aggiungere schemi puramente decorativi.
 
 Output Format (Formato Richiesto):
 Usa Markdown strutturato (H3 per i titoli principali della sezione, H4 per sottosezioni, Bullet points).
@@ -339,6 +377,125 @@ export async function mapWithConcurrency<T, R>(
   return results
 }
 
+export function parseRetryDelayMs(error: unknown): number {
+  if (!error) return 0
+
+  if (typeof error === 'object' && error !== null) {
+    const errObj = error as Record<string, unknown>
+
+    const details = Array.isArray(errObj.errorDetails)
+      ? errObj.errorDetails
+      : Array.isArray(errObj.details)
+        ? errObj.details
+        : []
+
+    for (const item of details) {
+      if (typeof item === 'object' && item !== null) {
+        const d = item as Record<string, unknown>
+        if (
+          d['@type'] === 'type.googleapis.com/google.rpc.RetryInfo' ||
+          'retryDelay' in d
+        ) {
+          const delay = parseDelayValue(d.retryDelay)
+          if (delay > 0) return delay
+        }
+      }
+    }
+
+    if ('retryDelay' in errObj) {
+      const delay = parseDelayValue(errObj.retryDelay)
+      if (delay > 0) return delay
+    }
+
+    const headers =
+      (errObj.response as Record<string, unknown> | undefined)?.headers ??
+      errObj.headers
+    if (headers) {
+      const retryAfter =
+        typeof (headers as { get?: (name: string) => string | null }).get === 'function'
+          ? (headers as { get: (name: string) => string | null }).get('retry-after')
+          : (headers as Record<string, unknown>)['retry-after'] ??
+            (headers as Record<string, unknown>)['Retry-After']
+      if (retryAfter !== undefined && retryAfter !== null) {
+        const delay = parseHttpRetryAfter(String(retryAfter))
+        if (delay > 0) return delay
+      }
+    }
+  }
+
+  const msg =
+    typeof error === 'string'
+      ? error
+      : error instanceof Error
+        ? error.message
+        : String(error)
+
+  const jsonRetryMatch = msg.match(/"retryDelay"\s*:\s*"(\d+(?:\.\d+)?s?)"/i)
+  if (jsonRetryMatch) {
+    const delay = parseDelayValue(jsonRetryMatch[1])
+    if (delay > 0) return delay
+  }
+
+  const textMatch = msg.match(/retry(?:ing)?\s+(?:in|after)[\s:]*(\d+(?:\.\d+)?)\s*(s|sec|seconds|ms|milliseconds)?/i)
+  if (textMatch) {
+    const val = parseFloat(textMatch[1])
+    const unit = (textMatch[2] || 's').toLowerCase()
+    if (Number.isFinite(val) && val > 0) {
+      return unit.startsWith('ms') ? Math.round(val) : Math.round(val * 1000)
+    }
+  }
+
+  const headerMatch = msg.match(/retry-after[\s:]+(\d+(?:\.\d+)?)/i)
+  if (headerMatch) {
+    const val = parseFloat(headerMatch[1])
+    if (Number.isFinite(val) && val > 0) {
+      return Math.round(val * 1000)
+    }
+  }
+
+  return 0
+}
+
+function parseDelayValue(val: unknown): number {
+  if (typeof val === 'string') {
+    const m = val.trim().match(/^(\d+(?:\.\d+)?)\s*(s|ms)?$/i)
+    if (m) {
+      const num = parseFloat(m[1])
+      const unit = (m[2] || 's').toLowerCase()
+      if (Number.isFinite(num) && num > 0) {
+        return unit === 'ms' ? Math.round(num) : Math.round(num * 1000)
+      }
+    }
+  } else if (typeof val === 'number') {
+    if (Number.isFinite(val) && val > 0) {
+      return Math.round(val * 1000)
+    }
+  } else if (typeof val === 'object' && val !== null) {
+    const obj = val as Record<string, unknown>
+    const seconds = typeof obj.seconds === 'number' ? obj.seconds : parseInt(String(obj.seconds || '0'), 10)
+    const nanos = typeof obj.nanos === 'number' ? obj.nanos : parseInt(String(obj.nanos || '0'), 10)
+    if (Number.isFinite(seconds) && seconds >= 0) {
+      const ms = seconds * 1000 + (Number.isFinite(nanos) && nanos > 0 ? Math.round(nanos / 1_000_000) : 0)
+      if (ms > 0) return ms
+    }
+  }
+  return 0
+}
+
+function parseHttpRetryAfter(headerVal: string): number {
+  const trimmed = headerVal.trim()
+  const seconds = parseFloat(trimmed)
+  if (Number.isFinite(seconds) && seconds >= 0) {
+    return Math.round(seconds * 1000)
+  }
+  const dateMs = Date.parse(trimmed)
+  if (!Number.isNaN(dateMs)) {
+    const diff = dateMs - Date.now()
+    return diff > 0 ? diff : 0
+  }
+  return 0
+}
+
 export async function callWithRetry<T>(
   fn: () => Promise<T>,
   options?: RetryOptions
@@ -374,16 +531,20 @@ export async function callWithRetry<T>(
         msg.includes('504')
 
       if (isRetryable && attempt <= maxRetries) {
-        const retryAfterMatch = msg.match(/retry(?: after|-after)[^\d]*(\d+(?:\.\d+)?)/i)
-        const hintedDelay = retryAfterMatch
-          ? Math.round(Number(retryAfterMatch[1]) * 1000)
-          : 0
+        const hintedDelay = parseRetryDelayMs(error)
+        const remainingTime = deadline - Date.now()
+        if (hintedDelay > 0 && hintedDelay > remainingTime) {
+          throw new Error('Timeout complessivo della richiesta Gemini.', { cause: error })
+        }
         const exponentialDelay = retryDelayMs * 2 ** (attempt - 1)
         const jitter = isTest ? 1 : 0.8 + Math.random() * 0.4
+        const effectiveMaxRetryDelay = isTest
+          ? 100
+          : Math.max(maxRetryDelayMs, hintedDelay)
         const delayMs = Math.min(
-          maxRetryDelayMs,
+          effectiveMaxRetryDelay,
           Math.max(hintedDelay, Math.round(exponentialDelay * jitter)),
-          Math.max(0, deadline - Date.now())
+          Math.max(0, remainingTime)
         )
         if (delayMs <= 0) {
           throw new Error('Timeout complessivo della richiesta Gemini.', { cause: error })
@@ -404,27 +565,174 @@ export const TRANSLATION_SYSTEM_INSTRUCTION = `You are a precise academic transl
 Your task is to translate the following Italian university lecture notes to English.
 
 Rules you MUST follow without exception:
-1. Translate ONLY the natural language text: sentences, paragraphs, section titles, descriptions, explanations, and examples written in plain text.
-2. Keep ALL LaTeX formulas, LaTeX commands, Markdown syntax (headings #, bold **, italic *, lists -, tables, code blocks), mathematical expressions, variable names, and any technical notation EXACTLY identical — character by character.
-3. Do NOT add, remove, or reorder any sections, headings, formulas, or structural elements.
+1. Translate ONLY the natural language text OUTSIDE protected math and code: sentences, paragraphs, section titles, descriptions, explanations, and examples written in plain text.
+2. Keep ALL LaTeX formulas, LaTeX commands, Markdown syntax (headings #, bold **, italic *, lists -, tables, code blocks), mathematical expressions, variable names, and any technical notation EXACTLY identical — character by character. Inside math delimiters ($...$, $$...$$, \\(...\\), \\[...\\]), copy the entire original span verbatim, INCLUDING Italian words inside \\text{...}, \\mathrm{...}, \\operatorname{...} or any other command. Do not translate these words, normalize whitespace, or change delimiters. This rule takes priority over translating natural language.
+3. Do NOT add, remove, or reorder any sections, headings, formulas, or structural elements. Preserve EVERY occurrence of inline math and inline code in its original order, even when the same variable or expression is repeated in a sentence. Do not merge repetitions or replace a repeated expression with a pronoun; translate the surrounding prose while retaining every original math/code occurrence.
 4. Do NOT add commentary, footnotes, or translator's notes.
 5. Preserve all line breaks and whitespace structure as faithfully as possible.
 6. Preserve any GitHub-style alerts (e.g. > [!NOTE], > [!WARNING]) exactly as they are, translating only the text content inside them.
 7. Translate technical terms accurately — use established English terminology for the field (e.g. "Automa a Stati Finiti" → "Finite State Automaton").
 8. Keep inline code (\`...\`) and non-Mermaid code blocks (\`\`\`...\`\`\`) completely untouched.
-9. For every \`\`\`mermaid block, preserve the diagram type, node identifiers, arrows, relationships and line structure exactly. Translate only human-readable labels enclosed in quotes plus accTitle and accDescr. Never add frontmatter, click, links, HTML, classDef, style, linkStyle, themes or init directives.`
+9. For every \`\`\`mermaid block, preserve the diagram type, node identifiers, arrows, relationships, static style and classDef directives and line structure exactly. Translate only human-readable labels enclosed in quotes plus accTitle and accDescr. Never add frontmatter, click, links, HTML, linkStyle, themes or init directives.`
+
+export function formatTimecode(seconds: number): string {
+  const total = Math.max(0, Math.floor(seconds))
+  const hrs = Math.floor(total / 3600)
+  const mins = Math.floor((total % 3600) / 60)
+  const secs = total % 60
+  if (hrs > 0) {
+    return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
+  }
+  return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
+}
+
+export function extractInteractionText(response: unknown): string | null {
+  if (!response || typeof response !== 'object') return null
+  const res = response as Record<string, unknown>
+  if (typeof res.output_text === 'string' && res.output_text.trim()) {
+    return res.output_text.trim()
+  }
+
+  const fragments: string[] = []
+  const containers: unknown[] = []
+  if (Array.isArray(res.outputs)) containers.push(...res.outputs)
+  if (Array.isArray(res.steps)) {
+    for (const step of res.steps) {
+      if (
+        step &&
+        typeof step === 'object' &&
+        String((step as Record<string, unknown>).type || '').toLowerCase() !== 'user_input'
+      ) {
+        containers.push(step)
+      }
+    }
+  }
+
+  for (const item of containers) {
+    if (!item || typeof item !== 'object') continue
+    const container = item as Record<string, unknown>
+    if (typeof container.text === 'string' && container.text.trim()) {
+      fragments.push(container.text.trim())
+      continue
+    }
+    if (Array.isArray(container.content)) {
+      for (const contentItem of container.content) {
+        if (!contentItem || typeof contentItem !== 'object') continue
+        const c = contentItem as Record<string, unknown>
+        if (typeof c.text === 'string' && c.text.trim()) {
+          fragments.push(c.text.trim())
+        } else if (c.raw && typeof c.raw === 'object') {
+          const raw = c.raw as Record<string, unknown>
+          for (const key of ['text', 'transcript', 'transcription']) {
+            if (typeof raw[key] === 'string' && (raw[key] as string).trim()) {
+              fragments.push((raw[key] as string).trim())
+            }
+          }
+        }
+      }
+    }
+  }
+
+  return fragments.length > 0 ? fragments.join('\n\n') : null
+}
+
+export function isNonSpeechTranscript(text: string | null): boolean {
+  if (!text || !text.trim()) return true
+  const withoutTags = text.replace(/<[^>]+>|\[[^\]]+\]/g, ' ')
+  const words = withoutTags.toLowerCase().match(/[a-zàèéìòù0-9]+/g) || []
+  if (words.length === 0) return true
+  const nonSpeechWords = new Set([
+    'applause',
+    'applausi',
+    'cough',
+    'coughing',
+    'music',
+    'musica',
+    'noise',
+    'rumore',
+    'silence',
+    'silenzio',
+    'snort'
+  ])
+  return words.every((w) => nonSpeechWords.has(w))
+}
+
+export function trimOverlapWords(leftText: string, rightText: string, maxWords: number = 30): string {
+  const left = leftText.trim()
+  const right = rightText.trim()
+  if (!left || !right) return right
+
+  const normalizeWord = (w: string) => w.toLowerCase().replace(/[^a-z0-9àèéìòù]/gi, '')
+  const leftWords = left.split(/\s+/).map(normalizeWord).filter(Boolean)
+  const rightRawWords = right.split(/\s+/)
+  const rightWords = rightRawWords.map(normalizeWord).filter(Boolean)
+
+  let bestOverlap = 0
+  const limit = Math.min(maxWords, leftWords.length, rightWords.length)
+  for (let count = 2; count <= limit; count++) {
+    const leftSlice = leftWords.slice(-count)
+    const rightSlice = rightWords.slice(0, count)
+    if (leftSlice.every((w, idx) => w === rightSlice[idx])) {
+      bestOverlap = count
+    }
+  }
+
+  if (bestOverlap > 0) {
+    return rightRawWords.slice(bestOverlap).join(' ')
+  }
+  return right
+}
 
 export class GeminiService {
+  private readonly requestManager: GeminiRequestManager
+  private readonly jobStore?: AiJobStore
+
+  constructor(options?: {
+    requestManager?: GeminiRequestManager
+    jobStore?: AiJobStore
+  }) {
+    this.requestManager = options?.requestManager ?? new GeminiRequestManager()
+    this.jobStore = options?.jobStore
+  }
+
+  getRequestManager(): GeminiRequestManager {
+    return this.requestManager
+  }
+
+  getJobStore(): AiJobStore | undefined {
+    return this.jobStore
+  }
+
   async testApiKey(apiKey: string): Promise<TestApiKeyResult> {
     if (!apiKey || !apiKey.trim()) {
       return { valid: false, error: 'Chiave API non inserita.' }
     }
 
     try {
-      const ai = new GoogleGenAI({ apiKey: apiKey.trim() })
-      const response = await ai.models.generateContent({
-        model: 'gemini-3.6-flash',
-        contents: 'Test di verifica connessione. Rispondi con OK.'
+      const { preferred, fallbacks } = getModelFallbackChain('gemini-3.7-flash')
+      const response = await this.requestManager.execute({
+        jobId: 'test-api-key',
+        purpose: 'key_verification',
+        priority: 'interactive',
+        keys: [{ key: apiKey.trim(), quotaGroup: 'test-key' }],
+        preferredModel: preferred,
+        fallbackModels: fallbacks,
+        call: async (key, model, signal) => {
+          const ai = this.requestManager.getTransport().getClient(key)
+          const res = await ai.models.generateContent({
+            model,
+            contents: 'Test di verifica connessione. Rispondi con OK.'
+          })
+          if (signal.aborted) {
+            throw new GeminiError({
+              category: 'cancelled',
+              isRetryable: false,
+              isDailyQuota: false,
+              sanitizedMessage: 'Verifica chiave annullata.'
+            })
+          }
+          return res
+        }
       })
 
       if (response && response.text) {
@@ -453,36 +761,54 @@ export class GeminiService {
   }
 
   async segmentTranscript(params: {
-    apiKey: string
+    apiKey?: string
+    keys?: KeyConfig[]
     model: GeminiModel
     transcript: string
     onRetry?: (attempt: number, delayMs: number, reason: string) => void
+    signal?: AbortSignal
   }): Promise<SegmentationCut[]> {
-    const { apiKey, model, transcript, onRetry } = params
-    const ai = new GoogleGenAI({ apiKey: apiKey.trim() })
+    const { apiKey, keys, model, transcript, onRetry, signal } = params
+    const keyConfigs = toKeyConfigs(apiKey, keys)
+    const { preferred, fallbacks } = getModelFallbackChain(model)
 
     const prompt = `TESTO DELLA LEZIONE:
 ${transcript}`
 
-    const rawText = await callWithRetry(
-      async () => {
+    const rawText = await this.requestManager.execute({
+      jobId: 'segmentation',
+      purpose: 'overview',
+      priority: 'background',
+      keys: keyConfigs,
+      preferredModel: preferred,
+      fallbackModels: fallbacks,
+      signal,
+      call: async (k, m, s) => {
+        const ai = this.requestManager.getTransport().getClient(k)
         const response = await ai.models.generateContent({
-          model: model || 'gemini-3.6-flash',
+          model: m,
           contents: prompt,
           config: {
-            systemInstruction: SEGMENTATION_SYSTEM_INSTRUCTION
+            systemInstruction: SEGMENTATION_SYSTEM_INSTRUCTION,
+            abortSignal: s
           }
         })
+        if (s.aborted) {
+          throw new GeminiError({ category: 'cancelled', isRetryable: false, isDailyQuota: false, sanitizedMessage: 'Segmentazione annullata.' })
+        }
         return response.text ?? ''
       },
-      { onRetry }
-    )
+      onRetry: (attempt, delayMs, reason) => {
+        onRetry?.(attempt, delayMs, reason)
+      }
+    })
 
     return parseSegmentationCuts(rawText)
   }
 
   async generateSectionNotes(params: {
-    apiKey: string
+    apiKey?: string
+    keys?: KeyConfig[]
     model: GeminiModel
     sectionTitle: string
     sectionTranscript: string
@@ -490,18 +816,22 @@ ${transcript}`
     totalSections: number
     courseCode: string | null
     onRetry?: (attempt: number, delayMs: number, reason: string) => void
+    signal?: AbortSignal
   }): Promise<string> {
     const {
       apiKey,
+      keys,
       model,
       sectionTitle,
       sectionTranscript,
       sectionIndex,
       totalSections,
       courseCode,
-      onRetry
+      onRetry,
+      signal
     } = params
-    const ai = new GoogleGenAI({ apiKey: apiKey.trim() })
+    const keyConfigs = toKeyConfigs(apiKey, keys)
+    const { preferred, fallbacks } = getModelFallbackChain(model)
 
     const prompt = `INFORMAZIONI SEZIONE:
 - Corso: ${courseCode ?? 'Ingegneria Magistrale'}
@@ -515,34 +845,51 @@ ${sectionTranscript}
 ISTRUZIONE:
 Elabora questa sezione in modo approfondito seguendo rigorosamente le regole del System Prompt. Includi tutte le formule in LaTeX ($...$ e $$...$$). Non inserire blocchi d'esame in questa sezione.`
 
-    const rawText = await callWithRetry(
-      async () => {
+    const rawText = await this.requestManager.execute({
+      jobId: `section-${sectionIndex + 1}`,
+      purpose: 'sections',
+      priority: 'background',
+      keys: keyConfigs,
+      preferredModel: preferred,
+      fallbackModels: fallbacks,
+      signal,
+      call: async (k, m, s) => {
+        const ai = this.requestManager.getTransport().getClient(k)
         const response = await ai.models.generateContent({
-          model: model || 'gemini-3.6-flash',
+          model: m,
           contents: prompt,
           config: {
-            systemInstruction: SECTION_DEEP_SYSTEM_INSTRUCTION
+            systemInstruction: SECTION_DEEP_SYSTEM_INSTRUCTION,
+            abortSignal: s
           }
         })
+        if (s.aborted) {
+          throw new GeminiError({ category: 'cancelled', isRetryable: false, isDailyQuota: false, sanitizedMessage: 'Generazione sezione annullata.' })
+        }
         return response.text ?? ''
       },
-      { onRetry }
-    )
+      onRetry: (attempt, delayMs, reason) => {
+        onRetry?.(attempt, delayMs, reason)
+      }
+    })
 
     return cleanMarkdownOutput(rawText)
   }
 
   async generateOverviewAndTitle(params: {
-    apiKey: string
+    apiKey?: string
+    keys?: KeyConfig[]
     model: GeminiModel
     transcript: string
     courseCode: string | null
     recordedAt: string | null
     onRetry?: (attempt: number, delayMs: number, reason: string) => void
+    signal?: AbortSignal
   }): Promise<{ title: string; overview: string }> {
-    const { apiKey, model, transcript, courseCode, recordedAt, onRetry } =
+    const { apiKey, keys, model, transcript, courseCode, recordedAt, onRetry, signal } =
       params
-    const ai = new GoogleGenAI({ apiKey: apiKey.trim() })
+    const keyConfigs = toKeyConfigs(apiKey, keys)
+    const { preferred, fallbacks } = getModelFallbackChain(model)
 
     const course = courseCode ?? 'Corso universitario'
     const date = recordedAt
@@ -565,19 +912,33 @@ Genera esclusivamente:
 
 NON generare altre sezioni e NON inserire note per l'esame.`
 
-    const rawText = await callWithRetry(
-      async () => {
+    const rawText = await this.requestManager.execute({
+      jobId: 'overview-title',
+      purpose: 'overview',
+      priority: 'background',
+      keys: keyConfigs,
+      preferredModel: preferred,
+      fallbackModels: fallbacks,
+      signal,
+      call: async (k, m, s) => {
+        const ai = this.requestManager.getTransport().getClient(k)
         const response = await ai.models.generateContent({
-          model: model || 'gemini-3.6-flash',
+          model: m,
           contents: prompt,
           config: {
-            systemInstruction: GEMS_SYSTEM_INSTRUCTION
+            systemInstruction: GEMS_SYSTEM_INSTRUCTION,
+            abortSignal: s
           }
         })
+        if (s.aborted) {
+          throw new GeminiError({ category: 'cancelled', isRetryable: false, isDailyQuota: false, sanitizedMessage: 'Overview annullata.' })
+        }
         return response.text ?? ''
       },
-      { onRetry }
-    )
+      onRetry: (attempt, delayMs, reason) => {
+        onRetry?.(attempt, delayMs, reason)
+      }
+    })
 
     const text = cleanMarkdownOutput(rawText)
     return {
@@ -589,30 +950,47 @@ NON generare altre sezioni e NON inserire note per l'esame.`
   }
 
   async extractExamNotes(params: {
-    apiKey: string
+    apiKey?: string
+    keys?: KeyConfig[]
     model: GeminiModel
     transcript: string
     courseCode: string | null
     onRetry?: (attempt: number, delayMs: number, reason: string) => void
+    signal?: AbortSignal
   }): Promise<string | null> {
-    const { apiKey, model, transcript, courseCode, onRetry } = params
-    const ai = new GoogleGenAI({ apiKey: apiKey.trim() })
+    const { apiKey, keys, model, transcript, courseCode, onRetry, signal } = params
+    const keyConfigs = toKeyConfigs(apiKey, keys)
+    const { preferred, fallbacks } = getModelFallbackChain(model)
 
     const prompt = `Corso: ${courseCode ?? 'Ingegneria'}\n\nTRASCRIZIONE DELLA LEZIONE:\n${transcript}`
 
-    const rawText = await callWithRetry(
-      async () => {
+    const rawText = await this.requestManager.execute({
+      jobId: 'exam-notes',
+      purpose: 'overview',
+      priority: 'background',
+      keys: keyConfigs,
+      preferredModel: preferred,
+      fallbackModels: fallbacks,
+      signal,
+      call: async (k, m, s) => {
+        const ai = this.requestManager.getTransport().getClient(k)
         const response = await ai.models.generateContent({
-          model: model || 'gemini-3.6-flash',
+          model: m,
           contents: prompt,
           config: {
-            systemInstruction: EXAM_NOTES_EXTRACTION_INSTRUCTION
+            systemInstruction: EXAM_NOTES_EXTRACTION_INSTRUCTION,
+            abortSignal: s
           }
         })
+        if (s.aborted) {
+          throw new GeminiError({ category: 'cancelled', isRetryable: false, isDailyQuota: false, sanitizedMessage: 'Note esame annullate.' })
+        }
         return response.text ?? ''
       },
-      { onRetry }
-    )
+      onRetry: (attempt, delayMs, reason) => {
+        onRetry?.(attempt, delayMs, reason)
+      }
+    })
 
     const cleaned = cleanMarkdownOutput(rawText)
     if (
@@ -626,25 +1004,32 @@ NON generare altre sezioni e NON inserire note per l'esame.`
   }
 
   async generateLectureNotes(params: {
-    apiKey: string
+    apiKey?: string
+    keys?: KeyConfig[]
     model: GeminiModel
     transcript: string
     courseCode: string | null
     recordedAt: string | null
     sourceAudioFileName: string
-    onProgress?: (step: string, percent: number) => void
+    lectureId?: string
+    onProgress?: (step: string, percent: number, meta?: Record<string, unknown>) => void
+    signal?: AbortSignal
   }): Promise<string> {
     const {
       apiKey,
+      keys,
       model,
       transcript,
       courseCode,
       recordedAt,
       sourceAudioFileName,
-      onProgress
+      lectureId,
+      onProgress,
+      signal
     } = params
 
-    if (!apiKey || !apiKey.trim()) {
+    const keyConfigs = toKeyConfigs(apiKey, keys)
+    if (keyConfigs.length === 0) {
       throw new Error(
         'Chiave API Gemini mancante. Configurala nelle Impostazioni.'
       )
@@ -656,9 +1041,37 @@ NON generare altre sezioni e NON inserire note per l'esame.`
     const retryHandler = (attempt: number, delayMs: number) => {
       if (onProgress) {
         onProgress(
-          `Server sovraccarico (503/429). Tentativo ${attempt}/3: attesa di ${Math.round(delayMs / 1000)}s prima di riprovare…`,
+          `Server sovraccarico (503/429). Tentativo ${attempt}: attesa di ${Math.round(delayMs / 1000)}s prima di riprovare…`,
           60
         )
+      }
+    }
+
+    // Checkpoint management via jobStore
+    const sourceHash = this.jobStore ? this.jobStore.computeSourceHash(transcript) : ''
+    let checkpoint: LectureNotesCheckpoint | null = null
+
+    if (this.jobStore && lectureId) {
+      try {
+        const loaded = await this.jobStore.loadLectureNotesCheckpoint(lectureId)
+        if (loaded && loaded.sourceTextHash === sourceHash) {
+          checkpoint = loaded
+        } else if (loaded) {
+          await this.jobStore.deleteLectureNotesCheckpoint(lectureId)
+        }
+      } catch {
+        checkpoint = null
+      }
+    }
+
+    if (!checkpoint && lectureId) {
+      checkpoint = {
+        lectureId,
+        sourceTextHash: sourceHash,
+        model: model || 'gemini-3.6-flash',
+        sections: {},
+        status: 'in_progress',
+        updatedAt: new Date().toISOString()
       }
     }
 
@@ -689,82 +1102,171 @@ ${transcript}
 ISTRUZIONE:
 Genera la dispensa didattica strutturata per questa lezione seguendo rigorosamente tutte le regole e i vincoli operativi indicati nel System Prompt.`
 
-      const ai = new GoogleGenAI({ apiKey: apiKey.trim() })
-      const rawText = await callWithRetry(
-        async () => {
+      const { preferred, fallbacks } = getModelFallbackChain(model)
+      const rawText = await this.requestManager.execute({
+        jobId: `quick-notes-${lectureId || 'direct'}`,
+        purpose: 'sections',
+        priority: 'background',
+        keys: keyConfigs,
+        preferredModel: preferred,
+        fallbackModels: fallbacks,
+        signal,
+        call: async (k, m, s) => {
+          const ai = this.requestManager.getTransport().getClient(k)
           const response = await ai.models.generateContent({
-            model: model || 'gemini-3.6-flash',
+            model: m,
             contents: prompt,
             config: {
               systemInstruction: GEMS_SYSTEM_INSTRUCTION
             }
           })
+          if (s.aborted) {
+            throw new GeminiError({ category: 'cancelled', isRetryable: false, isDailyQuota: false, sanitizedMessage: 'Generazione dispensa annullata.' })
+          }
           return response.text
         },
-        { onRetry: retryHandler }
-      )
+        onRetry: retryHandler
+      })
 
       if (!rawText || !rawText.trim())
         throw new Error('Gemini non ha restituito alcun testo.')
+      if (checkpoint && lectureId) {
+        await this.jobStore?.deleteLectureNotesCheckpoint(lectureId)
+      }
       if (onProgress) onProgress('Dispensa completata con successo!', 100)
       return cleanMarkdownOutput(rawText)
     }
 
-    // PIPELINE MULTI-STADIO APPROFONDITA (PARALLELIZZATA)
+    // PIPELINE MULTI-STADIO APPROFONDITA
     // Stadio 1: Segmentazione semantica in 3-5 parti con il Gem di taglio
-    if (onProgress)
-      onProgress('Fase 1/3: Segmentazione semantica in 3-5 macroargomenti…', 20)
     let cuts: SegmentationCut[]
-    try {
-      cuts = await this.segmentTranscript({
-        apiKey,
-        model,
-        transcript,
-        onRetry: retryHandler
-      })
-    } catch {
-      cuts = []
+    if (checkpoint?.cuts && checkpoint.cuts.length > 0) {
+      cuts = checkpoint.cuts
+    } else {
+      if (onProgress)
+        onProgress('Fase 1/3: Segmentazione semantica in 3-5 macroargomenti…', 20)
+      try {
+        cuts = await this.segmentTranscript({
+          keys: keyConfigs,
+          model,
+          transcript,
+          onRetry: retryHandler,
+          signal
+        })
+      } catch (err) {
+        const nErr = normalizeGeminiError(err)
+        if (nErr.isRetryable || nErr.category === 'rate_limited' || nErr.category === 'authentication') {
+          throw err
+        }
+        cuts = []
+      }
+      if (checkpoint) {
+        checkpoint.cuts = cuts
+        checkpoint.updatedAt = new Date().toISOString()
+        await this.jobStore?.saveLectureNotesCheckpoint(checkpoint)
+      }
     }
 
     const parts = sliceTranscriptByCuts(transcript, cuts)
+    if (checkpoint) {
+      checkpoint.totalSections = parts.length
+    }
 
-    // Stadio 2: Elaborazione di ciascuna parte IN PARALLELO per massima velocità
+    // Stadio 2: Elaborazione di overview, note esame e sezioni didattiche
     if (onProgress) {
       onProgress(
-        `Fase 2/3: Elaborazione didattica di ${parts.length} sezioni in parallelo con formule LaTeX…`,
-        50
+        `Fase 2/3: Elaborazione didattica di ${parts.length} sezioni con formule LaTeX…`,
+        45
       )
     }
 
-    const [headerInfo, examNotes] = await Promise.all([
-      this.generateOverviewAndTitle({
-        apiKey,
+    let headerInfo: { title: string; overview: string }
+    if (checkpoint?.overview && checkpoint.overview.overview) {
+      headerInfo = checkpoint.overview
+    } else {
+      onProgress?.('Generazione della panoramica e del titolo della dispensa…', 46)
+      headerInfo = await this.generateOverviewAndTitle({
+        keys: keyConfigs,
         model,
         transcript,
         courseCode,
         recordedAt,
-        onRetry: retryHandler
-      }),
-      this.extractExamNotes({
-        apiKey,
+        onRetry: retryHandler,
+        signal
+      })
+      if (checkpoint) {
+        checkpoint.overview = headerInfo
+        checkpoint.updatedAt = new Date().toISOString()
+        await this.jobStore?.saveLectureNotesCheckpoint(checkpoint)
+      }
+    }
+
+    let examNotes: string | null
+    if (checkpoint && checkpoint.examNotes !== undefined) {
+      examNotes = checkpoint.examNotes
+    } else {
+      try {
+        onProgress?.('Estrazione delle note importanti per l’esame…', 48)
+        examNotes = await this.extractExamNotes({
+          keys: keyConfigs,
+          model,
+          transcript,
+          courseCode,
+          onRetry: retryHandler,
+          signal
+        })
+      } catch (err) {
+        logger.warn('ai-notes', 'Estrazione delle note d’esame non completata; prosegue la dispensa.', JSON.stringify({ failureKind: normalizeGeminiError(err).category }))
+        examNotes = null
+      }
+      if (checkpoint) {
+        checkpoint.examNotes = examNotes
+        checkpoint.updatedAt = new Date().toISOString()
+        await this.jobStore?.saveLectureNotesCheckpoint(checkpoint)
+      }
+    }
+
+    const sectionOutputs: string[] = []
+    for (let i = 0; i < parts.length; i++) {
+      const part = parts[i]
+      const sectionProgress = 50 + Math.round(((i + 1) / Math.max(1, parts.length)) * 35)
+
+      if (checkpoint?.sections && checkpoint.sections[i]) {
+        if (onProgress) {
+          onProgress(
+            `Fase 2/3: Sezione ${i + 1} di ${parts.length} ("${part.title}") ripristinata dal checkpoint…`,
+            sectionProgress
+          )
+        }
+        sectionOutputs.push(checkpoint.sections[i])
+        continue
+      }
+
+      if (onProgress) {
+        onProgress(
+          `Fase 2/3: Elaborazione sezione ${i + 1} di ${parts.length} ("${part.title}")…`,
+          sectionProgress
+        )
+      }
+      const sectionNote = await this.generateSectionNotes({
+        keys: keyConfigs,
         model,
-        transcript,
+        sectionTitle: part.title,
+        sectionTranscript: part.text,
+        sectionIndex: i,
+        totalSections: parts.length,
         courseCode,
-        onRetry: retryHandler
+        onRetry: retryHandler,
+        signal
       })
-    ])
-    const sectionOutputs = await mapWithConcurrency(parts, 2, (part, i) =>
-      this.generateSectionNotes({
-            apiKey,
-            model,
-            sectionTitle: part.title,
-            sectionTranscript: part.text,
-            sectionIndex: i,
-            totalSections: parts.length,
-            courseCode,
-            onRetry: retryHandler
-      })
-    )
+      sectionOutputs.push(sectionNote)
+
+      if (checkpoint) {
+        checkpoint.sections[i] = sectionNote
+        checkpoint.updatedAt = new Date().toISOString()
+        await this.jobStore?.saveLectureNotesCheckpoint(checkpoint)
+      }
+    }
 
     // Stadio 3: Assemblaggio finale
     if (onProgress)
@@ -780,31 +1282,42 @@ ${sectionOutputs.join('\n\n---\n\n')}`
       finalDocument += `\n\n---\n\n${examNotes}`
     }
 
+    if (checkpoint && lectureId) {
+      checkpoint.status = 'completed'
+      checkpoint.updatedAt = new Date().toISOString()
+      await this.jobStore?.deleteLectureNotesCheckpoint(lectureId)
+    }
+
     if (onProgress) onProgress('Dispensa completata!', 100)
     return cleanMarkdownOutput(finalDocument)
   }
 
-  async transcribeAndGenerateFromAudio(params: {
-    apiKey: string
-    model: GeminiModel
+  async transcribeAudioFile(params: {
+    apiKey?: string
+    keys?: KeyConfig[]
     audioFilePath: string
-    courseCode: string | null
-    recordedAt: string | null
-    sourceAudioFileName: string
-  }): Promise<{ transcript: string; markdown: string }> {
-    const {
-      apiKey,
-      model,
-      audioFilePath,
-      courseCode,
-      recordedAt,
-      sourceAudioFileName
-    } = params
+    language?: 'it' | 'en' | 'auto' | string | null
+    fallbackModel?: GeminiModel | string
+    lectureId?: string
+    signal?: AbortSignal
+    onProgress?: (
+      step: string,
+      percent: number,
+      meta?: {
+        totalChunks?: number
+        currentChunk?: number
+        chunkTimeInterval?: string
+        etaSeconds?: number
+        elapsedSeconds?: number
+        stageDetail?: string
+      }
+    ) => void
+  }): Promise<string> {
+    const { apiKey, keys, audioFilePath, onProgress, lectureId, signal } = params
+    const keyConfigs = toKeyConfigs(apiKey, keys)
 
-    if (!apiKey || !apiKey.trim()) {
-      throw new Error(
-        'Chiave API Gemini mancante. Configurala nelle Impostazioni.'
-      )
+    if (keyConfigs.length === 0) {
+      throw new Error('Chiave API Gemini mancante. Configurala nelle Impostazioni.')
     }
 
     const fileStats = await stat(audioFilePath)
@@ -812,216 +1325,631 @@ ${sectionOutputs.join('\n\n---\n\n')}`
       throw new Error('File audio non trovato o non valido.')
     }
 
-    const course = courseCode ?? 'Corso universitario non specificato'
-    const date = recordedAt
-      ? new Date(recordedAt).toLocaleDateString('it-IT', {
-          day: '2-digit',
-          month: '2-digit',
-          year: 'numeric'
-        })
-      : 'Data non specificata'
+    const startTime = Date.now()
 
-    const prompt = `Ascolta attentamente questo file audio registrato in aula universitaria.
-File sorgente: ${sourceAudioFileName}
-Corso: ${course}
-Data: ${date}
-
-Esegui due compiti obbligatori:
-
-1. Trascrivi fedelmente e integralmente il parlato in italiano, delimitando questa sezione con:
-=== TRASCRIZIONE GREZZA ===
-[Trascrizione qui]
-
-2. Subito dopo, converti la lezione in una dispensa didattica strutturata e approfondita con formule LaTeX standard ($...$ e $$...$$) secondo i vincoli Gems, delimitando con:
-=== DISPENSA DIDATTICA ===
-[Dispensa in Markdown qui]`
-
-    const ai = new GoogleGenAI({ apiKey: apiKey.trim() })
-
-    let uploadedFileName: string | null = null
+    if (onProgress) {
+      onProgress('Analisi del file audio in corso…', 5, {
+        totalChunks: 1,
+        currentChunk: 0,
+        elapsedSeconds: 0,
+        stageDetail: 'Analisi traccia audio'
+      })
+    }
+    let totalDuration = 0
     try {
-      let audioPart: Part
-      if (fileStats.size < 20 * 1024 * 1024) {
-        const buffer = await readFile(audioFilePath)
-        audioPart = {
-          inlineData: {
-            mimeType: 'audio/mp3',
-            data: buffer.toString('base64')
+      const audioChunker = await import('./audioChunker')
+      totalDuration = await audioChunker.getAudioDuration(audioFilePath)
+    } catch (e) {
+      console.warn('Impossibile determinare la durata, fallback a chunk unico', e)
+    }
+
+    const MAX_SINGLE_CHUNK_MINUTES = 55
+    let chunkBoundaries = [{ start: 0, end: totalDuration }]
+    const needsChunking = totalDuration > MAX_SINGLE_CHUNK_MINUTES * 60
+
+    if (needsChunking) {
+      if (onProgress) {
+        onProgress(
+          'Audio lungo (>55min). Calcolo tagli ottimali sui silenzi…',
+          8,
+          {
+            totalChunks: 1,
+            currentChunk: 0,
+            elapsedSeconds: Math.round((Date.now() - startTime) / 1000),
+            stageDetail: 'Calcolo silenzi e punti di taglio'
           }
+        )
+      }
+      const audioChunker = await import('./audioChunker')
+      chunkBoundaries = await audioChunker.planSmartChunks(audioFilePath, totalDuration, 15, 2)
+    }
+
+    const lang = (params.language || 'en').toLowerCase().trim()
+    let languageCodes: string[] | undefined
+    if (lang === 'it' || lang === 'it-it') {
+      languageCodes = ['it-IT']
+    } else if (lang === 'auto') {
+      languageCodes = undefined
+    } else {
+      languageCodes = ['en-US']
+    }
+
+    const transcriptionConfig: Record<string, unknown> = {
+      mode: { type: 'verbatim' }
+    }
+    if (languageCodes && languageCodes.length > 0) {
+      transcriptionConfig.language_codes = languageCodes
+    }
+
+    const totalChunks = chunkBoundaries.length
+    const durationMin = Math.round(totalDuration / 60)
+    let etaSeconds = Math.max(15, totalChunks * 25)
+    if (onProgress) {
+      const summaryMsg =
+        totalChunks > 1
+          ? `Audio di ${durationMin} min suddiviso in ${totalChunks} parti da ~15 min sui silenzi.`
+          : `Audio di ${durationMin} min pronto per la trascrizione.`
+      onProgress(summaryMsg, 10, {
+        totalChunks,
+        currentChunk: 1,
+        etaSeconds,
+        elapsedSeconds: Math.round((Date.now() - startTime) / 1000),
+        stageDetail: 'Suddivisione completata'
+      })
+    }
+
+    // Checkpoint management for ASR
+    let asrCheckpoint: AsrJobCheckpoint | null = null
+    const audioChecksum = `${fileStats.size}-${fileStats.mtimeMs}`
+    if (this.jobStore && lectureId) {
+      try {
+        const loaded = await this.jobStore.loadAsrCheckpoint(lectureId)
+        if (loaded && loaded.audioChecksum === audioChecksum) {
+          asrCheckpoint = loaded
+        } else if (loaded) {
+          await this.jobStore.deleteAsrCheckpoint(lectureId)
         }
+      } catch {
+        asrCheckpoint = null
+      }
+    }
+
+    if (!asrCheckpoint && lectureId) {
+      asrCheckpoint = {
+        lectureId,
+        audioChecksum,
+        totalChunks,
+        chunks: {},
+        status: 'in_progress',
+        updatedAt: new Date().toISOString()
+      }
+    }
+
+    let finalTranscript = ''
+    let lastValidChunkText = ''
+    const { tmpdir } = await import('node:os')
+    const { randomUUID } = await import('node:crypto')
+    const { join } = await import('node:path')
+    const { rm } = await import('node:fs/promises')
+
+    for (let i = 0; i < totalChunks; i++) {
+      const boundary = chunkBoundaries[i]
+      const chunkIdx = i + 1
+      const progressPercent = 10 + Math.round((i / totalChunks) * 80)
+      const timeIntervalLabel = `${formatTimecode(boundary.start)} - ${formatTimecode(boundary.end)}`
+      const currentElapsed = Math.max(1, Math.round((Date.now() - startTime) / 1000))
+
+      if (i > 0) {
+        const avgPerChunk = (Date.now() - startTime) / i
+        const remainingChunks = totalChunks - i
+        etaSeconds = Math.round((avgPerChunk * remainingChunks) / 1000)
       } else {
-        const uploadResult = await ai.files.upload({
-          file: audioFilePath,
-          config: { mimeType: 'audio/mp3' }
-        })
-        if (!uploadResult.name) {
-          throw new Error('Il server non ha restituito un ID per il file audio.')
-        }
-        uploadedFileName = uploadResult.name
-
-        let file = await ai.files.get({ name: uploadResult.name })
-        const processingDeadline = Date.now() + 5 * 60_000
-        while (file.state === 'PROCESSING') {
-          if (Date.now() >= processingDeadline) {
-            throw new Error(
-              'Timeout durante l’elaborazione del file audio sui server Google.'
-            )
-          }
-          await new Promise((resolve) => setTimeout(resolve, 4000))
-          file = await ai.files.get({ name: uploadResult.name })
-        }
-
-        if (file.state === 'FAILED' || !file.uri) {
-          throw new Error(
-            'Elaborazione del file audio non riuscita sui server Google.'
-          )
-        }
-
-        audioPart = {
-          fileData: {
-            fileUri: file.uri,
-            mimeType: file.mimeType || 'audio/mp3'
-          }
-        }
+        etaSeconds = Math.max(20, totalChunks * 25)
       }
 
-      const response = await callWithRetry(async () => {
-        return await ai.models.generateContent({
-          model: model || 'gemini-3.6-flash',
-          contents: [audioPart, prompt],
-          config: {
-            systemInstruction: GEMS_SYSTEM_INSTRUCTION
-          }
-        })
-      })
+      // Se il chunk è già stato completato nel checkpoint, riutilizzalo
+      if (
+        asrCheckpoint?.chunks &&
+        asrCheckpoint.chunks[i] &&
+        (asrCheckpoint.chunks[i].status === 'transcribed' || asrCheckpoint.chunks[i].status === 'no_speech')
+      ) {
+        const restoredText = asrCheckpoint.chunks[i].text
+        const partHeader = totalChunks > 1
+          ? `--- [Parte ${i + 1}/${totalChunks} • ${formatTimecode(boundary.start)} - ${formatTimecode(boundary.end)}] ---`
+          : ''
+        const chunkBlock = partHeader ? `${partHeader}\n\n${restoredText}` : restoredText
+        finalTranscript += (finalTranscript.length > 0 ? '\n\n' : '') + chunkBlock
+        lastValidChunkText = restoredText
 
-      const rawText = response.text
-      if (!rawText || !rawText.trim()) {
-        throw new Error(
-          'Gemini non ha restituito alcun testo dall’analisi audio.'
+        if (onProgress) {
+          onProgress(
+            `Parte ${chunkIdx} di ${totalChunks} ripristinata dal checkpoint`,
+            progressPercent,
+            {
+              totalChunks,
+              currentChunk: chunkIdx,
+              chunkTimeInterval: timeIntervalLabel,
+              etaSeconds,
+              elapsedSeconds: currentElapsed,
+              stageDetail: `Parte ${chunkIdx} da checkpoint`
+            }
+          )
+        }
+        continue
+      }
+
+      if (onProgress) {
+        onProgress(
+          `Trascrizione parte ${chunkIdx} di ${totalChunks} (${timeIntervalLabel})…`,
+          progressPercent,
+          {
+            totalChunks,
+            currentChunk: chunkIdx,
+            chunkTimeInterval: timeIntervalLabel,
+            etaSeconds,
+            elapsedSeconds: currentElapsed,
+            stageDetail: `Inizio parte ${chunkIdx}`
+          }
         )
       }
 
-      const initial = parseMultimodalAudioResponse(rawText)
+      let chunkFilePath = audioFilePath
+      let isTempFile = false
 
-    // Se la trascrizione estratta dall'audio è lunga, possiamo raffinare la dispensa con la pipeline multi-stadio
-      if (initial.transcript && initial.transcript.split(/\s+/).length >= 1200) {
-        try {
-          const deepMarkdown = await this.generateLectureNotes({
-            apiKey,
-            model,
-            transcript: initial.transcript,
-            courseCode,
-            recordedAt,
-            sourceAudioFileName
-          })
-          return {
-            transcript: initial.transcript,
-            markdown: deepMarkdown
-          }
-        } catch {
-          // Se la pipeline multi-stadio fallisce, manteniamo la prima generazione valida
+      if (needsChunking) {
+        const audioChunker = await import('./audioChunker')
+        const tempDir = tmpdir()
+        chunkFilePath = join(tempDir, `chunk_${randomUUID()}.wav`)
+        isTempFile = true
+        const chunkMin = Math.round((boundary.end - boundary.start) / 60)
+        if (onProgress) {
+          onProgress(
+            `Estrazione parte ${chunkIdx} (${chunkMin} min)…`,
+            progressPercent,
+            {
+              totalChunks,
+              currentChunk: chunkIdx,
+              chunkTimeInterval: timeIntervalLabel,
+              etaSeconds,
+              elapsedSeconds: Math.round((Date.now() - startTime) / 1000),
+              stageDetail: `Estrazione WAV parte ${chunkIdx}`
+            }
+          )
         }
+        await audioChunker.extractChunkWav(audioFilePath, chunkFilePath, boundary.start, boundary.end)
       }
 
-      return initial
-    } finally {
-      if (uploadedFileName) {
+      // Gli URI Files appartengono al progetto/identità che li ha caricati.
+      // quotaGroup è una configurazione utente, non una prova di accesso condiviso.
+      const readyFiles = new Map<string, { uri: string; mimeType: string }>()
+      const uploadedFiles: Array<{ client: GoogleGenAI; name: string }> = []
+
+      try {
+        const ext = chunkFilePath.toLowerCase().split('.').pop()
+        const mimeType = ext === 'wav' ? 'audio/wav' : ext === 'm4a' ? 'audio/m4a' : 'audio/mp3'
+
+        if (onProgress) {
+          onProgress(
+            `In elaborazione parte ${chunkIdx} su Gemini…`,
+            progressPercent + 2,
+            {
+              totalChunks,
+              currentChunk: chunkIdx,
+              chunkTimeInterval: timeIntervalLabel,
+              etaSeconds,
+              elapsedSeconds: Math.round((Date.now() - startTime) / 1000),
+              stageDetail: `Upload parte ${chunkIdx}`
+            }
+          )
+        }
+
+        const ensureActive = (attemptSignal: AbortSignal): void => {
+          if (attemptSignal.aborted) {
+            throw attemptSignal.reason instanceof GeminiError
+              ? attemptSignal.reason
+              : new GeminiError({ category: 'cancelled', isRetryable: false, isDailyQuota: false, sanitizedMessage: 'Trascrizione annullata.' })
+          }
+        }
+        const fileForKey = async (activeKey: string, attemptSignal: AbortSignal) => {
+          ensureActive(attemptSignal)
+          const cached = readyFiles.get(activeKey)
+          if (cached) return cached
+          const client = this.requestManager.getTransport().getClient(activeKey)
+          const uploadResult = await client.files.upload({
+            file: chunkFilePath,
+            config: { mimeType, abortSignal: attemptSignal }
+          })
+          // Registrare subito il nome: anche un errore di get/poll/URI deve pulirlo.
+          if (uploadResult.name) uploadedFiles.push({ client, name: uploadResult.name })
+          ensureActive(attemptSignal)
+          if (!uploadResult.name || !uploadResult.uri) {
+            throw new GeminiError({ category: 'invalid_output', isRetryable: false, isDailyQuota: false, sanitizedMessage: 'Google non ha restituito un riferimento valido per il file audio.' })
+          }
+          let file = await client.files.get({ name: uploadResult.name, config: { abortSignal: attemptSignal } })
+          const processingDeadline = Date.now() + 5 * 60_000
+          while (file.state === 'PROCESSING') {
+            ensureActive(attemptSignal)
+            if (Date.now() >= processingDeadline) {
+              throw new GeminiError({ category: 'timeout', isRetryable: true, isDailyQuota: false, sanitizedMessage: 'Tempo limite dell’elaborazione audio su Google superato.' })
+            }
+            await delay(3000, undefined, { signal: attemptSignal })
+            file = await client.files.get({ name: uploadResult.name, config: { abortSignal: attemptSignal } })
+          }
+          ensureActive(attemptSignal)
+          if (file.state === 'FAILED') {
+            throw new GeminiError({ category: 'invalid_output', isRetryable: false, isDailyQuota: false, sanitizedMessage: 'Elaborazione del file audio fallita sui server Google.' })
+          }
+          const ready = { uri: file.uri || uploadResult.uri, mimeType: file.mimeType || mimeType }
+          readyFiles.set(activeKey, ready)
+          return ready
+        }
+
+        let chunkText: string | null = null
+        let transcribeErrorObj: GeminiError | null = null
+
         try {
-          await ai.files.delete({ name: uploadedFileName })
-        } catch (error) {
-          console.warn('Pulizia del file audio remoto non riuscita:', error)
+          chunkText = await this.requestManager.execute({
+            jobId: `asr-${chunkIdx}`,
+            purpose: 'asr_transcribe',
+            priority: 'background',
+            keys: keyConfigs,
+            preferredModel: 'gemini-3.5-transcribe',
+            signal,
+            call: async (activeKey, activeModel, attemptSignal) => {
+              const file = await fileForKey(activeKey, attemptSignal)
+              const activeAi = this.requestManager.getTransport().getClient(activeKey)
+              const interactionClient = (activeAi as unknown as { interactions: { create: (params: unknown, options?: { signal: AbortSignal }) => Promise<unknown> } }).interactions
+              const response = await interactionClient.create({
+                model: activeModel,
+                input: [{ type: 'audio', uri: file.uri, mime_type: file.mimeType }],
+                generation_config: {
+                  transcription_config: transcriptionConfig
+                }
+              }, { signal: attemptSignal })
+              ensureActive(attemptSignal)
+              return extractInteractionText(response)
+            },
+            onRetry: (attempt) => {
+              if (onProgress) {
+                onProgress(
+                  `Server sovraccarico. Tentativo ${attempt} sulla parte ${chunkIdx}…`,
+                  progressPercent,
+                  {
+                    totalChunks,
+                    currentChunk: chunkIdx,
+                    chunkTimeInterval: timeIntervalLabel,
+                    etaSeconds,
+                    elapsedSeconds: Math.round((Date.now() - startTime) / 1000),
+                    stageDetail: `Retry ${attempt}`
+                  }
+                )
+              }
+            }
+          })
+        } catch (transcribeError) {
+          transcribeErrorObj = normalizeGeminiError(transcribeError)
+          if (transcribeErrorObj.category === 'cancelled' || transcribeErrorObj.recoveryDisposition === 'terminal') throw transcribeErrorObj
+          logger.warn('transcription', `ASR parte ${chunkIdx}: ${transcribeErrorObj.sanitizedMessage}`)
+        }
+
+        const chunkDurationMin = Math.max(0.1, (boundary.end - boundary.start) / 60)
+        const wordCount = chunkText ? chunkText.split(/\s+/).filter(Boolean).length : 0
+        const wordsPerMin = wordCount / chunkDurationMin
+        const isInsufficient = (!chunkText || isNonSpeechTranscript(chunkText) || (wordsPerMin < 15 && chunkDurationMin >= 1.0))
+        logger.info('transcription', `Controllo risposta ASR parte ${chunkIdx}.`, JSON.stringify({
+          event: 'asr_output_check', chunk: chunkIdx, wordCount,
+          durationSeconds: Math.round(boundary.end - boundary.start),
+          reason: transcribeErrorObj ? 'api_error' : !chunkText ? 'empty' : isNonSpeechTranscript(chunkText) ? 'non_speech' : isInsufficient ? 'low_density' : 'accepted'
+        }))
+
+        let fallbackErrorObj: GeminiError | null = null
+        let wasFallback = false
+
+        if (isInsufficient || transcribeErrorObj) {
+          const fallbackModel = (params.fallbackModel as string) || 'gemini-3.8-flash'
+          if (onProgress) {
+            onProgress(
+              `Parte ${chunkIdx}: recupero di sicurezza con modello multimodale (${fallbackModel})…`,
+              progressPercent + 2,
+              {
+                totalChunks,
+                currentChunk: chunkIdx,
+                chunkTimeInterval: timeIntervalLabel,
+                etaSeconds,
+                elapsedSeconds: Math.round((Date.now() - startTime) / 1000),
+                stageDetail: 'Fallback multimodale'
+              }
+            )
+          }
+          try {
+            const isItalian = languageCodes && languageCodes.length === 1 && languageCodes[0] === 'it-IT'
+            const fallbackPrompt = isItalian
+              ? `Sei un trascrittore fedele e scrupoloso. Trascrivi integralmente parola per parola l'audio allegato.
+È una lezione universitaria.
+Trascrivi tutto il parlato senza omettere nulla, comprese formule matematiche e terminologia tecnica.
+Non riassumere, non tagliare e non inserire commenti personali.
+Se nel file non c'è parlato comprensibile ma solo rumore, musica o silenzio, rispondi ESATTAMENTE: [NESSUN_PARLATO].
+Restituisci esclusivamente la trascrizione:`
+              : `You are a faithful and rigorous academic transcriber.
+Transcribe the attached audio word-for-word.
+It is an advanced university engineering lecture taught in English.
+Transcribe everything verbatim, preserving all technical terminology, mathematical notation, algorithms, and code.
+Do not summarize, do not omit details, and do not add conversational remarks.
+If the audio contains no intelligible human speech (e.g. only background noise, murmur, music, or silence), reply EXACTLY with: [NESSUN_PARLATO].
+Return ONLY the verbatim transcript:`
+
+            const fallbackRaw = await this.requestManager.execute({
+              jobId: `fallback-${chunkIdx}`,
+              purpose: 'asr_fallback',
+              priority: 'background',
+              keys: keyConfigs,
+              preferredModel: fallbackModel,
+              fallbackModels: getModelFallbackChain(fallbackModel).fallbacks,
+              signal,
+              call: async (activeKey, activeModel, attemptSignal) => {
+                const file = await fileForKey(activeKey, attemptSignal)
+                const audioPart = createPartFromUri(file.uri, file.mimeType)
+                const activeAi = this.requestManager.getTransport().getClient(activeKey)
+                const fallbackRes = await activeAi.models.generateContent({
+                  model: activeModel,
+                  contents: [audioPart, fallbackPrompt],
+                  config: { temperature: 0.0, abortSignal: attemptSignal }
+                })
+                ensureActive(attemptSignal)
+                return fallbackRes.text?.trim() || ''
+              }
+            })
+
+            const fallbackWords = fallbackRaw.split(/\s+/).filter(Boolean).length
+            if (fallbackRaw && !fallbackRaw.includes('[NESSUN_PARLATO]') && fallbackWords >= 10) {
+              chunkText = cleanMarkdownOutput(fallbackRaw)
+              transcribeErrorObj = null
+              wasFallback = true
+            } else if (fallbackRaw.includes('[NESSUN_PARLATO]')) {
+              chunkText = '[NESSUN_PARLATO]'
+              transcribeErrorObj = null
+              wasFallback = true
+            }
+          } catch (fallbackErr) {
+            fallbackErrorObj = normalizeGeminiError(fallbackErr)
+            logger.warn('transcription', `Fallback parte ${chunkIdx}: ${fallbackErrorObj.sanitizedMessage}`)
+          }
+        }
+
+        if (transcribeErrorObj && fallbackErrorObj) {
+          throw fallbackErrorObj
+        }
+        if (transcribeErrorObj && !chunkText) {
+          throw transcribeErrorObj
+        }
+        if (fallbackErrorObj && (!chunkText || isNonSpeechTranscript(chunkText) || (wordsPerMin < 15 && chunkDurationMin >= 1.0))) {
+          throw fallbackErrorObj
+        }
+
+        let processedText = chunkText?.trim() || ''
+        const isNonSpeech = !processedText || isNonSpeechTranscript(processedText) || processedText.includes('[NESSUN_PARLATO]')
+        if (isNonSpeech) {
+          processedText = `[Nessun parlato rilevato tra ${formatTimecode(boundary.start)} e ${formatTimecode(boundary.end)}]`
+        } else {
+          if (lastValidChunkText && i > 0) {
+            processedText = trimOverlapWords(lastValidChunkText, processedText, 30)
+          }
+          lastValidChunkText = processedText
+        }
+
+        const partHeader = totalChunks > 1
+          ? `--- [Parte ${i + 1}/${totalChunks} • ${formatTimecode(boundary.start)} - ${formatTimecode(boundary.end)}] ---`
+          : ''
+        const chunkBlock = partHeader ? `${partHeader}\n\n${processedText}` : processedText
+        finalTranscript += (finalTranscript.length > 0 ? '\n\n' : '') + chunkBlock
+
+        if (asrCheckpoint) {
+          asrCheckpoint.chunks[i] = {
+            startSec: boundary.start,
+            endSec: boundary.end,
+            text: processedText,
+            status: isNonSpeech ? 'no_speech' : 'transcribed',
+            method: wasFallback ? 'fallback' : 'asr'
+          }
+          asrCheckpoint.updatedAt = new Date().toISOString()
+          await this.jobStore?.saveAsrCheckpoint(asrCheckpoint)
+        }
+
+        const finalWordCount = processedText ? processedText.split(/\s+/).filter(Boolean).length : 0
+        const chunkElapsed = Math.round((Date.now() - startTime) / 1000)
+        const remainingChunks = totalChunks - (i + 1)
+        const avgTime = (Date.now() - startTime) / (i + 1)
+        const nextEta = Math.round((avgTime * remainingChunks) / 1000)
+        const completedPercent = 10 + Math.round(((i + 1) / totalChunks) * 80)
+        if (onProgress) {
+          onProgress(
+            `Parte ${chunkIdx} di ${totalChunks} completata (${finalWordCount} parole trascritte)`,
+            completedPercent,
+            {
+              totalChunks,
+              currentChunk: chunkIdx,
+              chunkTimeInterval: timeIntervalLabel,
+              etaSeconds: nextEta,
+              elapsedSeconds: chunkElapsed,
+              stageDetail: `Parte ${chunkIdx} completata`
+            }
+          )
+        }
+      } finally {
+        const cleanupSignal = AbortSignal.timeout(CLEANUP_BUDGET_MS)
+        await Promise.all(uploadedFiles.map(async ({ client, name }) => {
+          try { await client.files.delete({ name, config: { abortSignal: cleanupSignal } }) }
+          catch { logger.warn('transcription', 'Pulizia di un file audio temporaneo su Google non completata.') }
+        }))
+        if (isTempFile) {
+          try { await rm(chunkFilePath) } catch { /* ignore */ }
         }
       }
     }
+
+    if (asrCheckpoint && lectureId) {
+      asrCheckpoint.status = 'completed'
+      asrCheckpoint.updatedAt = new Date().toISOString()
+      await this.jobStore?.deleteAsrCheckpoint(lectureId)
+    }
+
+    const totalElapsed = Math.round((Date.now() - startTime) / 1000)
+    if (onProgress) {
+      onProgress('Trascrizione completata con successo!', 100, {
+        totalChunks,
+        currentChunk: totalChunks,
+        etaSeconds: 0,
+        elapsedSeconds: totalElapsed,
+        stageDetail: 'Trascrizione completata'
+      })
+    }
+    return finalTranscript.trim()
   }
 
   async extractCourseLogistics(params: {
-    apiKey: string
+    apiKey?: string
+    keys?: KeyConfig[]
     model?: string
     transcript: string
+    signal?: AbortSignal
   }): Promise<string | null> {
-    const ai = new GoogleGenAI({ apiKey: params.apiKey })
+    const keyConfigs = toKeyConfigs(params.apiKey, params.keys)
+    const { preferred, fallbacks } = getModelFallbackChain(params.model)
 
-    const response = await callWithRetry(async () => {
-      return await ai.models.generateContent({
-        model: params.model || 'gemini-3.6-flash',
-        contents: [`Trascrizione Lezione:\n\n${params.transcript}`],
-        config: {
-          systemInstruction: COURSE_LOGISTICS_EXTRACTION_PROMPT,
-          temperature: 0.2
+    const raw = await this.requestManager.execute({
+      jobId: 'course-logistics-extract',
+      purpose: 'course_logistics',
+      priority: 'background',
+      keys: keyConfigs,
+      preferredModel: preferred,
+      fallbackModels: fallbacks,
+      signal: params.signal,
+      call: async (k, m, s) => {
+        const ai = this.requestManager.getTransport().getClient(k)
+        const response = await ai.models.generateContent({
+          model: m,
+          contents: [`Trascrizione Lezione:\n\n${params.transcript}`],
+          config: {
+            systemInstruction: COURSE_LOGISTICS_EXTRACTION_PROMPT,
+            temperature: 0.2
+          }
+        })
+        if (s.aborted) {
+          throw new GeminiError({ category: 'cancelled', isRetryable: false, isDailyQuota: false, sanitizedMessage: 'Estrazione logistica annullata.' })
         }
-      })
+        return response.text?.trim() ?? ''
+      }
     })
 
-    const raw = response.text?.trim()
     if (!raw || raw.includes('NO_INFO')) return null
     return raw
   }
 
   async mergeCourseLogistics(params: {
-    apiKey: string
+    apiKey?: string
+    keys?: KeyConfig[]
     model?: string
     existingInfo: string
     newExtractedInfo: string
+    signal?: AbortSignal
   }): Promise<string> {
-    const ai = new GoogleGenAI({ apiKey: params.apiKey })
+    const keyConfigs = toKeyConfigs(params.apiKey, params.keys)
+    const { preferred, fallbacks } = getModelFallbackChain(params.model)
 
-    const response = await callWithRetry(async () => {
-      return await ai.models.generateContent({
-        model: params.model || 'gemini-3.6-flash', // Fallback to user model or 3.6-flash because 3.1 Pro is not available
-        contents: [
-          `FILE ESISTENTE:\n${params.existingInfo}\n\nNUOVE INFORMAZIONI ESTRATTE:\n${params.newExtractedInfo}`
-        ],
-        config: {
-          systemInstruction: COURSE_LOGISTICS_MERGE_PROMPT,
-          temperature: 0.1
+    const raw = await this.requestManager.execute({
+      jobId: 'course-logistics-merge',
+      purpose: 'course_logistics',
+      priority: 'background',
+      keys: keyConfigs,
+      preferredModel: preferred,
+      fallbackModels: fallbacks,
+      signal: params.signal,
+      call: async (k, m, s) => {
+        const ai = this.requestManager.getTransport().getClient(k)
+        const response = await ai.models.generateContent({
+          model: m,
+          contents: [
+            `FILE ESISTENTE:\n${params.existingInfo}\n\nNUOVE INFORMAZIONI ESTRATTE:\n${params.newExtractedInfo}`
+          ],
+          config: {
+            systemInstruction: COURSE_LOGISTICS_MERGE_PROMPT,
+            temperature: 0.1
+          }
+        })
+        if (s.aborted) {
+          throw new GeminiError({ category: 'cancelled', isRetryable: false, isDailyQuota: false, sanitizedMessage: 'Merge logistica annullato.' })
         }
-      })
+        return response.text?.trim() ?? ''
+      }
     })
 
-    const merged = response.text?.trim()
-    if (!merged) throw new Error('Failed to merge logistics')
-    return cleanMarkdownOutput(merged)
+    if (!raw) throw new Error('Failed to merge logistics')
+    return cleanMarkdownOutput(raw)
   }
 
   async generateStudySet(params: {
-    apiKey: string
+    apiKey?: string
+    keys?: KeyConfig[]
     model?: GeminiModel
     transcript?: string | null
     markdown?: string | null
     courseCode?: string | null
     lectureId: string
+    signal?: AbortSignal
   }): Promise<LectureStudySet> {
+    const keyConfigs = toKeyConfigs(params.apiKey, params.keys)
+    const { preferred, fallbacks } = getModelFallbackChain(params.model)
     const textContent = params.markdown
       ? `DISPENSA DIDATTICA DELLA LEZIONE:\n\n${params.markdown}`
       : `TRASCRIZIONE GREZZA DELLA LEZIONE:\n\n${params.transcript}`
 
-    const ai = new GoogleGenAI({ apiKey: params.apiKey })
-    const response = await callWithRetry(async () => {
-      return await ai.models.generateContent({
-        model: params.model || 'gemini-3.6-flash',
-        contents: [
-          `Corso: ${params.courseCode ?? 'Generale'}\n\n${textContent}`
-        ],
-        config: {
-          systemInstruction: STUDY_SET_SYSTEM_INSTRUCTION,
-          responseMimeType: 'application/json',
-          temperature: 0.3
+    const raw = await this.requestManager.execute({
+      jobId: `study-set-${params.lectureId}`,
+      purpose: 'studyset',
+      priority: 'background',
+      keys: keyConfigs,
+      preferredModel: preferred,
+      fallbackModels: fallbacks,
+      signal: params.signal,
+      call: async (k, m, s) => {
+        const ai = this.requestManager.getTransport().getClient(k)
+        const response = await ai.models.generateContent({
+          model: m,
+          contents: [
+            `Corso: ${params.courseCode ?? 'Generale'}\n\n${textContent}`
+          ],
+          config: {
+            systemInstruction: STUDY_SET_SYSTEM_INSTRUCTION,
+            responseMimeType: 'application/json',
+            temperature: 0.3
+          }
+        })
+        if (s.aborted) {
+          throw new GeminiError({ category: 'cancelled', isRetryable: false, isDailyQuota: false, sanitizedMessage: 'Generazione quiz annullata.' })
         }
-      })
+        return response.text?.trim() ?? ''
+      }
     })
 
-    const raw = response.text?.trim()
     if (!raw) throw new Error('Nessuna risposta ricevuta da Gemini.')
 
     // 1. Pulisci i markdown codeblocks
     let jsonString = cleanMarkdownOutput(raw)
     // 2. Sanifica i backslash singoli che non sono sequenze di escape valide in JSON
-    // Questo previene crash (es. \sin, \math) salvando il parser, senza toccare quelli già doppi (\\)
     jsonString = jsonString.replace(/(?<!\\)\\(?!["\\/bfnrtu])/g, '\\\\')
 
-    const parsed: unknown = JSON.parse(jsonString)
+    let parsed: unknown
+    try {
+      parsed = JSON.parse(jsonString)
+    } catch {
+      throw new GeminiError({
+        category: 'invalid_output',
+        isRetryable: false,
+        isDailyQuota: false,
+        sanitizedMessage: 'Formato JSON del set di studio non valido.'
+      })
+    }
+
     if (
       !isRecord(parsed) ||
       !Array.isArray(parsed.questions) ||
@@ -1037,40 +1965,46 @@ Esegui due compiti obbligatori:
         const q = isRecord(value) ? value : {}
         const options = Array.isArray(q.options) ? q.options.map(String) : []
         return {
-        id: typeof q.id === 'string' && q.id ? q.id : `q${idx + 1}`,
-        question: String(q.question || ''),
-        options,
-        correctOptionIndex:
-          typeof q.correctOptionIndex === 'number' &&
-          q.correctOptionIndex >= 0 &&
-          q.correctOptionIndex < options.length
-            ? q.correctOptionIndex
-            : 0,
-        explanation: String(q.explanation || ''),
-        keyConcept: String(q.keyConcept || 'Concetto chiave')
-      }}),
+          id: typeof q.id === 'string' && q.id ? q.id : `q${idx + 1}`,
+          question: String(q.question || ''),
+          options,
+          correctOptionIndex:
+            typeof q.correctOptionIndex === 'number' &&
+            q.correctOptionIndex >= 0 &&
+            q.correctOptionIndex < options.length
+              ? q.correctOptionIndex
+              : 0,
+          explanation: String(q.explanation || ''),
+          keyConcept: String(q.keyConcept || 'Concetto chiave')
+        }
+      }),
       flashcards: parsed.flashcards.map((value: unknown, idx: number) => {
         const f = isRecord(value) ? value : {}
         return {
-        id: typeof f.id === 'string' && f.id ? f.id : `f${idx + 1}`,
-        front: String(f.front || ''),
-        back: String(f.back || ''),
-        category: f.category ? String(f.category) : undefined
-      }})
+          id: typeof f.id === 'string' && f.id ? f.id : `f${idx + 1}`,
+          front: String(f.front || ''),
+          back: String(f.back || ''),
+          category: f.category ? String(f.category) : undefined
+        }
+      })
     }
   }
 
   async *generateQnaResponse(params: {
-    apiKey: string
+    images?: { page: number; mimeType: 'image/png'; data: string }[]
+    apiKey?: string
+    keys?: KeyConfig[]
     model: GeminiModel
     courseCode?: string | null
     lectureTitle?: string | null
     thread: QnaThread
     fullLectureText?: string
     onRetry?: (attempt: number, delayMs: number, reason: string) => void
+    onAttempt?: (info: RequestAttemptInfo) => void
+    signal?: AbortSignal
   }): AsyncGenerator<string, void, unknown> {
-    const ai = new GoogleGenAI({ apiKey: params.apiKey })
-    const { model, courseCode, lectureTitle, thread, fullLectureText } = params
+    const keyConfigs = toKeyConfigs(params.apiKey, params.keys)
+    const { model, courseCode, lectureTitle, thread, fullLectureText, signal } = params
 
     // Costruiamo il contesto del prompt
     let contextText = ''
@@ -1101,62 +2035,174 @@ Lo studente sta studiando la dispensa e ti fa domande specifiche su una porzione
 Rispondi in italiano in modo chiaro, proporzionato (né troppo lungo né troppo corto), usando LaTeX ($...$ e $$...$$) per le formule matematiche.
 Mantieni il contesto del discorso.
 
+METODO DIDATTICO:
+- Punta alla comprensione: rispondi al dubbio concreto e spiega il perché, con passaggi o un esempio pertinente quando aiutano.
+- Valuta il ragionamento prima di approvarlo. Se la domanda contiene una premessa errata, correggila esplicitamente e spiega l'errore prima di proseguire. Mantieni un tono rispettoso e diretto.
+- Se lo studente propone una risposta parziale, distingui ciò che è corretto da ciò che manca o va corretto; completa il passaggio senza approvare l'intera risposta per compiacenza.
+- Dai riscontri specifici sul contenuto, senza elogi automatici, complimenti personali o formule di approvazione rituali. Una risposta corretta può essere confermata spiegando perché lo è.
+- Quando lo studente chiede un chiarimento, cambia formulazione o usa un esempio più semplice invece di ripetere la stessa spiegazione.
+- Puoi aggiungere una breve domanda di verifica solo quando aiuta a controllare un passaggio decisivo; rispondi prima alla richiesta e non trasformare ogni risposta in un interrogatorio.
+- Usa dispensa, citazione e slide allegate come fonti. Distingui ciò che riportano dalle tue deduzioni o integrazioni; se non consentono di stabilire un fatto, dichiaralo senza inventare dettagli o attribuzioni al docente. Se rilevi un errore o una contraddizione nelle fonti, segnalalo e motiva la correzione.
+
 ${contextText}
 ${historyContext}`
 
     const lastUserMessage = thread.messages[questionIndex].text
 
-    const chat = ai.chats.create({
-      model,
-      config: {
-        systemInstruction,
-        temperature: 0.2
-      }
-    })
+    type ChunkEvent =
+      | { type: 'chunk'; text: string }
+      | { type: 'done' }
+      | { type: 'error'; error: Error }
 
-    const isTest =
-      process.env.NODE_ENV === 'test' || process.env.VITEST === 'true'
-    const stream = await callWithRetry(
-      () => chat.sendMessageStream({ message: lastUserMessage }),
-      {
-        maxRetries: 1,
-        retryDelayMs: isTest ? 10 : 1200,
-        onRetry: params.onRetry
+    const queue: ChunkEvent[] = []
+    let notifyResolver: (() => void) | null = null
+
+    const pushEvent = (evt: ChunkEvent) => {
+      queue.push(evt)
+      if (notifyResolver) {
+        notifyResolver()
+        notifyResolver = null
       }
+    }
+
+    const pullEvent = async (): Promise<ChunkEvent> => {
+      if (queue.length > 0) {
+        return queue.shift()!
+      }
+      await new Promise<void>((resolve) => {
+        notifyResolver = resolve
+      })
+      return queue.shift()!
+    }
+
+    const { preferred, fallbacks } = getQnaModelFallbackChain(model)
+
+    this.requestManager.execute({
+      jobId: `qna-${thread.id}`,
+      purpose: 'qna',
+      preferModelFallback: true,
+      priority: 'interactive',
+      keys: keyConfigs,
+      preferredModel: preferred,
+      fallbackModels: fallbacks,
+      signal,
+      call: async (activeApiKey, activeModel, attemptSignal) => {
+        let emittedChunk = false
+        try {
+          await this.requestManager.getTransport().generateContentStream({
+            apiKey: activeApiKey,
+            model: activeModel,
+            contents: params.images?.length ? [{ role: 'user', parts: [
+              ...params.images.flatMap(image => [{ text: `Slide allegata: pagina ${image.page}.` }, { inlineData: { mimeType: image.mimeType, data: image.data } }]),
+              { text: lastUserMessage }
+            ] }] : lastUserMessage,
+            config: {
+              systemInstruction,
+              temperature: 0.2
+            },
+            signal: attemptSignal,
+            onChunk: (text) => {
+              if (!text.trim() && !emittedChunk) return
+              emittedChunk = true
+              pushEvent({ type: 'chunk', text })
+            }
+          })
+          if (!emittedChunk) throw new GeminiError({ category: 'invalid_output', isRetryable: true, isDailyQuota: false, sanitizedMessage: 'Il modello Q&A non ha restituito testo. Provo un modello alternativo.' })
+        } catch (error) {
+          if (emittedChunk) {
+            const normalized = normalizeGeminiError(error)
+            throw new GeminiError(
+              {
+                category: normalized.category,
+                statusCode: normalized.statusCode,
+                retryDelayMs: normalized.retryDelayMs,
+                isRetryable: false,
+                isDailyQuota: normalized.isDailyQuota,
+                recoveryDisposition: 'terminal',
+                sanitizedMessage:
+                  'Lo streaming Q&A si è interrotto dopo l’inizio della risposta. Riprova la domanda.'
+              },
+              error
+            )
+          }
+          throw error
+        }
+      },
+      onAttempt: params.onAttempt,
+      onRetry: (attempt, delayMs, reason) => {
+        params.onRetry?.(attempt, delayMs, reason)
+      }
+    }).then(
+      () => pushEvent({ type: 'done' }),
+      (err) => pushEvent({ type: 'error', error: err instanceof Error ? err : new Error(String(err)) })
     )
 
-    for await (const chunk of stream) {
-      yield chunk.text ?? ''
+    while (true) {
+      const evt = await pullEvent()
+      if (evt.type === 'chunk') {
+        yield evt.text
+      } else if (evt.type === 'done') {
+        break
+      } else if (evt.type === 'error') {
+        throw evt.error
+      }
     }
   }
 
   async translateToEnglish(params: {
-    apiKey: string
+    apiKey?: string
+    keys?: KeyConfig[]
     model: GeminiModel
     markdownIta: string
+    jobId?: string
     onRetry?: (attempt: number, delayMs: number, reason: string) => void
+    signal?: AbortSignal
   }): Promise<string> {
-    const { apiKey, model, markdownIta, onRetry } = params
-    const ai = new GoogleGenAI({ apiKey: apiKey.trim() })
+    const { apiKey, keys, model, markdownIta, jobId, onRetry, signal } = params
+    const keyConfigs = toKeyConfigs(apiKey, keys)
+    const { preferred, fallbacks } = getModelFallbackChain(model)
 
-    const prompt = `Translate the following Italian lecture notes to English:\n\n${markdownIta}`
+    const envelope = prepareTranslation(markdownIta)
+    const plan = prepareTranslationPlan(envelope)
+    const responseSchema = translationPlanSchema(plan)
+    if (!responseSchema.required.length) return validateTranslationPlan(envelope, plan, '{}', 'STOP')
+    const prompt = `Translate these Italian lecture notes to English in full, using the complete document as context. Each section contains an ordered sequence of parts. A part with "keep" is immutable context: it will be inserted locally, verbatim, in its original position. Never return, translate or duplicate a keep part. For each part with "key" and "translate", return its complete English Markdown as a string under that key, nested inside the corresponding section key. Return only the JSON object required by the schema. Preserve Markdown headings, lists, tables and Mermaid structure in translated fragments. Do not add math or code already present in keep parts, do not merge or omit prose fragments, and do not include commentary. Edge whitespace will be restored locally. SOURCE_TRANSLATION_PLAN_JSON:\n${JSON.stringify(plan)}`
 
-    const rawText = await callWithRetry(
-      async () => {
+    return await this.requestManager.execute({
+      jobId: jobId ?? 'translation',
+      purpose: 'translation',
+      priority: 'background',
+      keys: keyConfigs,
+      preferredModel: preferred,
+      fallbackModels: fallbacks.filter(candidate => !candidate.includes('-lite')),
+      signal,
+      call: async (k, m, s) => {
+        const ai = this.requestManager.getTransport().getClient(k)
         const response = await ai.models.generateContent({
-          model: model || 'gemini-3.6-flash',
+          model: m,
           contents: prompt,
           config: {
             systemInstruction: TRANSLATION_SYSTEM_INSTRUCTION,
-            temperature: 0.1
+            responseMimeType: 'application/json',
+            responseJsonSchema: responseSchema,
+            temperature: 0.1,
+            abortSignal: s
           }
         })
-        return response.text ?? ''
+        if (s.aborted) {
+          throw new GeminiError({ category: 'cancelled', isRetryable: false, isDailyQuota: false, sanitizedMessage: 'Traduzione annullata.' })
+        }
+        return validateTranslationPlan(envelope, plan, response.text ?? '', response.candidates?.[0]?.finishReason, sections => {
+          logger.info('translation-integrity', 'Copie display identiche escluse dalla prosa; formule originali conservate e integrità verificata.', JSON.stringify({ sections }))
+        }, sections => {
+          logger.info('translation-integrity', 'Diagrammi Mermaid originali conservati: traduzione della dispensa completata.', JSON.stringify({ sections }))
+        })
       },
-      { onRetry }
-    )
+      onRetry: (attempt, delayMs, reason) => {
+        onRetry?.(attempt, delayMs, reason)
+      }
+    })
 
-    return cleanMarkdownOutput(rawText)
   }
 }
 export const STUDY_SET_SYSTEM_INSTRUCTION = `Sei un docente e assistente didattico universitario per studenti di Ingegneria Magistrale.

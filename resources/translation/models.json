@@ -1,0 +1,61 @@
+{
+  "registryGenerated": "2026-10-13T00:44:54Z",
+  "models": [
+    {
+      "direction": "en-it",
+      "architecture": "base-memory",
+      "releaseStatus": "Release",
+      "files": [
+        {
+          "kind": "lexicalShortlist",
+          "path": "models/en-it/retrain_hr_fix_names_GPSr_u8PSmC9fOx1ZDCHoA/exported/lex.50.50.enit.s2t.bin.gz",
+          "bytes": 4133192,
+          "sha256": "8b21914804625b2777dae7fdb636eb78f02a3eb8b7bceaa50f29ac740961da93",
+          "compressedBytes": 2209348
+        },
+        {
+          "kind": "model",
+          "path": "models/en-it/retrain_hr_fix_names_GPSr_u8PSmC9fOx1ZDCHoA/exported/model.enit.intgemm.alphas.bin.gz",
+          "bytes": 31561787,
+          "sha256": "248f47568788ecc351da7e5e07064d4153b4f71e011364ae2c931ffeec4d1cc2",
+          "compressedBytes": 23892889
+        },
+        {
+          "kind": "vocab",
+          "path": "models/en-it/retrain_hr_fix_names_GPSr_u8PSmC9fOx1ZDCHoA/exported/vocab.enit.spm.gz",
+          "bytes": 812724,
+          "sha256": "3ef0211d4ae6db21440892f180f2019fe2bfc110a330ffa9d2eca9665e4f2bc5",
+          "compressedBytes": 407598
+        }
+      ]
+    },
+    {
+      "direction": "it-en",
+      "architecture": "base-memory",
+      "releaseStatus": "Release",
+      "files": [
+        {
+          "kind": "lexicalShortlist",
+          "path": "models/it-en/retrain_hr_d1nPDwVeSD6t-HdtWA4xNg/exported/lex.50.50.iten.s2t.bin.gz",
+          "bytes": 4713616,
+          "sha256": "0700d6d70b30490e68ff9deca0b45b80310745b491855bde3a13e1692d0cbce1",
+          "compressedBytes": 2532929
+        },
+        {
+          "kind": "model",
+          "path": "models/it-en/retrain_hr_d1nPDwVeSD6t-HdtWA4xNg/exported/model.iten.intgemm.alphas.bin.gz",
+          "bytes": 31561787,
+          "sha256": "21b70978ce2f3b4da7a06b5de86a09abe3acd30b9eee1b2ebb3582b9bad790bf",
+          "compressedBytes": 23301774
+        },
+        {
+          "kind": "vocab",
+          "path": "models/it-en/retrain_hr_d1nPDwVeSD6t-HdtWA4xNg/exported/vocab.iten.spm.gz",
+          "bytes": 812724,
+          "sha256": "3ef0211d4ae6db21440892f180f2019fe2bfc110a330ffa9d2eca9665e4f2bc5",
+          "compressedBytes": 407598
+        }
+      ]
+    }
+  ]
+}
