@@ -1,124 +1,54 @@
 <div align="center">
-  <img src="docs/assets/brand/lezionify-logo.png" alt="Logo di Lezionify" width="132" />
+  <img src="docs/assets/brand/lezionify-logo.png" alt="Lezionify logo" width="96" />
   <h1>Lezionify</h1>
-  <p><strong>Dalle registrazioni universitarie a un archivio di studio ordinato, ricercabile e verificabile.</strong></p>
-  <p>Desktop app local-first built with Electron, React and TypeScript.</p>
-
+  <p><strong>Turn lecture recordings into an organised study workspace.</strong></p>
+  <p>A local-first Windows desktop app built with Electron, React and TypeScript.</p>
   <p>
-    <img alt="Stato: work in progress" src="https://img.shields.io/badge/status-work%20in%20progress-F59E0B" />
-    <a href="https://github.com/giovannistefanuto/Lezionify/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/giovannistefanuto/Lezionify/actions/workflows/ci.yml/badge.svg" /></a>
-    <img alt="Piattaforma: Windows" src="https://img.shields.io/badge/platform-Windows-0078D4" />
-    <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-5.9-3178C6" />
-    <img alt="Electron" src="https://img.shields.io/badge/Electron-desktop-47848F" />
-    <img alt="Licenza: tutti i diritti riservati" src="https://img.shields.io/badge/license-all%20rights%20reserved-lightgrey" />
+    <a href="https://github.com/giovannistefanuto/Lezionify/actions/workflows/ci.yml"><img alt="Windows quality checks" src="https://github.com/giovannistefanuto/Lezionify/actions/workflows/ci.yml/badge.svg" /></a>
+    <img alt="Status: alpha" src="https://img.shields.io/badge/status-alpha-F59E0B" />
+    <img alt="Platform: Windows" src="https://img.shields.io/badge/platform-Windows-0078D4" />
+  </p>
+  <p><strong>English</strong> · <a href="README.it.md" lang="it">Italiano</a></p>
+  <p>
+    <a href="https://github.com/giovannistefanuto/lezionify-appunti"><strong>Read the lecture notes</strong></a> ·
+    <a href="#run-locally"><strong>Run the app</strong></a> ·
+    <a href="#engineering-decisions"><strong>Explore the engineering</strong></a>
   </p>
 </div>
 
-> [!IMPORTANT]
-> Lezionify è un progetto personale in sviluppo attivo. Il codice è pubblicato come portfolio tecnico: alcune funzioni richiedono ancora collaudi manuali e non è disponibile una release firmata per utenti finali.
+I built Lezionify to replace my own fragmented workflow: organise university recordings, transcribe them elsewhere, copy text into AI tools and piece the material back together. It brings recordings, notes, slides and questions into one workspace, keeping **the original audio and raw transcript separate from every AI-generated result**.
 
-## Perché esiste
+**Availability:** a personal alpha, used by its author. Running the app currently requires a development environment; there is no public signed Windows release. The interface is in Italian. You can read the [published notes in Italian and English](https://github.com/giovannistefanuto/lezionify-appunti) without installing anything or providing an API key.
 
-Registrare una lezione è semplice; trasformarla in materiale utile spesso significa rinominare file, lanciare trascrizioni altrove, copiare testi tra servizi AI e ricostruire manualmente il contesto settimane dopo.
+## See the workspace
 
-Lezionify riunisce quel flusso in un'app desktop mantenendo una regola centrale: **audio originale e trascrizione grezza restano le fonti primarie**. Le dispense, le traduzioni, i quiz e le risposte AI sono derivazioni esplicite e tracciabili.
+![Focus workspace with PDF slides, lecture notes and contextual discussion side by side](docs/assets/screenshots/focus-workspace.png)
 
-## Anteprima
+**Focus keeps the material and the question together:** PDF slides on the left, lecture notes in the centre and a discussion anchored to a passage on the right. Panels have independent scrolling and resizing; reading positions survive a restart.
 
-<p align="center">
-  <img src="docs/assets/screenshots/focus-workspace.png" alt="Focus con slide PDF, dispensa e discussione contestuale su dati sintetici" width="92%" />
-</p>
+<details>
+<summary><strong>Watch the 48-second visual tour</strong> — archive → Focus → questions → PDF export</summary>
 
-<table>
-  <tr>
-    <td width="50%"><img src="docs/assets/screenshots/lecture-archive.png" alt="Archivio delle lezioni con stato di studio e lingue disponibili" /></td>
-    <td width="50%"><img src="docs/assets/screenshots/pdf-export.png" alt="Esportazione PDF delle lezioni selezionate di un corso" /></td>
-  </tr>
-</table>
+![Guided tour of the archive, Focus workspace, contextual discussion and PDF export selection](docs/assets/demo/lezionify-tour.gif)
 
-Schermate reali dei componenti Electron con dati sintetici: Focus con PDF e discussione, archivio delle lezioni ed esportazione selettiva. Nessun materiale personale o account reale. [Provenienza e riproduzione](docs/assets/screenshots/README.md).
+This captioned tour uses real Electron component screenshots with synthetic data and synthetic answers. It shows the workflow's screens, rather than a continuous recording or a live AI request. [Static screenshots and accessible text description](docs/assets/demo/README.md).
 
-## Funzionalità
+</details>
 
-- Importazione da file, cartelle e registratore USB, copia nell'archivio locale e deduplicazione SHA-256.
-- Importazione di uno o più video con riordino e conversione locale in un unico MP3 tramite FFmpeg incluso. [Dettagli](docs/product/video-import.md).
-- Associazione delle registrazioni a corso, data e orario; classificazione dei laboratori tramite calendario e correzione manuale.
-- Conservazione separata di audio, trascrizione grezza, dispensa Markdown e traduzione.
-- Ricerca full-text locale con MiniSearch e filtri per corso e stato di studio.
-- Viewer Markdown con GFM, formule KaTeX, diagrammi Mermaid validati e fallback leggibile.
-- Focus con dispensa, slide PDF locali e discussione in pannelli ridimensionabili, zoom separati e cambio lingua. [Dettagli](docs/product/focus-pdf.md).
-- Esportazione PDF di una lezione o di lezioni selezionate del corso, in italiano o inglese, con formule, diagrammi e pagine Note quadrettate. Titoli IT/EN modificabili separatamente. [Dettagli](docs/product/lettura-export-pdf.md).
-- Ripresa del punto di lettura di dispense e slide PDF anche dopo la chiusura della lezione o il riavvio dell'app.
-- Generazione opzionale con Gemini di dispense, traduzioni, quiz, flashcard e Q&A contestuale.
-- Chat del corso su trascrizioni, dispense e documenti locali PDF/Markdown/TXT, con citazioni apribili, ricerca locale e traccia delle fonti inviate. [Dettagli e limiti](docs/product/rag-corso-2026-10-17.md).
-- Pipeline riprendibile per trascrizioni, dispense italiane e traduzioni inglesi; corsi archiviabili e ripristinabili.
-- Traduzione delle dispense con prosa strutturata e reinserimento locale di formule e codice; recupero del Mermaid originale se il diagramma tradotto cambia struttura. [Dettagli](docs/product/traduzione-dispense.md).
-- Sincronizzazione GitHub opzionale dei testi in italiano e inglese, con indici per corso e data e aggiornamento delle correzioni.
-- Dashboard dei corsi attivi, tempi per lezione, sessioni, timer e stima dello studio residuo; Memo raggruppati con anteprima, promemoria ed evidenziazioni.
-- Vocabolario EN ↔ IT offline con Ctrl+T e traduzione locale di frasi tramite modelli Bergamot opzionali. [Vocabolario](docs/product/vocabolario-offline.md) · [Strumenti offline](docs/product/funzioni-approvate-2026-10-15.md).
-- Suoni di sottofondo offline scaricabili su richiesta, con dissolvenze configurabili; telecomando Spotify e raccolta YouTube aperta nel browser. [Uso e limiti](docs/product/memo-log-pdf-transizioni-2026-10-19.md).
-- Log consultabili per giorno, diagnostica Gemini e gestione condivisa di quote, attese, annullamento e fallback senza registrare prompt, risposte o credenziali.
-- Scritture atomiche, backup recuperabile, mutex asincroni e validazione runtime ai confini IPC.
-- Credenziali Gemini cifrate tramite Electron `safeStorage` quando disponibile.
+## What you can do
 
-## Come funziona
+| Step | In Lezionify |
+| --- | --- |
+| **Collect and organise** | Import audio, transcripts or video; avoid duplicate imports; assign courses and dates; search your local archive. |
+| **Prepare study material** | Explicitly request Gemini transcription, structured Markdown notes and English translations. Keep the source files and resume interrupted processing. |
+| **Study in context** | Read notes alongside PDF slides, ask questions about a passage, or query the course's local documents with source citations. |
+| **Take the results with you** | Export a lecture or selected course lectures to PDF, including formulas, diagrams and grid pages for handwritten notes. Optionally publish texts to a dedicated GitHub repository. |
 
-```mermaid
-flowchart LR
-    A[Audio o TXT] --> B[Importazione e deduplicazione]
-    B --> C[(Archivio locale)]
-    C --> D[Trascrizione grezza]
-    D --> E{Azione esplicita}
-    E -->|Solo se richiesta| F[Gemini API]
-    F --> G[Dispensa, traduzione, quiz e Q&A]
-    C --> H[Ricerca e riproduzione]
-    G --> H
-```
+Study tools also include grouped Memo notes, timers, progress tracking, an offline EN ↔ IT dictionary, optional local phrase translation and downloadable background sounds. [Feature guides and limitations](docs/README.md#prodotto).
 
-La libreria dell'utente è salvata nella directory dati privata dell'applicazione. Le chiamate AI partono dalle azioni esplicite dell'utente o dalla pipeline abilitata nelle Impostazioni. Anche la chat di corso invia al provider i passaggi locali selezionati per rispondere. L'app resta utilizzabile per archivio, lettura e strumenti offline senza una chiave AI.
+## Run locally
 
-## Consultare le lezioni online
-
-Le lezioni sono disponibili nel repository [Lezionify · Appunti](https://github.com/giovannistefanuto/lezionify-appunti).
-
-1. Apri il corso che ti interessa dall'indice.
-2. Scegli la data della lezione: l'elenco segue l'ordine cronologico, dalla più vecchia alla più recente.
-3. Leggi **Italiano**, **English** oppure **Trascrizione** per consultare il testo grezzo.
-
-Non serve installare Lezionify né configurare una chiave API per leggere su GitHub. Per la consultazione offline puoi scaricare **Code → Download ZIP** o clonare il repository degli appunti. Le cartelle hanno nomi leggibili: `Nome del corso/AAAA-MM-GG/`; eventuali lezioni dello stesso giorno sono distinte dal titolo. Le traduzioni ancora da generare sono indicate nell'indice.
-
-Le dispense e le traduzioni sono elaborazioni AI e richiedono verifica rispetto alla trascrizione, alle slide e alle fonti del corso. Anche la trascrizione automatica può contenere errori. Gli appunti sono materiale personale di studio e non sostituiscono le risorse ufficiali del docente.
-
-### Organizzare e condividere il proprio archivio
-
-Nell'app importa gli audio o le trascrizioni, assegna corso e data, poi avvia la pipeline per produrre le dispense e le traduzioni. Audio originali e trascrizioni grezze restano separati dalle elaborazioni.
-
-Per condividere i testi configura nelle **Impostazioni** un repository GitHub dedicato, il branch e un PAT, quindi abilita la sincronizzazione automatica. Git deve essere disponibile nel PATH. Da quel momento l'app controlla GitHub all'avvio e periodicamente, aggiorna le lezioni modificate e aggiunge le traduzioni disponibili. Nessuna traduzione viene generata dalla pubblicazione stessa: le chiamate AI restano azioni esplicite nell'app. Il PAT viene cifrato localmente e non entra nel repository.
-
-*English readers: open [the lesson archive](https://github.com/giovannistefanuto/lezionify-appunti), choose a course and a date, then select **English**. No installation or API key is needed to read the notes.*
-
-## Stack
-
-| Area         | Tecnologie                                                |
-| ------------ | --------------------------------------------------------- |
-| Desktop      | Electron, electron-vite, electron-builder                 |
-| Interfaccia  | React 19, TypeScript, CSS                                 |
-| Contenuti    | react-markdown, KaTeX, Mermaid                            |
-| PDF e video  | PDF.js, stampa PDF Electron, ffmpeg-static                |
-| Ricerca      | MiniSearch                                                |
-| Strumenti offline | FreeDict/WikDict, Bergamot WASM, Web Audio          |
-| AI opzionale | Google Gen AI SDK / Gemini API                            |
-| Qualità      | Vitest, ESLint, Prettier, test React nel runtime Electron |
-| Persistenza  | JSON locale, file atomici, backup e cache in memoria      |
-
-## Avvio in locale
-
-### Requisiti
-
-- Windows 10 o 11;
-- Node.js 22.13.0 o successivo;
-- npm;
-- una chiave Gemini API solo per le funzioni AI opzionali.
+**Requirements:** Windows 10 or 11, Node.js 22.13.0 or later, npm and Git to clone the repository. Python 3.10 or later is also needed for the complete quality checks.
 
 ```powershell
 git clone https://github.com/giovannistefanuto/Lezionify.git
@@ -127,111 +57,72 @@ npm ci
 npm run dev
 ```
 
-La chiave API si configura dall'interfaccia dell'app e non deve essere inserita in `.env` o in file versionati.
+Use the Electron window opened by the command. Start by importing audio or a transcript and assigning a course and date. You can organise, search and read local material without an AI key. To generate notes, configure your Gemini API key in **Impostazioni** (Settings), then explicitly start processing. Never put keys in source files or `.env`.
 
-I modelli per tradurre frasi e i suoni di sottofondo si scaricano separatamente dall'app su richiesta e vengono conservati nel profilo locale. Il telecomando Spotify richiede configurazione e consenso dell'account; YouTube apre il browser esterno. Git serve soltanto per la sincronizzazione opzionale dei testi su GitHub.
+Phrase-translation models and background sounds are optional downloads. GitHub text synchronisation requires its own repository and credentials; Spotify requires separate account setup. [Usage guides](docs/README.md#prodotto).
 
-### Comandi utili
+## Engineering decisions
 
-| Comando                    | Scopo                                         |
-| -------------------------- | --------------------------------------------- |
-| `npm run dev`              | Avvia l'app in modalità sviluppo              |
-| `npm run check`            | Esegue typecheck, lint, test, test UI e build |
-| `npm test`                 | Esegue i test Vitest                          |
-| `npm run test:hooks`       | Esegue gli scenari React in Electron nascosto |
-| `npm run test:benchmark`   | Esegue le regressioni Python offline dei benchmark |
-| `npm run test:qna-benchmark` | Esegue le regressioni Node offline del benchmark Q&A |
-| `npm run test:pdf-export`  | Verifica PDF sintetici reali, dopo la build |
-| `npm run build`            | Genera la build di produzione                 |
-| `npm run package:win`      | Genera il setup Windows NSIS locale           |
-| `npm run package:portable` | Genera il pacchetto portable Windows          |
+Three problems shaped the implementation. These are useful starting points for a code review:
 
-Il test Q&A reale e i benchmark remoti sono intenzionalmente esclusi dalla CI perché richiedono credenziali, quote e consenso esplicito all'invio dei dati.
+| Problem | Design choice | Implementation and evidence |
+| --- | --- | --- |
+| Long AI jobs can stop because of quotas, network errors or an app restart. | Persist job state and checkpoints, with explicit pause and resume and shared request scheduling. | [Pipeline](electron/main/ai/archivePipeline.ts) · [Recovery and concurrency tests](tests/unit/archivePipeline.test.ts) |
+| Translating technical notes can alter formulas, code and diagrams. | Request prose fragments and reconstruct protected content locally. Validate structure and recover original Mermaid diagrams when a translation changes their structure. | [Translation plan](electron/main/ai/translationPlan.ts) · [Integrity checks](electron/main/ai/translationIntegrity.ts) · [Regression tests](tests/unit/translationPlan.test.ts) |
+| Local study material must remain readable after failed or concurrent writes. | Serialise atomic file replacement, keep recoverable backups and validate data at runtime boundaries. | [Atomic storage](electron/main/atomicFile.ts) · [Input validation](electron/main/archiveValidation.ts) · [Recovery tests](tests/unit/quality.test.ts) |
 
-## Stato del progetto
-
-La versione corrente è una **alpha 0.1.0 utilizzabile dall'autore**, non ancora una release firmata distribuita al pubblico. Il codice include gli sviluppi fino al **19 ottobre 2026**; la versione del pacchetto non identifica ogni aggiornamento del sorgente.
-
-- 625 test Vitest in 43 file per archivio, pipeline AI, sincronizzazione e regressioni applicative.
-- 24 test Python e 41 test Node offline, scenari React nel runtime Electron e verifica di PDF esportati realmente.
-- Typecheck, lint e build di produzione automatizzati in GitHub Actions.
-- Collaudi AI reali documentati separatamente; il quality gate non chiama provider esterni e non usa la libreria personale.
-- Installer Windows generabile localmente, non firmato e non incluso nei sorgenti Git.
-
-Esiti della pubblicazione e verifiche: [report del 19 ottobre](docs/quality/pubblicazione-github-2026-10-19.md). La [checklist di qualità](docs/quality/quality-checklist.md) conserva gli interventi storici e i collaudi manuali residui.
-
-Restano limiti espliciti: la chat può citare correttamente una fonte e interpretarla male; PDF scansionati senza testo richiedono OCR esterno; i controlli ENG non certificano la fedeltà linguistica. Le dissolvenze riguardano i suoni locali, mentre le transizioni Spotify/YouTube restano aperte. Il timer Amazfit Balance è un prototipo separato, senza collegamento hardware integrato.
-
-## Struttura del repository
+### Architecture at a glance
 
 ```text
-Lezionify/
-├── .github/            workflow CI e template GitHub
-├── docs/               prodotto, ricerca, qualità e asset pubblici
-├── electron/           processo main, servizi locali e preload IPC
-├── resources/          icone usate dalla build desktop
-├── public/             dizionari e asset con attribuzioni
-├── prototypes/         esperimenti separati dall'app di produzione
-├── shared/             contratti e tipi condivisi
-├── src/                renderer React
-├── tests/
-│   ├── unit/           test Vitest deterministici
-│   ├── integration/    scenari React/Electron e test reali opzionali
-│   ├── python/         regressioni offline dei benchmark
-│   └── node/           regressioni offline del benchmark Q&A
-└── tools/              script di sviluppo, benchmark e manutenzione
+React renderer (src/)
+        ↕ typed IPC through the preload bridge (electron/preload/)
+Electron main process (electron/main/)
+        ├── local files, search index and recoverable job state
+        └── optional Gemini requests / GitHub text publication
+
+shared/ → contracts and validation helpers shared across processes
 ```
 
-Per una mappa più dettagliata consulta [`STRUTTURA_PROGETTO.md`](STRUTTURA_PROGETTO.md). Le scelte tecniche sono registrate in ordine cronologico in [`DECISIONI.md`](DECISIONI.md).
+The renderer uses React 19 and TypeScript. Content rendering combines Markdown, KaTeX, Mermaid and PDF.js; local search uses MiniSearch. Persistence uses local JSON and files. Electron handles desktop integration and PDF printing, and bundled FFmpeg handles video-to-audio conversion.
 
-## Privacy e dati
+Further reading: [repository map](STRUTTURA_PROGETTO.md), [course retrieval and citations](docs/product/rag-corso-2026-10-17.md), [ASR research and benchmarks](docs/research/README.md). Most detailed project documents are currently in Italian.
 
-- Audio, trascrizioni reali, chiavi API, log e archivio personale sono esclusi da Git.
-- Le API key vengono cifrate con le primitive del sistema operativo quando disponibili.
-- Gli output AI non sovrascrivono mai la fonte grezza.
-- La sincronizzazione GitHub pubblica i testi soltanto dopo configurazione e attivazione esplicite: verificare diritti e contenuti prima di abilitarla. Audio, PDF personali e conversazioni non vengono pubblicati dal sincronizzatore.
-- Prima di aggiungere screenshot o fixture, rimuovere nomi, corsi, percorsi e contenuti personali.
-- Nel Free Tier di Gemini i dati possono essere trattati secondo le condizioni del provider: l'upload deve restare una scelta consapevole dell'utente.
+## Verification and current limits
 
-Consulta anche la [policy di sicurezza](SECURITY.md).
+Last documented full run, **19 October 2026**: **625 Vitest tests, 24 Python tests and 41 Node tests**, plus React scenarios running in Electron and checks of real exported PDFs. [Verification report](docs/quality/pubblicazione-github-2026-10-19.md).
 
-## Roadmap
+The checks exercise recovery after failed writes, job resumption, reading-position restoration across two Electron processes, and PDF output with formulas and diagrams. [Test guide](tests/README.md) · [Windows CI](.github/workflows/ci.yml).
 
-- [x] Archivio locale, importazione e deduplicazione.
-- [x] Viewer Markdown/LaTeX/Mermaid e ricerca full-text.
-- [x] Generazione di dispense, Q&A e strumenti di studio.
-- [x] Persistenza recuperabile e test di regressione principali.
-- [x] Chat RAG del corso con documenti locali e citazioni.
-- [x] Focus con PDF, ripresa della lettura ed esportazione selettiva ITA/EN.
-- [x] Pipeline riprendibile, sincronizzazione GitHub dei testi e archivio corsi.
-- [x] Vocabolario, frasi e suoni offline; Memo e log per giorno.
-- [x] Schermate dell’app con dati sintetici nel README.
-- [ ] Demo breve del flusso completo.
-- [ ] Risoluzione delle segnalazioni correnti di `npm audit` con collaudi dedicati.
-- [ ] Hardening Electron con CSP e revisione delle policy di navigazione.
-- [ ] Collaudo manuale completo di accessibilità, sospensione e audio corrotti.
-- [ ] Prima release Windows firmata e documentata.
-- [ ] Collaudi personali Spotify/dispositivi e percorso compatibile per le transizioni musicali.
-- [ ] Timer pausa Amazfit Balance con verifica hardware.
+```powershell
+npm run check        # Typecheck, lint, offline tests, Electron scenarios, build and PDF checks
+npm run build        # Production build
+npm run package:win  # Build a local unsigned Windows installer
+```
 
-## Documentazione
+The automated quality gate uses synthetic data and does not call AI providers. Live AI benchmarks are separate, opt-in checks requiring credentials and quota.
 
-- [Indice della documentazione](docs/README.md)
-- [Visione originale del prodotto](IDEA_INIZIALE.md)
-- [Registro delle decisioni](DECISIONI.md)
-- [Ricerca e benchmark ASR](docs/research/README.md)
-- [Chat del corso: uso, fonti e limiti](docs/product/rag-corso-2026-10-17.md)
-- [Backlog ordinato e stato delle attività](docs/product/idee-future-2026-10-13.md)
-- [Proposta per un repository unico e il portfolio](docs/product/repository-portfolio-plan.md)
+Known limits: AI answers and translations need human verification; citations and structural checks do not guarantee factual or linguistic accuracy. Scanned PDFs need external OCR. Spotify/device testing remains incomplete, and crossfades apply to local background sounds. The documented dependency audit has unresolved findings; Electron hardening and accessibility checks remain release work. [Detailed status](docs/quality/pubblicazione-github-2026-10-19.md#limiti-e-seguito).
 
-## Contribuire
+## Privacy and data
 
-Issue e pull request sono benvenute come feedback tecnico. Prima di proporre modifiche consulta [`CONTRIBUTING.md`](CONTRIBUTING.md), in particolare le regole sui dati reali e sulle decisioni architetturali.
+Audio, transcripts and notes live in the app's local data directory. AI requests send the selected material to Gemini when explicitly requested or when an enabled processing pipeline runs. Local-first does not make those remote requests private or offline: provider terms apply.
 
-## Licenza
+Credentials use Electron `safeStorage` when available. Personal archives, credentials and logs are excluded from Git. Optional GitHub synchronisation publishes texts after configuration and activation; it does not publish personal audio, PDFs or conversations. [Security policy](SECURITY.md).
 
-Il codice è visibile pubblicamente a scopo portfolio e valutazione. Tutti i diritti sono riservati; consulta [`LICENSE`](LICENSE). Una licenza open source non è ancora stata adottata.
+## Next milestones
 
-I dati esterni del vocabolario in [`public/dictionaries`](public/dictionaries/NOTICE.md) sono separatamente disponibili sotto **CC BY-SA 3.0**, con attribuzione a FreeDict/WikDict, Karl Bartel e ai contributori Wiktionary tramite DBnary.
+- Resolve dependency audit findings and complete Electron security hardening.
+- Complete manual accessibility, suspend/resume and malformed-audio checks.
+- Prepare a signed Windows release with installation documentation.
 
-<sub>Progetto personale di Giovanni Stefanuto: problema, idee e scelte di prodotto nascono dall'esperienza di studio dell'autore. Gemini, Claude e ChatGPT supportano sviluppo e rielaborazione; progettazione, integrazione e verifica restano a cura dell'autore.</sub>
+The [product backlog](docs/product/idee-future-2026-10-13.md) keeps the full feature queue, experiments and deferred work.
+
+## Author and development approach
+
+**Giovanni Stefanuto** — personal project built around my university study workflow. I define the problem and product decisions, integrate the implementation and verify its behaviour. AI coding assistants support development; design decisions, regressions and the limits of verification are documented in the [decision log](DECISIONI.md) and [quality reports](docs/README.md#qualità).
+
+## Documentation and contributions
+
+[Documentation index](docs/README.md) · [Original product vision](IDEA_INIZIALE.md) · [Decision log](DECISIONI.md) · [Contributing](CONTRIBUTING.md).
+
+Issues and focused pull requests are welcome as technical feedback. The source is publicly visible for portfolio review, with **all rights reserved**; an open-source licence has not been adopted. See [LICENSE](LICENSE). The external dictionary data has its own [CC BY-SA 3.0 licence and attributions](public/dictionaries/NOTICE.md).
