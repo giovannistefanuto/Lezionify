@@ -9,8 +9,10 @@ import React, {
 import type { AmbientSoundStatus } from '../../shared/ambientSounds'
 import { musicPreferences } from '../utils/musicPreferences'
 import { AmbientLoopPlayer } from '../utils/ambientLoopPlayer'
+import { nextShuffledSound } from '../utils/soundShuffle'
 
 export interface AmbientSoundContextValue {
+  playRandom: () => Promise<void>
   status: AmbientSoundStatus | null
   activeSoundId: string | null
   isPlaying: boolean
@@ -102,11 +104,15 @@ export function AmbientSoundProvider({
     return audioContextRef.current
   }, [])
 
+  const statusVersion = useRef(0)
+  const shuffled = useRef<string[]>([])
+  const installing = useRef(false)
   const refreshStatus = useCallback(async () => {
+    const version = ++statusVersion.current
     try {
       if (window.archive?.ambientSoundStatus) {
         const s = await window.archive.ambientSoundStatus()
-        setStatus(s)
+        if (version === statusVersion.current) setStatus(s)
       }
     } catch (e) {
       console.error('Errore nel recupero dello stato dei suoni ambientali:', e)
@@ -116,6 +122,11 @@ export function AmbientSoundProvider({
   useEffect(() => {
     void refreshStatus()
   }, [refreshStatus])
+  useEffect(() => {
+    if (!isInstalling) return
+    const timer = setInterval(() => void refreshStatus(), 500)
+    return () => clearInterval(timer)
+  }, [isInstalling, refreshStatus])
 
   const stopCurrentSource = useCallback(() => {
     playbackVersion.current++
@@ -189,6 +200,14 @@ export function AmbientSoundProvider({
     [pause, play]
   )
 
+  const playRandom = useCallback(async () => {
+    const installed = status?.sounds.filter(sound => sound.installed).map(sound => sound.id) ?? []
+    const next = nextShuffledSound(installed, shuffled.current, activeSoundIdRef.current)
+    if (!next.id) { setError('Scarica almeno un suono per usare Casuale.'); return }
+    shuffled.current = next.played
+    await play(next.id)
+  }, [status, play])
+
   const setVolume = useCallback((newVolume: number) => {
     const clamped = Math.max(0, Math.min(1, newVolume))
     setVolumeState(clamped)
@@ -198,6 +217,8 @@ export function AmbientSoundProvider({
   }, [])
 
   const install = useCallback(async (soundIds?: string[]) => {
+    if (installing.current) return
+    installing.current = true
     setIsInstalling(true)
     setError(null)
     try {
@@ -205,14 +226,17 @@ export function AmbientSoundProvider({
         throw new Error('API download non disponibile.')
       }
       const updatedStatus = await window.archive.installAmbientSounds(soundIds)
+      statusVersion.current++
       setStatus(updatedStatus)
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err)
       setError(msg)
     } finally {
+      await refreshStatus()
+      installing.current = false
       setIsInstalling(false)
     }
-  }, [])
+  }, [refreshStatus])
 
   // Ascolto eventi riproduzione audio lezione per pausa automatica e ripresa
   useEffect(() => {
@@ -263,6 +287,7 @@ export function AmbientSoundProvider({
   return (
     <AmbientSoundContext.Provider
       value={{
+        playRandom,
         status,
         activeSoundId,
         isPlaying,

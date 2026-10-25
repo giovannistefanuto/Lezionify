@@ -11,6 +11,7 @@ import {
 } from '../../shared/archive'
 import { MarkdownViewer } from './MarkdownViewer'
 import { AudioPlayer } from './AudioPlayer'
+import { LectureRecordingTimes } from './LectureRecordingTimes'
 import { FocusLockModal } from './FocusLockModal'
 import { PauseTimerOverlay } from './PauseTimerOverlay'
 import { FocusReminders } from './FocusReminders'
@@ -47,6 +48,7 @@ function formatStudyTimer(totalSeconds: number): string {
 }
 
 interface LectureDrawerProps {
+  memoOpen?: boolean
   isReturningToList?: boolean
   selectedLecture: Lecture | null
   allLectures?: Lecture[]
@@ -103,6 +105,7 @@ interface LectureDrawerProps {
 }
 
 export function LectureDrawer({
+  memoOpen = false,
   isReturningToList = false,
   selectedLecture,
   allLectures,
@@ -280,6 +283,15 @@ export function LectureDrawer({
 
   // Controlla la visibilità dell'intera Sidebar QnA
   const [isQnaSidebarOpen, setIsQnaSidebarOpen] = useState(false)
+  const reopenQna = () => {
+    if (!activeThreadId) {
+      let saved: string | null = null
+      try { saved = localStorage.getItem('lezionify:qna-last:' + selectedLecture?.id) } catch { /* Optional preference. */ }
+      const last = threads.find(thread => thread.id === saved) ?? threads[threads.length - 1]
+      if (last) setActiveThreadId(last.id)
+    }
+    setIsQnaSidebarOpen(true)
+  }
   const [isQnaComposing, setIsQnaComposing] = useState(false)
 
   const {
@@ -315,7 +327,8 @@ export function LectureDrawer({
     courseCode: selectedLecture?.courseCode ?? null,
     isFocusMode: isFullScreen,
     activeTab,
-    isEnabled: isFullScreen && !isReturningToList
+    isEnabled: isFullScreen && !isReturningToList,
+    suspended: memoOpen
   })
 
   const {
@@ -476,7 +489,9 @@ export function LectureDrawer({
 
   // Apri automaticamente la sidebar se c'è un thread attivo
   useEffect(() => {
-    if (activeThreadId) setIsQnaSidebarOpen(true)
+    if (activeThreadId) {
+      setIsQnaSidebarOpen(true)
+    }
   }, [activeThreadId])
 
   const handleMouseUp = () => {
@@ -691,6 +706,7 @@ export function LectureDrawer({
             </div>
           </div>
           <FocusWorkspace lectureId={selectedLecture.id} onTextZoom={changeTextZoom} textZoom={textZoom}
+            qnaButton={<button type="button" className="secondary-button small" onClick={reopenQna} aria-label="Apri domande Q&A">Q&amp;A · {threads.length}</button>}
             canSelectSlides={isQnaSidebarOpen && isQnaComposing}
             exportRequest={{ kind: 'lecture', lectureId: selectedLecture.id, language: effectiveLanguage }}
             onCloseQna={() => setIsQnaSidebarOpen(false)}
@@ -711,6 +727,7 @@ export function LectureDrawer({
             <div
               ref={contentRef}
               className="focus-mode-content"
+              data-notes-language={effectiveLanguage}
               tabIndex={0}
               aria-label="Testo della lezione: scorri o usa Ctrl e rotella per lo zoom"
               onMouseUp={handleMouseUp}
@@ -1025,6 +1042,7 @@ export function LectureDrawer({
                         >
                           🖨️ Stampa
                         </button>
+                        <button type="button" className="secondary-button small" onClick={reopenQna} aria-label="Apri domande Q&A">Q&amp;A · {threads.length}</button>
                         <PdfExportButton key={`${selectedLecture.id}-${effectiveLanguage}`} request={{ kind: 'lecture', lectureId: selectedLecture.id, language: effectiveLanguage }} />
                         <button
                           className="secondary-button small"
@@ -1166,6 +1184,7 @@ export function LectureDrawer({
                     <div className="qna-standard-layout">
                       <div
                         ref={standardContentRef}
+                        data-notes-language={effectiveLanguage}
                         className="markdown-view-container"
                         onMouseUp={handleMouseUp}
                       >
@@ -1404,6 +1423,7 @@ export function LectureDrawer({
                   )}
                 </div>
 
+                <LectureRecordingTimes lecture={selectedLecture} />
                 {isEditingMetadata ? (
                   <form onSubmit={onSaveMetadata} className="metadata-form">
                     <label>

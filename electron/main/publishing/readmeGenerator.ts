@@ -95,12 +95,12 @@ export async function hasPublishedLessons(coursePath: string): Promise<boolean> 
   }
 }
 
-export async function generateRootReadme(repoPath: string): Promise<string> {
+export async function generateRootReadme(repoPath: string, allowedLessons?: ReadonlySet<string>): Promise<string> {
   const rows: string[] = []
   const courses = await readdir(repoPath, { withFileTypes: true })
   for (const course of courses.sort((a, b) => a.name.localeCompare(b.name))) {
     if (!course.isDirectory() || course.name.startsWith('.')) continue
-    const lessons = await scanLessons(path.join(repoPath, course.name))
+    const lessons = (await scanLessons(path.join(repoPath, course.name))).filter(relative => !allowedLessons || allowedLessons.has(`${course.name}/${relative}`))
     if (lessons.length) rows.push(`| [${escapeLabel(course.name)}](${link(course.name)}/) | ${lessons.length} |`)
   }
   return '# 📚 Lezionify · Lezioni universitarie\n\n' +

@@ -1,6 +1,6 @@
 # Guida alle skill Codex per Lezionify
 
-Guida pratica in italiano, aggiornata il 16 ottobre 2026.
+Guida pratica in italiano, aggiornata il 21 ottobre 2026.
 
 Questa guida spiega quando usare le otto skill installate dalla raccolta di
 Matt Pocock, come richiamarle e quali risultati aspettarsi. Gli esempi sono
@@ -25,6 +25,7 @@ iniziale; per la nona skill vedi [Intervista con grilling](#intervista-con-grill
 - [Documentazione per agenti](#8-writing-for-agents--scrivere-istruzioni-utili)
 - [Come combinarle](#come-combinarle)
 - [Intervista con grilling](#intervista-con-grilling)
+- [Design frontend e audit UX](#design-frontend-e-audit-ux)
 - [Domande frequenti e manutenzione](#domande-frequenti-e-manutenzione)
 - [Fonti e versione](#fonti-e-versione)
 
@@ -40,6 +41,8 @@ iniziale; per la nona skill vedi [Intervista con grilling](#intervista-con-grill
 | Non è ancora chiaro se una tecnologia o un'API permetta una funzione | `research` | Un documento con fonti primarie, conclusioni e limiti |
 | Vuoi continuare in una nuova chat senza perdere il punto | `handoff` | Un documento di consegna con stato, riferimenti e prossimo passo |
 | Vuoi migliorare `AGENTS.md`, una skill o istruzioni per altri agenti | `writing-for-agents` | Indicazioni con condizioni di uso e criteri di completamento chiari |
+| Vuoi realizzare o rifinire una schermata mantenendo le convenzioni dell'app | `frontend-design` | UI funzionante e controllo visuale degli stati interessati |
+| Vuoi valutare l'esperienza di un flusso prima di modificarlo | `product-design-audit` | Problemi UX e rischi di accessibilità collegati a schermate osservate |
 
 Per Lezionify, le skill da usare più spesso sono `diagnosing-bugs`, `tdd` e
 `code-review`. Le altre servono quando emerge il problema specifico indicato.
@@ -634,6 +637,51 @@ valutare le differenze e preservare eventuali adattamenti locali. L'installer
 standard rifiuta destinazioni già esistenti: un aggiornamento va gestito come
 tale, senza sovrascritture implicite. Non occorre installare anche l'intero
 plugin per usare queste copie.
+
+## Design frontend e audit UX
+
+Il 21 ottobre 2026 sono state selezionate tre skill personali, esterne al
+pacchetto Electron e alle dipendenze dell'app:
+
+- `frontend-design`: implementazione e rifinitura di componenti e schermate.
+  Per Lezionify privilegiare leggibilità, ergonomia durante lo studio,
+  componenti esistenti e prestazioni. Verificare il risultato in Electron,
+  comprese finestre strette, zoom e stati vuoti, caricamento ed errore pertinenti.
+- `product-design-audit`: revisione di un flusso con schermate attuali e rilievi
+  legati a passaggi osservati. Adatta a Focus, Q&A, Memo e impostazioni.
+  Le immagini da sole non dimostrano la piena accessibilità.
+- `product-design-qa`: supporto per confrontare un prototipo implementato con
+  un riferimento visuale selezionato, alla stessa dimensione e nello stesso
+  stato. Usarla solo quando entrambi esistono; per una critica generale usare
+  `product-design-audit`.
+
+Esempi:
+
+> Usa frontend-design per rifinire il pannello Q&A mantenendo i componenti
+> esistenti. Verifica testo ingrandito, finestra stretta e stati di errore.
+
+> Usa product-design-audit per valutare il passaggio dalla lettura Focus al
+> Q&A e ritorno. Presenta prima i problemi osservati e le schermate pertinenti.
+
+Le copie sono in `C:/Users/Utente/.codex/skills/`. I supporti condivisi originali
+di Product Design sono conservati in
+`C:/Users/Utente/.codex/skill-support/product-design/`, fuori dal catalogo delle
+skill attive. I nomi delle due skill Product Design e i collegamenti ai supporti
+sono adattati per l'installazione autonoma: non è l'installazione dell'intero
+plugin e non abilita connessioni Figma, hosting o altri servizi.
+
+Ogni skill conserva `.installation-source.json` con revisione Git, hash dei
+file originali e adattamenti. Gli aggiornamenti sono manuali e devono preservare
+questi collegamenti. Provenienza: [frontend-design](https://github.com/dobromirdikov/codex-frontend-design-skill)
+(Apache-2.0) e [Product Design](https://github.com/openai/plugins/tree/main/plugins/product-design)
+(il manifest dichiara licenza Proprietary; disponibilità pubblica e licenza
+open source non sono equivalenti). Le copie restano personali.
+
+I flussi di ideazione, ricerca e pubblicazione del plugin sono conservati come
+supporti richiamabili, senza aggiungerli come ulteriori skill attive. Per
+Lezionify rimangono vincolanti local-first, uso di dati sintetici nei prototipi
+e invii AI espliciti. Le skill di design affiancano i collaudi funzionali e
+la revisione del codice. Disponibili dal turno successivo all'installazione.
 
 ## Fonti e versione
 

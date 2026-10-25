@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef } from 'react'
+import { useModalFocus } from '../hooks/useModalFocus'
 
 function formatStudyTime(seconds: number): string {
   const minutes = Math.floor(Math.max(0, seconds) / 60)
@@ -26,6 +27,8 @@ export function FocusLockModal({
   onQuit,
   onPause
 }: FocusLockModalProps) {
+  const dialog = useRef<HTMLDivElement>(null)
+  useModalFocus(dialog, show)
   const [countdown, setCountdown] = useState(15)
   const continueBtnRef = useRef<HTMLButtonElement | null>(null)
 
@@ -78,14 +81,14 @@ export function FocusLockModal({
   const isUnlocked = countdown === 0
 
   return (
-    <div className="focus-lock-overlay" role="dialog" aria-modal="true">
+    <div ref={dialog} tabIndex={-1} className="focus-lock-overlay" role="dialog" aria-modal="true" aria-labelledby="focus-lock-title">
       <div className="focus-lock-card">
         <div className="focus-lock-badge-row">
           <div className="focus-lock-badge">🛡️ FOCUS LOCK</div>
           <div className="focus-lock-timer-paused-pill">⏸️ Timer di studio fermo</div>
         </div>
         
-        <h2 className="focus-lock-title">Sessione di Studio in Corso</h2>
+        <h2 id="focus-lock-title" className="focus-lock-title">Sessione di Studio in Corso</h2>
         
         <p className="focus-lock-status">
           Stai studiando questa lezione
@@ -108,9 +111,8 @@ export function FocusLockModal({
             ref={continueBtnRef}
             className="focus-lock-continue-btn"
             onClick={onContinue}
-            autoFocus
           >
-            🟢 Continua a Studiare (Torna in Focus)
+            🟢 Continua a Studiare (Esc)
           </button>
 
           {onPause && (

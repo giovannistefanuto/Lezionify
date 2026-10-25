@@ -26,6 +26,8 @@ function translationAssets(): Plugin {
 function courseRagAssets(): Plugin {
   return { name: 'course-rag-worker', generateBundle() {
     this.emitFile({ type: 'asset', fileName: 'course-rag/pdf-worker.cjs', source: readFileSync(resolve('resources/course-rag/pdf-worker.cjs')) })
+    this.emitFile({ type: 'asset', fileName: 'course-rag/pdf-layout.cjs', source: readFileSync(resolve('resources/course-rag/pdf-layout.cjs')) })
+    this.emitFile({ type: 'asset', fileName: 'course-rag/embedding-worker.cjs', source: readFileSync(resolve('resources/course-rag/embedding-worker.cjs')) })
   } }
 }
 

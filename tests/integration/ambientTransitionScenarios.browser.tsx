@@ -90,6 +90,15 @@ export async function runAmbientTransitionScenarios(root: Root, api: any) {
       current!.activeSoundId === 'waves' && sources.length === 1,
       'Late buffer replaced the most recent selection'
     )
+    const content = document.querySelector<HTMLElement>('.music-content')!
+    content.scrollTop = content.scrollHeight
+    await act(async () => { await new Promise(resolve => setTimeout(resolve, 80)) })
+    const playerBounds = document.querySelector('.ambient-player-bar')!.getBoundingClientRect()
+    const contentBounds = content.getBoundingClientRect()
+    check(playerBounds.top >= contentBounds.top - 1 && playerBounds.bottom <= contentBounds.bottom + 1, 'Player pause/volume hidden after catalog scrolling')
+    check(document.querySelector('.ambient-options summary') && document.querySelector('.ambient-random-button'), 'Secondary music options or compact random missing')
+    await require('electron').ipcRenderer.invoke('capture-video-import', 'oct22-player-scrolled')
+    content.scrollTop = 0
     for (const theme of ['light', 'dark']) {
       document.documentElement.setAttribute('data-theme', theme)
       await require('electron').ipcRenderer.invoke('capture-video-import', `sounds-${theme}`)

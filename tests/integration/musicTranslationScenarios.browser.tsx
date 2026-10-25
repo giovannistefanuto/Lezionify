@@ -7,10 +7,12 @@ import { YoutubeLibrary } from '../../src/components/YoutubeLibrary'
 import { ToolSettingsContext } from '../../src/components/ToolSettingsContext'
 import { runToolSettingsScenarios } from './toolSettingsScenarios.browser'
 import { spotifyCallback } from '../../shared/spotify'
+import { AmbientSoundProvider, useAmbientSound, type AmbientSoundContextValue } from '../../src/components/AmbientSoundContext'
 declare const require: any
 
 export async function runMusicTranslationScenarios(root: Root, api: any) {
   const keys = ['connectSpotifyLibrary', 'selectSpotifyDevice', 'spotifyLibrary', 'playSpotifyItem', 'openSpotifyItem', 'spotifyConnection', 'configureSpotify', 'connectSpotify', 'disconnectSpotify', 'spotifyDevices', 'spotifyPlayback', 'spotifyCommand', 'openSpotify', 'openCompilation', 'offlineTranslationStatus', 'installOfflineTranslation', 'translatePhrase']
+  keys.push('ambientSoundStatus', 'readAmbientSound')
   const originals = Object.fromEntries(keys.map(key => [key, api[key]]))
   const check = (value: unknown, message: string) => { if (!value) throw new Error(message) }
   const flush = () => act(async () => { await new Promise(resolve => setTimeout(resolve, 20)) })
@@ -31,17 +33,18 @@ export async function runMusicTranslationScenarios(root: Root, api: any) {
   let installs = 0
   let reads = 0
   let libraryReads = 0
+  let spotifyPlaying = true
   const cover = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="300" height="300"><defs><linearGradient id="a" x2="1" y2="1"><stop stop-color="#4b4536"/><stop offset="1" stop-color="#c39b4e"/></linearGradient></defs><rect width="300" height="300" fill="url(#a)"/><circle cx="150" cy="150" r="95" fill="none" stroke="#f2dfad" stroke-width="1"/><text x="150" y="142" text-anchor="middle" font-family="serif" font-size="30" fill="#fff7df">CLASSICAL</text><text x="150" y="178" text-anchor="middle" font-family="serif" font-size="23" fill="#fff7df">COLLECTION</text></svg>')
   const commands: any[] = [], videos: any[] = [], phrases: any[] = []
   const connection = () => ({ clientId: configured, connected, libraryConnected, preferredDeviceId, computerName: 'Study PC', callback: spotifyCallback })
   Object.assign(api, {
     spotifyConnection: async () => connection(), configureSpotify: async (id: string) => { configured = id; return connection() },
     connectSpotify: async () => { connected = true; return connection() }, disconnectSpotify: async () => { connected = false; return connection() },
-    spotifyDevices: async () => { reads++; return [{ id: 'pc', name: 'Study PC', type: 'Computer', active: true }] }, spotifyPlayback: async () => ({ playing: true, title: 'Synthetic song', artists: 'Synthetic artist', deviceId: 'pc', imageUrl: cover, uri: 'spotify:track:' + 'a'.repeat(22), observedAt: Date.now(), progressMs: 43000, durationMs: 240000, volume: 40, canSetVolume: true }),
+    spotifyDevices: async () => { reads++; return [{ id: 'pc', name: 'Study PC', type: 'Computer', active: true }] }, spotifyPlayback: async () => ({ playing: spotifyPlaying, title: 'Synthetic song', artists: 'Synthetic artist', deviceId: 'pc', imageUrl: cover, uri: 'spotify:track:' + 'a'.repeat(22), observedAt: Date.now(), progressMs: 43000, durationMs: 240000, volume: 40, canSetVolume: true }),
     connectSpotifyLibrary: async () => { libraryConnected = true; return connection() }, selectSpotifyDevice: async (id: string) => { preferredDeviceId = id; return connection() },
     spotifyLibrary: async (kind: string, offset = 0) => { libraryReads++; return { items: Array.from({ length: 4 }, (_, index) => ({ kind: kind === 'tracks' ? 'track' : 'playlist', uri: `spotify:${kind === 'tracks' ? 'track' : 'playlist'}:${String.fromCharCode(97 + index).repeat(22)}`, title: ['Classical Study', 'Piano essentials', 'Calm evenings', 'Focus collection'][index], subtitle: 'Synthetic collection', imageUrl: cover })), nextOffset: offset === 0 ? 20 : null } },
     playSpotifyItem: async (...args: any[]) => { commands.push(['item', ...args]) }, openSpotifyItem: async () => {},
-    spotifyCommand: async (...args: any[]) => { if (failure) throw new Error('Limite Spotify raggiunto. Attendi prima di riprovare.'); commands.push(args) }, openSpotify: async () => {},
+    spotifyCommand: async (...args: any[]) => { if (failure) throw new Error('Limite Spotify raggiunto. Attendi prima di riprovare.'); commands.push(args); if (args[0] === 'play' || args[0] === 'pause') spotifyPlaying = args[0] === 'play' }, openSpotify: async () => {},
     openCompilation: async (...args: any[]) => { videos.push(args) }, offlineTranslationStatus: async () => ({ installed, installing: false, downloadBytes: 53000000, diskBytes: 74000000 }),
     installOfflineTranslation: async () => { installed = true; installs++; return { installed: true, installing: false, downloadBytes: 53000000, diskBytes: 74000000 } }, translatePhrase: async (...args: any[]) => { phrases.push(args); return { text: 'Lo studente legge $x_i$.', engine: 'Mozilla/Bergamot', direction: args[1] } }
   })
@@ -125,6 +128,29 @@ export async function runMusicTranslationScenarios(root: Root, api: any) {
     await click('YouTube')
     check(document.querySelectorAll('.music-track-list li').length === 2, 'Local timestamp edits must survive reopen')
     await runToolSettingsScenarios(root, api)
+    // Real Web Audio decode/loop while the actual Spotify controls send commands.
+    // Only the remote account boundary is synthetic; no personal player changes.
+    const wav = new Uint8Array(44 + 32000)
+    const view = new DataView(wav.buffer)
+    const label = (offset: number, value: string) => [...value].forEach((character, index) => { wav[offset + index] = character.charCodeAt(0) })
+    label(0, 'RIFF'); view.setUint32(4, wav.length - 8, true); label(8, 'WAVE'); label(12, 'fmt ')
+    view.setUint32(16, 16, true); view.setUint16(20, 1, true); view.setUint16(22, 1, true)
+    view.setUint32(24, 16000, true); view.setUint32(28, 32000, true); view.setUint16(32, 2, true); view.setUint16(34, 16, true)
+    label(36, 'data'); view.setUint32(40, 32000, true)
+    api.readAmbientSound = async () => wav
+    api.ambientSoundStatus = async () => ({ installed: true, installing: false, sounds: [], downloadBytes: 0, installedBytes: 0 })
+    let ambient: AmbientSoundContextValue | undefined
+    function AmbientProbe() { ambient = useAmbientSound(); return null }
+    await act(async () => root.render(<AmbientSoundProvider><AmbientProbe /><SpotifyPanel /></AmbientSoundProvider>)); await flush()
+    await act(async () => ambient!.play('rain'))
+    check(ambient!.isPlaying && !ambient!.error, 'Synthetic WAV must play through the real ambient loop')
+    await click('Pausa')
+    check(commands.at(-1)[0] === 'pause' && ambient!.isPlaying && !document.querySelector('[role="alert"]'), 'Spotify pause must succeed while ambient sounds continue')
+    await act(async () => { await new Promise(resolve => setTimeout(resolve, 900)) })
+    await click('Riprendi')
+    check(commands.at(-1)[0] === 'play' && ambient!.isPlaying && !document.querySelector('[role="alert"]'), 'Spotify play must succeed while ambient sounds continue')
+    await act(async () => ambient!.pause())
+    check(!ambient!.isPlaying, 'Ambient loop must stop independently')
   } finally {
     await act(async () => root.render(null)); check(polls.size === 0, 'Closing Music must clear polling timers'); window.setInterval = nativeInterval; window.clearInterval = nativeClear; Object.assign(api, originals)
     navigationKeys.forEach((key, index) => { const value = navigationSaved[index]; if (value === null) localStorage.removeItem(key); else localStorage.setItem(key, value) })

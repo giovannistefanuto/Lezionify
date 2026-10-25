@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os'
 import * as path from 'node:path'
 import { createHash } from 'node:crypto'
 import { PublishState } from '../../electron/main/publishing/publishState'
-import { PublishService, gitBlobHash } from '../../electron/main/publishing/publishService'
+import { PublishService, gitBlobHash, isCoursePublicationEnabled } from '../../electron/main/publishing/publishService'
 import { AutomaticPublisher } from '../../electron/main/publishing/automaticPublisher'
 import { PublishGitClient, PublishingError, normalizeRepoUrl, validateBranch, type GitRunner } from '../../electron/main/publishing/publishGitClient'
 import { generateRootReadme, generateCourseReadme, sanitizeDirName, writePublishedFile } from '../../electron/main/publishing/readmeGenerator'
@@ -141,6 +141,73 @@ function fixture() {
 }
 
 describe('PublishService', () => {
+  it('non elenca nell indice remoto corsi esclusi o nuove lezioni rimaste solo nel clone', async () => {
+    const f = fixture()
+    await mkdir(f.root, { recursive: true })
+    for (const relative of ['SECRET/2026-10-01', 'HISTORY/2026-10-01', 'HISTORY/2026-10-02']) {
+      await writePublishedFile(f.root, `${relative}/schema.md`, '# Synthetic local notes')
+      await writePublishedFile(f.root, `${relative}/trascrizione.txt`, 'Synthetic raw')
+    }
+    f.remoteFiles['HISTORY/2026-10-01/schema.md'] = gitBlobHash('# Synthetic local notes')
+    f.remoteFiles['HISTORY/2026-10-01/trascrizione.txt'] = gitBlobHash('Synthetic raw')
+    f.setCourses({ SECRET: { publishToGithub: false } as CourseDefinition, HISTORY: { publishToGithub: false } as CourseDefinition })
+    await f.service.publishNew()
+    const index = await readFile(path.join(f.root, 'README.md'), 'utf8')
+    expect(index).not.toContain('SECRET')
+    expect(index).toContain('| [HISTORY](./HISTORY/) | 1 |')
+    expect(await readFile(path.join(f.root, 'SECRET/2026-10-01/schema.md'), 'utf8')).toBe('# Synthetic local notes')
+    expect(f.git.addFiles.mock.calls[0][0].some(file => file.startsWith('SECRET/') || file.startsWith('HISTORY/'))).toBe(false)
+  })
+  it('ferma un invio se il consenso cambia durante preparazione o commit', async () => {
+    const f = fixture()
+    f.git.commit.mockImplementationOnce(async () => {
+      f.setCourses({ RL: { publishToGithub: false } as CourseDefinition })
+      return HASH
+    })
+    expect((await f.service.publishNew()).errors[0]).toContain('consenso')
+    expect(f.git.push).not.toHaveBeenCalled()
+    const g = fixture()
+    g.git.ensureRepo.mockImplementationOnce(async () => {
+      await mkdir(g.root, { recursive: true })
+      g.setCourses({ RL: { publishToGithub: false } as CourseDefinition })
+    })
+    expect((await g.service.publishNew()).errors[0]).toContain('consenso')
+    expect(g.git.commit).not.toHaveBeenCalled()
+    expect(g.git.push).not.toHaveBeenCalled()
+  })
+  it('migra solo i corsi esistenti senza ricifrare o perdere credenziali non decifrabili', async () => {
+    const service = new SettingsService(directory)
+    const disk = { apiKeys: ['opaque-ciphertext'], apiKey: 'opaque-active', keysEncrypted: true, courses: { CONFIGURED: { code: 'CONFIGURED' } }, model: 'gemini-3.6-flash' }
+    await writeFile(path.join(directory, 'settings.json'), JSON.stringify(disk))
+    cryptoMock.corrupt = true
+    await service.initializeCoursePublicationConsent(['IMPLICIT'])
+    const migrated = JSON.parse(await readFile(path.join(directory, 'settings.json'), 'utf8'))
+    expect(migrated).toEqual({ ...disk, legacyPublishingCourseCodes: ['CONFIGURED', 'IMPLICIT'] })
+    await service.initializeCoursePublicationConsent(['IMPLICIT', 'NEW'])
+    expect(JSON.parse(await readFile(path.join(directory, 'settings.json'), 'utf8')).legacyPublishingCourseCodes).not.toContain('NEW')
+  })
+  it('esclude corsi disabilitati da conteggi, letture, invii e checkpoint senza rimuovere file remoti', async () => {
+    const f = fixture()
+    await f.service.publishNew()
+    const calls = f.git.push.mock.calls.length
+    const remote = { ...f.remoteFiles }
+    f.setCourses({ RL: { code: 'RL', publishToGithub: false } as CourseDefinition })
+    f.storage.readTranscript.mockClear()
+    expect((await f.service.getStatus()).unpublishedCount).toBe(0)
+    expect((await f.service.publishNew()).published).toBe(0)
+    expect(f.storage.readTranscript).not.toHaveBeenCalled()
+    expect(f.git.push).toHaveBeenCalledTimes(calls)
+    expect(f.remoteFiles).toEqual(remote)
+    f.setCourses({ RL: { code: 'RL', publishToGithub: true } as CourseDefinition })
+    f.setLectures([lecture('new')])
+    expect((await f.service.publishNew()).published).toBe(1)
+  })
+  it('abilita soltanto corsi legacy noti o consensi espliciti dopo la migrazione', () => {
+    expect(isCoursePublicationEnabled('OLD', {}, ['OLD'])).toBe(true)
+    expect(isCoursePublicationEnabled('NEW', {}, ['OLD'])).toBe(false)
+    expect(isCoursePublicationEnabled('NEW', { NEW: { publishToGithub: true } as CourseDefinition }, ['OLD'])).toBe(true)
+    expect(isCoursePublicationEnabled('OLD', { OLD: { publishToGithub: false } as CourseDefinition }, ['OLD'])).toBe(false)
+  })
   it('does no work when disabled, unconfigured or there are no eligible lessons', async () => {
     const f = fixture()
     f.setSettings(undefined)
@@ -645,6 +712,12 @@ describe('Automatic publishing lifecycle', () => {
 })
 
 describe('PublishGitClient with a synthetic runner (no git processes or network)', () => {
+  it('impedisce di inviare commit locali pendenti che contengono corsi ora esclusi', async () => {
+    const runner = vi.fn<GitRunner>(async args => ({ stdout: args[0] === 'for-each-ref' ? 'refs/heads/main\n' : args[0] === 'ls-tree' ? 'Enabled/schema.md\0Disabled/schema.md\0' : '', stderr: '' }))
+    await expect(client(runner).assertPendingFilesAllowed(['Enabled/schema.md'])).rejects.toThrow('selezione attuale')
+    await expect(client(runner).assertPendingFilesAllowed(['Enabled/schema.md', 'Disabled/schema.md'])).resolves.toBeUndefined()
+    expect(runner.mock.calls.some(([args]) => args[0] === 'push')).toBe(false)
+  })
   function client(runner: GitRunner) {
     return new PublishGitClient({ ...publishing(), githubToken: 'synthetic-test-token', localPath: path.join(directory, 'clone') }, runner)
   }

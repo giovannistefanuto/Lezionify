@@ -2,6 +2,22 @@
 
 La documentazione è divisa per scopo, così il README principale resta leggibile.
 
+[Allineamento GitHub del 25 ottobre](quality/pubblicazione-github-2026-10-25.md): perimetro dei sorgenti, collaudi e limiti della pubblicazione.
+
+[RAG: otto famiglie di domande realistiche](product/rag-domande-studio-2026-10-23.md), con correzioni, benchmark locale e installer finale successivo.
+
+[Full Focus, Ctrl+T, parole mancanti e Spotify del 23 ottobre](product/focus-traduttore-spotify-2026-10-23.md), con installer successivo al pacchetto RAG.
+
+[RAG del 23 ottobre: indice preparabile, cache, controlli delle affermazioni e installer](product/rag-completamento-2026-10-23.md), con prove reali e tre validazioni qualitative ancora aperte.
+
+[Interventi del 22 ottobre: prime 17 attività e correzione RAG](product/interventi-2026-10-22.md), con setup Windows aggiornato e verificato.
+
+[Orari audio, Musica sempre raggiungibile e comandi Memo](product/orari-musica-memo-2026-10-21.md).
+
+[Modifiche del 21 ottobre: prime dieci attività, timer, Q&A e traduttore](product/interventi-2026-10-21.md).
+
+[Modifiche del 20 ottobre: Q&A, Memo, batteria, dieci nuovi suoni e Mermaid](product/interventi-2026-10-20.md).
+
 ## Strumenti di sviluppo
 
 - [Punto di ripresa del 16 ottobre](product/punto-ripresa-2026-10-16.md): risultati, verifiche, attività rinviate e scelte aperte per i suoni offline.
@@ -10,6 +26,8 @@ La documentazione è divisa per scopo, così il README principale resta leggibil
 
 ## Pubblicazione
 
+- [Presentazione inglese](../README.md) e [italiana](../README.it.md): accessi ad appunti, avvio locale e scelte tecniche con prove consultabili.
+- [Tour visuale di 48 secondi](assets/demo/README.md): schermate Electron sintetiche, alternativa testuale bilingue e rigenerazione locale.
 - [Checklist GitHub](publishing/launch-checklist.md): controlli prima e dopo il primo push pubblico.
 - [Bozza post LinkedIn](publishing/linkedin-post-draft.md): testo pronto da personalizzare e allegati consigliati.
 
@@ -27,7 +45,7 @@ La documentazione è divisa per scopo, così il README principale resta leggibil
 
 - [Lettura ed esportazione PDF](product/lettura-export-pdf.md): riquadri inglesi, export della lezione e del corso, ripresa locale di dispense e slide dopo il riavvio.
 
-- [Idee future del 13 ottobre 2026](product/idee-future-2026-10-13.md): interventi immediati e approfondimenti per riquadri inglesi, export PDF, ripresa della lettura, Mermaid, musica, vocabolario, slide e modelli Q&A.
+- [Idee future e Coda LISTA_ORDINE](product/idee-future-2026-10-13.md): al 23 ottobre 44 attività, 25 concluse e 19 aperte; prima la diagnosi Ctrl+L personale. Le validazioni RAG 90–92 restano parziali. Lista, riassunto Gemini e tutti i 13 rilievi UX/UI conservati.
 - [Vocabolario offline](product/vocabolario-offline.md): Ctrl+T in Focus e fuori, inglese ↔ italiano, parole e locuzioni senza Gemini.
 - [Sette migliorie dell’archivio e della discussione](product/idee-da-valutare.md): colori dei corsi, laboratori, lunghezza delle dispense, notifica USB, lettura e ridimensionamento della discussione e log AI.
 - [Dispense, posizione PDF e tempo della lezione](product/study-reader-improvements.md): piano e verifiche dei tag, della conservazione della slide e dei tempi nel Focus Lock.
@@ -40,6 +58,7 @@ La documentazione è divisa per scopo, così il README principale resta leggibil
 
 ## Qualità
 
+- [Audit UX/UI del 21 ottobre](quality/audit-ux-ui-2026-10-21.md): evidenze, priorità e limiti; tutti i 13 rilievi implementati e collaudati il 22 ottobre, con limite esplicito sulla prova NVDA.
 - [Pubblicazione GitHub del 19 ottobre](quality/pubblicazione-github-2026-10-19.md): perimetro pubblicato, esclusioni locali, verifiche e limiti.
 - [Integrità ENG: diagnosi e correzioni](quality/integrita-eng-indagine-2026-10-19.md): piano della prosa, conservazione di formule e codice, ripristino Mermaid e collaudi.
 
@@ -84,3 +103,12 @@ I file grezzi, gli audio e le trascrizioni integrali usati nei benchmark restano
 - [Uso delle funzioni approvate](product/funzioni-approvate-2026-10-15.md): slide, immagini, frasi offline, musica, ENG e stato Balance.
 
 - [Musica: interfaccia visuale e PC automatico](product/musica-ui-2026-10-15.md): copertine, controlli, consenso libreria Spotify e compilation YouTube.
+
+- [Recupero RAG e confronto reale delle lezioni RL](quality/rag-recupero-2026-10-22.md): backoff, budget condiviso, citazioni e verifica richiesta prima del nuovo setup (D-0395).
+
+## Evoluzione RAG del 22 ottobre
+
+Piano, implementazione, benchmark, dati di collaudo e limiti:
+[Recupero RAG strutturato e semantico locale](product/rag-implementazione-2026-10-22.md)
+(D-0397/D-0398). Include test Node/Electron offline e prove locali autorizzate
+sulle fonti personali. Il setup precedente non contiene questa evoluzione.

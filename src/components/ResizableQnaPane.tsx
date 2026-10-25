@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { PaneDivider } from './PaneDivider'
+import { useNumericPreference } from '../hooks/useNumericPreference'
 import { discussionWidth } from '../utils/focusLayout'
 
 export function ResizableQnaPane({ children }: { children: ReactNode }) {
   const pane = useRef<HTMLElement>(null)
   const [width, setWidth] = useState(1000)
-  const [ratio, setRatio] = useState(0.4)
+  const [ratio, setRatio] = useNumericPreference('lezionify:qna-width:standard:v1', 0.4, 0.15, 0.85)
   useEffect(() => {
     const parent = pane.current?.parentElement
     if (!parent) return
@@ -20,7 +21,7 @@ export function ResizableQnaPane({ children }: { children: ReactNode }) {
         const bounds = pane.current?.parentElement?.getBoundingClientRect()
         if (bounds) resize((bounds.right - clientX) / bounds.width)
       }} />
-    <section ref={pane} className="resizable-qna-pane" style={{ width: discussionWidth(width, ratio) }} aria-label="Discussione Contestuale">
+    <section ref={pane} className="resizable-qna-pane" style={{ width: discussionWidth(width, ratio) }} aria-label="Domande sulla lezione">
       {children}
     </section>
   </>

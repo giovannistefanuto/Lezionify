@@ -11,8 +11,12 @@ files:
   - package.json
 
 asarUnpack:
+  - "out/main/course-rag/**"
   - "node_modules/ffmpeg-static/**"
   - "out/main/translation-runtime/**"
+  - "node_modules/onnxruntime-node/**"
+  - "node_modules/@img/**"
+  - "node_modules/sharp/**"
 
 win:
   target:

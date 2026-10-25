@@ -146,7 +146,7 @@ export function useStudyEstimate({
         now - lastInteraction > 15 * 60_000 ||
         Boolean(
           document.querySelector(
-            '.modal-overlay, [aria-label="Catture rapide"], [data-dictionary-overlay]'
+            '.modal-overlay, .quick-capture-backdrop, [data-dictionary-overlay]'
           )
         )
       if (blocked) {

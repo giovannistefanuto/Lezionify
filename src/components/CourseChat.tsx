@@ -8,6 +8,7 @@ import type {
 import type { FocusPdfDocument } from '../../shared/archive'
 import type { QnaImageInput } from '../../shared/qnaImages'
 import { MarkdownViewer } from './MarkdownViewer'
+import { courseAnswerSections } from '../utils/courseAnswerSections'
 
 const FocusPdfViewer = React.lazy(() =>
   import('./FocusPdfViewer').then((module) => ({
@@ -28,6 +29,13 @@ export function CourseChat({
   onClose: () => void
   onOpenLecture: (id: string, kind: string) => void
 }) {
+  const [courseNames, setCourseNames] = useState<Record<string, string>>({})
+  useEffect(() => {
+    if (!open || !window.archive.getCourses) return
+    let cancelled = false
+    void window.archive.getCourses().then(items => { if (!cancelled) setCourseNames(Object.fromEntries(items.map(item => [item.code, item.name || item.code]))) }).catch(() => {})
+    return () => { cancelled = true }
+  }, [open])
   const [course, setCourse] = useState(
     initialCourse && courses.includes(initialCourse)
       ? initialCourse
@@ -37,6 +45,7 @@ export function CourseChat({
   const [threadId, setThreadId] = useState<string | null>(null)
   const [draft, setDraft] = useState('')
   const [busy, setBusy] = useState(false)
+  const [semanticBusy, setSemanticBusy] = useState(false)
   const [status, setStatus] = useState('')
   const [error, setError] = useState('')
   const [showSources, setShowSources] = useState(false)
@@ -174,7 +183,7 @@ export function CourseChat({
         setStatus(event.message)
       if (
         !event.requestId &&
-        event.message === 'Aggiornamento delle fonti terminato.'
+        (event.message === 'Aggiornamento delle fonti terminato.' || event.message.startsWith('Indice locale:'))
       )
         void refresh().catch(() => {})
     })
@@ -281,7 +290,7 @@ export function CourseChat({
       if (generation.current === token) {
         setError(
           failure instanceof Error
-            ? failure.message
+            ? failure.message.replace(/^Error invoking remote method '[^']+': (?:Error: )?/, '')
             : 'Risposta non completata.'
         )
         await refresh().catch(() => {})
@@ -352,18 +361,24 @@ export function CourseChat({
             }}
           >
             {courses.map((code) => (
-              <option key={code}>{code}</option>
+              <option key={code} value={code}>{courseNames[code] || code}</option>
             ))}
           </select>
           <button onClick={() => setShowSources((value) => !value)}>
             Fonti ({data?.sources.length ?? 0})
           </button>
-          <button onClick={close}>Chiudi</button>
+          <button onClick={close} aria-label="Chiudi chat del corso">Chiudi</button>
         </header>
+        {course && data && <div className="course-coverage" aria-label="Copertura del corso">
+          <strong>{courseNames[course] || course}</strong>
+          <span>{data.sources.filter(source => source.status === 'ready' || source.status === 'partial').length} fonti consultabili · {data.sources.filter(source => source.status !== 'ready').length} fonti con limiti · {data.missingTranscripts ?? 0} trascrizioni mancanti</span>
+          <button type="button" onClick={() => setShowSources(value => !value)}>Vedi copertura e lacune</button>
+          <small>Le risposte usano i passaggi consultati: un concetto non trovato può essere presente in altre fonti o pagine non leggibili.</small>
+        </div>}
         {!courses.length && <p>Aggiungi un corso per iniziare.</p>}
         {error && <p role="alert">{error}</p>}
         <p role="status">
-          {busy || data?.syncing ? status || 'Aggiornamento delle fonti…' : ''}
+          {busy || semanticBusy || data?.syncing ? status || 'Aggiornamento delle fonti…' : ''}
         </p>
         {showSources && (
           <section className="course-chat-sources" aria-label="Fonti del corso">
@@ -415,11 +430,45 @@ export function CourseChat({
                 Aggiorna indice
               </button>
             </div>
+            <p>
+              {data?.semantic?.status === 'ready' ? 'Ricerca ibrida locale disponibile. Prepara l’indice prima delle domande per ridurre l’attesa; i passaggi già pronti vengono riusati.' : 'Ricerca testuale attiva. Puoi aggiungere un modello multilingue per cercare anche parafrasi e concetti affini.'}
+            </p>
+            {data?.semantic?.status !== 'ready' && <button type="button" disabled={semanticBusy || busy || !course} onClick={() => {
+              setSemanticBusy(true)
+              void perform(() => window.archive.prepareCourseSemantic(course)).finally(() => setSemanticBusy(false))
+            }}>{semanticBusy ? 'Preparazione modello locale…' : 'Scarica modello semantico locale (circa 140 MB)'}</button>}
+            <small>Il download contatta Hugging Face per i pesi pubblici. Testi e vettori restano sul computer; la risposta viene inviata a Gemini solo con il comando Invia.</small>
+            {data?.semantic?.status === 'ready' && <div className="course-chat-actions">
+              <button type="button" disabled={busy || data.indexing?.status === 'running'} onClick={() => void perform(() => window.archive.manageCourseIndex(course, 'start'))}>Prepara / riprendi indice locale</button>
+              {data.indexing?.status === 'running' && <button type="button" onClick={() => void perform(() => window.archive.manageCourseIndex(course, 'cancel'))}>Interrompi preparazione</button>}
+            </div>}
+            {data?.indexing && <div aria-label="Preparazione indice locale" role="status">
+              <p>{({ running: 'Preparazione in corso', paused: 'In pausa: puoi riprendere', cancelled: 'Preparazione interrotta', complete: 'Indice preparato', error: 'Preparazione da riprendere', stale: 'Fonti cambiate: aggiorna l’indice' })[data.indexing.status]} · {data.indexing.completed}/{data.indexing.total} passaggi</p>
+              <progress max={Math.max(1, data.indexing.total)} value={data.indexing.completed} aria-label="Passaggi preparati" />
+              {data.indexing.issue && <p>{data.indexing.issue}</p>}
+              <details><summary>Copertura per fonte</summary><ul>{data.indexing.sources.map(source => <li key={source.sourceId}>{data.sources.find(item => item.id === source.sourceId)?.title ?? 'Fonte non più disponibile'}: {source.completed}/{source.total}</li>)}</ul></details>
+            </div>}
+            <details><summary>Spazio e derivazioni locali</summary>
+              <p>Il modello e i vettori sono condivisi tra i corsi. La pulizia delle revisioni conserva quelle usate dai metadati attuali e dal backup; le citazioni storiche conservano i propri estratti.</p>
+              <button type="button" onClick={() => void perform(() => window.archive.manageCourseIndex(course, 'storage'))}>Misura spazio locale</button>
+              {data?.storage && <p>Modello {(data.storage.modelBytes / 1048576).toFixed(1)} MB · Vettori {(data.storage.vectorBytes / 1048576).toFixed(1)} MB · Revisioni del corso {data.storage.revisions} ({(data.storage.corpusBytes / 1048576).toFixed(1)} MB)</p>}
+              <button type="button" disabled={busy || data?.indexing?.status === 'running'} onClick={() => void perform(() => window.archive.manageCourseIndex(course, 'clear-vectors'))}>Svuota vettori ricostruibili di tutti i corsi</button>
+              <button type="button" disabled={busy || data?.syncing || data?.indexing?.status === 'running'} onClick={() => void perform(() => window.archive.manageCourseIndex(course, 'clean-revisions'))}>Pulisci revisioni non utilizzate del corso</button>
+            </details>
+            <details><summary>Numeri delle lezioni</summary>
+              <p>I numeri assegnati restano legati alla lezione anche se cambia la data. Puoi impostare un numero ufficiale libero; i laboratori restano esclusi. Le citazioni precedenti conservano la numerazione originale.</p>
+              {data?.sources.filter((source, index, all) => source.lectureId && source.lectureOrdinal && all.findIndex(item => item.lectureId === source.lectureId) === index).map(source => <form key={source.id} onSubmit={event => {
+                event.preventDefault()
+                const number = Number(new FormData(event.currentTarget).get('number'))
+                void perform(() => window.archive.setCourseLectureNumber(course, source.lectureId!, number))
+              }}><label>{source.title} · {source.numbering === 'official' ? 'ufficiale' : 'riferimento stabile'} {source.lectureOrdinal} · ordine cronologico {source.chronologicalOrdinal ?? source.lectureOrdinal}<input name="number" type="number" min={1} max={1000} defaultValue={source.lectureOrdinal} aria-label={`Numero ufficiale: ${source.title}`} /></label><button disabled={busy || data.indexing?.status === 'running'}>Imposta numero</button></form>)}
+            </details>
+            {data?.semantic?.issue && <p role="alert">{data.semantic.issue}</p>}
             {data?.issue && <p role="alert">{data.issue}</p>}
             <ul>
               {data?.sources.map((source) => (
                 <li key={source.id}>
-                  <strong>{source.title}</strong> ·{' '}
+                  <strong>{source.title}</strong> {source.provenance === 'ai-derived' || source.kind === 'notes' ? '· Derivazione AI' : ''} ·{' '}
                   {source.status === 'ready'
                     ? 'Testo indicizzato; figure e annotazioni da consultare visivamente'
                     : source.status === 'partial'
@@ -495,9 +544,10 @@ export function CourseChat({
             ))}
           </aside>
           <section
-            className="course-chat-messages"
-            aria-label="Messaggi del corso"
+            className="course-chat-conversation"
+            aria-label="Conversazione del corso"
           >
+            <div className="course-chat-messages" aria-label="Messaggi del corso">
             {!active?.messages.length && (
               <p>
                 Confronta lezioni, cerca esercizi o chiedi cosa ha detto il
@@ -517,7 +567,22 @@ export function CourseChat({
                   </p>
                 )}
                 <strong>{message.role === 'user' ? 'Tu' : 'Assistente'}</strong>
-                <MarkdownViewer content={message.text} allowImages={false} />
+                {message.role === 'assistant' && <p className="course-answer-kind">{message.citations?.length ? 'Risposta con fonti del corso · verifica citazioni e deduzioni' : 'Nessuna citazione del corso verificata in questa risposta'}</p>}
+                {message.evidence && <div className="course-answer-kind" aria-label="Evidenza consultata">
+                  <p>{message.evidence.passages} passaggi consultati · {message.evidence.originalSources} fonti originali · {message.evidence.derivedSources} derivazioni AI · {message.evidence.independentGroups} gruppi di provenienza. La validità dei riferimenti non certifica il supporto di ogni affermazione.</p>
+                  {message.evidence.requestedLessons.length > 0 && <p>Lezioni richieste: {message.evidence.requestedLessons.join(', ')}. Lezioni citate: {message.evidence.citedLessons.join(', ') || 'nessuna'}.</p>}
+                  {message.evidence.missingLessons.length > 0 && <p role="note">Copertura incompleta: nessun estratto recuperato per le lezioni {message.evidence.missingLessons.join(', ')}. Non significa che l’argomento sia assente.</p>}
+                </div>}
+                {message.role === 'assistant' ? courseAnswerSections(message.text).map((part, index) => <section key={index} className={`course-answer-section kind-${part.kind}`} aria-label={part.kind === 'sources' ? 'Dalle fonti del corso' : part.kind === 'deduction' ? 'Deduzione' : part.kind === 'general' ? 'Integrazione generale' : 'Risposta'}><MarkdownViewer content={part.markdown} allowImages={false} /></section>) : <MarkdownViewer content={message.text} allowImages={false} />}
+                {message.role === 'assistant' && <details className="course-grounding"><summary>{message.grounding?.status === 'reviewed' || message.grounding?.status === 'partial' ? `Controllo ${message.grounding.status === 'partial' ? 'parziale' : 'AI fallibile'} · ${message.grounding.claims.filter(claim => claim.support !== 'supported').length + (message.grounding.omittedClaims ?? 0)} affermazioni da verificare` : 'Supporto delle affermazioni non controllato semanticamente'}</summary>
+                  <p>Il controllo AI delle principali affermazioni è fallibile e può non essere disponibile. Leggi i passaggi e controlla ipotesi, attribuzioni e conclusioni.</p>
+                  {message.grounding?.status === 'partial' && <p>Controllo incompleto: può includere avvisi locali su copertura e cronologia. {message.grounding.omittedClaims ? `${message.grounding.omittedClaims} affermazioni non sono state collegate al testo e restano da verificare.` : ''}</p>}
+                  {message.grounding?.claims.map((claim, index) => <div key={index}><blockquote>{claim.text}</blockquote><p>{claim.kind === 'course' ? 'Fonte del corso' : claim.kind === 'deduction' ? 'Deduzione' : 'Integrazione generale'} · {claim.support === 'supported' ? 'Supporto rilevato dal modello' : claim.support === 'unsupported' ? 'Supporto non rilevato' : 'Supporto incerto'}: {claim.reason}</p>{claim.passageIds.map(id => {
+                    const item = message.citations?.find(citation => citation.passage.id === id)
+                    return item ? <button type="button" key={id} onClick={() => setCitation(item)}>Leggi evidenza: {item.source.title}</button> : null
+                  })}</div>)}
+                  {message.grounding?.contradictions.map((text, index) => <p key={index} role="note">Conflitto segnalato: {text}</p>)}
+                </details>}
                 {message.requestedDocument && (
                   <div className="course-document-request">
                     <strong>Fonte richiesta</strong>
@@ -604,6 +669,7 @@ export function CourseChat({
                     : ''}
                 </p>
                 <pre>{citation.passage.text}</pre>
+                {citation.passage.structuralBlock && <p>Estratto di un blocco {citation.passage.structuralBlock.kind === 'code' ? 'di codice' : 'matematico'} lungo, posizioni {citation.passage.structuralBlock.start}–{citation.passage.structuralBlock.end}. Il blocco prosegue oltre questo estratto: consulta la fonte completa.</p>}
                 {citation.source.lectureId && (
                   <button
                     onClick={() => {
@@ -628,6 +694,9 @@ export function CourseChat({
                 )}
               </section>
             )}
+            </div>
+            <div className="course-chat-composer">
+            <details className="course-count-tool"><summary>Conteggio esatto locale nelle trascrizioni</summary>
             <form
               className="course-count"
               onSubmit={(event) => {
@@ -673,6 +742,7 @@ export function CourseChat({
                 </div>
               )}
             </form>
+            </details>
             <form
               onSubmit={(event) => {
                 event.preventDefault()
@@ -730,10 +800,10 @@ export function CourseChat({
               )}
               <p>
                 Invia la domanda con gli estratti selezionati dal corso e fino a
-                tre approfondimenti automatici.
+                tre approfondimenti automatici. Include un controllo AI fallibile delle principali affermazioni, entro il medesimo limite di invii e tempo.
               </p>
               <button disabled={!course || !data || busy || !draft.trim()}>
-                Invia a Gemini
+                {error ? 'Riprova domanda' : 'Invia a Gemini'}
               </button>
               {busy && (
                 <button
@@ -751,6 +821,7 @@ export function CourseChat({
                 </button>
               )}
             </form>
+            </div>
           </section>
         </div>
         {pdf && (

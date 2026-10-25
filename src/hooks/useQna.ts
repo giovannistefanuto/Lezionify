@@ -1,10 +1,16 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import type { QnaThread, QnaStatusUpdate } from '../../shared/archive'
 import { QNA_IMAGE_LIMIT, type QnaImageInput } from '../../shared/qnaImages'
 
 export function useQna(lectureId: string | null) {
   const [threads, setThreads] = useState<QnaThread[]>([])
-  const [activeThreadId, setActiveThreadId] = useState<string | null>(null)
+  const [activeThreadId, setActiveThreadState] = useState<string | null>(null)
+  const setActiveThreadId = useCallback((id: string | null) => {
+    setActiveThreadState(id)
+    if (id && lectureId) {
+      try { localStorage.setItem('lezionify:qna-last:' + lectureId, id) } catch { /* Optional UI preference. */ }
+    }
+  }, [lectureId])
   const latestThreads = useRef(threads)
   latestThreads.current = threads
   const [isGeneratingQna, setIsGeneratingQna] = useState(false)
@@ -23,7 +29,7 @@ export function useQna(lectureId: string | null) {
   useEffect(() => {
     let cancelled = false
     setThreads([])
-    setActiveThreadId(null)
+    setActiveThreadState(null)
     setQnaError(null)
     setQnaStatuses({})
     if (lectureId) {
@@ -115,20 +121,25 @@ export function useQna(lectureId: string | null) {
   const sendMessage = async (
     threadId: string,
     text: string,
-    useFullContext: boolean
+    useFullContext: boolean,
+    includeOtherQna = false,
+    responseLength: 'brief' | 'medium' | 'long' = 'brief'
   ) => {
-    if (!lectureId || running.current || adding.current || !text.trim()) return
+    if (!lectureId || running.current || adding.current || !text.trim()) return false
     const currentThread = threads.find((t) => t.id === threadId)
-    if (!currentThread) return
+    if (!currentThread) return false
     const owner = lectureId
     running.current = true
     streaming.current = { lectureId: owner, threadId }
     setQnaError(null)
     setIsGeneratingQna(true)
+    const lastMessage = currentThread.messages.at(-1)
+    const history = lastMessage?.role === 'user' && lastMessage.text.trim() === text.trim()
+      ? currentThread.messages.slice(0, -1) : currentThread.messages
     const requestThread: QnaThread = {
       ...currentThread,
       messages: [
-        ...currentThread.messages,
+        ...history,
         { role: 'user', text: text.trim(), timestamp: new Date().toISOString(), ...(currentThread.attachmentIds?.length ? { attachmentIds: [...currentThread.attachmentIds] } : {}) }
       ],
       updatedAt: new Date().toISOString()
@@ -152,7 +163,9 @@ export function useQna(lectureId: string | null) {
       const res = await window.archive.generateQnaResponse(
         owner,
         requestThread,
-        useFullContext
+        useFullContext,
+        includeOtherQna,
+        responseLength
       )
       if (!res.success || !res.text?.trim())
         throw new Error(res.error || 'Risposta vuota dal modello.')
@@ -173,11 +186,13 @@ export function useQna(lectureId: string | null) {
       )
       await window.archive.saveQnaThreads(owner, final)
       if (currentLecture.current === owner) setThreads(final)
+      return true
     } catch (e) {
       if (currentLecture.current === owner) {
         setThreads(base)
         setQnaError(e instanceof Error ? e.message : 'Errore imprevisto')
       }
+      return false
     } finally {
       streaming.current = null
       running.current = false

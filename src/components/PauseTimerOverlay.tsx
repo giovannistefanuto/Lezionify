@@ -89,12 +89,11 @@ export function PauseTimerOverlay({
           {isExpired ? 'Pausa terminata' : `Pausa programmata (${minutes} min)`}
         </h2>
 
-        <p className="pause-timer-subtext">
-          {isExpired
-            ? 'La pausa prevista è terminata. Il tempo di studio resta fermo finché scegli di riprendere, anche se resti lontano più a lungo.'
-            : 'Prenditi il tempo per riposare. Il tempo di studio resta fermo per tutta la pausa, anche dopo la scadenza.'}
-        </p>
+        {!isExpired && <p className="pause-timer-subtext">
+          Prenditi il tempo per riposare. Il tempo di studio resta fermo per tutta la pausa, anche dopo la scadenza.
+        </p>}
 
+        {!isExpired && <p className="pause-suggestion" role="status">{minutes === 5 ? 'Vatti a prendere un caffè e non usare il telefono.' : minutes === 15 ? "Leggi un po’ di pagine del libro." : minutes === 30 ? "Fai una passeggiata all’aria aperta o accarezza i gatti." : 'Allontanati dallo schermo e prenditi un momento per te.'}</p>}
         {/* Cerchio SVG countdown pomodoro-style */}
         <div className="pause-timer-clock-wrapper">
           <svg className="pause-timer-radial-svg" width="210" height="210" viewBox="0 0 210 210">

@@ -38,7 +38,7 @@ export default tseslint.config(
   },
   {
     // Electron starts this standalone Node worker as CommonJS.
-    files: ['resources/course-rag/pdf-worker.cjs'],
+    files: ['resources/course-rag/*.cjs'],
     rules: {
       '@typescript-eslint/no-require-imports': 'off'
     }

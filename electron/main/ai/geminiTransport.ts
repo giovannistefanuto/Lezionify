@@ -5,7 +5,8 @@
  */
 
 import { GoogleGenAI } from '@google/genai'
-import { normalizeGeminiError, GeminiError } from './geminiErrors'
+import { GeminiError } from './geminiErrors'
+import { assertGeminiOnline, connectedGeminiError } from './connectivity'
 import { QNA_TIMEOUTS } from './geminiPolicy'
 
 export interface GenerateContentParams {
@@ -62,6 +63,7 @@ export class GeminiTransport {
   private clientCache = new Map<string, GoogleGenAI>()
 
   getClient(apiKey: string): GoogleGenAI {
+    assertGeminiOnline()
     const trimmed = apiKey.trim()
     let client = this.clientCache.get(trimmed)
     if (!client) {
@@ -118,7 +120,7 @@ export class GeminiTransport {
           : undefined
       }
     } catch (err) {
-      throw normalizeGeminiError(err)
+      throw connectedGeminiError(err)
     }
   }
 
@@ -150,7 +152,8 @@ export class GeminiTransport {
     let finished = false
     let abortError: GeminiError | undefined
     let timer: ReturnType<typeof setTimeout> | undefined
-    type StreamChunk = { text?: string; promptFeedback?: { blockReason?: string }; candidates?: { finishReason?: string }[] }
+    type StreamChunk = { text?: string; usageMetadata?: TransportExecutionResult<string>['usageMetadata']; promptFeedback?: { blockReason?: string }; candidates?: { finishReason?: string }[] }
+    let usageMetadata: TransportExecutionResult<string>['usageMetadata']
     let iterator: AsyncIterator<StreamChunk> | undefined
     let rejectAborted!: (error: GeminiError) => void
     const aborted = new Promise<never>((_, reject) => {
@@ -216,6 +219,7 @@ export class GeminiTransport {
       while (!finished) {
         const chunk = await Promise.race([iterator.next(), aborted])
         if (finished || chunk.done) break
+        if (chunk.value.usageMetadata) usageMetadata = chunk.value.usageMetadata
         const blockReason = chunk.value.promptFeedback?.blockReason
         if ((blockReason && blockReason !== 'BLOCK_REASON_UNSPECIFIED') || chunk.value.candidates?.some(candidate => ['SAFETY', 'RECITATION', 'BLOCKLIST', 'PROHIBITED_CONTENT', 'SPII', 'IMAGE_SAFETY'].includes(candidate.finishReason ?? ''))) {
           throw new GeminiError({ category: 'invalid_request', recoveryDisposition: 'terminal', isRetryable: false, isDailyQuota: false, sanitizedMessage: 'La risposta Q&A è stata bloccata dal provider. Riformula la domanda.' })
@@ -235,10 +239,10 @@ export class GeminiTransport {
         }
       }
       if (abortError) throw abortError
-      return { data: fullText }
+      return { data: fullText, ...(usageMetadata ? { usageMetadata } : {}) }
     } catch (error) {
       // Il SDK può sostituire il motivo con AbortError: conserviamo timeout/cancel.
-      throw abortError ?? normalizeGeminiError(error)
+      throw connectedGeminiError(abortError ?? error)
     } finally {
       finished = true
       clearTimeout(timer)
@@ -288,7 +292,7 @@ export class GeminiTransport {
 
       return { data: response }
     } catch (err) {
-      throw normalizeGeminiError(err)
+      throw connectedGeminiError(err)
     }
   }
 
@@ -317,7 +321,7 @@ export class GeminiTransport {
       }
       return { name: result.name, uri: result.uri }
     } catch (err) {
-      throw normalizeGeminiError(err)
+      throw connectedGeminiError(err)
     }
   }
 
@@ -342,7 +346,7 @@ export class GeminiTransport {
         mimeType: file.mimeType
       }
     } catch (err) {
-      throw normalizeGeminiError(err)
+      throw connectedGeminiError(err)
     }
   }
 

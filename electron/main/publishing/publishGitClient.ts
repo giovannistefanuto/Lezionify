@@ -23,6 +23,7 @@ export interface PublishingGit {
   commit(message: string): Promise<string | null>
   push(): Promise<string>
   getRemoteFileHashes(): Promise<Record<string, string>>
+  assertPendingFilesAllowed?(files: string[], removedFiles?: string[]): Promise<void>
 }
 
 export class PublishingError extends Error {
@@ -147,6 +148,19 @@ export class PublishGitClient implements PublishingGit {
     for (let offset = 0; offset < files.length; offset += 50) {
       await this.run(['add', '--', ...files.slice(offset, offset + 50)])
     }
+  }
+
+  /** A failed earlier push may contain a now-disabled course in local commits. */
+  async assertPendingFilesAllowed(files: string[], removedFiles: string[] = []): Promise<void> {
+    let pending: string[]
+    if (this.remoteBranchExists) {
+      pending = (await this.run(['diff', '--name-only', '-z', `refs/remotes/origin/${this.options.branch}...HEAD`])).stdout.split('\0').filter(Boolean)
+    } else {
+      const heads = (await this.run(['for-each-ref', '--format=%(refname)', `refs/heads/${this.options.branch}`])).stdout.trim()
+      pending = heads ? (await this.run(['ls-tree', '-r', '--name-only', '-z', 'HEAD'])).stdout.split('\0').filter(Boolean) : []
+    }
+    const allowed = new Set([...files, ...removedFiles])
+    if (pending.some(file => !allowed.has(file))) throw new PublishingError('Pubblicazione sospesa: il clone contiene modifiche non autorizzate dalla selezione attuale dei corsi. Controlla i consensi dei corsi prima di riprovare.')
   }
 
   async commit(message: string): Promise<string | null> {

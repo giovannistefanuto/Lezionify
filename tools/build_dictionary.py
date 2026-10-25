@@ -67,6 +67,22 @@ def convert(source: Path, destination: Path):
     print(f"{source.stem}: {len(entries)} entries, {destination.stat().st_size} bytes")
 
 
+def supplement_collusion(directory: Path):
+    """Reviewed factual translation pair; no third-party definitions copied."""
+    source = "https://dizionari.corriere.it/dizionario_inglese/Inglese/C/collusion.shtml"
+    for filename, word, translation in [("eng-ita.json", "collusion", "collusione"),
+                                        ("ita-eng.json", "collusione", "collusion")]:
+        path = directory / filename
+        data = json.loads(path.read_text(encoding="utf-8"))
+        if not any(entry["word"] == word for entry in data["entries"]):
+            data["entries"].append({"word": word, "partOfSpeech": "n", "pronunciation": "",
+                                    "senses": [{"translations": [translation], "definitions": []}]})
+        data["reviewedTranslationPairs"] = [{"word": word, "translation": translation,
+                                              "sourceUrl": source, "reviewedOn": "2026-10-23"}]
+        data["modifications"] = data["modifications"].split(" Reviewed translation pair:")[0] + " Reviewed translation pair: collusion/collusione; no copied definitions."
+        path.write_text(json.dumps(data, ensure_ascii=False, separators=(",", ":")) + "\n", encoding="utf-8")
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("source_directory", type=Path)
@@ -76,3 +92,4 @@ if __name__ == "__main__":
     for pair in ("eng-ita", "ita-eng"):
         convert(args.source_directory / f"{pair}.tei", output / f"{pair}.json")
     supplement_italian(output / "ita-eng.json", output / "eng-ita.json")
+    supplement_collusion(output)

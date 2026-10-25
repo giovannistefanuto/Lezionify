@@ -44,8 +44,8 @@ export async function runToolSettingsScenarios(root: Root, api: any) {
   try {
     await act(async () => root.render(null))
     await act(async () => root.render(<Harness />)); await settle()
-    const input = document.querySelector<HTMLInputElement>('[aria-label="Parola o frase"]')!
-    await act(async () => { Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(input, 'Una frase'); input.dispatchEvent(new Event('input', { bubbles: true })) }); await settle()
+    const input = document.querySelector<HTMLTextAreaElement>('[aria-label="Parola o frase"]')!
+    await act(async () => { Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')!.set!.call(input, 'Una frase'); input.dispatchEvent(new Event('input', { bubbles: true })) }); await settle()
     check(downloads === 0 && translations === 0, 'Missing models must not trigger automatic installation or online translation')
     await click('Apri Impostazioni traduttore'); await settle()
     check(Boolean(document.querySelector('[aria-label="Traduttore offline"]')), 'Missing-model link must open the exact settings section')

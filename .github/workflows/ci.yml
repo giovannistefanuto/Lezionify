@@ -46,6 +46,9 @@ jobs:
       - name: Unit tests
         run: npm test
 
+      - name: Offline public RAG retrieval gate (no model or API)
+        run: node tools/evaluate_course_rag.mjs --gate
+
       - name: Gemini benchmark unit tests
         run: npm run test:benchmark
 

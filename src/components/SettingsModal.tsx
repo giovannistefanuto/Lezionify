@@ -1,3 +1,4 @@
+import { CopyGuardSettings } from './CopyGuard'
 import { StudyEstimateSettings } from './StudyEstimateSettings'
 import React, { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
@@ -154,9 +155,10 @@ export function SettingsModal({
         </nav>
         <div className="settings-modal-body" hidden={section !== 'general'}>
           <StudyEstimateSettings />
+          <CopyGuardSettings />
           <section className="publishing-settings" aria-labelledby="publishing-settings-title">
             <h4 id="publishing-settings-title">Pubblicazione automatica su GitHub</h4>
-            <p>Condividi trascrizioni e dispense ITA nel tuo repository. Al salvataggio,
+            <p>Condividi trascrizioni e dispense dei corsi abilitati nel tuo repository. Al salvataggio,
               a ogni avvio e dopo l’elaborazione, Lezionify controlla GitHub e sincronizza
               lezioni nuove e modifiche. Gli audio restano sul computer.</p>
             <label className="auto-rotate-checkbox-label">
@@ -187,7 +189,7 @@ export function SettingsModal({
                 publishingStatus.connection === 'offline' ? 'GitHub non è raggiungibile. Riproverò automaticamente.' :
                 publishingStatus.lastError || (publishingStatus.unpublishedCount ?
                   `${publishingStatus.unpublishedCount} lezioni nuove o modificate da sincronizzare.` :
-                  publishingStatus.lastCheckedAt ? 'Le lezioni sono aggiornate su GitHub.' : 'In attesa della prima verifica automatica.')}
+                  publishingStatus.lastCheckedAt ? 'Le lezioni dei corsi abilitati sono aggiornate su GitHub.' : 'In attesa della prima verifica automatica.')}
               {publishingStatus?.lastCheckedAt && <small>Ultima verifica: {new Date(publishingStatus.lastCheckedAt).toLocaleString('it-IT')}</small>}
             </div>
           </section>
@@ -369,7 +371,7 @@ export function SettingsModal({
                 <span>
                   <strong>Elaborazione automatica all’importazione</strong> (opzionale):
                   avvia trascrizione, dispensa ITA e versione ENG in background per ogni lezione appena
-                  importata. Se disattivata, importa tutti gli audio e poi usa “Elabora tutto”.
+                  importata. Se disattivata, importa tutti gli audio e poi usa “Elabora archivio”.
                 </span>
               </label>
 

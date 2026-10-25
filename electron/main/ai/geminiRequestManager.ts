@@ -14,6 +14,7 @@ import {
 } from './geminiPolicy'
 import { GeminiError, normalizeGeminiError } from './geminiErrors'
 import { GeminiTransport } from './geminiTransport'
+import { assertGeminiOnline, connectedGeminiError } from './connectivity'
 import { logger } from '../logger'
 import { createHash } from 'node:crypto'
 
@@ -32,15 +33,15 @@ export const defaultClock: Clock = {
       }
       const isTest = typeof process !== 'undefined' && (process.env.NODE_ENV === 'test' || process.env.VITEST === 'true')
       const actualMs = isTest ? Math.min(ms, 15) : ms
-      const timer = setTimeout(resolve, actualMs)
-      signal?.addEventListener(
-        'abort',
-        () => {
-          clearTimeout(timer)
-          reject(new GeminiError({ category: 'cancelled', isRetryable: false, isDailyQuota: false, sanitizedMessage: 'Attesa annullata.' }))
-        },
-        { once: true }
-      )
+      const onAbort = () => {
+        clearTimeout(timer)
+        reject(new GeminiError({ category: 'cancelled', isRetryable: false, isDailyQuota: false, sanitizedMessage: 'Attesa annullata.' }))
+      }
+      const timer = setTimeout(() => {
+        signal?.removeEventListener('abort', onAbort)
+        resolve()
+      }, actualMs)
+      signal?.addEventListener('abort', onAbort, { once: true })
     })
   }
 }
@@ -72,6 +73,8 @@ export interface LogicalRequestOptions<T> {
   fallbackModels?: string[]
   /** Interactive Q&A can advance immediately when a model produces no usable answer. */
   preferModelFallback?: boolean
+  /** Explicit bounded recovery; defaults preserve the global six-attempt policy. */
+  recovery?: { maxTotalAttempts: number; modelPasses: number; passDelayMs: number }
   signal?: AbortSignal
   timeoutMs?: number
   call: (apiKey: string, model: string, attemptSignal: AbortSignal) => Promise<T>
@@ -371,7 +374,7 @@ export class GeminiRequestManager {
       lifecycle('gemini_queue_enqueued', `Richiesta accodata con priorità ${priority}; ${this.queue.length} richieste in coda, ${this.activeCount} attive.`, {
         priority, queueLength: this.queue.length, activeCount: this.activeCount,
         models: [options.preferredModel, ...(options.fallbackModels || [])],
-        keyCount: options.keys.length, maxTotalAttempts: this.policy.maxTotalAttempts
+        keyCount: options.keys.length, maxTotalAttempts: options.recovery?.maxTotalAttempts ?? this.policy.maxTotalAttempts
       })
       this.processQueue()
     })
@@ -469,7 +472,12 @@ export class GeminiRequestManager {
     // È un budget assoluto per la richiesta logica, non un valore minimo.
     // Moltiplicarlo per chiavi e modelli permetteva a un pool grande di
     // consumare decine di chiamate prima di restituire un errore.
-    const effectiveMaxAttempts = this.policy.maxTotalAttempts
+    const effectiveMaxAttempts = options.recovery?.maxTotalAttempts ?? this.policy.maxTotalAttempts
+    const modelPasses = options.recovery?.modelPasses ?? 1
+    if (!Number.isInteger(effectiveMaxAttempts) || effectiveMaxAttempts < 1 || effectiveMaxAttempts > 12 || !Number.isInteger(modelPasses) || modelPasses < 1 || modelPasses > 3) throw new Error('Budget di recupero Gemini non valido.')
+
+    for (let pass = 0; pass < modelPasses; pass++) {
+      const attemptsBeforePass = totalPhysicalAttempts
 
     // Itera tra modelli e chiavi
     for (const model of models) {
@@ -604,7 +612,7 @@ export class GeminiRequestManager {
           options.signal.addEventListener('abort', onParentAbort, { once: true })
         }
 
-        const attemptTimeout = TIMEOUTS_BY_PURPOSE[options.purpose] || 180_000
+        const attemptTimeout = Math.max(1, Math.min(TIMEOUTS_BY_PURPOSE[options.purpose] || 180_000, deadline - this.clock.now()))
         const attemptTimer = setTimeout(() => {
           step('gemini_attempt_timeout', `Tentativo ${totalPhysicalAttempts}, ${keyAlias}, modello ${model}: timeout dopo ${attemptTimeout / 1000} s; richiesta di interruzione inviata.`, { keyAlias, model, physicalAttempt: totalPhysicalAttempts, attemptTimeout }, 'warn')
           attemptAbortController.abort(new GeminiError({
@@ -614,6 +622,7 @@ export class GeminiRequestManager {
         }, attemptTimeout)
 
         try {
+          assertGeminiOnline()
           const result = await options.call(
             apiKey,
             model,
@@ -642,14 +651,14 @@ export class GeminiRequestManager {
             options.signal.removeEventListener('abort', onParentAbort)
           }
 
-          const normalized = normalizeGeminiError(rawError)
+          const normalized = connectedGeminiError(rawError)
           const error = normalized.recoveryDisposition !== 'terminal' &&
             normalized.category === 'cancelled' &&
             attemptAbortController.signal.reason instanceof GeminiError
               ? attemptAbortController.signal.reason
               : normalized
           lastError = error
-          this.handleFailure(quotaGroup, model, error, groupModelKey)
+          if (!(error.category === 'network_error' && error.recoveryDisposition === 'terminal')) this.handleFailure(quotaGroup, model, error, groupModelKey)
           this.writeTelemetry('warn', 'gemini_request_result', {
             actionId: options.jobId,
             requestId: options.requestId || options.jobId,
@@ -753,10 +762,26 @@ export class GeminiRequestManager {
       const nextModel = models[models.indexOf(model) + 1]
       if (nextModel && totalPhysicalAttempts < effectiveMaxAttempts) {
         step('gemini_model_fallback', `Passo dal modello ${model} al modello ${nextModel}: il precedente non ha completato la richiesta.`, { model, nextModel, errorCategory: lastError?.category })
+        if (options.recovery && lastError?.isRetryable && ['timeout', 'service_unavailable', 'network_error', 'rate_limited'].includes(lastError.category)) {
+          const delayMs = Math.max(lastError.retryDelayMs ?? 0, Math.min(30000, 2000 * 2 ** Math.min(totalPhysicalAttempts - 1, 4)))
+          if (this.clock.now() + delayMs >= deadline) break
+          options.onRetry?.(totalPhysicalAttempts, delayMs, lastError.sanitizedMessage, 0)
+          step('gemini_fallback_wait', `Attendo ${Math.ceil(delayMs / 1000)} s prima del modello alternativo.`, { delayMs, errorCategory: lastError.category })
+          await this.clock.sleep(delayMs, options.signal)
+        }
       }
     }
 
+      if (pass + 1 >= modelPasses || totalPhysicalAttempts >= effectiveMaxAttempts || totalPhysicalAttempts === attemptsBeforePass || !lastError?.isRetryable || lastError.recoveryDisposition === 'terminal' || !['timeout', 'service_unavailable', 'network_error', 'rate_limited', 'invalid_output'].includes(lastError.category)) break
+      const delayMs = Math.max(lastError.retryDelayMs ?? 0, (options.recovery?.passDelayMs ?? 15000) * 2 ** pass)
+      if (this.clock.now() + delayMs >= deadline) break
+      options.onRetry?.(totalPhysicalAttempts, delayMs, lastError.sanitizedMessage, 0)
+      step('gemini_recovery_wait', `Servizio temporaneamente indisponibile: attendo ${Math.ceil(delayMs / 1000)} s prima del giro ${pass + 2}/${modelPasses}.`, { delayMs, pass: pass + 2, errorCategory: lastError.category })
+      await this.clock.sleep(delayMs, options.signal)
+    }
+
     step('gemini_attempts_exhausted', `Nessuna alternativa utilizzabile: ${totalPhysicalAttempts}/${effectiveMaxAttempts} tentativi eseguiti; ${totalPhysicalAttempts >= effectiveMaxAttempts ? 'budget totale esaurito' : 'modelli e chiavi disponibili esauriti'}.`, { physicalAttempts: totalPhysicalAttempts, maxTotalAttempts: effectiveMaxAttempts }, 'warn')
+    if (options.recovery && lastError?.isRetryable && lastError.recoveryDisposition !== 'terminal') throw new GeminiError({ category: lastError.category, isRetryable: true, isDailyQuota: false, sanitizedMessage: 'Il servizio non ha ancora risposto dopo il recupero automatico. La domanda è conservata: puoi riprovare senza riscriverla.' }, lastError)
     throw lastError || new GeminiError({
       category: 'unknown',
       isRetryable: false,

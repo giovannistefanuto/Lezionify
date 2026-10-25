@@ -42,7 +42,9 @@ try {
 x &= 1 \\
 &= 2
 \end{aligned}$$` + '\n\n## After multiline math\n\nLecture ending remains visible.'
-  const markdown = '# Sintesi della lezione\n\n> [!CONCETTO CHIAVE]\n> Una formula da ricordare: $E=mc^2$.\n\n## Formule e procedimenti\n\n$$\\int_0^1 x^2\\,dx = \\frac{1}{3}$$\n\n| Fase | Risultato |\n| --- | --- |\n| Analisi | $x^2$ |\n| Verifica | Corretto |\n\n```mermaid\nflowchart LR\nA["Ingresso"] --> B["Calcolo"] --> C["Risultato"]\n```\n\n' + Array.from({ length: 38 }, (_, index) => `## Argomento ${index + 1}\n\n${'Questo testo sintetico verifica impaginazione, paragrafi e continuità della dispensa. '.repeat(5)}\n\n`).join('')
+  let markdown = '# Sintesi della lezione\n\n> [!CONCETTO CHIAVE]\n> Una formula da ricordare: $E=mc^2$.\n\n## Formule e procedimenti\n\n$$\\int_0^1 x^2\\,dx = \\frac{1}{3}$$\n\n| Fase | Risultato |\n| --- | --- |\n| Analisi | $x^2$ |\n| Verifica | Corretto |\n\n```mermaid\nflowchart LR\nA["Ingresso"] --> B["Calcolo"] --> C["Risultato"]\n```\n\n' + Array.from({ length: 38 }, (_, index) => `## Argomento ${index + 1}\n\n${'Questo testo sintetico verifica impaginazione, paragrafi e continuità della dispensa. '.repeat(5)}\n\n`).join('')
+  const fictitious = readFileSync('tests/fixtures/fictitious-play.mmd', 'utf8');
+  markdown += '\n\n```mermaid\n' + fictitious + '\n```\n';
   const english = '# English lecture\n\n> [!KEY CONCEPT]\n> Remember **the source** and $x^2$.\n\n```mermaid\nflowchart TD\nX["Read"] --> Y["Understand"]\n```\n\n## Broken diagram fallback\n\n```mermaid\nflowchart LR\nA[\n```\n\nEnd of the synthetic notes.'
   const adaptive = '# Adaptive print layouts\n\n```mermaid\nflowchart LR\n' + Array.from({ length: 4 }, (_, i) => `N${i}["Stage ${i + 1} with a descriptive label"] -->|"A descriptive connection label"| N${i + 1}["Stage ${i + 2} with a descriptive label"]`).join('\n') + '\n```\n\n```mermaid\nflowchart TD\n' + Array.from({ length: 7 }, (_, i) => `Root["Main comparison"] --> B${i}["Branch ${i + 1} with a detailed description"]`).join('\n') + '\n```\n\n```mermaid\nsequenceDiagram\nautonumber\nactor A as First synthetic participant\nparticipant B as Second synthetic participant\nparticipant C as Third synthetic participant\nparticipant D as Fourth synthetic participant\nA->>D: A long request that should wrap across several lines while remaining complete\nD-->>B: A complete response to the second participant\nB->>C: Final message\n```\n\nAdaptive layout ending.'
   const compact = '# Diagrammi per la stampa\n\n## Piccolo\n\n```mermaid\nflowchart LR\nA["Fonte"]\n```\n\nTesto dopo lo schema piccolo.\n\n## Verticale\n\n```mermaid\nflowchart TD\n' + Array.from({ length: 7 }, (_, i) => `N${i}["Fase ${i + 1}"] --> N${i + 1}["Fase ${i + 2}"]`).join('\n') + '\n```\n\nTesto dopo lo schema verticale.\n\n## Largo\n\n```mermaid\nflowchart LR\n' + Array.from({ length: 5 }, (_, i) => `W${i}["Passo ${i + 1}"] --> W${i + 1}["Passo ${i + 2}"]`).join('\n') + '\n```\n\nTesto dopo lo schema largo.\n\n## Fallback lungo\n\n```mermaid\nflowchart LR\nA[\n' + Array.from({ length: 30 }, (_, i) => `%% Riga sorgente ${i + 1}`).join('\n') + '\n```\n\nFine del confronto.'
@@ -104,6 +106,11 @@ x &= 1 \\
             assert.equal(await event.sender.executeJavaScript('document.querySelectorAll(".katex-error").length'), 0);
             if (view.text.includes('English lecture')) assert(view.text.includes('Key concept') && view.text.includes('flowchart LR'));
             else assert(view.text.includes('Concetto chiave'));
+          }
+          if (view.text.includes('Ciclo del Fictitious Play')) {
+            assert(view.text.replace(/\\s/g, '').includes('EquilibriodiNash'));
+            assert.equal(await event.sender.executeJavaScript('document.querySelectorAll(".mermaid-diagram svg").length'), document.lectures.filter(lecture => lecture.markdown).length * 2);
+            assert.equal(await event.sender.executeJavaScript('Array.from(document.querySelectorAll(".mermaid-diagram svg")).filter(svg => svg.querySelectorAll(".node").length === 6).length'), document.lectures.filter(lecture => lecture.markdown).length);
           }
           readyChecks++;
           exporter.ready(event, token, false);

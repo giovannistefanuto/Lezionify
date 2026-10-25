@@ -220,6 +220,7 @@ export function validateCourse(value: unknown): asserts value is CourseDefinitio
   const validDate = (candidate: unknown): candidate is string =>
     typeof candidate === 'string' && Boolean(parseLocalCalendarDate(candidate))
   if (
+    (value.publishToGithub !== undefined && typeof value.publishToGithub !== 'boolean') ||
     typeof value.code !== 'string' ||
     value.code.trim().length === 0 ||
     value.code.length > 120 ||

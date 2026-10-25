@@ -12,12 +12,13 @@ const ICONS: Record<string, string> = {
   brown: '🍂',
   rain: '🌧️',
   waves: '🌊',
-  stream: '🏞️'
+  stream: '🏞️', birds: '🐦', fireplace: '🔥', storm: '⛈️', 'summer-night': '🦗', wind: '🍃', breeze: '🌬️', 'heavy-rain': '🌧️', 'forest-stream': '💧', 'rain-thunder': '🌩️', campfire: '🪵'
 }
 
 export function AmbientSoundPanel() {
   const {
     status,
+    playRandom,
     activeSoundId,
     isPlaying,
     volume,
@@ -34,6 +35,8 @@ export function AmbientSoundPanel() {
   const [showCredits, setShowCredits] = useState(false)
 
   const activeSound = AMBIENT_SOUNDS.find((s) => s.id === activeSoundId) ?? null
+  const formatMb = (bytes: number) => `${(bytes / 1024 / 1024).toLocaleString('it-IT', { maximumFractionDigits: 1 })} MB`
+  const missingBytes = status?.sounds.filter(sound => !sound.installed).reduce((sum, sound) => sum + sound.bytes, 0) ?? AMBIENT_SOUNDS.reduce((sum, sound) => sum + sound.bytes, 0)
   const allInstalled = status?.installed ?? false
   const installedCount = status?.sounds.filter((s) => s.installed).length ?? 0
 
@@ -57,9 +60,7 @@ export function AmbientSoundPanel() {
           </span>
           <div className="ambient-card-info">
             <strong>{sound.title}</strong>
-            <span className="ambient-card-meta">
-              {sound.license} · {sound.format.toUpperCase()}
-            </span>
+
           </div>
         </div>
 
@@ -86,94 +87,19 @@ export function AmbientSoundPanel() {
               </span>
             </button>
           ) : (
-            <span className="ambient-badge-missing">Da scaricare</span>
+            <button type="button" className="music-primary" disabled={isInstalling || !status}
+              onClick={() => void install([sound.id])} aria-label={`Scarica ${sound.title}`}>
+              {status?.installingSoundId === sound.id ? 'Scaricamento…' : `Scarica (${formatMb(sound.bytes)})`}
+            </button>
           )}
         </div>
+        {status?.failures?.[sound.id] && <p className="music-error" role="alert">{status.failures[sound.id]}</p>}
       </div>
     )
   }
 
   return (
     <div className="ambient-panel">
-      <div className="music-section-heading">
-        <div>
-          <span className="music-eyebrow">RUMORI E NATURA</span>
-          <h3>Suoni di sottofondo</h3>
-        </div>
-        <span className="music-count">
-          {allInstalled
-            ? '6 suoni offline pronti'
-            : `${installedCount}/6 scaricati`}
-        </span>
-      </div>
-
-      <label className="ambient-transition-setting">
-        Dissolvenza tra suoni locali{' '}
-        <select
-          aria-label="Durata dissolvenza suoni"
-          value={transitionSeconds}
-          onChange={(event) => setTransitionSeconds(Number(event.target.value))}
-        >
-          {[1, 2, 4].map((seconds) => (
-            <option value={seconds} key={seconds}>
-              {seconds} {seconds === 1 ? 'secondo' : 'secondi'}
-            </option>
-          ))}
-        </select>
-      </label>
-      <p className="music-feedback">
-        La dissolvenza riguarda i suoni offline. Per passare da Spotify o
-        YouTube, interrompi prima la musica nel rispettivo player.
-      </p>
-      {error && (
-        <div className="music-error" role="alert" style={{ marginBottom: 16 }}>
-          <span>{error}</span>
-        </div>
-      )}
-
-      {pausedByLectureAudio && (
-        <div className="ambient-lecture-notice" role="status">
-          <MusicIcon name="volume" size={16} />
-          <span>
-            Sottofondo in pausa automatica durante la riproduzione della
-            lezione.
-          </span>
-        </div>
-      )}
-
-      {!allInstalled && (
-        <div className="ambient-download-banner">
-          <div>
-            <strong>Scarica i suoni sul computer</strong>
-            <p>
-              I 6 file audio (rumore bianco, rosa, marrone, pioggia, onde,
-              ruscello — ~11,1 MB in totale) sono necessari per l’ascolto
-              offline continuo.
-            </p>
-          </div>
-          <button
-            type="button"
-            className="music-primary"
-            disabled={isInstalling}
-            onClick={() => void install()}
-          >
-            {isInstalling
-              ? 'Scaricamento in corso…'
-              : 'Scarica suoni (11,1 MB)'}
-          </button>
-        </div>
-      )}
-
-      <div className="ambient-section">
-        <h4 className="ambient-section-title">Rumori continui</h4>
-        <div className="ambient-grid">{noises.map(renderCard)}</div>
-      </div>
-
-      <div className="ambient-section" style={{ marginTop: 24 }}>
-        <h4 className="ambient-section-title">Paesaggi naturali</h4>
-        <div className="ambient-grid">{natures.map(renderCard)}</div>
-      </div>
-
       {/* Barra di controllo attiva persistente */}
       {activeSound && (
         <div className="ambient-player-bar">
@@ -183,7 +109,7 @@ export function AmbientSoundPanel() {
             </span>
             <div>
               <strong>{activeSound.title}</strong>
-              <small>{isPlaying ? 'Attivo in sottofondo' : 'In pausa'}</small>
+              <small>{pausedByLectureAudio ? 'In pausa durante l’audio della lezione' : isPlaying ? 'Attivo in sottofondo' : 'In pausa'}</small>
             </div>
           </div>
 
@@ -219,6 +145,88 @@ export function AmbientSoundPanel() {
         </div>
       )}
 
+
+      <div className="music-section-heading">
+        <div>
+          <span className="music-eyebrow">RUMORI E NATURA</span>
+          <h3>Suoni di sottofondo</h3>
+        </div>
+        <span className="music-count">
+          {allInstalled
+            ? `${AMBIENT_SOUNDS.length} suoni offline pronti`
+            : `${installedCount}/${AMBIENT_SOUNDS.length} scaricati`}
+        </span>
+      </div>
+
+      <button type="button" className="ambient-random-button" disabled={!status} onClick={() => void playRandom()}>Casuale</button>
+      <details className="ambient-options"><summary>Opzioni di riproduzione</summary>
+      <label className="ambient-transition-setting">
+        Dissolvenza tra suoni locali{' '}
+        <select
+          aria-label="Durata dissolvenza suoni"
+          value={transitionSeconds}
+          onChange={(event) => setTransitionSeconds(Number(event.target.value))}
+        >
+          {[1, 2, 4].map((seconds) => (
+            <option value={seconds} key={seconds}>
+              {seconds} {seconds === 1 ? 'secondo' : 'secondi'}
+            </option>
+          ))}
+        </select>
+      </label>
+      <p className="music-feedback">
+        La dissolvenza riguarda i suoni offline. Per passare da Spotify o
+        YouTube, interrompi prima la musica nel rispettivo player.
+      </p>
+      </details>
+      {error && (
+        <div className="music-error" role="alert" style={{ marginBottom: 16 }}>
+          <span>{error}</span>
+        </div>
+      )}
+
+      {pausedByLectureAudio && (
+        <div className="ambient-lecture-notice" role="status">
+          <MusicIcon name="volume" size={16} />
+          <span>
+            Sottofondo in pausa automatica durante la riproduzione della
+            lezione.
+          </span>
+        </div>
+      )}
+
+      {!allInstalled && (
+        <div className="ambient-download-banner">
+          <div>
+            <strong>Scarica i suoni sul computer</strong>
+            <p>
+              Scegli Scarica su ciascun suono oppure scarica tutti i file mancanti ({formatMb(missingBytes)}).
+              I file già presenti e integri vengono conservati. Nessun ascolto parte automaticamente.
+            </p>
+          </div>
+          <button
+            type="button"
+            className="music-primary"
+            disabled={isInstalling || !status}
+            onClick={() => void install()}
+          >
+            {isInstalling
+              ? 'Scaricamento in corso…'
+              : 'Scaricali tutti'}
+          </button>
+        </div>
+      )}
+
+      <div className="ambient-section">
+        <h4 className="ambient-section-title">Rumori continui</h4>
+        <div className="ambient-grid">{noises.map(renderCard)}</div>
+      </div>
+
+      <div className="ambient-section" style={{ marginTop: 24 }}>
+        <h4 className="ambient-section-title">Paesaggi naturali</h4>
+        <div className="ambient-grid">{natures.map(renderCard)}</div>
+      </div>
+
       {/* Accordion licenze e attribuzioni */}
       <div className="ambient-credits-section">
         <button
@@ -235,7 +243,7 @@ export function AmbientSoundPanel() {
           <div className="ambient-credits-box">
             <p>
               Tutti i suoni sono distribuiti sotto licenze libere (Creative
-              Commons Zero o Creative Commons Attribuzione 4.0) e restano
+              Commons o pubblico dominio) e restano
               archiviati esclusivamente sul tuo dispositivo:
             </p>
             <ul>

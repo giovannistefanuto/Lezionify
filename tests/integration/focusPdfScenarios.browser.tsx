@@ -217,7 +217,7 @@ export async function runFocusPdfScenarios(root: Root, api: any) {
     const beforeHide = readingPosition()
     document.getElementById('focus-fixture')!.style.width = '900px'
     await until(() => getComputedStyle(document.querySelector('.focus-pdf-column')!).display === 'none', 'Slides not suspended at narrow widths')
-    await act(async () => document.querySelector<HTMLButtonElement>('[aria-label="Chiudi domanda e ripristina colonne"]')!.click())
+    await act(async () => document.querySelector<HTMLButtonElement>('[aria-label="Chiudi Q&A"]')!.click())
     await until(() => getComputedStyle(document.querySelector('.focus-pdf-column')!).display !== 'none', 'Slides not restored after question closes')
     document.getElementById('focus-fixture')!.style.width = '1240px'
     await until(() => Math.abs(document.querySelector('.focus-pdf-column')!.getBoundingClientRect().width - previous) < 2, 'Previous divider ratio not restored')

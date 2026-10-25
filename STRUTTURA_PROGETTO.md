@@ -6,7 +6,23 @@ Lezionify è un'applicazione desktop Electron con React e TypeScript in fase alp
 
 - **Backend:** `ArchiveService`, validazioni runtime, scritture atomiche serializzate, recovery, cache in memoria, ricerca MiniSearch, credenziali protette tramite `safeStorage`, gestione e verifica suoni di sottofondo offline e pipeline archivio persistente e riprendibile.
 - **Frontend:** renderer React modulare con caricamento differito per Dashboard, drawer, Q&A, Markdown/KaTeX, Mermaid, suoni di sottofondo offline Web Audio e strumenti di studio; sidebar con corsi attivi e archiviati, menu contestuale e liste di studio limitate ai corsi attivi.
-- **Qualità:** 625 test Vitest, 24 regressioni Python (14 ASR e 10 ricerca Q&A), 41 test Node Q&A, scenari React in Electron, typecheck, lint, build e CI Windows.
+- **Qualità:** 739 test Vitest in 56 file, 24 regressioni Python (14 ASR e 10 ricerca Q&A), 41 test Node Q&A, scenari React in Electron, typecheck, lint e build locali. CI Windows disponibile; snapshot dei sorgenti del 25 ottobre con gli interventi del 20–23 ottobre, verificato prima della pubblicazione in `docs/quality/pubblicazione-github-2026-10-25.md`.
+
+Gli interventi D-0404 sullo studio introducono la soglia di cinque minuti per
+l'attrito di uscita Focus, Ctrl+T con selezione e lingua della dispensa,
+fallback Bergamot per parole assenti e gestione dei successi Spotify privi di
+JSON. Il traduttore è incluso nel modulo iniziale del renderer per aprirlo
+prima di configurare e tradurre. La coppia collusion/collusione è aggiunta dai
+supplementi riproducibili di `tools/build_dictionary.py`. Uso e verifiche in
+`docs/product/focus-traduttore-spotify-2026-10-23.md`.
+
+D-0406 estende il RAG alle domande realistiche di studio: recupero distribuito
+tra lezioni nelle ricerche trasversali, precedenza dei vincoli correnti sullo
+storico, fino a due passaggi originali sulle modalità d'esame, regole per
+esercizi generati e avvisi sulle assenze globali attribuite al docente.
+Benchmark aggiuntivo di otto casi sintetici e ispezione locale di 32 domande
+sui quattro corsi; risultati e limiti in
+`docs/product/rag-domande-studio-2026-10-23.md`.
 - **Ricerca:** benchmark riproducibili per confrontare pipeline ASR locali, Colab e Gemini senza versionare audio o trascrizioni reali.
 
 Il controllo ENG in `electron/main/ai/translationIntegrity.ts` recupera i
@@ -39,7 +55,73 @@ le dissolvenze dei soli suoni offline (default 1 secondo, D-0370), con invalidaz
 dei caricamenti superati nel provider. Transizioni Spotify/YouTube ancora aperte.
 Uso, limiti e verifiche in `docs/product/memo-log-pdf-transizioni-2026-10-19.md`.
 
+Le otto richieste del 20 ottobre sono implementate in D-0379.
+`shared/qnaContext.ts` seleziona estratti pertinenti di altri Q&A soltanto su
+opt-in validato nel main; lo storico corrente e il contesto completo restano
+indipendenti. `useNumericPreference` conserva larghezza e zoom Q&A;
+`useQna` registra l'ultima discussione per lezione. `MemoTodoText` gestisce
+modifica esplicita e annullamento. `battery.ts` nel main legge lo stato Windows
+con comando locale fisso; `BatteryIndicator` mostra la piccola emoji anche
+in fullscreen. Catalogo esteso a 16 suoni e stato download per file con hash,
+errori e conservazione degli integri. Il caso Mermaid con stili terminati da
+punto e virgola è coperto anche dal PDF reale. [Uso, fonti e verifiche](docs/product/interventi-2026-10-20.md).
+
 ## Mappa del repository
+
+Il completamento D-0400–D-0403 aggiunge lavori locali riprendibili dell'indice,
+cache misurabile e pulizia sicura, numerazione RAG stabile/ufficiale e controllo
+AI fallibile delle affermazioni. `shared/courseGrounding.ts` valida i collegamenti;
+`shared/courseAnswerSections.ts` condivide la distinzione delle sezioni fra
+main e renderer; `courseRagGrounding.ts` prepara il controllo e gli avvisi locali.
+`courseRagPackageCheck.ts` offre un controllo CLI isolato del vero pacchetto,
+incluso download pubblico esplicito. Worker RAG e librerie native sono estratti
+in ASAR; `pdf-layout.cjs` tratta prudentemente colonne e tabelle. Fonte, test,
+benchmark e limiti in `docs/product/rag-completamento-2026-10-23.md`.
+
+L'evoluzione RAG D-0397 separa piano della domanda (`courseRagQuery.ts`),
+finestra di evidenza sostituibile (`courseRagContext.ts`) e ricerca semantica
+locale (`courseRagSemantic.ts`). Il worker statico `embedding-worker.cjs`
+esegue MiniLM multilingue q8 su CPU con Transformers.js 4.3.1; il modello è
+opzionale, scaricato esplicitamente e fissato a una revisione immutabile.
+I corpus esterni sono immutabili e separati dalle conversazioni, con migrazione
+compatibile; MiniSearch viene riusato e aggiornato per fonte. I vettori restano
+nel profilo locale. Piano, benchmark, prove personali e limiti sono descritti in
+`docs/product/rag-implementazione-2026-10-22.md`.
+
+Gli interventi del 22 ottobre (D-0391/D-0392) aggiungono `CopyGuard.tsx` e
+`src/utils/copyGuard.ts` per la copia Memo protetta 08:00–17:30 configurabile,
+`useModalFocus.ts` per isolamento/focus dei dialoghi e
+`courseAnswerSections.ts` per distinguere le sezioni esplicite del RAG.
+`electron/main/ai/courseRagCompletion.ts` concentra schema, validazione e
+fallback del completamento RAG, condivisi con il collaudo reale opzionale.
+Il recupero successivo condivide un budget di 12 invii e 10 minuti fra tutti
+gli approfondimenti, con più giri e backoff annullabile;
+[diagnosi e verifiche](docs/quality/rag-recupero-2026-10-22.md).
+Q&A supporta Breve/Media/Lunga; chat, Memo, Focus Lock e player dei suoni sono
+stati affinati senza aggiungere elementi al Focus oltre all'icona Musica esistente.
+
+`CourseDefinition.publishToGithub` conserva la scelta per corso;
+`AppSettings.legacyPublishingCourseCodes` registra la migrazione iniziale senza
+ricifrare credenziali. Il publisher filtra conteggi e invii, ricontrolla il
+consenso e verifica che vecchi commit locali non includano corsi ora esclusi.
+Nuovi scenari in `tests/integration/october22Scenarios.browser.tsx`, collaudo
+RAG opzionale con budget persistente in `tools/run_course_rag_real.cjs` e verifica
+del setup in `tools/verify_installer.cjs`. [Uso, verifiche e limiti](docs/product/interventi-2026-10-22.md).
+
+`LectureRecordingTimes` e `src/utils/lectureRecordingTimes.ts` mostrano gli orari
+audio in sola lettura nel drawer, distinguendo fine calcolata e dati assenti.
+Sidebar ancorata alla viewport con Musica sopra la ricerca e Memo con barra
+azioni e menu di gestione gruppi riusano player e persistenza esistenti.
+`tests/integration/interfacePolishScenarios.browser.tsx` contiene i relativi
+collaudi sintetici. [Uso, diagnosi e limiti](docs/product/orari-musica-memo-2026-10-21.md).
+
+Le modifiche del 21 ottobre aggiungono `shared/studyCorrections.ts` per rettifiche
+locali non distruttive, `StudyTimeRemovalDialog` nella Dashboard e il controllo
+condiviso `electron/main/ai/connectivity.ts`, configurato con `net.isOnline()`
+nel main. Memo sospende tracker/stima e mostra Tutti come lista compatta;
+`soundShuffle.ts` gestisce Casuale nel provider audio. Toggle Q&A, stili per CSS
+differito e traduttore a due riquadri riusano i percorsi esistenti.
+[Uso, prove e limiti](docs/product/interventi-2026-10-21.md).
 
 ```text
 Lezionify/
@@ -47,7 +129,7 @@ Lezionify/
 |   |-- workflows/ci.yml       # quality gate Windows
 |   `-- ISSUE_TEMPLATE/        # moduli per bug e feature
 |-- docs/
-|   |-- assets/                # logo e segnaposto screenshot
+|   |-- assets/                # logo, screenshot sintetici e tour visuale del README
 |   |-- product/               # proposte di prodotto future
 |   |-- publishing/            # checklist GitHub e bozza LinkedIn
 |   |-- quality/               # checklist e report di collaudo
@@ -72,11 +154,18 @@ Lezionify/
 |-- AGENTS.md                  # regole operative permanenti
 |-- DECISIONI.md               # registro append-only delle decisioni
 |-- IDEA_INIZIALE.md           # visione storica del prodotto
-|-- README.md                  # presentazione pubblica
+|-- README.md                  # presentazione pubblica in inglese
+|-- README.it.md               # presentazione pubblica equivalente in italiano
 `-- STRUTTURA_PROGETTO.md      # questo documento
 ```
 
 `local-artifacts/`, `.library-data/`, `benchmark_outputs/`, `out/` e `dist/` sono locali e ignorate da Git.
+
+I due README offrono accessi diretti ad appunti, avvio locale e scelte tecniche
+con collegamenti a moduli e collaudi. `docs/assets/demo/` conserva un tour GIF
+di 48 secondi e la descrizione testuale bilingue; `tools/build_readme_tour.mjs`
+lo ricostruisce dai tre screenshot sintetici già revisionati usando FFmpeg
+esistente, senza nuove dipendenze, profili personali o richieste AI.
 
 La chat di corso usa `shared/courseRag.ts`, `electron/main/courseRag.ts` e
 `courseRagIndex.ts` per fonti, passaggi, conteggi, persistenza e richieste

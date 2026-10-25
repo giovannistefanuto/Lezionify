@@ -103,3 +103,11 @@
   .ambient-player-bar { flex-direction: column; align-items: stretch; }
   .ambient-player-controls { justify-content: space-between; }
 }
+
+.ambient-panel .ambient-player-bar { position: sticky; top: 0; z-index: 3; margin-top: 0; background: var(--bg-surface); flex-shrink: 0; }
+.music-studio .ambient-random-button { align-self: flex-start; padding: 7px 14px; border: 1px solid var(--border-subtle); border-radius: 8px; background: var(--bg-content); color: var(--text-main); cursor: pointer; }
+.ambient-options { font-size: 12px; color: var(--text-muted); }
+.ambient-options summary { cursor: pointer; padding: 5px 0; }
+.ambient-options label { display: block; margin-top: 10px; }
+.ambient-player-track { min-width: 0; }
+.ambient-player-track strong { overflow-wrap: anywhere; }

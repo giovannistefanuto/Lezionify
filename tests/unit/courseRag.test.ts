@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { mkdtemp, mkdir, writeFile, rm, readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
-import { CourseRagService } from '../../electron/main/courseRag'
+import { CourseRagService, type CourseRagDependencies } from '../../electron/main/courseRag'
 import {
   CourseRetrieval,
   extractCoursePdf,
@@ -45,10 +45,7 @@ function source(
   }
 }
 async function fixture(
-  complete: (
-    prompt: string,
-    signal: AbortSignal
-  ) => Promise<string> = async () =>
+  complete: CourseRagDependencies['complete'] = async () =>
     JSON.stringify({
       action: 'answer',
       text: 'Integrazione generale: risposta senza attribuzione.',
@@ -245,6 +242,19 @@ describe('indice e copertura locale', () => {
 })
 
 describe('orchestrazione delle richieste strutturate', () => {
+  it('ripete una domanda fallita senza duplicarla e conserva la bozza fino al successo', async () => {
+    let calls = 0
+    const f = await fixture(async () => {
+      if (++calls === 1) throw new SyntaxError('private synthetic payload')
+      return JSON.stringify({ action: 'answer', text: 'Risposta recuperata', passageIds: [] })
+    })
+    await f.service.saveThread('GAME', thread())
+    await expect(f.service.ask('GAME', 'thread', 'Nash', 'first')).rejects.toThrow('Risposta non completata')
+    expect((await f.service.state('GAME')).threads[0].draft).toBe('Nash')
+    const result = await f.service.ask('GAME', 'thread', 'Nash', 'retry')
+    expect(result.messages.map(item => item.role)).toEqual(['user', 'assistant'])
+    expect(result.draft).toBe('')
+  })
   it('recupera una pagina richiesta senza attraversare il corso e conserva la provenienza visiva', async () => {
     let round = 0
     const f = await fixture(async (prompt) => {
@@ -467,3 +477,52 @@ it('estrae testo e pagine con PDFjs reale, incluse pagine grafiche senza testo',
   expect(pages[0].text).toContain('John Nash')
   expect(pages[1].text).toBe('')
 }, 30_000)
+
+
+it('usa un unico budget e una deadline condivisa in tutti gli approfondimenti della domanda', async () => {
+  const contexts: unknown[] = []
+  const f = await fixture(async (_prompt, _signal, _images, context) => {
+    expect(context).toBeDefined()
+    contexts.push(context)
+    if (contexts.length === 1) {
+      context!.remainingAttempts -= 5
+      context!.onProgress?.('Recupero automatico in corso')
+      return JSON.stringify({ action: 'search_course', query: 'Nash' })
+    }
+    expect(context!.remainingAttempts).toBe(7)
+    return JSON.stringify({ action: 'answer', text: 'Risposta verificata', passageIds: [] })
+  })
+  await f.service.saveThread('GAME', thread())
+  const result = await f.service.ask('GAME', 'thread', 'Nash', 'shared-budget')
+  expect(contexts).toHaveLength(2)
+  expect(contexts[1]).toBe(contexts[0])
+  expect(result.messages.map(item => item.role)).toEqual(['user', 'assistant'])
+  expect(result.draft).toBe('')
+})
+
+
+it('recupera estratti pertinenti da tutte le lezioni citate in un confronto, ignorando parole vuote e sintassi LaTeX', () => {
+  const sources = [5, 6, 7].flatMap(n => ['transcript', 'notes'].map(kind => splitCourseSource({ id: `${n}-${kind}`, title: `Materiale ${n}`, kind: kind as 'transcript' | 'notes', version: 'one', status: 'ready', lectureId: `l${n}`, lectureOrdinal: n } as any, [{ text: 'Oggi nella lezione abbiamo parlato del problema. '.repeat(80) + '\nLa policy greedy massimizza Q^\\pi nello stato corrente; confronto fra modello noto e ignoto.' }])))
+  const result = new CourseRetrieval(sources).search('Oggi nella lezione 7 abbiamo parlato del risolvere il problema dell uso greedy della policy con Q_pi. ma non l avevamo già introdotta cosi nelle lezioni 5 e 6 precedenti?')
+  for (const n of [5, 6, 7]) {
+    const matches = result.filter(item => item.source.lectureId === `l${n}`)
+    expect(matches.length).toBeGreaterThanOrEqual(2)
+    expect(matches.every(item => item.passage.text.includes('massimizza'))).toBe(true)
+    expect(new Set(matches.map(item => item.source.kind))).toEqual(new Set(['transcript', 'notes']))
+  }
+})
+
+
+it('normalizza Q_pi e Q^\\pi e non devia su altre lezioni in un confronto esplicito', () => {
+  const sources = [5, 6, 7].map(n => splitCourseSource({ id: `l${n}`, title: `Materiale`, kind: 'notes', version: 'one', status: 'ready', lectureId: `l${n}`, lectureOrdinal: n }, [{ text: 'Politica greedy tramite Q^\\pi. Il modello serve a calcolare il valore, non a massimizzare Q.' }]))
+  sources.push(splitCourseSource({ id: 'unrelated', title: 'Banditi', kind: 'notes', version: 'one', status: 'ready', lectureOrdinal: 2 }, [{ text: 'greedy policy '.repeat(100) }]))
+  const result = new CourseRetrieval(sources).search('Confronta Q_pi e greedy nella lezione 7 e nelle lezioni 5 e 6')
+  expect(new Set(result.map(item => item.source.lectureOrdinal))).toEqual(new Set([5, 6, 7]))
+})
+
+
+it('privilegia il simbolo matematico richiesto rispetto a passaggi greedy generici nella stessa lezione', () => {
+  const item = splitCourseSource({ id: 'lesson', title: 'Appunti', kind: 'notes', version: 'one', status: 'ready', lectureOrdinal: 7 }, [{ text: ('greedy policy epsilon esplorazione. '.repeat(150)) + '\nQ^\\pi permette la scelta greedy senza il modello.' }])
+  const result = new CourseRetrieval([item]).search('Nella lezione 7 come uso Q_pi per la policy greedy?')
+  expect(result[0].passage.text).toContain('senza il modello')
+})

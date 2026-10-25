@@ -50,6 +50,7 @@ function validateSettingsUpdate(
     'autoRotateOnQuota',
     'model',
     'courses',
+    'legacyPublishingCourseCodes',
     'archivedCourseCodes',
     'courseConfigs',
     'lastSemesterReminderDismissed',
@@ -114,9 +115,11 @@ function validateSettingsUpdate(
       ) {
         throw new Error('Elenco dei corsi non valido.')
       }
+      if (course.publishToGithub !== undefined && typeof course.publishToGithub !== 'boolean') throw new Error('Consenso GitHub del corso non valido.')
       validateLaboratorySchedule(course.laboratorySchedule)
     }
   }
+  if (value.legacyPublishingCourseCodes !== undefined && (!Array.isArray(value.legacyPublishingCourseCodes) || value.legacyPublishingCourseCodes.length > 500 || value.legacyPublishingCourseCodes.some(code => typeof code !== 'string' || !code.trim() || code.length > 120))) throw new Error('Consensi dei corsi non validi.')
   if (value.archivedCourseCodes !== undefined &&
     (!Array.isArray(value.archivedCourseCodes) ||
       value.archivedCourseCodes.length > 500 ||
@@ -187,6 +190,35 @@ export class SettingsService {
 
   constructor(rootDirectory: string) {
     this.settingsPath = path.join(rootDirectory, 'settings.json')
+  }
+
+  /** Add only the migration marker; never decrypt/re-encrypt credentials at startup. */
+  async initializeCoursePublicationConsent(libraryCodes: string[]): Promise<void> {
+    await this.saveMutex.runExclusive(async () => {
+      let disk: Record<string, unknown> | undefined
+      let primaryMissing = false
+      for (const file of [this.settingsPath, `${this.settingsPath}.bak`]) {
+        try {
+          const parsed: unknown = JSON.parse(await readFile(file, 'utf8'))
+          if (!isRecord(parsed)) throw new Error()
+          disk = parsed
+          break
+        } catch (error) {
+          if (file === this.settingsPath) primaryMissing = (error as NodeJS.ErrnoException).code === 'ENOENT'
+          else if (!primaryMissing || (error as NodeJS.ErrnoException).code !== 'ENOENT') throw new Error('Impossibile preparare i consensi GitHub. Ripristina le impostazioni locali.', { cause: error })
+        }
+      }
+      if (disk?.legacyPublishingCourseCodes !== undefined) return
+      const legacyPublishingCourseCodes = [...new Set([...Object.keys(isRecord(disk?.courses) ? disk.courses : {}), ...libraryCodes])]
+      validateSettingsUpdate({ legacyPublishingCourseCodes })
+      if (!disk) {
+        await this.saveSettingsUnlocked({ legacyPublishingCourseCodes })
+        return
+      }
+      const temp = `${this.settingsPath}.tmp`
+      await writeFile(temp, `${JSON.stringify({ ...disk, legacyPublishingCourseCodes }, null, 2)}\n`, 'utf8')
+      await rename(temp, this.settingsPath)
+    })
   }
 
   private async readSettingsFile(filePath: string): Promise<AppSettings> {
@@ -278,6 +310,7 @@ export class SettingsService {
           ? parsed.model
           : DEFAULT_SETTINGS.model,
       courses: parsed.courses || {},
+      legacyPublishingCourseCodes: Array.isArray(parsed.legacyPublishingCourseCodes) ? parsed.legacyPublishingCourseCodes.filter((code): code is string => typeof code === 'string' && Boolean(code.trim()) && code.length <= 120) : undefined,
       archivedCourseCodes: Array.isArray(parsed.archivedCourseCodes)
         ? [...new Set(parsed.archivedCourseCodes.filter(
             (code): code is string => typeof code === 'string' &&
@@ -393,7 +426,8 @@ export class SettingsService {
           ? updates.model
           : current.model,
       courses:
-        updates.courses !== undefined ? updates.courses : current.courses,
+        updates.courses !== undefined ? Object.fromEntries(Object.entries(updates.courses).map(([code, course]) => [code, { ...course, publishToGithub: course.publishToGithub ?? current.courses?.[code]?.publishToGithub ?? Boolean(current.courses?.[code] || current.legacyPublishingCourseCodes?.includes(code)) }])) : current.courses,
+      legacyPublishingCourseCodes: updates.legacyPublishingCourseCodes ?? current.legacyPublishingCourseCodes,
       archivedCourseCodes:
         updates.archivedCourseCodes !== undefined
           ? [...new Set(updates.archivedCourseCodes.map(code => code.trim()))].sort()

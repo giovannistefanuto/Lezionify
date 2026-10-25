@@ -1219,6 +1219,33 @@ describe('ScratchpadService & Quick Capture Data Persistence', () => {
 })
 
 describe('ArchiveService — QnA Key Rotation & Diagnostic Status', () => {
+  it('invia altri Q&A della sola lezione richiesta esclusivamente dopo opt-in valido', async () => {
+    const root = await (await import('node:fs/promises')).mkdtemp(join(tmpdir(), 'lezionify-qna-consent-'))
+    const service = new ArchiveService(root)
+    try {
+      await service.initialize()
+      await service.saveSettings({ apiKeys: ['synthetic-qna-consent'], model: 'gemini-3.6-flash' })
+      const thread: any = { id: 'current', quote: 'Equilibrio strategico', messages: [{ role: 'user', text: 'Equilibrio di Nash?' }] }
+      const related: any = { id: 'related', quote: 'Equilibrio di Nash', messages: [{ role: 'user', text: 'Equilibrio?' }, { role: 'ai', text: 'Chiarimento precedente' }], updatedAt: '' }
+      const load = vi.spyOn(service, 'loadQnaThreads').mockResolvedValue([related])
+      let request: any
+      vi.spyOn(service['geminiService'], 'generateQnaResponse').mockImplementation(async function* (params: any) { request = params; yield 'Risposta sintetica' })
+      expect((await service.generateQnaResponse('lesson-current', thread, false)).success).toBe(true)
+      expect(load).not.toHaveBeenCalled()
+      expect(request.otherQnaContext).toBeUndefined()
+      expect((await service.generateQnaResponse('lesson-current', thread, false, true)).success).toBe(true)
+      expect(load).toHaveBeenCalledWith('lesson-current')
+      expect(request.otherQnaContext).toContain('Chiarimento precedente')
+      expect(request.fullLectureText).toBeUndefined()
+      load.mockClear()
+      expect((await service.generateQnaResponse('lesson-current', thread, false, 'yes')).success).toBe(false)
+      expect(load).not.toHaveBeenCalled()
+    } finally {
+      await (await import('../../electron/main/logger')).logger.flush()
+      await rm(root, { recursive: true, force: true })
+    }
+  })
+
   it('delega una sola richiesta logica al gestore centrale e riflette la chiave realmente usata', async () => {
     const root = join(tmpdir(), `lezionify-qna-test-${randomUUID()}`)
     await mkdir(root, { recursive: true })

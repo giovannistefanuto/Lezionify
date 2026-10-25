@@ -3,6 +3,17 @@
 Lista raccolta e implementata l'8 ottobre 2026.
 Le tre attività seguenti sono completate; le verifiche sono registrate in DECISIONI.md.
 
+Per le richieste successive, comprese quelle del 22 ottobre e i tredici rilievi
+del report UX/UI, usare [Idee future e Coda LISTA_ORDINE](idee-future-2026-10-13.md#coda-lista_ordine):
+è l'unica coda operativa. Il riordino D-0390 contava 34 attività aperte;
+D-0392 ne conclude 18, lasciandone 16 aperte. La successiva aggiunta delle dieci
+attività RAG 89–98 porta la coda a 26 aperte, conservando l'ordine precedente;
+[base implementata e limiti](rag-implementazione-2026-10-22.md).
+Il completamento RAG del 23 ottobre (D-0400–D-0403) chiude 89 e 93–98:
+restano 19 aperte, comprese le validazioni 90–92. [Uso e verifiche](rag-completamento-2026-10-23.md).
+Questo elenco conserva gli esiti
+storici dell'8 ottobre; [uso e verifiche del 22 ottobre](interventi-2026-10-22.md).
+
 ## 1. Ordinamento in «Tutte le lezioni»
 
 - [x] Mostrare prima le lezioni **In corso**.

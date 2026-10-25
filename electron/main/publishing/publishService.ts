@@ -11,6 +11,7 @@ import { publicationPaths } from './publicationLayout'
 export interface PublishServiceDeps {
   listLectures: () => Promise<Lecture[]>
   getCourses: () => Promise<Record<string, CourseDefinition>>
+  getLegacyCourseCodes?: () => Promise<string[] | undefined>
   getSettings: () => Promise<PublishingSettings | undefined>
   storage: {
     readTranscript: (fileName: string) => Promise<string | null>
@@ -20,6 +21,8 @@ export interface PublishServiceDeps {
   createGitClient?: (options: GitClientOptions) => PublishingGit
   state?: PublishState
 }
+
+export const isCoursePublicationEnabled = (code: string | null, courses: Record<string, CourseDefinition>, legacy?: string[]) => Boolean(code && (courses[code]?.publishToGithub ?? (legacy ? legacy.includes(code) : true)))
 
 const digest = (value: string) => createHash('sha256').update(value).digest('hex')
 const canonicalText = (value: string) => value.replace(/\r\n?/g, '\n')
@@ -69,7 +72,8 @@ export class PublishService {
     const snapshot = target ? this.state.snapshot(target) : null
     const courses = await this.deps.getCourses()
     let pending = 0
-    const lectures = (await this.deps.listLectures()).filter(publishable)
+    const legacy = await this.deps.getLegacyCourseCodes?.()
+    const lectures = (await this.deps.listLectures()).filter(lecture => publishable(lecture) && isCoursePublicationEnabled(lecture.courseCode, courses, legacy))
     const paths = publicationPaths(lectures, courses)
     for (const lecture of lectures) {
       try {
@@ -104,6 +108,15 @@ export class PublishService {
       contentHash: digest(JSON.stringify([relative, lecture.title ?? null, raw, notes, english])) }
   }
 
+  private async assertConsent(lectures: Lecture[], target: string): Promise<void> {
+    const settings = await this.deps.getSettings()
+    const courses = await this.deps.getCourses()
+    const legacy = await this.deps.getLegacyCourseCodes?.()
+    if (!settings?.enabled || !settings.repoUrl || destination(settings) !== target || lectures.some(lecture => !isCoursePublicationEnabled(lecture.courseCode, courses, legacy))) {
+      throw new PublishingError('Pubblicazione interrotta: configurazione o consenso del corso modificati. Le fonti locali sono conservate.')
+    }
+  }
+
   async publishNew(): Promise<PublishResult> {
     if (this.publishing) return { published: 0, skipped: 0, errors: ['Pubblicazione già in corso.'] }
     this.publishing = true
@@ -118,7 +131,9 @@ export class PublishService {
       target = destination(settings)
       this.phase = 'checking'
       const snapshot = this.state.snapshot(target)
-      const lectures = (await this.deps.listLectures()).filter(publishable)
+      const courses = await this.deps.getCourses()
+      const legacy = await this.deps.getLegacyCourseCodes?.()
+      const lectures = (await this.deps.listLectures()).filter(lecture => publishable(lecture) && isCoursePublicationEnabled(lecture.courseCode, courses, legacy))
       const client = (this.deps.createGitClient ?? (options => new PublishGitClient(options)))({
         repoUrl: settings.repoUrl, githubToken: settings.githubToken, branch: settings.branch,
         localPath: path.join(this.libraryDir, 'publish-repo', target)
@@ -128,7 +143,6 @@ export class PublishService {
       this.connection = 'online'
       const remoteFiles = await client.getRemoteFileHashes()
       const root = client.getLocalPath()
-      const courses = await this.deps.getCourses()
       const paths = publicationPaths(lectures, courses)
       const files: string[] = []
       const prepared: PreparedLecture[] = []
@@ -163,6 +177,7 @@ export class PublishService {
         return result
       }
       this.phase = 'publishing'
+      await this.assertConsent(prepared.map(source => source.lecture), target)
       const removed = new Set<string>()
       const previousCourses = new Set<string>()
       const currentPaths = new Set(prepared.map(source => source.relative.toLocaleLowerCase('en-US')))
@@ -209,7 +224,14 @@ export class PublishService {
         await writePublishedFile(root, `${course}/README.md`, await generateCourseReadme(root, course, metadata))
         files.push(`${course}/README.md`)
       }
-      await writePublishedFile(root, 'README.md', await generateRootReadme(root))
+      const indexedLessons = new Set(prepared.map(source => source.relative))
+      for (const file of Object.keys(remoteFiles)) {
+        if (file.endsWith('/schema.md')) {
+          const relative = file.slice(0, -'/schema.md'.length)
+          if (remoteFiles[`${relative}/trascrizione.txt`]) indexedLessons.add(relative)
+        }
+      }
+      await writePublishedFile(root, 'README.md', await generateRootReadme(root, indexedLessons))
       await writePublishedFile(root, '.gitignore', '*.tmp\n*.bak\nThumbs.db\n.DS_Store\n')
       files.push('README.md', '.gitignore')
       const docsChanged = (await Promise.all(files.filter(file => file.endsWith('README.md') || file === '.gitignore')
@@ -220,9 +242,12 @@ export class PublishService {
         this.phase = result.errors.length ? 'error' : 'synced'
         return result
       }
+      await this.assertConsent(prepared.map(source => source.lecture), target)
+      await client.assertPendingFilesAllowed?.(files, [...removed])
       await client.addFiles(files, [...removed])
       await client.commit(`Sincronizzate ${changed.length} lezioni con Lezionify`)
       // Always push, including unchanged files after a failed push/crash.
+      await this.assertConsent(prepared.map(source => source.lecture), target)
       const hash = await client.push()
       if (!/^[a-f0-9]{7,64}$/i.test(hash)) throw new PublishingError('Impossibile verificare il commit pubblicato.')
       const entries: Record<string, PublishedLectureEntry> = {}

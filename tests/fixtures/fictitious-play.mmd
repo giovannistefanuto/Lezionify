@@ -1,0 +1,17 @@
+flowchart TD
+    accTitle: Ciclo del Fictitious Play
+    accDescr: Diagramma di flusso iterativo che descrive il processo di aggiustamento asincrono nel Fictitious Play.
+
+    A["Inizio: Profilo Strategico Iniziale s"] --> B["Selezione Giocatore i (Casuale o Round-Robin)"]
+    B --> C{"Il giocatore i ha rimpianti?<br/>(s_{-i} è fisso)"}
+    C -- "Sì" --> D["Deviazione a Risposta Ottima: s'_i = BR(s_{-i})"]
+    D --> E["Aggiornamento Profilo Strategico"]
+    E --> B
+    C -- "No per tutti i giocatori" --> F["Stato Assorbente: Equilibrio di Nash"]
+
+    style A fill:#f9f9f9,stroke:#333333,stroke-width:2px;
+    style B fill:#ffffff,stroke:#333333,stroke-width:2px;
+    style C fill:#ffffff,stroke:#333333,stroke-width:2px;
+    style D fill:#ffffff,stroke:#333333,stroke-width:2px;
+    style E fill:#ffffff,stroke:#333333,stroke-width:2px;
+    style F fill:#d4edda,stroke:#28a745,stroke-width:2px;

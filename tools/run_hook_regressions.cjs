@@ -6,6 +6,9 @@ const { spawnSync } = require('node:child_process')
 const { buildSync } = require('esbuild')
 const directory = mkdtempSync(join(tmpdir(), 'lezionify-hooks-'))
 const screenshotDirectory = process.env.LEZIONIFY_VIDEO_SCREENSHOT_DIR || null
+const october22Only = process.argv.includes('--october22-only')
+const interfacePolishOnly = process.argv.includes('--interface-polish-only')
+const todayOnly = process.argv.includes('--today-only')
 const memoLogsExportOnly = process.argv.includes('--memo-logs-export-only')
 const lectureListOnly = process.argv.includes('--lecture-list-only')
 const courseRagOnly = process.argv.includes('--course-rag-only')
@@ -63,8 +66,19 @@ try {
         worker.once('message', result => { clearTimeout(timer); void worker.terminate(); if (result.error) reject(new Error(result.error)); else resolve(result.pages) });
         worker.once('error', () => { clearTimeout(timer); reject(new Error('PDF worker failed')) });
       }));
-      ipcMain.handle('feature-test-window-size', (_, narrow) => { win.setSize(narrow === true ? 640 : 1240, 820) });
+      ipcMain.handle('feature-test-key', async (_, keyCode, shift) => {
+        if (!['Tab','Enter','Space','Escape'].includes(keyCode)) throw new Error('Unsupported key');
+        win.webContents.focus();
+        const modifiers = shift ? ['shift'] : [];
+        win.webContents.sendInputEvent({type:'keyDown', keyCode, modifiers});
+        if (keyCode === 'Enter' || keyCode === 'Space') win.webContents.sendInputEvent({type:'char',keyCode:keyCode === 'Enter' ? String.fromCharCode(13) : ' ',modifiers});
+        win.webContents.sendInputEvent({type:'keyUp',keyCode,modifiers});
+        await new Promise(resolve => setTimeout(resolve, 50));
+      });
+      ipcMain.handle('feature-test-zoom', (_, value) => { if (![1,2].includes(value)) throw new Error('Unsupported zoom'); win.webContents.setZoomFactor(value) });
+      ipcMain.handle('feature-test-window-size', (_, narrow) => { if (narrow && typeof narrow === 'object' && Number.isInteger(narrow.width) && Number.isInteger(narrow.height) && narrow.width >= 360 && narrow.width <= 1600 && narrow.height >= 360 && narrow.height <= 1200) win.setContentSize(narrow.width, narrow.height); else win.setSize(narrow === true ? 640 : 1240, 820) });
       ipcMain.handle('video-import-styles', () => require('node:fs').readFileSync(${JSON.stringify(join(process.cwd(), 'src/styles.css'))}, 'utf8').replace(/^@import[^;]+;/, ''));
+      ipcMain.handle('qna-styles', () => require('node:fs').readFileSync(${JSON.stringify(join(process.cwd(), 'src/qna.css'))}, 'utf8'));
       ipcMain.handle('language-shortcut-key', async () => {
         win.webContents.focus();
         win.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'L', modifiers: ['control'] });
@@ -101,14 +115,14 @@ try {
       });
       ipcMain.handle('capture-video-import', async (_, name) => {
         const directory = ${JSON.stringify(screenshotDirectory)};
-        if (!directory || !['logs-light', 'logs-dark', 'sounds-light', 'sounds-dark', 'memo-narrow', 'export-narrow', 'memo-light', 'memo-dark', 'export-light', 'export-dark', 'tools-settings-translation', 'tools-settings-music', 'music-youtube-light', 'music-youtube-dark', 'music-light', 'music-dark', 'dictionary-light', 'dictionary-dark', 'discussion-light', 'discussion-dark', 'markdown-alerts-light', 'markdown-alerts-dark', 'focus-lock-times', 'dashboard-light', 'dashboard-dark', 'order', 'destination-light', 'destination-dark', 'home-light', 'home-dark', 'lecture-title-light', 'lecture-title-dark', 'drawer-focus-floating', 'focus-pdf-light', 'focus-pdf-dark', 'focus-pdf-qna'].includes(name)) return;
+        if (!directory || (!/^oct22-[a-z0-9-]+$/.test(name) && !['polish-sidebar', 'polish-sidebar-narrow', 'polish-sidebar-collapsed', 'polish-memo-light', 'polish-memo-dark', 'polish-memo-narrow', 'polish-info', 'study-removal', 'dictionary-long', 'today-qna', 'today-memo', 'today-sounds', 'today-mermaid', 'today-battery', 'logs-light', 'logs-dark', 'sounds-light', 'sounds-dark', 'memo-narrow', 'export-narrow', 'memo-light', 'memo-dark', 'export-light', 'export-dark', 'tools-settings-translation', 'tools-settings-music', 'music-youtube-light', 'music-youtube-dark', 'music-light', 'music-dark', 'dictionary-light', 'dictionary-dark', 'discussion-light', 'discussion-dark', 'markdown-alerts-light', 'markdown-alerts-dark', 'focus-lock-times', 'dashboard-light', 'dashboard-dark', 'order', 'destination-light', 'destination-dark', 'home-light', 'home-dark', 'lecture-title-light', 'lecture-title-dark', 'drawer-focus-floating', 'focus-pdf-light', 'focus-pdf-dark', 'focus-pdf-qna'].includes(name))) return;
         await win.webContents.executeJavaScript('new Promise(resolve => setTimeout(() => requestAnimationFrame(() => requestAnimationFrame(resolve)), 200))');
         await win.webContents.capturePage();
         await new Promise(resolve => setTimeout(resolve, 250));
         const screenshot = await win.webContents.capturePage();
         require('node:fs').writeFileSync(require('node:path').join(directory, name + '.png'), screenshot.toPNG());
       });
-      win.loadFile(${JSON.stringify(join(directory, 'index.html'))}, process.argv.includes('--resume-reading') ? { query: { resumeReading: '1' } } : ${JSON.stringify(memoLogsExportOnly ? { query: { 'memo-logs-export-only': '1' } } : lectureListOnly ? { query: { 'lecture-list-only': '1' } } : courseRagOnly ? { query: { 'course-rag-only': '1' } } : studyToolsOnly ? { query: { 'study-tools-only': '1' } } : languageShortcutOnly ? { query: { languageShortcutOnly: '1' } } : focusPdfOnly ? { query: { focusPdfOnly: '1' } } : musicOnly ? { query: { musicOnly: '1' } } : mathRenderingOnly ? { query: { mathRenderingOnly: '1' } } : dictionaryOnly ? { query: { dictionaryOnly: '1' } } : studyPauseOnly ? { query: { studyPauseOnly: '1' } } : readingPositionOnly ? { query: { readingPositionOnly: '1' } } : readingRestartOnly ? { query: { readingRestartOnly: '1' } } : {})});
+      win.loadFile(${JSON.stringify(join(directory, 'index.html'))}, process.argv.includes('--resume-reading') ? { query: { resumeReading: '1' } } : ${JSON.stringify(october22Only ? { query: { 'october22-only': '1' } } : interfacePolishOnly ? { query: { 'interface-polish-only': '1' } } : todayOnly ? { query: { 'today-only': '1' } } : memoLogsExportOnly ? { query: { 'memo-logs-export-only': '1' } } : lectureListOnly ? { query: { 'lecture-list-only': '1' } } : courseRagOnly ? { query: { 'course-rag-only': '1' } } : studyToolsOnly ? { query: { 'study-tools-only': '1' } } : languageShortcutOnly ? { query: { languageShortcutOnly: '1' } } : focusPdfOnly ? { query: { focusPdfOnly: '1' } } : musicOnly ? { query: { musicOnly: '1' } } : mathRenderingOnly ? { query: { mathRenderingOnly: '1' } } : dictionaryOnly ? { query: { dictionaryOnly: '1' } } : studyPauseOnly ? { query: { studyPauseOnly: '1' } } : readingPositionOnly ? { query: { readingPositionOnly: '1' } } : readingRestartOnly ? { query: { readingRestartOnly: '1' } } : {})});
     });
     setTimeout(() => { console.error('Hook tests timed out'); app.exit(1) }, 180000);
   `
@@ -126,7 +140,7 @@ try {
   process.stdout.write(result.stdout || '')
   process.stderr.write(result.stderr || '')
   process.exitCode = result.status ?? 1
-  if (result.status === 0 && !memoLogsExportOnly && !lectureListOnly && !courseRagOnly && !studyToolsOnly && !focusPdfOnly && !musicOnly && !readingPositionOnly && !studyPauseOnly && !dictionaryOnly && !mathRenderingOnly && !languageShortcutOnly) {
+  if (result.status === 0 && !october22Only && !interfacePolishOnly && !todayOnly && !memoLogsExportOnly && !lectureListOnly && !courseRagOnly && !studyToolsOnly && !focusPdfOnly && !musicOnly && !readingPositionOnly && !studyPauseOnly && !dictionaryOnly && !mathRenderingOnly && !languageShortcutOnly) {
     const restarted = spawnSync(require('electron'), [join(directory, 'main.cjs'), '--resume-reading'], { env, encoding: 'utf8', windowsHide: true, timeout: 190000 })
     process.stdout.write(restarted.stdout || '')
     process.stderr.write(restarted.stderr || '')

@@ -69,7 +69,7 @@ function hasSafeStaticDeclarations(value: string): boolean {
 
 function isSafeStyleDirective(line: string): boolean {
   const match = STYLE_DIRECTIVE.exec(line.trim())
-  return Boolean(match && hasSafeStaticDeclarations(match[2]))
+  return Boolean(match && hasSafeStaticDeclarations(match[2].replace(/;$/, '')))
 }
 
 function isSafeClassDefDirective(line: string): boolean {

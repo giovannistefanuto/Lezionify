@@ -67,17 +67,17 @@ export function ArchivePipelinePanel({
       </div>
 
       {!status.includeTranslation && <p className="archive-pipeline-translation-hint">
-        Questa elaborazione non include le versioni ENG. Per aggiungere le versioni ENG mancanti usa “Elabora tutto” al termine; se l’elaborazione è in pausa, riprendila prima. Le nuove importazioni con elaborazione automatica abilitata includono anche l’inglese.
+        Questa elaborazione non include le versioni ENG. Per aggiungere le versioni ENG mancanti usa “Elabora archivio” al termine; se l’elaborazione è in pausa, riprendila prima. Le nuove importazioni con elaborazione automatica abilitata includono anche l’inglese.
       </p>}
       {status.includeTranslation && status.stageSummaries.translation.pending > 0 && status.activeStage !== 'translation' && <p className="archive-pipeline-translation-hint">
-        {status.status === 'stopped' ? 'Elaborazione interrotta: usa “Elabora tutto” per completare le versioni ENG mancanti.' : 'Le versioni ENG in attesa inizieranno dopo le trascrizioni e le dispense ITA. Se l’elaborazione è in pausa, premi “Riprendi elaborazione”.'}
+        {status.status === 'stopped' ? 'Elaborazione interrotta: usa “Elabora archivio” per completare le versioni ENG mancanti.' : 'Le versioni ENG in attesa inizieranno dopo le trascrizioni e le dispense ITA. Se l’elaborazione è in pausa, premi “Riprendi elaborazione”.'}
       </p>}
       {problems.length > 0 && <details className="archive-pipeline-problems">
         <summary>Dettagli di {problems.length} attività da controllare</summary>
         <ul>{problems.map(task => <li key={`${task.lectureId}-${task.stage}`}>
           <strong>{task.title} · {STAGE_LABELS[task.stage]}</strong>: {task.status === 'blocked' ? 'Bloccata dalla fase precedente.' : 'Non riuscita.'} {task.error}
         </li>)}</ul>
-        <p>{resumable ? 'Correggi il problema e premi “Riprendi elaborazione”. Gli errori di contenuto vanno controllati nella lezione.' : 'Dopo aver controllato il problema, usa “Elabora tutto” per riprovare gli elementi mancanti. Le fonti e le dispense già salvate vengono conservate.'}</p>
+        <p>{resumable ? 'Correggi il problema e premi “Riprendi elaborazione”. Gli errori di contenuto vanno controllati nella lezione.' : 'Dopo aver controllato il problema, usa “Elabora archivio” per riprovare gli elementi mancanti. Le fonti e le dispense già salvate vengono conservate.'}</p>
       </details>}
 
       {status.currentLectureTitle && (

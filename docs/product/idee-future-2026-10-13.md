@@ -1,7 +1,7 @@
 # Idee e modifiche future — 13 ottobre 2026
 
 Raccolta delle richieste dell’utente per lo sviluppo futuro di Lezionify,
-iniziata il 13 ottobre e aggiornata con nuove idee fino al 19 ottobre 2026.
+iniziata il 13 ottobre e aggiornata con nuove idee fino al 23 ottobre 2026.
 La classificazione è preliminare: gli interventi immediati hanno un obiettivo
 già definito e non richiedono una ricerca preventiva; restano necessari i normali
 controlli del codice e i collaudi. Gli approfondimenti richiedono invece una
@@ -17,11 +17,141 @@ Le ricerche concluse non chiudono le caselle delle funzioni ancora da integrare.
 
 ## Coda LISTA_ORDINE
 
+### Ordine operativo aggiornato al 23 ottobre 2026
+
+Su richiesta dell'utente, tutte le attività aperte sono riordinate per facilità
+crescente, includendo lista, riassunto Gemini e interventi del
+[report UX/UI del 21 ottobre](../quality/audit-ux-ui-2026-10-21.md).
+La precisazione dell'utente associa «cose dell'audio» alle idee del riassunto:
+non aggiunge una nuova funzione audio generica alle voci 31 e 38.
+
+La stima considera ampiezza della modifica, incertezza diagnostica, integrità
+dei dati, collaudi e dipendenze esterne; non è una promessa sui tempi.
+**Facilità e gravità sono distinte:** i P1/P2 del report restano validi anche se
+un intervento più facile li precede. Le voci restano identificativi stabili;
+le posizioni indicano soltanto l'ordine attuale. Nessuna implementazione è
+avviata da questo aggiornamento documentale (D-0390).
+
+| Ordine e stato | Attività | Voce | Difficoltà stimata e motivo |
+| --- | --- | --- | --- |
+| 1. [x] | Q&A: aggiungere Media conservando Breve iniziale | 72 | D-0392: implementata e collaudata; dettagli e limiti nel report del 22 ottobre. |
+| 2. [x] | Suggerimenti rigeneranti per pause di 5 / 15 / 30 minuti | 74 | D-0392: implementata e collaudata; dettagli e limiti nel report del 22 ottobre. |
+| 3. [x] | Q&A: etichette accessibili e annuncio degli errori — U13 | 88 | D-0392: semantica, tastiera ed errori collaudati; NVDA non verificato. |
+| 4. [x] | Elenco Q&A operabile da tastiera — U01 | 76 | D-0392: implementata e collaudata; dettagli e limiti nel report del 22 ottobre. |
+| 5. [x] | Contrasto di metadati e Continua — U04 | 79 | D-0392: implementata e collaudata; dettagli e limiti nel report del 22 ottobre. |
+| 6. [x] | Apertura lezione senza attesa del doppio clic — U12 | 87 | D-0392: implementata e collaudata; dettagli e limiti nel report del 22 ottobre. |
+| 7. [x] | Ambito esplicito di Elabora archivio — U06 | 81 | D-0392: implementata e collaudata; dettagli e limiti nel report del 22 ottobre. |
+| 8. [x] | Focus Lock: nome, focus interno e ritorno al controllo — U02 | 77 | D-0392: implementata e collaudata; dettagli e limiti nel report del 22 ottobre. |
+| 9. [x] | Focus Lock leggibile con zoom 200% — U03 | 78 | D-0392: implementata e collaudata; dettagli e limiti nel report del 22 ottobre. |
+| 10. [x] | Chat di corso: composizione sempre raggiungibile — U05 | 80 | D-0392: implementata e collaudata; dettagli e limiti nel report del 22 ottobre. |
+| 11. [x] | Copia tutto/gruppo protetta 08:00–17:30 con frase da ricopiare | 67 | D-0392: implementata e collaudata; dettagli e limiti nel report del 22 ottobre. |
+| 12. [x] | Nomi coerenti e comandi principali riconoscibili — U07 | 82 | D-0392: implementata e collaudata; dettagli e limiti nel report del 22 ottobre. |
+| 13. [x] | Barre Focus/Q&A più chiare e chiusure distinte — U08 | 83 | D-0392: implementata e collaudata; dettagli e limiti nel report del 22 ottobre. |
+| 14. [x] | Musica: pausa/volume sempre accessibili e gerarchia — U10 | 85 | D-0392: player nel pannello collaudato; in Focus resta soltanto l’icona già presente. |
+| 15. [x] | Memo: leggere attività lunghe anche senza hover — U11 | 86 | D-0392: implementata e collaudata; dettagli e limiti nel report del 22 ottobre. |
+| 16. [x] | Chat di corso: corso, copertura e certezza visibili — U09 | 84 | D-0392: implementata e collaudata; dettagli e limiti nel report del 22 ottobre. |
+| 17. [x] | Scelta per corso delle lezioni da pubblicare su GitHub | 68 | D-0392: implementata e collaudata; dettagli e limiti nel report del 22 ottobre. |
+| 18. [ ] | Ctrl / Ctrl+L e cerchio bianco attorno al mouse | 33 | Media incerta: test nativi positivi e cerchio spiegato; serve l'episodio personale storico. |
+| 19. [ ] | Diagnosi della stima di studio che non funziona | 70 | Media incerta: distinguere soglie intenzionali, campionamento e difetto reale. |
+| 20. [ ] | Formule Q&A: caso epsilon-greedy / epsilon-soft | 73 | Media incerta: isolare testo ricevuto, normalizzazione, KaTeX/CSS e streaming. |
+| 21. [x] | Diagnosi errore course-rag:ask «Risposta non completata» | 69 | D-0392: output strutturato, fallback e retry collaudati; due prove RAG complete reali riuscite con fonti sintetiche. D-0395: recupero da timeout/503 e confronto RL reale verificato, con 12 invii e 10 minuti condivisi: [diagnosi](../quality/rag-recupero-2026-10-22.md). |
+| 22. [ ] | Collaudi residui del traduttore offline | 7 | Media: prove tecniche, formule/codice e glossario; funzione base già integrata. |
+| 23. [ ] | Validazione qualitativa residua dei modelli Q&A | 9 | Media: contratto già collaudato, qualità reale e provider da verificare. |
+| 24. [ ] | Verifica personale residua delle versioni ENG mancanti | 20 | Media incerta: riusare diagnosi/correzioni, serve un caso dopo l'aggiornamento. |
+| 25. [ ] | Ctrl+T: modalità Dizionario italiano oltre al traduttore | 71 | Media/alta: corpus monolingue, copertura e licenza da verificare prima dell'integrazione. |
+| 26. [ ] | Pilota personale della sezione musica | 5 | Media con dipendenza esterna: account, PC e cuffie; rinvio precedente conservato. |
+| 27. [ ] | Percorso rapido Mermaid → iPad → nota Notability corrente | 63 | Medio/alta: intera catena e prova reale tra dispositivi. |
+| 28. [ ] | Misurare l'inattività personale e chiedere se si studia ancora | 56 | Alta: calibrazione locale e conteggio affidabile; riusare Focus Lock corretto. |
+| 29. [ ] | Rigenerare un singolo paragrafo dalla trascrizione | 59 | Alta: corrispondenza con fonte, sostituzione mirata e versioni conservate. |
+| 30. [ ] | Completare transizioni canzone → canzone / canzone → suono | 38 | Alta e vincolata ai player: dissolvenze offline già implementate, limiti D-0370. |
+| 31. [ ] | Valutare limite YouTube di 30 minuti al giorno negli orari di studio | 75 | Alta: strumento esterno e perimetro d'uso da concordare, affidabilità su PC da provare. |
+| 32. [ ] | Timer pausa sul telefono | 32 | Alta: trasporto locale e avvisi affidabili a schermo bloccato. |
+| 33. [ ] | Audio nel Q&A e registrazione dal telefono | 31 | Alta: acquisizione, trasferimento, allegati e invio AI esplicito. |
+| 34. [ ] | Timer pausa su Amazfit Balance originale | 17 | Molto alta/bloccata sul trasporto: prototipo presente, collegamento hardware non pronto. |
+| 35. [x] | RAG: benchmark rappresentativo con evidenze annotate e casi negativi | 89 | D-0400–D-0403: implementata e collaudata; [uso e limiti](rag-completamento-2026-10-23.md). |
+| 36. [ ] | RAG: valutare le risposte complete sulle fonti reali | 90 | Medio/alta: giudizi annotati, budget AI tracciato e prove ripetute. |
+| 37. [ ] | RAG: verificare il supporto delle singole affermazioni | 91 | Alta: citazioni pertinenti, contraddizioni e provenienza senza false garanzie. |
+| 38. [ ] | RAG: calibrare ranking, deduplicazione e astensione | 92 | Alta: confronti sul benchmark e qualità dei primi risultati, non sola recall. |
+| 39. [x] | RAG: indice semantico preparabile e riprendibile prima delle domande | 93 | D-0400–D-0403: implementata e collaudata; [uso e limiti](rag-completamento-2026-10-23.md). |
+| 40. [x] | RAG: gestione di cache, revisioni e spazio su disco | 94 | D-0400–D-0403: implementata e collaudata; [uso e limiti](rag-completamento-2026-10-23.md). |
+| 41. [x] | RAG: copertura di PDF complessi, figure e blocchi lunghi | 95 | D-0400–D-0403: implementata e collaudata; [uso e limiti](rag-completamento-2026-10-23.md). |
+| 42. [x] | RAG: riferimenti stabili alla numerazione delle lezioni | 96 | D-0400–D-0403: implementata e collaudata; [uso e limiti](rag-completamento-2026-10-23.md). |
+| 43. [x] | RAG: regressioni automatiche di robustezza e funzionamento offline | 97 | D-0400–D-0403: implementata e collaudata; [uso e limiti](rag-completamento-2026-10-23.md). |
+| 44. [x] | RAG: collaudo del nuovo installer Windows e runtime ASAR | 98 | D-0400–D-0403: implementata e collaudata; [uso e limiti](rag-completamento-2026-10-23.md). |
+| 45. [x] | Full Focus: attrito solo dopo cinque minuti | 99 | D-0404/D-0405: soglia, continua e rientro collaudati. |
+| 46. [x] | Ctrl+T: selezione e lingua della dispensa | 100 | D-0404/D-0405: apertura compilata prima della traduzione, entrambe le lingue. |
+| 47. [x] | Parole assenti: fallback al modello offline | 101 | D-0404/D-0405: collaudato anche con suggerimenti; modelli espliciti. |
+| 48. [x] | Dizionario: lacuna collusion e casi precedenti | 102 | D-0404/D-0405: supplemento verificato e regressioni sui dati reali. |
+| 49. [x] | Rimuovere testo della pausa scaduta | 103 | D-0404/D-0405: testo rimosso, statistiche conservate. |
+| 50. [x] | Spotify: correggere play/pausa e rigenerare installer | 104 | D-0404/D-0405: regressioni trasporto e suoni attivi; installer verificato. |
+
+Le prime 17 posizioni e la 21 sono concluse in D-0392 su richiesta diretta dopo grilling (D-0391). [Uso, verifiche e limiti](interventi-2026-10-22.md).
+La prima attività ancora aperta è la **voce 33, diagnosi Ctrl+L personale**, posizione 18. Ogni invocazione
+letterale di `LISTA_ORDINE` autorizza implementazione e collaudo della prima
+casella aperta, una sola attività. Leggere prima la descrizione completa e le
+decisioni successive. Aggiornare tabella e descrizione soltanto dopo le verifiche;
+un blocco non autorizza a saltare automaticamente la voce.
+
+Il riordino comprendeva **34 attività aperte**: 12 residue, 9 nuove richieste
+(voci 67–75) e 13 rilievi del report (76–88). Dopo D-0392 sono **18 concluse e 16 ancora aperte**. L’ordine delle residue è conservato. La voce 70 è una nuova
+diagnosi della funzione 36 già realizzata, la 69 riguarda la funzione 37 e la
+72 estende la 53: le implementazioni storiche restano concluse. Tutti i rinvii
+personali precedenti sono conservati. Le scelte ancora aperte si risolvono
+quando si affronta la singola voce, senza approvare già servizi, dipendenze,
+installazioni, invii AI o modifiche al sistema operativo.
+
+Su richiesta successiva dell'utente sono aggiunte in fondo **10 attività RAG**
+(voci 89–98, posizioni 35–44), derivate dai limiti e dai collaudi D-0397/D-0398.
+Dopo la richiesta diretta RAG del 23 ottobre (D-0400–D-0403), la coda conta
+**44 attività: 25 concluse e 19 aperte**. Concluse 89 e 93–98; 90–92 restano
+parziali per validazione umana e calibrazione residua. [Report](rag-completamento-2026-10-23.md).
+Le posizioni 1–34 e la prima voce aperta 33 restano invariate; l'aggiunta non
+aveva avviato implementazioni o riaperto le funzioni RAG già concluse.
+Il lavoro del 23 ottobre è autorizzato dalla richiesta diretta, non da LISTA_ORDINE.
+
+
+### Attività concluse nel secondo ordine del 21 ottobre — non operative
+
+| Posizione precedente e stato | Attività | Voce | Esito |
+| --- | --- | --- | --- |
+| 1. [x] | Orario di inizio e fine audio in Info e Gestione | 66 | D-0387: sola lettura, fine calcolata e dati assenti collaudati. |
+| 2. [x] | Musica sempre raggiungibile con liste lunghe | 64 | D-0387: accesso sopra ricerca, scroll e sidebar ridotta collaudati. |
+| 3. [x] | Riorganizzare pulsanti e gerarchia Memo | 65 | D-0387: comandi, menu gruppo, copia e layout adattabile collaudati. |
+
+L'ordine D-0386 era 66, 64, 65, 33, 7, 9, 20, 5, 63, 56, 59, 38, 32, 31, 17.
+Dopo le prime tre concluse in D-0387 restavano 12 attività aperte. Le posizioni
+di D-0381–D-0384 si riferiscono invece al primo ordine; [esiti e limiti](interventi-2026-10-21.md).
+Questi riferimenti sono storici, superati dall'ordine operativo del 22 ottobre.
+
+### Attività concluse nel primo ordine del 21 ottobre — non operative
+
+Le posizioni seguenti sono quelle di D-0381, prima del secondo riordino.
+
+| Posizione precedente e stato | Attività | Voce | Esito |
+| --- | --- | --- | --- |
+| 1. [x] | Q&A diretto, senza frasi di apertura o chiusura | 54 | D-0383: prompt condiviso e contratto SDK collaudati. |
+| 2. [x] | Toggle Q&A Breve / Lunga | 53 | D-0383: preferenza globale persistente, Breve iniziale, invio e prompt collaudati. |
+| 3. [x] | Verificare la pausa del cronometro quando si apre Memo | 57 | D-0383: corretto timer e stima; nessun reset o ripresa di pause esplicite. |
+| 4. [x] | Vista compatta nella scheda Tutti di Memo | 52 | D-0383: lista piatta, gruppi e appunti richiudibili collaudati. |
+| 5. [x] | Eliminare lo spazio vuoto a destra ridimensionando Q&A | 61 | D-0383: regressione CSS differito prima rossa e poi verde, ordinaria e Focus. |
+| 6. [x] | Pulsante Casuale nei suoni | 62 | D-0383: giri senza ripetizioni tra installati, nessun download implicito. |
+| 7. [x] | Traduttore con due riquadri leggibili | 58 | D-0383: testi lunghi, caratteri uguali e disposizione verticale stretta collaudati. |
+| 9. [x] | Togliere tempo di studio da oggi / ultima lezione studiata | 55 | D-0383: rettifiche serializzate, storico preservato, concorrenza e riavvio collaudati. |
+| 10. [x] | Avviso esplicito di assenza Internet prima di Gemini | 60 | D-0383: gate locale e messaggio offline, stop retry/fallback e bozza recuperabile. |
+
+### Storico della coda precedente — non operativo
+
+I numeri e gli stati seguenti sono conservati come riferimenti storici.
+Le caselle aperte sono rappresentate nell'ordine operativo sopra; i riferimenti
+successivi a posizioni e prossime attività descrivono la situazione di allora.
+
 Ordine concordato il 14 ottobre 2026 per facilita' e velocita' di realizzazione
 con Codex, esteso il 16 ottobre su richiesta dell'utente (D-0327). Le prime
 dodici posizioni conservano ordine e stato; seguono le attività aggiunte nei
 giorni successivi. Il 19 ottobre sono state aggiunte le posizioni 24–29,
 senza riordinare le precedenti e senza avviare implementazioni.
+Il 20 ottobre sono aggiunte le posizioni 30–37 nell'ordine del messaggio
+dell'utente (D-0374); le posizioni precedenti conservano ordine e stato.
 Ogni comando `LISTA_ORDINE` avvia implementazione e collaudo della
 prima voce ancora aperta, una sola per invocazione. Le descrizioni complete e
 i requisiti restano nelle voci indicate sotto; una ricerca conclusa non basta
@@ -60,6 +190,21 @@ anche per quelle aggiunte nei giorni precedenti (D-0328).
 27. [x] **Testo completo delle attività Memo al passaggio del mouse** — voce 41; anteprima dopo un secondo fermo, reset al movimento, rotella per testi lunghi e pulizia alla chiusura collaudati in D-0367.
 28. [x] **Log caricati progressivamente per giorno** — voce 42; oggi e precedente giorno con eventi al fondo, letture per intervalli di byte, filtri e aggiornamento senza duplicati implementati e collaudati in D-0368.
 29. [x] **Diagnosi e correzione dell'errore ricorrente di integrità ENG** — voce 43; ripresa D-0364: replay reale Mermaid di 39 sezioni, quote legacy senza falsa sospensione dell'intero pool e fallback ENG completi. 615 test, cinque replay e nuova traduzione reale di 40 sezioni riusciti; 244 contenuti protetti identici. Protezioni sui frammenti incompleti conservate; setup aggiornato da installare.
+
+30. [x] **Pannello Q&A ridimensionabile e testo ingrandibile** — voce 44; larghezze persistenti per vista, zoom messaggi 80–200%, pulsanti e Ctrl+rotella; viste ordinaria e Focus collaudate (D-0379).
+31. [x] **Modificare le attività Memo con doppio clic** — voce 45; Invio salva, Esc annulla la modifica, uscita dal campo salva, identità e completamento conservati (D-0379).
+32. [x] **Valutare i Q&A precedenti nel contesto** — voce 46; valutazione conclusa e opzione esplicita per estratti pertinenti della stessa lezione, con limiti e distinzione dalle fonti (D-0379).
+33. [x] **Indicatore batteria sotto il 20%** — voce 47; piccola emoji in basso a destra, solo a batteria, anche in fullscreen; stati simulati collaudati (D-0379).
+34. [x] **Riaprire il Q&A dopo la chiusura** — voce 48; pulsante con conteggio e ultima discussione consultata, anche dopo cambio lezione, senza invio AI (D-0379).
+35. [x] **Q&A con riferimenti ai paragrafi successivi** — voce 49; prompt aggiornato solo con contesto completo scelto manualmente; nessun riferimento inventato nel contesto limitato (D-0379).
+36. [x] **Ampliare Paesaggi naturali e download per suono** — voce 50; dieci nuove registrazioni, totale 16 suoni, Scarica/Ascolta individuale, Scaricali tutti, integrità e recupero parziale collaudati (D-0379).
+37. [x] **Correggere il rendering Mermaid del Fictitious Play** — voce 51; terminatore degli stili corretto, sei nodi renderizzati, fonte preservata e PDF reali verificati (D-0379).
+
+Aggiornamento del 20 ottobre (D-0374): otto richieste nelle voci 44–51,
+inizialmente tutte aperte. Quella registrazione aggiornava soltanto la
+pianificazione. Successivamente tutte e otto sono state implementate e
+collaudate su richiesta diretta (D-0376/D-0379); [uso ed esiti](interventi-2026-10-20.md). La valutazione della voce 46 ha portato a un'opzione esplicita e
+limitata, senza invio automatico di tutte le conversazioni al modello.
 
 Aggiornamento del 19 ottobre: le sei richieste sono descritte nelle voci 38–43.
 L'importanza della diagnosi ENG è esplicita; non modifica da sola l'ordine
@@ -763,6 +908,23 @@ passa: predisposta diagnostica locale facoltativa con flag esplicito, senza
 modificare il cambio lingua; serve acquisire l'episodio nella sessione reale.
 [Evidenze e ripresa](../quality/ctrl-l-diagnosi-2026-10-16.md).
 
+Integrazione del 21 ottobre: l'utente segnala che premendo «Ctrl», che si
+aspettava cambiasse lingua, compare un cerchio bianco intorno al mouse.
+Distinguere Ctrl da solo dalla scorciatoia prevista **Ctrl+L**, verificando
+quali tasti vengono effettivamente premuti. Controllare eventuali funzioni di
+localizzazione del puntatore o scorciatoie di Windows e utilità installate,
+senza attribuire loro la causa prima di riprodurre il caso. Riutilizzare la
+diagnostica già predisposta e conservare la casella aperta; nessuna impostazione
+di sistema viene modificata dalla sola registrazione della richiesta.
+
+Diagnosi del 21 ottobre (D-0383): nel profilo reale FindMyMouse di PowerToys è
+abilitato con `activation_method = 0`, cioè doppio Ctrl sinistro secondo il
+sorgente Microsoft. Spiega il cerchio; nessuna impostazione esterna modificata.
+Ctrl+L nativo in Electron passa di nuovo. L'episodio storico di vero Ctrl+L
+senza cambio lingua non è acquisito: casella ancora aperta, senza scambiare
+la spiegazione del cerchio per una correzione di quel diverso sintomo.
+[Esiti, fonti e ripresa](interventi-2026-10-21.md#ctrl-cerchio-bianco-e-limite-residuo).
+
 ### 34. Tag personali e raggruppamento dinamico delle catture rapide
 
 - [x] Aggiungere creazione di tag, per esempio «Lezionify» con lettera «L», «Studio», «Casa» e «Altro».
@@ -1012,6 +1174,947 @@ non aggirare semplicemente la validazione per far passare il salvataggio.
 Documentare causa, correzione e regressioni. Eventuali nuove chiamate AI devono
 restare esplicite e tracciabili: questa raccolta non avvia traduzioni.
 
+## Aggiunte del 20 ottobre 2026
+
+### 44. Pannello Q&A ridimensionabile e testo ingrandibile
+
+Completata in D-0379: [uso, scelte e verifiche](interventi-2026-10-20.md).
+
+- [x] Consentire di ridimensionare il pannello Q&A trascinandone il bordo.
+- [x] Consentire di ingrandire il testo delle domande e risposte Q&A.
+
+Chiarimento integrativo dell'utente (D-0375): la richiesta comprende sia le
+dimensioni del pannello sia la possibilità di ingrandire il testo Q&A.
+Verificare entrambi i comportamenti nelle viste ordinarie e Focus,
+conservando la leggibilità e l'accesso ai comandi, anche con testo ingrandito.
+Il codice contiene già `ResizableQnaPane` e un divisore Q&A in `FocusWorkspace`:
+riusare questi meccanismi e verificare cosa impedisce il comportamento atteso,
+senza considerare la richiesta completata sulla sola presenza del codice.
+
+### 45. Modificare le Cose da fare Memo con doppio clic
+
+Completata in D-0379: [uso, scelte e verifiche](interventi-2026-10-20.md).
+
+- [x] Aprire la modifica del testo di un'attività Memo con un doppio clic.
+
+Permettere di correggere il testo senza eliminare e ricreare l'attività,
+conservando identità, gruppo e stato di completamento. Prevedere conferma e
+annullamento della modifica; verificare la convivenza con selezione, comandi
+esistenti e anteprima al passaggio del mouse (voce 41, D-0367).
+
+### 46. Valutare domande e risposte precedenti nel contesto Q&A
+
+Completata in D-0379: [uso, scelte e verifiche](interventi-2026-10-20.md).
+
+- [x] Valutare se includere anche le domande e risposte precedenti associate al testo della lezione nel contesto di una nuova domanda.
+
+La richiesta è una domanda di prodotto: «Utile o no?». Lo storico della singola
+conversazione è già costruito in `GeminiService` tramite `thread.messages`;
+distinguere questo comportamento dall'eventuale inclusione di altre
+conversazioni sulla lezione. Chiarire il perimetro prima di implementare.
+Confrontare continuità didattica, pertinenza, rischio di propagare risposte
+errate, dimensione del contesto e consumo di token. Le risposte AI restano
+derivazioni distinte dalle fonti; eventuali invii aggiuntivi devono essere
+espliciti e tracciabili. Registrare l'esito anche se si decide di non estendere
+il contesto, senza presentare la valutazione come funzione già implementata.
+
+### 47. Avviso in basso a destra per batteria inferiore al 20%
+
+Completata in D-0379: [uso, scelte e verifiche](interventi-2026-10-20.md).
+
+- [x] Mostrare una piccola emoji in basso a destra quando la carica del PC è minore del 20% e il PC è alimentato a batteria.
+
+La soglia richiesta è strettamente inferiore al 20%. Verificare la lettura
+locale della batteria su Windows e il comportamento senza batteria o con
+lettura non disponibile. Definire in implementazione durata, ripetizione e
+gestione del collegamento all'alimentazione, evitando avvisi continui durante
+lo studio. Nessuna telemetria o chiamata AI necessaria.
+
+### 48. Pulsante per riaprire le domande Q&A dopo la chiusura
+
+Completata in D-0379: [uso, scelte e verifiche](interventi-2026-10-20.md).
+
+- [x] Aggiungere un pulsante per riaprire il pannello delle domande Q&A esistenti.
+
+Problema segnalato: una volta chiuso il pannello, oggi l'utente deve fare
+un'altra domanda per riaprirlo. Il comando deve consentire l'accesso alle
+domande e risposte già presenti nella lezione senza creare una domanda fittizia
+o inviare una richiesta AI. Verificare vista ordinaria e Focus e il caso senza
+conversazioni salvate; mantenere il contesto della lezione corrente.
+
+### 49. Usare e segnalare risposte nei paragrafi successivi
+
+Completata in D-0379: [uso, scelte e verifiche](interventi-2026-10-20.md).
+
+- [x] Quando la risposta è presente più avanti nella dispensa, usarla e indicarlo esplicitamente nel Q&A.
+
+Esempio richiesto: «Come vedrai tra due paragrafi: …». Il modello deve usare
+il passaggio pertinente per rispondere al dubbio attuale, senza limitarsi a
+rimandare lo studente alla lettura successiva. Verificare il contesto realmente
+inviato e la posizione del brano selezionato. Indicare una distanza precisa
+soltanto quando verificabile; altrimenti riferirsi al titolo o al passaggio
+corretto, senza inventare numeri di paragrafi. Conservare la distinzione tra
+contenuto della dispensa e integrazioni del modello.
+
+### 50. Ampliare Paesaggi naturali e scaricare i suoni singolarmente
+
+Completata in D-0379: [uso, scelte e verifiche](interventi-2026-10-20.md).
+
+- [x] Ampliare il catalogo dei suoni «Paesaggi naturali».
+- [x] Mostrare un pulsante Scarica per ciascun suono non ancora disponibile localmente.
+- [x] Dopo il download, sostituire Scarica con Ascolta o il comando di riproduzione equivalente.
+- [x] Aggiungere anche Scaricali tutti, controllando i suoni già presenti e scaricando soltanto quelli mancanti.
+
+Estensione della voce 30 e del catalogo offline D-0340: riusare archiviazione,
+verifica dei file e riproduzione esistenti. Selezionare le nuove risorse
+verificando provenienza, licenza e dimensioni; il catalogo comprende dieci nuove registrazioni
+con fonti e licenze documentate. Mostrare avanzamento ed eventuali errori per suono e
+consentire di riprovare quelli mancanti senza riscaricare i file già validi.
+Il download resta esplicito, sia singolo sia collettivo; mantenere le
+dissolvenze locali D-0370 e la pausa automatica con l'audio della lezione.
+
+### 51. Correggere il diagramma Mermaid del Fictitious Play
+
+Completata in D-0379: [uso, scelte e verifiche](interventi-2026-10-20.md).
+
+- [x] Riprodurre il mancato rendering del diagramma fornito e correggerne la causa verificata.
+
+Conservare questo caso completo come riproduzione del problema. Il messaggio
+lo riporta su una riga; sotto sono ripristinati gli a capo per leggibilità,
+senza modificare nodi, archi, etichette, metadati o stili. Verificare anche
+l'effetto degli a capo nel percorso reale Markdown → Mermaid, senza assumere
+che siano la causa. Controllare lettura ordinaria, Focus ed esportazione PDF
+dove condividono il rendering; aggiungere una regressione sul caso risolto.
+Conservare il sorgente e non dichiarare il problema risolto tramite il solo
+fallback al codice o modificando il significato del grafo.
+
+```mermaid
+flowchart TD
+    accTitle: Ciclo del Fictitious Play
+    accDescr: Diagramma di flusso iterativo che descrive il processo di aggiustamento asincrono nel Fictitious Play.
+
+    A["Inizio: Profilo Strategico Iniziale s"] --> B["Selezione Giocatore i (Casuale o Round-Robin)"]
+    B --> C{"Il giocatore i ha rimpianti?<br/>(s_{-i} è fisso)"}
+    C -- "Sì" --> D["Deviazione a Risposta Ottima: s'_i = BR(s_{-i})"]
+    D --> E["Aggiornamento Profilo Strategico"]
+    E --> B
+    C -- "No per tutti i giocatori" --> F["Stato Assorbente: Equilibrio di Nash"]
+
+    style A fill:#f9f9f9,stroke:#333333,stroke-width:2px;
+    style B fill:#ffffff,stroke:#333333,stroke-width:2px;
+    style C fill:#ffffff,stroke:#333333,stroke-width:2px;
+    style D fill:#ffffff,stroke:#333333,stroke-width:2px;
+    style E fill:#ffffff,stroke:#333333,stroke-width:2px;
+    style F fill:#d4edda,stroke:#28a745,stroke-width:2px;
+```
+
+## Aggiunte del 21 ottobre 2026
+
+Registrazione delle richieste e dei criteri da verificare. Al momento della
+raccolta tutte le nuove caselle erano aperte; i successivi esiti D-0383 sono
+indicati sotto e nella coda. Le stime
+relative, incluse le attività precedenti ancora aperte, sono nella coda
+operativa all'inizio del documento. La segnalazione su Ctrl integra la voce 33.
+
+### 52. Memo: vista Tutti più compatta
+
+- [x] Rendere la scheda Tutti una vista compatta, senza gruppi separati che obbligano a scorrere la pagina per vedere le varie categorie.
+
+Completata e collaudata in D-0383: lista unica con gruppo per riga, nuove attività
+assegnabili e appunti richiudibili. [Uso ed esiti](interventi-2026-10-21.md).
+
+Rivedere la disposizione aggregata introdotta dalla voce 39, conservando
+assegnazioni ai gruppi, filtri e comandi esistenti. Rendere riconoscibile la
+categoria senza riproporre blocchi verticali separati; verificare molte attività,
+testi lunghi e finestre piccole. Non promettere che qualunque quantità di dati
+possa stare interamente su una schermata.
+
+### 53. Q&A: toggle Breve / Lunga
+
+- [x] Aggiungere un toggle con i due stati **Breve** e **Lunga**.
+- [x] Aggiungere al prompt «meno di 200 parole» per Breve e «più di 200 parole» per Lunga.
+
+Completata in D-0383: Breve iniziale, preferenza globale persistente e prossimo
+invio incluso follow-up. Main, SDK e riapertura UI collaudati.
+
+La richiesta riguarda un'istruzione al modello, senza taglio locale della risposta
+né garanzia matematica sul conteggio. Applicarla a domanda iniziale e follow-up,
+anche nei fallback. D-0382 ha fissato Breve iniziale e persistenza globale;
+il valore che verrà usato al prossimo invio resta visibile.
+
+### 54. Q&A: risposte subito al punto
+
+- [x] Modificare il prompt per evitare frasi di apertura e chiusura e rispondere direttamente al punto.
+
+Completata in D-0383: rimosse anche le domande di verifica finali non richieste;
+istruzioni sulle fonti conservate, contratto SDK sintetico collaudato.
+
+L'utente osserva il problema solo in alcune risposte. Estendere il tono didattico
+della voce 26 senza eliminare spiegazioni necessarie, precisazioni sulle fonti
+o correzioni degli errori. Verificare le istruzioni comuni ai vari percorsi Q&A;
+la verifica del prompt non equivale a garantire il tono di ogni risposta reale.
+
+### 55. Togliere tempo di studio aggiunto o conteggiato per errore
+
+- [x] Aggiungere il comando **Togli tempo di studio**, complementare all'aggiunta manuale.
+- [x] Consentire la rettifica del tempo di oggi, con associazione alla lezione corrente o all'ultima lezione studiata da rendere esplicita.
+
+Completata in D-0383 con scelta successiva approvata D-0382: oggi per corso,
+incluso tempo manuale, oppure ultima lezione su tutte le sessioni. Riepilogo,
+limite disponibile, storico non distruttivo, snapshot e riavvio collaudati.
+
+Caso d'uso: il PC è rimasto acceso mentre l'utente non studiava. Mostrare giorno,
+lezione e quantità da sottrarre prima di applicare la rettifica. Verificare
+sessione in corso, totali giornalieri e per lezione, evitando valori negativi
+o modifiche a lezioni diverse. Definire il comportamento se oggi comprende più
+lezioni o non esiste una lezione recente; conservare una rettifica tracciabile
+localmente, senza alterare audio, trascrizioni o dispense.
+
+### 56. Inattività: misurare il ritmo personale e confermare lo studio
+
+- [ ] Misurare localmente gli intervalli tra interazioni mouse/tastiera durante lo studio attivo, a partire da un periodo di osservazione esplicito.
+- [ ] Usare i dati personali per proporre una soglia di inattività da concordare prima di applicarla.
+- [ ] Superata la soglia, mostrare «Stai ancora studiando?» riusando la schermata di uscita con attesa di 15 secondi e comandi di pausa pertinenti.
+- [ ] Escludere dal tempo studiato l'assenza rilevata, definendo come trattare l'intervallo precedente all'avviso e la mancata risposta.
+
+Esempio dell'utente: interazioni almeno ogni 10 minuti durante lo studio reale,
+quindi possibile soglia di 15 minuti senza interazioni. Sono esempi da misurare,
+non valori già dimostrati né un automatismo approvato. Definire durata del
+campionamento, ambito delle interazioni (app o sistema), trattamento della
+lettura senza input e dell'uso dell'iPad. Raccogliere soltanto intervalli e
+conteggi, senza tasti digitati, contenuti o tracciamento del puntatore.
+Coordinare con pausa, sospensione PC e heartbeat D-0287, Memo (voce 57) e
+rettifiche (voce 55); l'inattività da sola non prova l'assenza.
+
+### 57. Verificare che Memo metta in pausa il cronometro della lezione
+
+- [x] Verificare se il cronometro della lezione è già in pausa durante l'uso di Memo.
+- [x] Se non lo è, escludere quel tempo e collaudare il ritorno alla lezione.
+
+Corretto in D-0383: prima continuava a contare. Ora sospende tracker e stima
+senza disattivare/reset della sessione; pausa esplicita e tempo salvato collaudati.
+
+La domanda dell'utente non certifica il comportamento attuale. Controllare
+vista ordinaria e Focus, apertura/chiusura di Memo, timer della sessione,
+totali salvati e statistiche. Conservare un'eventuale pausa già in corso:
+chiudere Memo non deve riavviare automaticamente una pausa esplicita.
+
+### 58. Traduttore: due riquadri e testi lunghi leggibili
+
+- [x] Rivedere la grafica con testo originale a sinistra e traduzione a destra, in due riquadri.
+- [x] Mettere il pulsante di inversione IT/ENG al centro e ridurre le scritte alle sole necessarie.
+- [x] Rendere leggibili e interamente consultabili le frasi lunghe e ingrandire la traduzione oggi troppo piccola.
+
+Completata in D-0383: textarea, caratteri da 18px, copia e scroll, riquadri
+verticali su finestra stretta; dizionario, Focus e testi lunghi collaudati.
+
+Riferimento visivo indicato dall'utente: disposizione simile a Google Translate.
+Riutilizzare il traduttore offline esistente, il campo unico e le impostazioni
+separate; il riferimento grafico non richiede un servizio Google. Verificare
+scroll, selezione/copia, tastiera e finestre strette, evitando tagli del testo
+o riduzioni automatiche eccessive del carattere.
+
+### 59. Rigenerare un singolo paragrafo dalla trascrizione
+
+- [ ] Valutare e realizzare un'azione **Rigenera** sul titolo/sezione, accanto a **Chiedi a Gemini**.
+- [ ] Aprire un campo per istruzioni, per esempio «Rifallo ma più dettagliato».
+- [ ] Recuperare il tratto pertinente della trascrizione e rigenerare solo la parte richiesta.
+
+Verificare prima la corrispondenza effettiva tra sezioni della dispensa e fonte:
+non presumere che titolo o posizione identifichino già un intervallo univoco.
+Se manca un collegamento affidabile, esplicitare il limite e definire il
+contesto necessario. Mostrare un'anteprima della nuova versione e prevedere
+conferma/ripristino, conservando fonte grezza e versione precedente. Definire
+effetti sulla controparte ENG, sui riferimenti, su formule e diagrammi e sulle
+posizioni di lettura. L'invio a Gemini resta esplicito e tracciabile.
+
+### 60. Gemini: distinguere assenza Internet da errore del servizio
+
+- [x] Prima di ogni operazione che usa Gemini, controllare la disponibilità della connessione e segnalare chiaramente «Non c'è connessione Internet» quando assente.
+- [x] Applicare il comportamento al Q&A e agli altri percorsi Gemini, evitando il solo messaggio generico di errore verso i server Google.
+
+Completata in D-0383: `net.isOnline()` nel main, gate comune a tentativi/client
+SDK e controlli dopo errori rete/timeout. Offline terminale senza fallback;
+bozza Q&A recuperata e domanda non duplicata al retry. [Limiti del segnale
+di sistema e verifiche](interventi-2026-10-21.md#limiti-ai-e-rete).
+
+Caso segnalato: Wi-Fi scollegato durante l'uso del Q&A. Non limitarsi allo stato
+del Wi-Fi: il PC può avere altre connessioni oppure una rete locale senza accesso
+a Internet. Scegliere un controllo condiviso proporzionato e distinguere, quando
+verificabile, offline, servizio irraggiungibile, timeout, quota e credenziali.
+Un controllo positivo non garantisce il successo dell'invio: gestire anche la
+perdita di rete durante la richiesta, conservando bozze, lavori e possibilità
+di riprovare. Nessun invio AI di prova nascosto né dati personali nei diagnostici.
+
+### 61. Q&A: spazio vuoto a destra dopo il trascinamento
+
+- [x] Riprodurre lo spazio vuoto che resta a destra quando il pannello Q&A viene trascinato verso sinistra e correggerne la causa.
+
+Completata in D-0383: regole fisse del CSS Q&A differito prevalevano su quelle
+del contenitore. Regressione fallita prima e riuscita dopo la correzione.
+
+Estensione della voce 44 sul pannello ridimensionabile D-0379. Verificare
+dimensioni del contenitore, divisore, limiti di larghezza e preferenze salvate,
+nelle viste ordinaria e Focus e dopo resize/riapertura. Non presumere la causa
+dal solo sintomo; controllare che pannelli e comandi usino lo spazio disponibile
+senza aree residue ingiustificate o perdita della posizione di lettura.
+
+### 62. Suoni: pulsante Casuale con criterio utile
+
+- [x] Aggiungere **Casuale** per scegliere un suono del catalogo.
+- [x] Valutare un criterio intelligente prima di fissarne il comportamento.
+
+Completata in D-0383 secondo D-0382: giri senza ripetizioni tra file installati
+e integri, avvio al clic e casi zero/uno collaudati, senza download automatici.
+
+Scelta adottata dopo l'intervista D-0382: estrarre dai suoni già scaricati e
+integri, senza ripetizioni nel giro e senza il corrente quando esiste un'altra
+scelta nel giro. Il clic avvia subito; con zero suoni invita al download
+esplicito, con uno avvia quello. Nessun download implicito; riusare volume, dissolvenze
+offline e pausa automatica con l'audio della lezione, senza introdurre AI per
+una scelta che può essere interamente locale.
+
+### 63. Mermaid dalla dispensa alla nota corrente di Notability su iPad
+
+- [ ] Esaminare l'intera catena di componenti, strumenti e possibili installazioni per trasferire l'immagine di uno schema Mermaid da Lezionify all'iPad.
+- [ ] Confrontare i percorsi per inserirla nella nota Notability su cui si sta già lavorando, riducendo passaggi e tempo totale.
+- [ ] Eseguire un pilota del percorso scelto, distinguendo esportazione, trasferimento e inserimento nella nota corrente.
+
+Partire dalle capacità di esportazione/copia effettivamente disponibili e dagli
+strumenti già presenti sui dispositivi. Valutare qualità e formato dell'immagine,
+sfondo, leggibilità, connessione necessaria, costi e passaggi manuali; verificare
+le capacità reali di Notability senza promettere accesso automatico alla nota
+aperta. Confrontare prima alternative locali e rendere espliciti eventuali
+servizi cloud e materiali trasferiti. La ricerca non autorizza automaticamente
+installazioni, account, abbonamenti o sincronizzazione dei dati di studio.
+
+## Ulteriori aggiunte del 21 ottobre 2026 — accesso Musica, Memo e orari audio
+
+Registrate in D-0386 e completate in D-0387 su richiesta diretta. La coda
+confronta queste richieste con tutte le attività precedenti ancora aperte.
+Applicate `grilling` per concordare le scelte, `frontend-design` per le interfacce
+e `diagnosing-bugs` per riprodurre e correggere il problema di accesso a Musica.
+
+### 64. Musica: pulsante raggiungibile anche con molte lezioni
+
+- [x] Riprodurre il caso in cui una lista lunga di lezioni porta il pulsante **Musica** in fondo e rende scomodo raggiungerlo.
+- [x] Individuare la causa nel layout e nello scorrimento, senza attribuirla in anticipo a un componente specifico.
+- [x] Valutare una posizione più comoda e una presentazione visiva riconoscibile, poi implementare e collaudare la soluzione.
+
+Completata in D-0387 dopo conferma delle proposte grilling.
+[Uso, diagnosi, verifiche e limiti](orari-musica-memo-2026-10-21.md).
+
+Il comando esiste già in `Sidebar` e in Focus tramite `MusicButton` (voce 24):
+la richiesta riguarda accessibilità e disposizione, distinta dal pilota personale
+Spotify della voce 5 e dalle transizioni della voce 38. Confrontare, per esempio,
+un'area fissa della sidebar e la barra dei comandi; la posizione definitiva è da
+scegliere dopo aver osservato il problema. Verificare liste corte/lunghe, finestra
+bassa o stretta, sidebar aperta/ridotta e accesso da tastiera. Conservare player,
+stato di riproduzione e controlli esistenti, evitando comandi duplicati ambigui.
+
+### 65. Memo: riorganizzare pulsanti, comodità e gerarchia visiva
+
+- [x] Esaminare i pulsanti attualmente sparsi nella scheda Memo e individuare gli ostacoli visivi e d'uso.
+- [x] Proporre una disposizione coerente dei comandi, con raggruppamenti, priorità ed etichette riconoscibili.
+- [x] Implementare la revisione UX e collaudare i principali percorsi con tastiera, molti elementi e finestre piccole.
+
+Completata in D-0387 dopo conferma delle proposte grilling.
+[Uso, diagnosi, verifiche e limiti](orari-musica-memo-2026-10-21.md).
+
+L'utente comprende cosa fanno i pulsanti ma trova la disposizione poco bella
+e scomoda. È un nuovo intervento successivo alle voci 39, 45 e 52 già concluse:
+non riapre quei risultati né ripropone la sola lista Tutti compatta. Esaminare
+insieme azioni globali, filtri/gruppi, creazione, modifica, copia/trasferimento,
+completamento e appunti, distinguendo i comandi frequenti dai secondari.
+Conservare dati locali, gruppi, doppio clic, Invio/Esc, appunti richiudibili e
+pausa del cronometro durante Memo; verificare anche stati vuoti e testi lunghi.
+Soluzione confermata e adottata in D-0387: intestazione, navigazione e azioni
+separate, con gestione gruppo nel menu ⋯ e copia direttamente accessibile.
+
+### 66. Info e Gestione: orario di inizio e fine della lezione audio
+
+- [x] Mostrare in **Info e Gestione** l'orario di inizio e l'orario di fine della registrazione audio della lezione.
+- [x] Verificare le fonti dei due orari e rendere riconoscibili dati mancanti o fine calcolata dalla durata.
+- [x] Collaudare registrazioni ordinarie, import da video, passaggio della mezzanotte e metadati incompleti.
+
+Completata in D-0387 dopo conferma delle proposte grilling.
+[Uso, diagnosi, verifiche e limiti](orari-musica-memo-2026-10-21.md).
+
+La richiesta riguarda gli orari dell'audio, distinti dagli orari programmati del
+corso e dal tempo di studio. Nel modello esistono `recordedAt`, `durationSeconds`
+e, per import video, `scheduledEndTime`: controllarne il significato effettivo
+prima di usarli. Se l'inizio è attendibile, valutare la fine come inizio più durata
+e indicarne la natura calcolata; non presentare un orario programmato come fine
+misurata né usare la data d'importazione come inizio della registrazione.
+Gestire fuso locale e cambio giorno senza inventare orari quando manca la fonte.
+La richiesta è di visualizzazione: l'eventuale modifica manuale degli orari
+richiede una scelta separata. Conservare audio originale e metadati sorgente.
+
+## Aggiunte del 22 ottobre 2026 — lista e riassunto Gemini
+
+La raccolta iniziale D-0390 era solo pianificazione, con tutte le caselle
+aperte. Gli esiti successivi D-0392 sono indicati nelle singole descrizioni. «Implementare cose dell'audio» rimanda, per precisazione dell'utente,
+alle tre idee del riassunto: voci 67, 74 e 75. Non è una richiesta aggiuntiva
+di acquisizione audio, trascrizione o nuove transizioni.
+
+### 67. Copia tutto / Copia gruppo: frase da ricopiare 08:00–17:30
+
+Completata in D-0392 dopo l'intesa D-0391. [Uso, verifiche e limiti](interventi-2026-10-22.md).
+
+- [x] Nella fascia concordata, intercettare Copia tutto e Copia gruppo con un box contenente un messaggio motivazionale variabile da ricopiare manualmente prima di copiare gli appunti.
+- [x] Impedire copia/incolla del messaggio nel passaggio di conferma, compresi Ctrl+C / Ctrl+V e menu contestuale.
+
+Obiettivo: introdurre una pausa intenzionale prima di trasferire contenuti su
+ChatGPT o altre piattaforme, evitando distrazioni. Scelta definitiva dell’utente: **08:00–17:30**, ogni giorno, con
+orari configurabili nelle Impostazioni. Fuori fascia la copia è immediata.
+È collaudata anche una fascia configurata oltre mezzanotte. Messaggi locali variabili: non serve generarli con AI. Preservare
+gruppo e testo originale; annullare non deve perdere appunti né copiarli prima
+della conferma. Il vincolo riguarda questo box nell'app, non le scorciatoie di
+Windows o un blocco universale di strumenti esterni.
+
+Accettazione: entrambi i pulsanti, orari prima/dentro/dopo la fascia e confini
+di mezzanotte, testo errato/corretto, tentativi di incolla, annullamento e copia
+finale una sola volta. Definire il confronto del testo senza rendere ambiguo
+l'esito per spazi e accenti; conservare navigazione da tastiera.
+
+### 68. Consenso alla pubblicazione GitHub per ciascun corso
+
+Completata in D-0392 dopo l'intesa D-0391. [Uso, verifiche e limiti](interventi-2026-10-22.md).
+
+- [x] Aggiungere per ogni corso la scelta «Vuoi che queste lezioni vadano su GitHub?» e applicarla a tutte le sue lezioni.
+
+La configurazione attuale del publisher è globale; `CourseDefinition` non
+contiene una preferenza di pubblicazione. Il controllo deve essere applicato
+nel main a ogni avvio/retry automatico, oltre che nella UI, nei conteggi dei
+contenuti da pubblicare e nei README generati. Audio originale e archivio locale
+restano conservati. Riutilizzare configurazione e checkpoint per destinazione.
+
+Scelta definitiva: corsi esistenti abilitati tramite migrazione locale,
+scelta Sì/No obbligatoria per i nuovi; un codice nuovo non configurato è escluso.
+Disattivare non rimuove le lezioni già pubblicate.
+Disattivare futuri invii e rimuovere materiale remoto sono azioni diverse:
+non dedurre una cancellazione retroattiva dal solo interruttore.
+Accettazione con due corsi, uno incluso e uno escluso, riavvio, retry, cambio
+corso della lezione e destinazione diversa; nessuna pubblicazione reale necessaria
+per le regressioni locali.
+
+### 69. Indagare l'errore course-rag:ask della chat di corso
+
+Completata in D-0392 dopo l'intesa D-0391. [Uso, verifiche e limiti](interventi-2026-10-22.md).
+
+- [x] Riprodurre, isolare e correggere il guasto segnalato nella chat RAG di corso, con un errore utile e sanitizzato.
+
+Sintomo esatto:
+
+```text
+Error invoking remote method 'course-rag:ask': Error: Risposta non completata. Controlla connessione e configurazione Gemini e riprova.
+```
+
+`electron/main/courseRag.ts` usa questo testo come errore pubblico generico nel
+catch di `ask`: il solo messaggio non prova un problema di connessione o Gemini.
+Ricostruire il percorso IPC, recupero fonti, richieste strutturate, eventuali
+approfondimenti, validazione e salvataggio. Riusare gestore richieste e controllo
+rete D-0383; distinguere rete, quote/configurazione, risposta non valida e guasti
+locali senza esporre payload, chiavi o testi personali nei log.
+
+Accettazione: regressione sul caso isolato, domanda/bozza e conversazione
+recuperabili, retry senza duplicati, conclusione dello stato in corso anche
+dopo errore/annullamento e risposte valide ancora accettate. Partire da replay
+e dati sintetici; un invio AI reale resta esplicito e tracciabile. Non segnare
+risolto soltanto sostituendo il messaggio. Distinta da U05/U09 sulla presentazione.
+
+### 70. Diagnosi della stima «quanto manca alla fine della lezione»
+
+- [ ] Verificare la segnalazione «la stima non funziona» e correggere il comportamento o la comunicazione del limite effettivamente riscontrato.
+
+Riferimento iniziale: stima dello **studio restante** della voce 36, non fine
+della registrazione o orario programmato. Se il sintomo riguarda un altro
+indicatore, identificarlo prima della correzione. La funzione è implementata
+in `src/utils/studyEstimate.ts` e `src/hooks/useStudyEstimate.ts`: richiede almeno
+10 minuti, 60% di intervalli consolidati con 45 secondi per intervallo e stima
+inferiore a 30 minuti. Un tratto saltato può lasciare l'indicatore nascosto;
+questo è un possibile limite da verificare, non una diagnosi già conclusa.
+
+Riprodurre campionamento, scroll, pause/Memo, background, riavvio, cambio IT/EN,
+contenuto modificato e Ricalcola da qui. Confrontare casi che soddisfano le
+soglie con quelli insufficienti. Accettazione: stima visibile quando dovuta,
+assenza spiegabile quando i dati non bastano, nessun tempo di pausa contato
+come studio e campioni locali conservati correttamente. Non abbassare soglie
+alla cieca né promettere precisione sulla comprensione della lezione.
+
+### 71. Ctrl+T: switch Traduttore / Dizionario italiano
+
+- [ ] Mantenere il traduttore automatico come modalità iniziale e aggiungere lo switch esplicito verso **Dizionario italiano**.
+- [ ] Inserendo una parola italiana nel riquadro sinistro, mostrare a destra una definizione italiana nella modalità dizionario.
+
+Riutilizzare i due riquadri della voce 58, Ctrl+T, focus e testo digitato passando
+fra modalità. Lo switch di funzione è distinto dall'inversione IT/EN già
+disponibile. Il corpus bilingue attuale non dimostra una copertura monolingue
+adeguata: verificare fonte, licenza, dimensione, definizioni, flessioni e
+disponibilità offline prima di scegliere dati o dipendenze. Nessun fallback
+online implicito e nessuna chiave da aggiungere per la ricerca locale.
+
+Accettazione: parole italiane comuni e tecniche, accenti/flessioni, parola
+assente con stato esplicito, passaggio avanti/indietro senza perdita dell'input,
+testi lunghi e finestra stretta. Frasi intere nella modalità dizionario devono
+avere un comportamento definito, senza avviare automaticamente la traduzione.
+
+### 72. Q&A: Breve / Media / Lunga
+
+Completata in D-0392 dopo l'intesa D-0391. [Uso, verifiche e limiti](interventi-2026-10-22.md).
+
+- [x] Aggiungere una lunghezza intermedia **Media**, conservando **Breve** e **Lunga** e Breve come valore iniziale.
+
+Estensione della voce 53, già conclusa: conservare preferenza globale persistente
+e scelta visibile al prossimo invio, anche nei follow-up. Estendere renderer,
+hook, contratto IPC, validazione nel main e prompt usato dai fallback; migrare
+le preferenze esistenti senza cambiarle arbitrariamente.
+
+Contratto adottato in D-0391/D-0392: Breve sotto 200 parole, Media fra
+200 e 400, Lunga oltre 400. Le preferenze precedenti Breve/Lunga restano valide. Sono
+istruzioni al modello, senza taglio locale delle risposte o garanzia di conteggio.
+Accettazione: tutte e tre le scelte, riapertura/riavvio, invio iniziale/follow-up,
+fallback e rifiuto di valori IPC non ammessi; Breve resta il default.
+
+### 73. Rendering matematico nel Q&A: epsilon-greedy ed epsilon-soft
+
+- [ ] Riprodurre e correggere il rendering della risposta segnalata, con simboli duplicati e un blocco LaTeX `cases` visibile come testo.
+
+Caso fornito: la spiegazione comincia con «politica ϵ ϵ-greedy» e «politica
+ϵ ϵ-soft», ripete «1 − ϵ 1−ϵ» e contiene questo frammento apparentemente privo
+dell'apertura del blocco:
+
+```text
+1 - \epsilon + \frac{\epsilon}{|\mathcal{A}(s)|} & \text{se } a \text{ è l'azione greedy} \\ \frac{\epsilon}{|\mathcal{A}(s)|} & \text{se } a \text{ è un'azione non-greedy} \end{cases}$$
+```
+
+Nel seguito compaiono anche espressioni inline come `$\epsilon$-soft`,
+`$\pi(a \mid s) \ge \frac{\epsilon}{|\mathcal{A}(s)|}$`, `$\pi'$` e `$Q$`.
+Il testo incollato può aver perso delimitatori o contenere sia copia visiva sia
+testo accessibile: distinguere risposta grezza, streaming, conversione delimitatori,
+parser e CSS KaTeX prima di attribuire la causa. `QnaSidebar` usa già
+remark-math/rehype-katex e conversioni proprie; confrontare la normalizzazione
+condivisa di `src/utils/markdownMath.ts` senza alterare le fonti salvate.
+
+Accettazione: `cases` valido completo, inline/display, delimitatori Gemini,
+streaming parziale poi completo, copia senza duplicazioni e formula malformata
+mostrata senza inglobare il resto del messaggio. Conservare il testo grezzo;
+non inventare una formula mancante e non confondere correttezza matematica
+della risposta con correttezza della visualizzazione.
+
+### 74. Pausa: suggerire un'attività in base a 5 / 15 / 30 minuti
+
+Completata in D-0392 dopo l'intesa D-0391. [Uso, verifiche e limiti](interventi-2026-10-22.md).
+
+- [x] Quando si sceglie Pausa, mostrare un suggerimento locale coerente con la durata e orientato al distacco dallo schermo.
+
+Esempi richiesti:
+
+- **5 minuti:** «Vatti a prendere un caffè e non usare il telefono.»
+- **15 minuti:** «Leggi un po' di pagine del libro.»
+- **30 minuti:** «Fai una passeggiata all'aria aperta / accarezza i gatti.»
+
+Riutilizzare i pulsanti e il ciclo pausa esistenti; il suggerimento non richiede
+un'altra conferma per partire. Nessun timer parallelo, chiamata AI o conteggio
+della pausa come studio. Accettazione per tutte le durate, annullamento/ripresa,
+scadenza e finestra piccola. Distinta dai trasporti telefono/watch (32/17) e
+dall'eventuale overlay grafico studiato nella ricerca sul gatto.
+
+### 75. YouTube: valutare un limite di 30 minuti al giorno negli orari di studio
+
+- [ ] Valutare uno strumento esterno che limiti l'uso di YouTube a **30 minuti al giorno**, anche sul computer, nelle fasce di studio specificate.
+
+È una proposta di valutazione, senza integrazione o installazione già scelta.
+Definire con l'utente orari, piattaforme/browser da coprire, conteggio condiviso
+o per dispositivo, comportamento fuori fascia e distinzione fra video distraenti,
+lezioni e sottofondo YouTube usato da Lezionify. Riusare i requisiti della musica
+senza interrompere implicitamente uno strumento di studio autorizzato.
+
+La valutazione deve confrontare copertura reale su PC, costi, privacy, permessi
+e resistenza alle semplici riaperture del browser; una raccomandazione documentata
+non equivale a un blocco installato e collaudato. Criteri: budget giornaliero,
+reset del giorno, fasce oltre mezzanotte, avvisi e recupero/configurazione
+consapevole. Non modificare automaticamente sistema operativo o account.
+
+## Aggiunte del 22 ottobre 2026 — interventi del report UX/UI
+
+Tutti i 13 rilievi U01–U13 del [report](../quality/audit-ux-ui-2026-10-21.md)
+sono entrati nella coda, uno per voce, e sono stati implementati in D-0392.
+Evidenze, priorità, proposte e criteri completi
+restano nel report: questa sezione ne esplicita il lavoro da affrontare.
+L'inserimento richiesto dall'utente non dichiara i difetti risolti né approva
+automaticamente ogni alternativa di prodotto proposta nell'audit.
+
+### 76. U01 — Elenco discussioni Q&A accessibile da tastiera
+
+Completata in D-0392 dopo l'intesa D-0391. [Uso, verifiche e limiti](interventi-2026-10-22.md).
+
+- [x] Usare controlli semantici per le discussioni, raggiungibili con Tab e apribili con Invio/Spazio, conservando selezione e punto di ritorno del focus.
+
+**P1, difficoltà bassa.** Riusare layout e dati; verificare elenco vuoto/lungo,
+apertura e ritorno con sola tastiera. Evidenza E04 e accettazione U01 nel report.
+
+### 77. U02 — Focus Lock: nome accessibile e gestione del focus
+
+Completata in D-0392 dopo l'intesa D-0391. [Uso, verifiche e limiti](interventi-2026-10-22.md).
+
+- [x] Associare il titolo al dialogo, trattenere Tab/Maiusc+Tab all'interno, rendere inerte lo sfondo e ripristinare il focus alla chiusura.
+- [x] Spiegare il significato attuale di Esc («torna allo studio») e valutare separatamente la configurabilità del blocco.
+
+**P1, difficoltà media contenuta.** Conservare countdown, pause e uscite già
+richieste: cambiarne l'obbligatorietà è una scelta ancora da concordare, non
+una correzione automatica di accessibilità. Verificare anche Ctrl+T e dialoghi
+sovrapposti, tempi salvati e posizione. Evidenza E08 e U02 nel report.
+
+### 78. U03 — Focus Lock utilizzabile con zoom generale 200%
+
+Completata in D-0392 dopo l'intesa D-0391. [Uso, verifiche e limiti](interventi-2026-10-22.md).
+
+- [x] Contenere altezza e scorrimento del dialogo perché titolo, uscita e pause restino raggiungibili a 900×640 e zoom 100/200%.
+
+**P1, difficoltà media contenuta.** Coordinare con la struttura e il focus della
+voce 77, evitando scroll che nascondano il controllo attivo. Conservare timer
+e posizione di lettura. Evidenza E09 e accettazione U03 nel report.
+
+### 79. U04 — Contrasto di metadati e pulsante Continua
+
+Completata in D-0392 dopo l'intesa D-0391. [Uso, verifiche e limiti](interventi-2026-10-22.md).
+
+- [x] Correggere i colori insufficienti dei metadati e del pulsante Continua in Focus Lock con interventi mirati sui token esistenti.
+
+**P1, difficoltà bassa.** Conservare identità verde e testo principale; misurare
+colori computati in tema chiaro/scuro, hover, focus e attivo rispetto alle soglie
+riportate nell'audit. Una singola misura non certifica l'intera app. E01/E08, U04.
+
+### 80. U05 — Chat del corso: domanda disponibile durante risposte lunghe
+
+Completata in D-0392 dopo l'intesa D-0391. [Uso, verifiche e limiti](interventi-2026-10-22.md).
+
+- [x] Separare lo scorrimento dello storico dall'area domanda, mantenendo disponibili campo e invio durante la lettura.
+- [x] Rendere il conteggio completo uno strumento espandibile e contenere la larghezza della prosa senza perdere la funzione.
+
+**P1, difficoltà media contenuta.** Verificare almeno 20 messaggi, risposta lunga,
+finestra bassa, fonti, citazioni/PDF e bozza. Dipende dal layout della chat,
+non dalla soluzione dell'errore Gemini della voce 69. E06/E07, U05 nel report.
+
+### 81. U06 — Ambito esplicito di Elabora tutto prima dell'invio AI
+
+Completata in D-0392 dopo l'intesa D-0391. [Uso, verifiche e limiti](interventi-2026-10-22.md).
+
+- [x] Rendere leggibile che l'avvio attuale riguarda l'archivio, anche quando la lista mostra un solo corso, e indicare fasi mancanti e invio a Gemini.
+
+**P1, difficoltà bassa/media.** Proposta minima: «Elabora archivio» con ambito
+chiaro prima del clic. Eventuale selezione corso/archivio e riepilogo dei lavori
+sono l'alternativa più ampia da concordare, non un filtro già implementato.
+Verificare corrispondenza fra insieme mostrato ed elaborato su due corsi con
+prove sintetiche, conservando avvio esplicito, tracciabilità e ripresa. U06.
+
+### 82. U07 — Nomi coerenti e accessi principali riconoscibili
+
+Completata in D-0392 dopo l'intesa D-0391. [Uso, verifiche e limiti](interventi-2026-10-22.md).
+
+- [x] Allineare Memo / Note rapide / Brain Dump / Catture rapide e rendere riconoscibili i comandi frequenti oltre alle sole icone.
+
+**P2, difficoltà media.** Valutare «Aggiorna cartelle» al posto di «Sync» se
+descrive esattamente l'azione; collocare la diagnostica come azione secondaria,
+conservando tutte le funzioni e le scorciatoie. Verificare toolbar stretta,
+tooltip e nomi accessibili. E01/E11, U07 e direzione visiva nel report.
+
+### 83. U08 — Gerarchia delle barre Focus e Q&A
+
+Completata in D-0392 dopo l'intesa D-0391. [Uso, verifiche e limiti](interventi-2026-10-22.md).
+
+- [x] Ridurre azioni concorrenti, chiarire a quale pannello si applica lo zoom e dare a ogni pannello una chiusura primaria riconoscibile.
+
+**P2, difficoltà media.** Conservare lingua, domanda, ritorno al testo, divisori
+da tastiera e controlli essenziali; rendere coerente anche Ricalcola della stima.
+Verificare titoli lunghi, tre colonne e larghezze 900/1280 senza confondere
+chiusura Q&A e uscita Focus. Prototipo contenuto se serve a confrontare scelte;
+nessun cambio generale di palette/font. E03/E05, U08 nel report.
+
+### 84. U09 — Corso, copertura delle fonti e certezza della risposta
+
+Completata in D-0392 dopo l'intesa D-0391. [Uso, verifiche e limiti](interventi-2026-10-22.md).
+
+- [x] Mostrare nome completo del corso, fonti disponibili/lacune e citazioni vicine alle affermazioni; distinguere fonti, deduzioni e integrazione generale anche senza colore.
+
+**P2, difficoltà media.** Usare «Non trovato nelle fonti consultate» quando
+appropriato e rendere riconoscibile il conteggio locale rispetto alla risposta
+AI. Conservare versionamento e apertura delle citazioni; non dedurre assenza
+dal corso o cambiare l'algoritmo RAG solo per correggere la presentazione.
+Verificare corpus parziale, nessun risultato e fonti mancanti. E06, U09.
+
+### 85. U10 — Musica: controlli di riproduzione sempre raggiungibili
+
+Completata in D-0392 dopo l'intesa D-0391. [Uso, verifiche e limiti](interventi-2026-10-22.md).
+
+- [x] Rendere pausa e volume accessibili dall'inizio e dalla fine del catalogo, anche con tastiera e finestra bassa.
+- [x] Ridurre la dominanza di Casuale, mostrare il suono attivo dal punto d'accesso e spostare opzioni secondarie senza perdere crediti/licenze.
+
+**P2, difficoltà media.** Conservare catalogo, download espliciti, dissolvenze
+locali e distinzione fra riproduzione, pausa e auto-pausa per audio lezione.
+L'accesso Musica della voce 64 è già concluso: qui si interviene sul player e
+sulla gerarchia interna, senza promettere controllo di Spotify/YouTube esterni.
+E10 e accettazione U10 nel report; transizioni residue nella voce 38.
+
+### 86. U11 — Memo: testo lungo leggibile senza dipendere dall'hover
+
+Completata in D-0392 dopo l'intesa D-0391. [Uso, verifiche e limiti](interventi-2026-10-22.md).
+
+- [x] Dare spazio al testo delle attività nelle finestre strette e aggiungere accesso esplicito da tastiera a lettura estesa e modifica.
+
+**P2, difficoltà media.** Valutare testo su due righe e azioni/gruppo su riga
+separata o menu. Conservare anteprima, dati, completamento, modifica Invio/Esc,
+copia gruppo e Tutti; coordinare la copia con la futura voce 67. Verificare
+900 pixel con zoom e robustezza del componente stretto, senza dichiarare
+supporto mobile. È un affinamento della voce 65 conclusa, non la sua riapertura.
+E11/E12, U11 nel report.
+
+### 87. U12 — Rimuovere l'attesa nell'apertura delle lezioni
+
+Completata in D-0392 dopo l'intesa D-0391. [Uso, verifiche e limiti](interventi-2026-10-22.md).
+
+- [x] Rendere immediata l'apertura principale oggi ritardata fino a 500 ms per distinguerla dalla rinomina con doppio clic.
+
+**P2, difficoltà bassa/media.** Conservare rinomina tramite un accesso evidente
+come menu/F2; concordare se mantenere anche il doppio clic prima di modificarne
+il comportamento. Verificare che la rinomina non apra la lezione, con mouse,
+tastiera e titoli IT/EN indipendenti. È un ritardo d'interazione documentato,
+non una lentezza del backend già misurata. E01 e U12 nel report.
+
+### 88. U13 — Q&A: nomi accessibili e annuncio degli errori
+
+Completata in D-0392 dopo l'intesa D-0391. [Uso, verifiche e limiti](interventi-2026-10-22.md).
+
+- [x] Associare un nome stabile alla textarea, nominare «Torna alle discussioni» e annunciare gli errori senza spostare il focus.
+
+**P2, difficoltà bassa.** Riusare la bozza recuperata e rendere chiaro il nuovo
+invio; non annunciare tutta la risposta a ogni frammento dello streaming.
+Verificare tastiera e NVDA per nomi, ordine, generazione, errore e retry;
+esplicitare eventuali prove assistive ancora mancanti. E05 e U13 nel report.
+
+## Aggiunte del 22 ottobre 2026 — qualità RAG e collaudi successivi
+
+Richiesta diretta successiva all'implementazione D-0397/D-0398. Base da riusare:
+[piano, risultati e limiti RAG](rag-implementazione-2026-10-22.md), fixture e
+harness già presenti. Le voci seguenti riguardano il lavoro residuo; embedding
+locali, contesto sostituibile, vincoli sulle lezioni e corpus separato sono già
+implementati e non vanno rifatti. Nessuna attività è avviata da questo elenco.
+
+### 89. RAG: benchmark rappresentativo con evidenze annotate e casi negativi
+
+Completata nel perimetro e con i limiti dichiarati in D-0400–D-0403. [Report del 23 ottobre](rag-completamento-2026-10-23.md).
+
+- [x] Costruire un insieme più ampio di domande realistiche su più corsi e tipi
+  di fonte, con passaggi attesi annotati indipendentemente dal recupero corrente.
+- [x] Separare casi usati per calibrare e casi di verifica tenuti da parte;
+  includere parafrasi IT/EN, formule, confronti, seguiti ambigui, laboratori,
+  fonti contraddittorie e domande senza evidenza anche senza un vincolo numerico.
+- [x] Misurare recall, precisione e ordine dei risultati, copertura dei confronti,
+  falsi positivi e astensione; riportare campione, variabilità e risultati per
+  categoria, separando casi rispondibili e non rispondibili.
+- [x] Rendere riproducibili configurazioni, revisioni e confronto con la base
+  attuale; tenere fonti personali e annotazioni sensibili solo in artefatti locali.
+
+**Completamento:** report riproducibile su casi non usati per calibrare, con
+soglie motivate; il 100% sui 20 casi sintetici attuali non vale come accettazione.
+
+### 90. RAG: valutare le risposte complete sulle fonti reali
+
+Parzialmente implementata; validazione qualitativa residua aperta in D-0400–D-0403. [Report del 23 ottobre](rag-completamento-2026-10-23.md).
+
+Ripresa D-0406 con gli otto esempi dell'utente: otto casi sintetici e 32
+varianti di recupero sui quattro corsi. Queste prove non sono nuove valutazioni
+delle risposte generate: lo stato resta parziale.
+[Domande, risultati e limiti](rag-domande-studio-2026-10-23.md).
+
+- [x] Estendere il benchmark 89 dalla ricerca alla risposta finale: domande,
+  fonti, passaggi effettivamente consegnati e risposta attesa con criteri di giudizio.
+- [ ] Valutare separatamente correttezza, completezza, pertinenza, supporto delle
+  affermazioni, gestione delle contraddizioni e dichiarazione delle lacune.
+- [x] Eseguire prove Gemini esplicite e tracciate con budget di invii/costo/tempo,
+  profili isolati e più esecuzioni; non confondere timeout o quota con qualità.
+- [ ] Conservare regressioni dei fallimenti reali; eventuali giudici AI devono
+  essere confrontati con valutazioni umane e dichiarati fallibili.
+
+**Completamento:** confronto documentato e lettura delle citazioni su un insieme
+annotato; prove simulate, singola risposta RL e sola copertura non bastano.
+Riusare la voce 9 per la valutazione generale dei modelli Q&A: qui si verifica
+specificamente l'intera catena della chat di corso con recupero delle fonti.
+
+### 91. RAG: verificare il supporto delle singole affermazioni
+
+Parzialmente implementata; validazione qualitativa residua aperta in D-0400–D-0403. [Report del 23 ottobre](rag-completamento-2026-10-23.md).
+
+D-0406 aggiunge regole per obblighi d'esame, esercizi generati, cambiamenti di
+ipotesi e un avviso locale sulle assenze globali attribuite al docente.
+L'efficacia del giudizio semantico su risposte reali resta da validare.
+
+- [x] Collegare le principali affermazioni della risposta ai passaggi pertinenti,
+  distinguendo fonti del corso, deduzioni e integrazioni generali.
+- [x] Gestire citazione esistente ma irrilevante, attribuzione alla lezione
+  sbagliata, ipotesi omesse, conclusioni assolute e conflitti tra fonti.
+- [x] Trattare trascrizione e relativa dispensa come stessa provenienza;
+  verificare le attribuzioni al docente sulle fonti originali disponibili.
+- [ ] Valutare un controllo semantico delle affermazioni sul benchmark 90,
+  misurandone falsi rifiuti, errori non rilevati, latenza e costo. Rendere visibili
+  risultati parziali e incertezza senza etichettare la risposta come verità certificata.
+
+**Completamento:** regressioni per affermazioni non supportate e confronto con
+giudizi annotati; l'appartenenza di un ID al prompt non equivale al supporto.
+
+### 92. RAG: calibrare ranking, deduplicazione e astensione
+
+Parzialmente implementata; validazione qualitativa residua aperta in D-0400–D-0403. [Report del 23 ottobre](rag-completamento-2026-10-23.md).
+
+D-0406 corregge vincoli ereditati nelle richieste trasversali, occupazione dei
+risultati da più dispense della stessa lezione e perdita di comunicazioni
+d'esame in inglese. Nuovi otto casi e precedenti 22 con recall@8 1,000;
+questi campioni sintetici non chiudono la calibrazione su casi indipendenti.
+
+- [x] Confrontare lessicale, semantico e fusione attuali sul benchmark 89,
+  calibrando soglie, numero di candidati e diversificazione per lezione/provenienza.
+- [ ] Misurare ed eliminare ridondanze da sovrapposizioni e derivazioni senza
+  cancellare differenze sostanziali o evidenze contraddittorie.
+- [ ] Valutare un reranker locale e l'espansione gerarchica del contesto;
+  adottarli solo se migliorano i casi di verifica con costo accettabile.
+- [ ] Verificare domande senza risposta e passaggi solo genericamente affini,
+  affinché il recupero semantico non forzi risposte su evidenza insufficiente.
+
+**Completamento:** miglioramento dei primi risultati e dell'astensione sul
+campione indipendente, con confronto di latenza/memoria e assenza di regressioni
+su formule e vincoli. Nessun nuovo modello o dipendenza è già approvato dalla voce.
+
+### 93. RAG: indice semantico preparabile e riprendibile prima delle domande
+
+Completata nel perimetro e con i limiti dichiarati in D-0400–D-0403. [Report del 23 ottobre](rag-completamento-2026-10-23.md).
+
+- [x] Offrire preparazione esplicita dell'indice del corso, progresso e copertura
+  per fonte, separandola dal tempo disponibile per rispondere a una domanda.
+- [x] Salvare lavori e checkpoint locali; riprendere dopo chiusura, errore o
+  annullamento senza ricalcolare i vettori validi e senza riattivare lavori annullati.
+- [x] Aggiornare solo fonti cambiate; gestire equamente più corsi e dare priorità
+  alle domande interattive con limiti di CPU e memoria.
+- [x] Collaudare corpus grandi a cache fredda e calda, variazioni durante il
+  lavoro e uso del recupero lessicale mentre l'indice semantico è incompleto.
+
+**Completamento:** un corpus grande può completare l'indice senza dover inviare
+più domande per popolare la cache; originali e chiamate AI restano indipendenti.
+
+### 94. RAG: gestione di cache, revisioni e spazio su disco
+
+Completata nel perimetro e con i limiti dichiarati in D-0400–D-0403. [Report del 23 ottobre](rag-completamento-2026-10-23.md).
+
+- [x] Mostrare dimensioni di modello, vettori e revisioni; prevedere ricostruzione
+  e pulizia delle sole derivazioni locali, senza eliminare gli originali.
+- [x] Definire conservazione e pulizia delle revisioni del corpus considerando
+  conversazioni, citazioni storiche, backup e lavori ancora attivi.
+- [x] Invalidare correttamente cache dopo modifica/rimozione di una fonte,
+  revisione del modello, regole di segmentazione o dimensioni dei vettori.
+- [x] Collaudare cache corrotta, modello mancante, spazio insufficiente, scrittura
+  interrotta e ripristino; documentare migrazione e percorsi di recupero.
+
+**Completamento:** recupero e pulizia riproducibili senza perdita di fonti,
+citazioni o conversazioni; misure di spazio e memoria su corpus crescenti.
+
+### 95. RAG: copertura di PDF complessi, figure e blocchi lunghi
+
+Completata nel perimetro e con i limiti dichiarati in D-0400–D-0403. [Report del 23 ottobre](rag-completamento-2026-10-23.md).
+
+- [x] Ampliare le prove a PDF multicolonna, tabelle, scansioni, formule e blocchi
+  codice/display oltre 4.400 caratteri, verificando ordine e contesto estratti.
+- [x] Migliorare l'espansione di sezione e i riferimenti pagina/posizione senza
+  inventare testo o indicare come completa una pagina con contenuto non letto.
+- [x] Valutare OCR e rappresentazione di figure/scrittura a mano con preferenza
+  locale; esplicitare installazioni, download ed eventuali invii AI prima dell'uso.
+- [x] Conservare testo estratto, testo OCR e interpretazioni AI come derivazioni
+  distinte, versionate e verificabili rispetto al documento originale.
+
+**Completamento:** benchmark di estrazione e recupero sulle classi supportate,
+copertura e limiti visibili; nessuna promessa di lettura universale delle scansioni.
+
+### 96. RAG: riferimenti stabili alla numerazione delle lezioni
+
+Completata nel perimetro e con i limiti dichiarati in D-0400–D-0403. [Report del 23 ottobre](rag-completamento-2026-10-23.md).
+
+- [x] Distinguere identità della lezione, ordine cronologico derivato e numero
+  ufficiale del corso; consentire associazioni esplicite quando necessarie.
+- [x] Gestire lezioni mancanti, importate in ritardo, date corrette, laboratori
+  e riferimenti ambigui nella domanda o nello storico.
+- [x] Preservare collegamenti e citazioni storiche dopo riordino o correzione,
+  dichiarando quale convenzione numerica è stata applicata al recupero.
+
+**Completamento:** aggiungere o ridatare una lezione non attribuisce silenziosamente
+a un'altra lezione un riferimento già usato; casi ambigui gestiti e collaudati.
+
+### 97. RAG: regressioni automatiche di robustezza e funzionamento offline
+
+Completata nel perimetro e con i limiti dichiarati in D-0400–D-0403. [Report del 23 ottobre](rag-completamento-2026-10-23.md).
+
+- [x] Integrare in CI le regressioni RAG deterministiche e il benchmark pubblico
+  con esiti e soglie controllati, senza dati personali o chiamate AI automatiche.
+- [x] Collaudare inferenza a freddo con rete effettivamente negata dopo il
+  download esplicito; verificare che nessun testo sia trasmesso dal worker locale.
+- [x] Coprire download fallito/interrotto, modello o vettori corrotti, annullamento
+  durante attesa/inferenza, concorrenza, scadenze e fallback lessicale.
+- [x] Aggiungere prove di migrazione interrotta, schema persistito non valido,
+  corpus modificato durante la domanda e isolamento tra corsi; includere controlli
+  di istruzioni ostili nelle fonti e rispetto delle sole azioni ammesse.
+- [x] Separare test rapidi senza modello, collaudi con pesi locali e prove remote
+  opzionali; fallire esplicitamente sui prerequisiti mancanti nei collaudi richiesti.
+
+**Completamento:** esiti riproducibili in Windows/Node/Electron e controllo del
+codice d'uscita di ogni harness; nessun falso successo dopo un processo non avviato.
+
+### 98. RAG: collaudo del nuovo installer Windows e runtime ASAR
+
+Completata nel perimetro e con i limiti dichiarati in D-0400–D-0403. [Report del 23 ottobre](rag-completamento-2026-10-23.md).
+
+- [x] Generare un installer dalla build RAG aggiornata, con backup e manifesto,
+  verificando inclusione del worker e caricamento nativo ONNX nel pacchetto ASAR.
+- [x] Collaudare in profilo isolato primo avvio, download esplicito, cache fredda
+  e calda, inferenza offline, ripristino modello e fallback senza modello.
+- [x] Verificare aggiornamento dal formato legacy con conversazioni e citazioni
+  conservate; confrontare file distribuiti e build, dimensioni e dipendenze native.
+- [x] Documentare risultati e limiti e consegnare il pacchetto senza installarlo
+  sul profilo personale o pubblicarlo automaticamente.
+
+**Completamento:** prova sul pacchetto reale, non soltanto sulla build in Electron;
+la configurazione ASAR preparata in D-0397 non vale come collaudo dell'installer.
+
+### 99. Full Focus: attrito di uscita solo dopo cinque minuti
+
+- [x] Uscire subito nei primi cinque minuti di ogni ingresso; poi conservare il conto alla rovescia di 15 secondi. Soglia e rientro collaudati; cambio lezione azzera il riferimento di ingresso (D-0404/D-0405).
+
+### 100. Ctrl+T: selezione e lingua della dispensa
+
+- [x] Catturare selezione e lingua IT/EN, aprire subito il traduttore compilato; solo dopo la prima visualizzazione impostare direzione e tradurre. Collaudate entrambe le lingue e richieste obsolete (D-0404/D-0405).
+
+### 101. Vocabolario: fallback al modello per parole assenti
+
+- [x] Se mancano voci, anche con suggerimenti, tentare automaticamente il modello offline per frasi nella direzione corretta. Conservata gestione dei modelli mancanti e degli errori (D-0404/D-0405).
+
+### 102. Indagare e correggere la lacuna “collusion”
+
+- [x] Verificati dati inclusi e caso precedente trascrivere: lacuna della fonte, non dell'installazione. Integrata collusion/collusione con provenienza e procedura riproducibile. Il fallback gestisce ulteriori assenze; nessuna sostituzione del dizionario necessaria per questa correzione (D-0404/D-0405).
+
+### 103. Pausa scaduta: rimuovere il testo superfluo
+
+- [x] Rimosso il paragrafo “La pausa prevista è terminata…” mantenendo titolo e controlli per riprendere o uscire (D-0404/D-0405).
+
+### 104. Spotify: errore play/pausa con suoni ambientali
+
+- [x] Riprodotto lo stesso errore con HTTP 200 vuoto senza suoni, corretta la lettura JSON sui comandi; regressioni e prova con vero loop Web Audio superate. Rigenerato e verificato l'installer finale delle voci 99–104. Account Spotify simulato: nessuna cattura della sessione personale (D-0404/D-0405).
+
+Uso, collaudi, installer e limiti delle sei voci nel
+[resoconto Focus, traduttore e Spotify](focus-traduttore-spotify-2026-10-23.md).
+La coda comprende ora 50 posizioni: 31 concluse e 19 aperte; la prima aperta
+resta la voce 33. Le tre valutazioni RAG 90–92 mantengono lo stato parziale.
+
+Autorizzazione diretta dell'utente del 23 ottobre: queste sei richieste sono
+implementabili nello stesso intervento, dopo il completamento del lavoro RAG
+(D-0404). Non modificano ordine o stato delle precedenti attività aperte.
+
 ## Nota sulla classificazione
 
 Le otto richieste originali sono tutte conservate. L’esportazione PDF e la
@@ -1035,6 +2138,28 @@ Le dodici aggiunte del 16 ottobre sono le voci 26–37: quattro semplici
 (inclusa la domanda sui modelli già risposta) e otto complesse/da approfondire.
 Le undici attività future restano aperte e sono state aggiunte alle posizioni
 13–23 della coda in D-0327, mantenendo invariate le dodici posizioni precedenti.
+
+Le otto aggiunte del 20 ottobre sono le voci 44–51 e occupano le posizioni
+30–37 della coda, nell'ordine ricevuto. La voce Q&A comprende ridimensionamento
+del pannello e ingrandimento del testo, come chiarito dall'utente in D-0375;
+la valutazione dello storico aggiuntivo è conclusa con l'opzione esplicita D-0379.
+Il caso Mermaid completo è conservato nella voce 51 e nella fixture di regressione.
+
+Il 21 ottobre sono aggiunte dodici voci (52–63) e integrata la voce 33 con
+la tredicesima richiesta. La nuova coda operativa comprende tutte le 21 attività
+ancora aperte al momento del riordino, incluse le verifiche residue delle voci 7, 9, 17 e 20.
+Il secondo aggiornamento aggiunge le voci 64–66 e ordina le 15 attività
+ancora aperte dopo D-0383, conservando separatamente le nove concluse (D-0386).
+Le indicazioni precedenti sull'ordine sono storiche e superate da questa
+richiesta esplicita di riordino; gli stati e le evidenze restano conservati.
+
+Il 22 ottobre, D-0390 integra nove richieste distinte della lista/riassunto
+(67–75) e tutti i tredici rilievi U01–U13 del report (76–88). Insieme alle dodici
+residue costituivano le 34 attività aperte dell’unico ordine operativo iniziale.
+D-0392 ne conclude 18; restano 16 caselle aperte, senza riordino delle residue.
+Il riferimento generico all'audio rimanda al riassunto per chiarimento
+dell'utente e non crea una voce duplicata. Il report conserva evidenze e priorità;
+l'ordinamento nuovo usa la facilità stimata, senza dichiarare risolti i rilievi.
 
 ## Appendice musicale — link e tracce forniti dall’utente
 

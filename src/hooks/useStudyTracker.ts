@@ -8,6 +8,7 @@ interface UseStudyTrackerProps {
   isFocusMode: boolean
   activeTab: string
   isEnabled?: boolean
+  suspended?: boolean
 }
 
 export function useStudyTracker({
@@ -15,7 +16,8 @@ export function useStudyTracker({
   courseCode,
   isFocusMode,
   activeTab,
-  isEnabled = false
+  isEnabled = false,
+  suspended = false
 }: UseStudyTrackerProps) {
   const [activeSeconds, setActiveSeconds] = useState(0)
   const [previousStudy, setPreviousStudy] = useState<{ lectureId: string; sessionId: string; seconds: number } | null>(null)
@@ -32,7 +34,14 @@ export function useStudyTracker({
   const isFocusModeRef = useRef(isFocusMode)
   const activeTabRef = useRef(activeTab)
   const pauseTimerActiveRef = useRef(false)
+  const suspendedRef = useRef(suspended)
+  suspendedRef.current = suspended
   const showFocusLockRef = useRef(false)
+  const focusEnteredAt = useRef<number | null>(null)
+
+  useEffect(() => {
+    focusEnteredAt.current = isEnabled && isFocusMode ? performance.now() : null
+  }, [isEnabled, isFocusMode, activeLectureId])
 
   useEffect(() => {
     isEnabledRef.current = isEnabled
@@ -93,6 +102,12 @@ export function useStudyTracker({
     return flushQueue.current
   }, [getStudyMode])
 
+  useEffect(() => {
+    lastTickRef.current = Date.now()
+    lastInteractionRef.current = Date.now()
+    if (suspended) void flushCurrentSession()
+  }, [suspended, flushCurrentSession])
+
   // Gestione ciclo di vita sessione: attiva SOLO quando isEnabled è true
   useEffect(() => {
     if (isEnabled && activeLectureId) {
@@ -146,7 +161,7 @@ export function useStudyTracker({
   useEffect(() => {
     const handleInteraction = () => {
       // Non aggiornare o rimuovere la pausa se siamo in Focus Lock o in pausa programmata
-      if (showFocusLockRef.current || pauseTimerActiveRef.current) {
+      if (suspendedRef.current || showFocusLockRef.current || pauseTimerActiveRef.current) {
         return
       }
       lastInteractionRef.current = Date.now()
@@ -221,7 +236,7 @@ export function useStudyTracker({
       lastTickRef.current = now
 
       // Se siamo nel Focus Lock (attesa 15s / decisione) o in pausa programmata, il timer di studio rimane FERMO
-      if (showFocusLockRef.current || pauseTimerActiveRef.current) {
+      if (suspendedRef.current || showFocusLockRef.current || pauseTimerActiveRef.current) {
         lastInteractionRef.current = now
         return
       }
@@ -256,11 +271,16 @@ export function useStudyTracker({
   // Richiesta di uscita da Focus Mode con Focus Lock a 15s obbligatorio
   const requestExitFocus = useCallback((onExitConfirmed: () => void) => {
     if (showFocusLockRef.current) return
+    if (focusEnteredAt.current === null || performance.now() - focusEnteredAt.current < 5 * 60_000) {
+      void flushCurrentSession()
+      onExitConfirmed()
+      return
+    }
     pendingExitRef.current = onExitConfirmed
     showFocusLockRef.current = true
     setShowFocusLock(true)
     setIsPaused(true)
-  }, [])
+  }, [flushCurrentSession])
 
   const handleContinueFocus = useCallback(() => {
     showFocusLockRef.current = false
@@ -331,7 +351,7 @@ export function useStudyTracker({
     activeSeconds,
     lectureTotalSeconds: previousStudy?.lectureId === activeLectureId && previousStudy.sessionId === sessionIdRef.current
       ? previousStudy.seconds + activeSeconds : null,
-    isPaused,
+    isPaused: isPaused || suspended,
     showFocusLock,
     isZenMode,
     toggleZenMode,

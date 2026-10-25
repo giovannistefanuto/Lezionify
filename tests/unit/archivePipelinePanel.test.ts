@@ -15,7 +15,7 @@ const render = (status: ArchivePipelineStatus) => renderToStaticMarkup(createEle
 it('distingue ENG non richiesto all importazione da traduzione in attesa', () => {
   const automatic = render(snapshot({ trigger: 'import', includeTranslation: false, tasks: [{ lectureId: 'one', title: 'Sintetica', courseCode: null, stage: 'notes', status: 'succeeded' }], stageSummaries: { transcription: { ...empty }, notes: { ...empty, total: 1, succeeded: 1 }, translation: { ...empty } } }))
   expect(automatic).toContain('Non richieste')
-  expect(automatic).toContain('Elabora tutto')
+  expect(automatic).toContain('Elabora archivio')
   expect(automatic).toContain('Questa elaborazione non include le versioni ENG')
   expect(automatic).not.toContain('L’importazione automatica crea trascrizioni e dispense ITA.')
   expect(automatic).not.toContain('Versioni ENG</span><strong>0/0')
@@ -34,7 +34,7 @@ it('mostra il motivo della traduzione fallita separato dalle dipendenze bloccate
   expect(failed).toContain('1 bloccate dalla fase precedente')
   expect(failed).toContain('Traduzione non salvata: risposta incompleta.')
   expect(failed).toContain('Dispensa italiana non disponibile.')
-  expect(failed).toContain('usa “Elabora tutto”')
+  expect(failed).toContain('usa “Elabora archivio”')
 })
 
 it('mantiene la ripresa esplicita dopo un problema di quota della traduzione', () => {
@@ -43,5 +43,5 @@ it('mantiene la ripresa esplicita dopo un problema di quota della traduzione', (
     stageSummaries: { transcription: { ...empty }, notes: { ...empty }, translation: { ...empty, total: 1, failed: 1 } } }))
   expect(paused).toContain('Quota esaurita.')
   expect(paused).toContain('▶ Riprendi elaborazione')
-  expect(paused).not.toContain('usa “Elabora tutto”')
+  expect(paused).not.toContain('usa “Elabora archivio”')
 })

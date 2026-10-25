@@ -9,6 +9,20 @@ import { spotifyCallback, chooseSpotifyComputer, spotifyImageUrl, spotifyItemUrl
 const folders: string[] = []
 const vault = { available: () => true, encrypt: (value: string) => Buffer.from(value).toString('base64'), decrypt: (value: string) => Buffer.from(value, 'base64').toString() }
 const id = 'a'.repeat(32)
+
+it.each(['play', 'pause', 'next', 'previous', 'transfer', 'seek', 'volume'])('comando %s accetta successo 200 vuoto, indipendente dai suoni', async command => {
+  const { service } = await connected((async (url: string) => url.endsWith('/devices')
+    ? Response.json({ devices: [{ id: 'pc', name: 'PC', type: 'Computer', is_active: true }] })
+    : new Response('', { status: 200 })) as typeof fetch)
+  await expect(service.command(command, 'pc', command === 'seek' || command === 'volume' ? 10 : undefined)).resolves.toBeUndefined()
+})
+
+it('le letture Spotify continuano a rifiutare JSON assente o malformato', async () => {
+  for (const body of ['', 'not-json']) {
+    const { service } = await connected((async () => new Response(body, { status: 200 })) as typeof fetch)
+    await expect(service.playback()).rejects.toThrow('Risposta Spotify non leggibile')
+  }
+})
 afterEach(async () => { vi.useRealTimers(); await Promise.all(folders.splice(0).map(path => rm(path, { recursive: true, force: true }))) })
 async function fixture(request: typeof fetch, open = async (_url: string) => {}) {
   const root = await mkdtemp(join(tmpdir(), 'lezionify-spotify-')); folders.push(root)

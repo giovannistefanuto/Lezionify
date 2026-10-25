@@ -44,18 +44,18 @@ export async function runDictionaryScenarios(root: Root, api: any) {
       onClose: () => { drawerCloses++ }, requestExitFocus: () => { focusExitRequests++ }, exitFromPause: () => {},
       resumeFromPause: () => {}, handleContinueFocus: () => {}, contentRef: content, zoomLabelRef: label, zoomLevelRef: zoom, hasContent: false })
     const dictionary = useDictionaryShortcut()
-    return <div ref={content}><button id="dictionary-return-target">Torna alla lezione</button><p>Lezione di riferimento</p>
+    return <div ref={content}><button id="dictionary-return-target">Torna alla lezione</button><p id="selected-notes" data-notes-language="en">A selected phrase from the notes.</p>
       {auxiliary === 'lock' && <FocusLockModal show courseCode="TEST" sessionSeconds={20} lectureTotalSeconds={40} onContinue={() => { continues++ }} onQuit={() => { focusExitRequests++ }} />}
       {auxiliary === 'pause' && <PauseTimerOverlay show minutes={5} onReturnToStudy={() => { continues++ }} onQuit={() => { focusExitRequests++ }} />}
-      {dictionary.isOpen && <DictionaryOverlay onClose={dictionary.close} />}
+      {dictionary.isOpen && <DictionaryOverlay onClose={dictionary.close} selection={dictionary.selection} />}
     </div>
   }
   const keyboard = async (key: string, ctrlKey = false, extra: Partial<KeyboardEventInit> = {}) => act(async () => {
     (document.activeElement ?? document.body).dispatchEvent(new KeyboardEvent('keydown', { key, ctrlKey, bubbles: true, cancelable: true, ...extra }))
   })
   const type = async (text: string) => act(async () => {
-    const input = document.querySelector<HTMLInputElement>('[aria-label="Parola o frase"]')!
-    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(input, text)
+    const input = document.querySelector<HTMLTextAreaElement>('[aria-label="Parola o frase"]')!
+    Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')!.set!.call(input, text)
     input.dispatchEvent(new Event('input', { bubbles: true }))
   })
   const style = document.createElement('style')
@@ -95,6 +95,11 @@ export async function runDictionaryScenarios(root: Root, api: any) {
     await type('zzzxxyy')
     await until(() => Boolean(document.querySelector('.dictionary-results')?.textContent?.includes('Lingua non riconosciuta')), 'Unknown input must explain the retained direction')
     check(document.querySelector('.dictionary-direction')?.textContent?.includes('IT → EN'), 'Unknown input must not flip direction')
+    await until(() => phrases.at(-1)?.text === 'zzzxxyy', 'Missing dictionary word must automatically fall back to the phrase model')
+    check(phrases.at(-1)?.direction === 'it-en', 'Fallback must preserve the dictionary direction')
+    await type('trascr')
+    await until(() => phrases.at(-1)?.text === 'trascr', 'Suggestions must not prevent model fallback')
+    check(document.querySelector('.dictionary-suggestions')?.textContent?.includes('trascrivere'), 'Dictionary suggestions must remain available')
     await type('Searching')
     await until(() => Boolean(document.querySelector('.dictionary-entry')?.textContent?.includes('search: cercare')), 'English must be detected after Italian')
     await require('electron').ipcRenderer.invoke('capture-video-import', 'dictionary-light')
@@ -114,6 +119,20 @@ export async function runDictionaryScenarios(root: Root, api: any) {
     document.body.appendChild(fullscreenHost)
     fullscreen = true
     await act(async () => root.render(<Harness />))
+    for (const language of ['en', 'it']) {
+      const paragraph = document.getElementById('selected-notes')!
+      paragraph.dataset.notesLanguage = language
+      const range = document.createRange(); range.selectNodeContents(paragraph)
+      window.getSelection()!.removeAllRanges(); window.getSelection()!.addRange(range)
+      const before = phrases.length
+      await keyboard('t', true)
+      check(document.querySelector<HTMLTextAreaElement>('[aria-label="Parola o frase"]')?.value === paragraph.textContent, 'Selected text must be present as soon as the translator opens')
+      check(phrases.length === before, 'Translation must not start before the populated overlay opens')
+      window.getSelection()!.removeAllRanges()
+      await until(() => phrases.length > before, 'Selected notes must translate after opening')
+      check(phrases.at(-1)?.direction === (language === 'en' ? 'en-it' : 'it-en'), 'Selected notes must use the actual source language')
+      await keyboard('Escape')
+    }
     await keyboard('t', true)
     check(fullscreenHost.querySelector('[data-dictionary-overlay]'), 'Dictionary portal must be visible inside the fullscreen element')
     await type('look up')
@@ -135,6 +154,19 @@ export async function runDictionaryScenarios(root: Root, api: any) {
     api.lookupDictionary = lookup
     await type('unknown whole sentence')
     await until(() => Boolean(document.querySelector('[aria-label="Traduzione offline"]')?.textContent?.includes('unknown whole sentence')), 'Phrase must use the local translator')
+    const longPhrase = 'Una frase lunga con dettagli da tradurre. '.repeat(35)
+    await type(longPhrase)
+    await until(() => Boolean(document.querySelector('[aria-label="Traduzione offline"]')?.textContent?.includes(longPhrase.trim())), 'Long phrase was truncated')
+    const sourceField = document.querySelector<HTMLTextAreaElement>('[aria-label="Parola o frase"]')!
+    const translated = document.querySelector<HTMLElement>('[aria-label="Traduzione offline"]')!
+    check(sourceField.value === longPhrase && parseFloat(getComputedStyle(sourceField).fontSize) === parseFloat(getComputedStyle(translated).fontSize), 'Translator must retain complete source and equally readable translation')
+    check(sourceField.getBoundingClientRect().right < translated.getBoundingClientRect().left, 'Translator panels must be side by side on desktop')
+    await require('electron').ipcRenderer.invoke('capture-video-import', 'dictionary-long')
+    await require('electron').ipcRenderer.invoke('feature-test-window-size', true)
+    await settle()
+    check(sourceField.getBoundingClientRect().bottom < translated.getBoundingClientRect().top && document.querySelector('.dictionary-panel')!.getBoundingClientRect().width <= window.innerWidth, 'Narrow translator must stack panels without horizontal overflow')
+    await require('electron').ipcRenderer.invoke('feature-test-window-size', false)
+    await settle()
     await act(async () => resolveOld.forEach(resolve => resolve()))
     check(!document.querySelector('.dictionary-entry'), 'A delayed previous search must not replace current results')
     check(document.querySelector('.dictionary-direction')?.textContent?.includes('IT → EN'), 'A delayed word lookup must not change phrase direction')

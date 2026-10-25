@@ -1,6 +1,7 @@
 // Trusted local worker; only bytes and the installed PDF.js module URL are accepted.
 const { parentPort, workerData } = require('node:worker_threads')
 const { fileURLToPath } = require('node:url')
+const { extractLayoutText } = require('./pdf-layout.cjs')
 ;(async () => {
   const { getDocument } = await import(workerData.moduleUrl)
   const asset = folder => fileURLToPath(new URL(`../../${folder}/`, workerData.moduleUrl)).replaceAll('\\', '/')
@@ -16,7 +17,7 @@ const { fileURLToPath } = require('node:url')
       try {
         const documentPage = await pdf.getPage(page)
         const content = await documentPage.getTextContent()
-        text = content.items.map(item => 'str' in item ? item.str + (item.hasEOL ? '\n' : ' ') : '').join('')
+        text = extractLayoutText(content.items, documentPage.getViewport({ scale: 1 }).width)
         documentPage.cleanup()
       } catch { /* Retain a coverage gap for this page; never invent searchable text. */ }
       length += text.length

@@ -4116,3 +4116,388 @@ Non modificare manualmente la sezione `Registro`: aggiungi le nuove decisioni es
 - **Impatto:** Tutti625test in43file passano anche con runtime temporaneo Node22.23.3 e lint del file modificato passa. Nessuna modifica al runtime dell app alle dipendenze o ai criteri di estrazione, nessuna chiamata AI. Report con run39277009892 e limiti della diagnosi.
 - **Follow-up:** Verificare la nuova CI Windows sul commit correttivo; i controlli Electron build e PDF locali restano validi perche il runtime applicativo non cambia. Audit19segnalazioni resta intervento separato.
 - **File coinvolti:** tests/unit/courseRag.test.ts, tests/README.md, docs/quality/pubblicazione-github-2026-10-19.md
+
+## D-0374 — Otto nuove richieste nella raccolta futura e nella coda
+
+- **Data:** 2026-10-20
+- **Stato:** accettata
+- **Area:** pianificazione-prodotto
+- **Decisione:** Aggiungere le voci 44-51 e le posizioni 30-37 di LISTA_ORDINE nell ordine ricevuto: pannello Q&A ridimensionabile, doppio clic sulle attivita Memo, valutazione dello storico Q&A aggiuntivo, avviso batteria sotto il 20%, riapertura Q&A, riferimenti ai paragrafi successivi, catalogo Paesaggi naturali con download singoli e collettivo dei mancanti, correzione del caso Mermaid Fictitious Play. L utente conferma che riscalabile indica il pannello ridimensionabile.
+- **Motivazione:** Conservare tutte le richieste e il caso Mermaid completo in una pianificazione coerente, distinguendo requisiti confermati da valutazioni ancora aperte e dal comportamento gia presente nel codice.
+- **Impatto:** Aggiornamento esclusivamente documentale; tutte le nuove caselle restano aperte, ordine e stato precedenti invariati. Nessuna implementazione, download, dipendenza o richiesta AI. Annotati divisori Q&A e storico della singola conversazione gia presenti, da verificare prima di duplicare funzioni.
+- **Follow-up:** Implementare e collaudare le singole voci quando richiesto. Valutare separatamente l utilita di includere altre conversazioni, selezionare le nuove risorse sonore e riprodurre il caso Mermaid senza presumere la causa.
+- **File coinvolti:** docs/product/idee-future-2026-10-13.md
+
+## D-0375 — Q&A con pannello ridimensionabile e testo ingrandibile
+
+- **Data:** 2026-10-20
+- **Stato:** accettata
+- **Area:** pianificazione-prodotto
+- **Decisione:** Integrare la voce 44 e la posizione 30 di LISTA_ORDINE: la richiesta comprende sia il pannello ridimensionabile trascinando il bordo sia la possibilita di ingrandire il testo delle domande e risposte. Il chiarimento estende D-0374 e corregge la precedente esclusione della dimensione del testo nella descrizione.
+- **Motivazione:** L utente precisa esplicitamente di volere entrambe le funzioni.
+- **Impatto:** Aggiornamento documentale della stessa attivita, con due requisiti aperti; ordine della coda invariato e nessuna modifica applicativa.
+- **Follow-up:** Verificare entrambi i comportamenti in vista ordinaria e Focus, riusando i controlli esistenti e controllando leggibilita e accesso ai comandi con testo ingrandito.
+- **File coinvolti:** docs/product/idee-future-2026-10-13.md
+
+## D-0376 — Conferma delle otto modifiche e delle precisazioni finali
+
+- **Data:** 2026-10-20
+- **Stato:** accettata
+- **Area:** requisiti-20-ottobre
+- **Decisione:** Implementare insieme le voci 44-51 su richiesta diretta: larghezza e zoom Q&A persistenti indipendenti, Memo con doppio clic Invio Esc e salvataggio uscendo, riapertura ultima discussione, altri Q&A pertinenti della stessa lezione soltanto su opzione esplicita. Aggiornare il prompt per anticipazioni soltanto se lo studente allega tutta la lezione: nessuna attivazione automatica del contesto completo. Indicatore batteria come piccola emoji in basso a destra. Almeno dieci nuovi suoni scelti dall agente con download singoli e collettivo dei mancanti. Correggere Mermaid e consegnare setup aggiornato con backup.
+- **Motivazione:** L utente conferma tutte le proposte con tre precisazioni: contesto completo sempre scelto manualmente, batteria discreta e almeno dieci suoni nuovi.
+- **Impatto:** Perimetro esplicito di otto voci, senza riordinare il backlog o avviare altre attivita. Nessuna nuova dipendenza, fonte personale o chiamata Gemini reale necessaria ai collaudi.
+- **Follow-up:** Completare collaudi UI servizi renderer PDF e installer; segnare le caselle soltanto dopo esito positivo.
+- **File coinvolti:** docs/product/idee-future-2026-10-13.md, docs/product/interventi-2026-10-20.md
+
+## D-0377 — README bilingue con percorsi chiari, prove tecniche e tour visuale
+
+- **Data:** 2026-10-20
+- **Stato:** accettata
+- **Area:** readme-portfolio
+- **Decisione:** Riorganizzare README.md in inglese e aggiungere README.it.md equivalente: accessi immediati ad appunti, avvio e codice; quattro capacita principali; tre scelte ingegneristiche con moduli e test; ruolo autore e AI leggibile; roadmap ridotta. Aggiungere tour GIF di 48 secondi con didascalie, schermate sintetiche gia revisionate e alternativa testuale bilingue.
+- **Motivazione:** L utente approva le migliorie per visitatori e reclutatori e chiede esecuzione autonoma, precisando che altre modifiche applicative sono in corso e non vanno pubblicate. La gerarchia rende il prodotto comprensibile e le competenze verificabili senza ampliare promesse o licenza.
+- **Impatto:** Solo presentazione, documentazione e generatore media locale con FFmpeg gia presente. Nessuna dipendenza o modifica applicativa. GIF 274318 byte, 4 capitoli, durata verificata 48 secondi e frame ispezionati; 78 link locali e ancore validati. Anteprime Markdown offline Electron 1200 e 390 px per entrambe le lingue senza overflow pagina. Risultati applicativi storici datati 19 ottobre, senza nuovo collaudo applicativo o chiamate AI. Nessun commit o push.
+- **Follow-up:** Mantenere allineate le due lingue e rigenerare il tour quando cambiano gli screenshot. Tour dichiarato come sequenza di schermate con risposte sintetiche, non registrazione continua o benchmark. Tutto resta locale per rispettare il lavoro concorrente dell utente; una futura pubblicazione del README deve includere i relativi file di lingua e media per evitare link mancanti.
+- **File coinvolti:** README.md, README.it.md, docs/assets/demo/README.md, docs/assets/demo/lezionify-tour.gif, tools/build_readme_tour.mjs, docs/README.md, STRUTTURA_PROGETTO.md
+
+## D-0378 — Pubblicazione isolata dei README e dei soli media di presentazione
+
+- **Data:** 2026-10-20
+- **Stato:** accettata
+- **Area:** pubblicazione-readme
+- **Decisione:** Pubblicare su main soltanto README.md, README.it.md, docs/assets/demo/README.md e docs/assets/demo/lezionify-tour.gif nel commit 3e6cd6951eb4958eaa44408514ef984503d41cf2, su richiesta esplicita dell utente di vedere il README sul sito senza pubblicare le modifiche applicative concorrenti.
+- **Motivazione:** Versione italiana, descrizione e GIF sono necessari per rendere navigabile la presentazione pubblicata senza link mancanti. Sorgenti, test, generatori e aggiornamenti documentali separati restano locali.
+- **Impatto:** 78 collegamenti locali e ancore verificati prima del commit, controllo diff senza errori, inventario del commit limitato a quattro file. Push riuscito da 762606f a 3e6cd69 e SHA remoto main verificato con git ls-remote. Nessuna nuova richiesta AI, collaudo applicativo o modifica alla libreria.
+- **Follow-up:** Questa decisione rimane locale insieme agli altri aggiornamenti documentali, senza un ulteriore push. Completare separatamente il lavoro applicativo in corso e verificarne la CI quando sara pubblicato.
+- **File coinvolti:** README.md, README.it.md, docs/assets/demo/README.md, docs/assets/demo/lezionify-tour.gif
+
+## D-0379 — Otto richieste implementate e collaudate
+
+- **Data:** 2026-10-20
+- **Stato:** accettata
+- **Area:** qna-memo-batteria-suoni-mermaid
+- **Decisione:** Completare voci 44-51 con larghezza e zoom Q&A persistenti, riapertura ultima discussione per lezione, altri Q&A pertinenti opt-in validati e limitati a cinque discussioni e 12000 caratteri, prompt condizionato al contesto completo manuale. Memo con modifica esplicita Invio Esc e uscita campo; emoji batteria locale sotto20percento solo scollegato anche fullscreen. Dieci nuove registrazioni da Blanket e AmbientSounds con URL immutabili licenze dimensioni e hash, download singoli e collettivo con riparazione ed errori per file. Accettare il solo punto e virgola terminale degli stili Mermaid senza alterare fonte o controlli.
+- **Motivazione:** Attuare D-0376 con invii AI consapevoli, interazioni riprendibili e risorse sonore verificabili. La regressione riproduceva il diagramma rifiutato prima della modifica. La revisione ha individuato e corretto la memoria Q&A al cambio lezione.
+- **Impatto:** 634 test Vitest in46file,24Python41Node, typecheck lint scenari Electron riavvio e PDF reali superati. Dieci audio decodificati e verificati, downloader reale dieci richieste poi zero con rilettura integra. Schermate sintetiche ispezionate. Nessuna dipendenza nuova, richiesta Gemini reale o modifica alle fonti personali.
+- **Follow-up:** Generare e verificare setup Windows con backup. Osservare sul portatile la lettura batteria e la qualita delle risposte reali; i collaudi AI usano SDK simulato e la selezione Q&A e lessicale. Uso fonti limiti e report in docs/product/interventi-2026-10-20.md.
+- **File coinvolti:** shared/qnaContext.ts, shared/ambientSounds.ts, shared/battery.ts, shared/archive.ts, electron/main/archive.ts, electron/main/gemini.ts, electron/main/ambientSounds.ts, electron/main/battery.ts, electron/main/index.ts, electron/preload/index.ts, src/components, src/hooks, tests, tools/run_hook_regressions.cjs, tools/run_pdf_export_regressions.cjs, docs/product/idee-future-2026-10-13.md, docs/product/interventi-2026-10-20.md, STRUTTURA_PROGETTO.md
+
+## D-0380 — Setup con otto modifiche del 20 ottobre e dieci nuovi suoni
+
+- **Data:** 2026-10-20
+- **Stato:** accettata
+- **Area:** packaging-windows
+- **Decisione:** Generare il setup NSIS x64 0.1.0 con D-0379 e pubblicazione disabilitata, dopo build e collaudi. Conservare setup precedente blockmap e latest.yml in local-artifacts/installer-backups/20261020-qna-memo-suoni. Verificare contenuti ASAR, runtime, manifesto e backup prima della consegna.
+- **Motivazione:** L utente ha richiesto anche il setup per usare nell app installata tutte le modifiche confermate, con backup del pacchetto precedente.
+- **Impatto:** Packaging concluso con codice0. Setup 190811192 byte SHA256 5fee5297d8acd3b4b91559f197b854e4e15801f30f5f879dab4d02c203dde5b1. Tutti 370 file out identici al pacchetto, FFmpeg e runtime offline presenti, manifesto SHA512 dimensione blockmap e backup verificati. Nessun artefatto privato incluso; i nuovi audio restano download espliciti. Nessuna installazione o pubblicazione automatica.
+- **Follow-up:** Chiudere Lezionify e avviare dist/Lezionify-Setup-0.1.0.exe. Report di verifica nella cartella del backup. Nessuna altra voce del backlog avviata. Contenuti e limiti in docs/product/interventi-2026-10-20.md.
+- **File coinvolti:** dist/Lezionify-Setup-0.1.0.exe, dist/Lezionify-Setup-0.1.0.exe.blockmap, dist/latest.yml, local-artifacts/installer-backups/20261020-qna-memo-suoni, docs/product/interventi-2026-10-20.md
+
+## D-0381 — Nuove richieste del 21 ottobre e coda riordinata per complessita
+
+- **Data:** 2026-10-21
+- **Stato:** accettata
+- **Area:** pianificazione-prodotto
+- **Decisione:** Aggiungere dodici voci 52-63 e integrare la voce 33 con il cerchio bianco al Ctrl, conservando tutte le tredici richieste. Sostituire su richiesta esplicita l ordine operativo con una classifica delle 21 attivita ancora aperte dalla piu semplice alla meno semplice; includere i collaudi residui delle voci 7 9 17 20. Conservare la vecchia coda come storico non operativo e gli stati conclusi.
+- **Motivazione:** L utente chiede di aggiornare idee future e LISTA_ORDINE e confrontare la difficolta di tutte le idee. Unificare la diagnosi Ctrl evita duplicati; distinguere residui e storico impedisce di perdere verifiche o rifare funzioni gia concluse.
+- **Impatto:** Solo documentazione. Prima attivita operativa voce54 Q&A diretto, poi toggle Breve Lunga e verifica timer Memo. Stime motivate e provvisorie; nessuna implementazione collaudo applicativo installazione dipendenza o chiamata AI. Rinvi e limiti precedenti restano documentati. Soglia inattivita 15minuti proposta da misurare; rigenerazione mirata e trasferimento Notability da valutare.
+- **Follow-up:** Applicare la nuova tabella alla prossima invocazione LISTA_ORDINE una voce per volta. Chiarire le scelte residue quando si affronta la singola attivita e aggiornare caselle solo dopo implementazione e verifiche pertinenti.
+- **File coinvolti:** docs/product/idee-future-2026-10-13.md
+
+## D-0382 — Dieci attivita concordate dopo intervista grilling
+
+- **Data:** 2026-10-21
+- **Stato:** accettata
+- **Area:** requisiti-21-ottobre
+- **Decisione:** Implementare insieme le posizioni 1-10 della coda su richiesta esplicita. Breve iniziale e scelta globale persistente Breve Lunga; prompt diretto senza apertura chiusura o domande finali non richieste. Memo Tutti con lista unica gruppi visibili e appunti richiudibili; timer e stima sospesi senza perdere stato. Casuale avvia suoni integri locali senza ripetizioni nel giro. Traduttore a due riquadri con caratteri uguali e layout verticale stretto. Conservare Ctrl+L e indagare il cerchio senza modificare Windows. Togli tempo oggi per corso oppure ultima lezione su tutte le sessioni con riepilogo e limite disponibile. Controllo rete comune Gemini. Dopo test completi rigenerare setup con backup.
+- **Motivazione:** L utente approva tutte le otto domande e conferma l intesa finale. Il perimetro esplicito di dieci attivita supera per questa richiesta il limite di una sola voce del comando LISTA_ORDINE.
+- **Impatto:** Nessuna nuova dipendenza o chiamata Gemini reale necessaria. L eventuale sintomo personale Ctrl+L non riprodotto resta aperto anche se le prove sintetiche passano. Conservare le modifiche preesistenti del checkout e il pacchetto precedente.
+- **Follow-up:** Completare implementazione regressioni verifica visiva e check completo; allineare solo le caselle verificate e consegnare installer senza installazione o pubblicazione automatica.
+- **File coinvolti:** docs/product/idee-future-2026-10-13.md,docs/product/interventi-2026-10-21.md
+
+## D-0383 — Prime dieci attivita implementate con limite sulla diagnosi Ctrl
+
+- **Data:** 2026-10-21
+- **Stato:** accettata
+- **Area:** qna-memo-studio-traduttore
+- **Decisione:** Completare posizioni1-7 e9-10 con prompt Q&A diretto e Breve Lunga persistente validato nel main, Memo compatto con appunti richiudibili e sospensione tracker stima, fix CSS differito Q&A, shuffle locale nel provider, traduttore multilinea a due riquadri, rettifiche non distruttive e serializzate delle sessioni, controllo net.isOnline condiviso prima di Gemini incluso Files. Ripristinare bozza Q&A fallita senza duplicare domanda al retry. Per posizione8 conservare Ctrl+L: FindMyMouse PowerToys abilitato con doppio Ctrl sinistro spiega il cerchio; vecchio episodio Ctrl+L non riprodotto resta aperto.
+- **Motivazione:** Attuare D-0382 con verifiche reali di layout persistenza e lifecycle. La regressione dello spazio vuoto riproduce la precedenza del CSS caricato in ritardo. Rettifiche separate dalla durata impediscono che snapshot successivi annullino la correzione. Non cambiare impostazioni esterne senza una richiesta specifica.
+- **Impatto:** Typecheck lint 646 Vitest in49file 24Python 41Node Q&A intera suite Electron e riavvio build e PDF reali superati. Fonte e derivazioni conservate, nessuna dipendenza nuova o chiamata Gemini reale. Offline terminale non altera cooldown modelli; quote terminali esistenti conservate. Screenshot sintetici ispezionati. Test precedenti adeguati a lista piatta e textarea, non rimossi. Un menu laboratorio intermittente passa isolato e nella suite finale.
+- **Follow-up:** Rigenerare setup senza pubblicazione con backup verificato; controllare ASAR runtime e manifesto. Voce33 resta aperta per acquisire l episodio personale storico; spiegazione PowerToys e fonti nel report. Seguire il comportamento reale di net.isOnline su reti limitate e la qualita dei prompt senza dichiarare garanzie sul modello.
+- **File coinvolti:** shared/studyCorrections.ts,electron/main/ai/connectivity.ts,electron/main/ai/geminiRequestManager.ts,electron/main/ai/geminiTransport.ts,electron/main/gemini.ts,electron/main/archive.ts,electron/main/index.ts,electron/preload/index.ts,shared/archive.ts,src,tests,tools/run_hook_regressions.cjs,docs/product/interventi-2026-10-21.md,docs/product/idee-future-2026-10-13.md,STRUTTURA_PROGETTO.md
+
+## D-0384 — Setup delle prime dieci attivita con backup verificato
+
+- **Data:** 2026-10-21
+- **Stato:** accettata
+- **Area:** packaging-windows
+- **Decisione:** Generare setup NSIS x64 0.1.0 con D-0383 dopo build e collaudi, usando npx electron-builder --win --publish never. Conservare setup precedente blockmap e latest.yml in local-artifacts/installer-backups/20261021-prime-dieci. Consegnare senza installazione pubblicazione commit o push automatici.
+- **Motivazione:** L utente ha richiesto installer aggiornato dopo tutte le modifiche e verifiche concordate. Il pacchetto include nove attivita concluse e mantiene la diagnosi Ctrl storica aperta come documentato, senza modificare PowerToys.
+- **Impatto:** Packaging codice0. Setup190814571byte SHA256 a0695817205c5edfb44112219ab97c3518b8a3701c7791ee99dcee208ba2af24. Verificati370file out identici al contenuto ASAR, nuove funzioni presenti, FFmpeg e runtime traduzione offline, manifesto SHA512 dimensione e blockmap. Tre backup con hash identici agli originali e nessun artefatto privato incluso. Verificatore corretto per separatori nativi Windows senza cambiare il pacchetto.
+- **Follow-up:** Chiudere Lezionify e avviare dist/Lezionify-Setup-0.1.0.exe. Report verification.json e backup.json nella cartella del backup. Per il cerchio usare impostazioni PowerToys; vecchio episodio Ctrl+L da acquisire se ricompare. Nessuna altra voce avviata.
+- **File coinvolti:** dist/Lezionify-Setup-0.1.0.exe,dist/Lezionify-Setup-0.1.0.exe.blockmap,dist/latest.yml,local-artifacts/installer-backups/20261021-prime-dieci,docs/product/interventi-2026-10-21.md
+
+## D-0385 — Skill personali per frontend e audit UX
+
+- **Data:** 2026-10-21
+- **Stato:** accettata
+- **Area:** skill-design
+- **Decisione:** Installare nel profilo personale Codex frontend-design da dobromirdikov/codex-frontend-design-skill revisione 983119775a936d123df9fbfbc3821bdee5bb58fd, product-design-audit e product-design-qa da openai/plugins revisione 0722921d5542fc593105c27bd52630babd8b8c2a. Conservare i supporti Product Design in .codex/skill-support/product-design fuori dalla scoperta delle skill. Adattare soltanto nomi, collegamenti locali e risoluzione dei comandi al percorso condiviso Windows. QA conserva invocazione implicita disabilitata.
+- **Motivazione:** L utente autorizza l installazione delle skill utili dopo la valutazione. Frontend-design supporta le modifiche quotidiane al renderer, audit verifica flussi con evidenze, QA confronta prototipi con riferimenti visuali. I supporti completi evitano riferimenti mancanti senza esporre ulteriori skill generiche o sovrapporre research.
+- **Impatto:** Tre cartelle personali, metadati di provenienza con hash originali e revisioni fissate. Verificati otto file originali salvo adattamenti dichiarati, nove link Markdown locali e configurazione QA; diff documentale senza errori. Nessuna dipendenza applicativa, collaudo dell app, richiesta AI, connessione a servizi, commit o push. Installazione tramite validazione e copia degli helper skill-installer con fallback Git dopo interruzioni dei download ZIP. Frontend Apache-2.0; manifest Product Design Proprietary, copie personali esterne al repository.
+- **Follow-up:** Disponibili dal turno successivo; verificare l uso su un primo intervento reale. Privilegiare leggibilita e convenzioni di Lezionify, dati sintetici e collaudi Electron. Aggiornamenti manuali con verifica di metadati e collegamenti. Guida aggiornata con criteri e prompt.
+- **File coinvolti:** docs/product/guida-skill-codex.md, C:/Users/Utente/.codex/skills/frontend-design, C:/Users/Utente/.codex/skills/product-design-audit, C:/Users/Utente/.codex/skills/product-design-qa, C:/Users/Utente/.codex/skill-support/product-design
+
+## D-0386 — Accesso Musica, revisione Memo e orari audio nella coda riordinata
+
+- **Data:** 2026-10-21
+- **Stato:** accettata
+- **Area:** pianificazione-prodotto
+- **Decisione:** Aggiungere le voci aperte 64-66: pulsante Musica raggiungibile con liste lunghe con diagnosi e scelta visiva; revisione UX dei pulsanti Memo; orari di inizio e fine audio in Info e Gestione. Su richiesta esplicita riordinare tutte le 15 attivita ancora aperte per difficolta crescente: 66,64,65,33,7,9,20,5,63,56,59,38,32,31,17. Conservare separatamente le nove attivita concluse con le posizioni del primo ordine e tutti gli identificativi stabili.
+- **Motivazione:** L utente chiede di raccogliere tre nuove idee e confrontare la semplicita di tutte le idee esistenti. Separare gli esiti dalle priorita operative evita di rifare funzioni concluse e mantiene leggibili i riferimenti storici. Le stime considerano dati disponibili, ampiezza UX, incertezza diagnostica e vincoli esterni.
+- **Impatto:** Solo documentazione: prima attivita operativa voce66, poi64 e65. Nuove caselle aperte; nessuna implementazione, dipendenza, installazione o chiamata AI. Le voci Memo gia concluse e i rinvii personali restano documentati. Orari audio distinti da orario programmato e tempo studiato, fine derivata da rendere esplicita e dati assenti da non inventare.
+- **Follow-up:** Alla prossima richiesta LISTA_ORDINE affrontare una sola voce a partire dalla66. Per Musica e Memo osservare prima il flusso con product-design-audit e applicare frontend-design alla realizzazione secondo la guida. Confermare le stime dopo diagnosi e aggiornare caselle solo dopo implementazione e verifiche.
+- **File coinvolti:** docs/product/idee-future-2026-10-13.md
+
+## D-0387 — Prime tre voci completate dopo grilling: orari, Musica e Memo
+
+- **Data:** 2026-10-21
+- **Stato:** accettata
+- **Area:** orari-musica-memo
+- **Decisione:** Implementare insieme le posizioni1-3 della coda D-0386 su richiesta diretta e conferma delle cinque proposte grilling: orari audio in sola lettura con fine calcolata e dati assenti espliciti; Musica sopra la ricerca e icona nella sidebar ridotta, sidebar sticky con scroll corsi limitato; Memo con intestazione e chiusura, navigazione gruppi separata, copia visibile e gestione gruppo nel menu nativo con Esc e clic esterno, inserimento attivita riconoscibile e layout adattabile. Conservare modifica data preesistente, tutti i dati e i flussi gia disponibili. Segnare concluse le voci66,64,65 e mantenere la33 come prossima.
+- **Motivazione:** L utente approva esplicitamente tutte le proposte e precisa che non serve una nuova modifica degli orari. Il collaudo iniziale riproduce Musica fuori schermo: grid e sidebar crescevano con la lista principale senza vincolo di altezza. La gerarchia Memo rende raggiungibili i comandi senza alterarne il significato.
+- **Impatto:** Tipi e lint superati, 657 test Vitest in50file,24Python41Node, suite Electron completa e riavvio, build e PDF reali superati. Undici nuovi test orari e scenario interface-polish con schermate sintetiche, finestre bassa e stretta, persistenza e cancellazione conservativa. Due avvii completi avevano instabilita negli scenari preesistenti Focus e menu lezioni: esplicitato evento scroll e atteso layout iniziale nei test, senza cambiare le asserzioni o il comportamento applicativo relativo. Nessuna dipendenza o chiamata AI reale, fonte personale o configurazione esterna modificata.
+- **Follow-up:** Uso e limiti in docs/product/orari-musica-memo-2026-10-21.md. Inizio derivato dai metadati del nome MP3 senza certificare convenzioni del registratore; per video inizio assegnato all importazione, fine programmata esclusa dal calcolo. Audio e trascrizioni intatti. Build aggiornata; setup precedente non rigenerato, nessuna installazione pubblicazione commit o push. Prossima voce33 non avviata.
+- **File coinvolti:** src/components/LectureRecordingTimes.tsx,src/utils/lectureRecordingTimes.ts,src/components/LectureDrawer.tsx,src/components/Sidebar.tsx,src/components/QuickCaptureOverlay.tsx,src/components/memo.css,src/hooks/useQuickCapture.ts,src/styles.css,tests/unit/lectureRecordingTimes.test.ts,tests/integration/interfacePolishScenarios.browser.tsx,tests/integration/hookRegression.browser.tsx,tests/integration/lectureListScenarios.browser.tsx,tests/integration/studyToolsScenarios.browser.tsx,tests/integration/todayScenarios.browser.tsx,tools/run_hook_regressions.cjs,tests/README.md,docs/product/idee-future-2026-10-13.md,docs/product/orari-musica-memo-2026-10-21.md,docs/README.md,STRUTTURA_PROGETTO.md
+
+## D-0388 — Installer con orari audio, accesso Musica e revisione Memo
+
+- **Data:** 2026-10-21
+- **Stato:** accettata
+- **Area:** packaging-windows
+- **Decisione:** Rigenerare su richiesta diretta il setup NSIS x64 0.1.0 dalla build D-0387 gia collaudata, con npx --no-install electron-builder --win --publish never. Conservare setup precedente, blockmap e latest.yml in local-artifacts/installer-backups/20261021-orari-musica-memo prima della sostituzione e verificarne gli hash. Consegnare il setup senza installazione o pubblicazione automatica.
+- **Motivazione:** L utente richiede l installer per utilizzare le tre modifiche appena implementate; la build e i controlli applicativi completi sono gia conclusi nella stessa sessione. Il backup conserva una versione precedente recuperabile.
+- **Impatto:** Packaging concluso con codice0. Setup190815708byte SHA256 30811b4e7ee35a54f346d9916b1db2d315bab58c61211e2beca9dfcc59fd7194. Tutti370file out identici nel pacchetto ASAR, marcatori delle tre funzioni presenti, FFmpeg e runtime offline verificati. Manifesto SHA512 e dimensione coerenti, blockmap presente, tre backup con hash identici agli originali; nessun artefatto privato incluso. Nessuna nuova modifica applicativa, dipendenza, richiesta AI, commit o push.
+- **Follow-up:** Chiudere Lezionify e avviare dist/Lezionify-Setup-0.1.0.exe. Report verification.json e backup.json nella cartella del backup; uso e limiti in docs/product/orari-musica-memo-2026-10-21.md. Nessuna altra voce del backlog avviata.
+- **File coinvolti:** dist/Lezionify-Setup-0.1.0.exe,dist/Lezionify-Setup-0.1.0.exe.blockmap,dist/latest.yml,local-artifacts/installer-backups/20261021-orari-musica-memo,docs/product/orari-musica-memo-2026-10-21.md
+
+## D-0389 — Report UX e UI con evidenze locali
+
+- **Data:** 2026-10-21
+- **Stato:** accettata
+- **Area:** ux-ui-audit
+- **Decisione:** Consegnare un audit documentale del progetto con product-design-audit e criteri frontend-design, schermate fornite e catture Electron sintetiche, priorita e limiti. Le raccomandazioni restano proposte: nessuna modifica UI o alla coda viene adottata.
+- **Motivazione:** L utente richiede analisi e report entro le17:50 del21ottobre. Separare difetti riprodotti preferenze visive e scelte di prodotto rende la revisione verificabile senza avviare implementazioni.
+- **Impatto:** Report in docs/quality con indice docs e copia HTML locale. Suite Electron completa e interface-polish passate; probe tastiera layout zoom e contrasto documentano limiti Q&A Focus Lock chat e ambito AI. Sorgenti applicativi dati personali installer dipendenze e servizi esterni invariati. Screenshot personali soltanto in local-artifacts ignorata da Git.
+- **Follow-up:** Valutare le priorita del report prima di implementare; completare NVDA e prove con utenti. La coda LISTA_ORDINE resta invariata. I probe PASS attestano l esecuzione e non la conformita accessibile.
+- **File coinvolti:** docs/quality/audit-ux-ui-2026-10-21.md,docs/README.md,local-artifacts/ux-audit-2026-10-21
+
+## D-0390 — Richieste del 22 ottobre e tredici rilievi UX nella coda per facilita
+
+- **Data:** 2026-10-22
+- **Stato:** accettata
+- **Area:** pianificazione-prodotto
+- **Decisione:** Raccogliere nove richieste distinte della lista e del riassunto Gemini nelle voci 67-75 e tutti i tredici rilievi U01-U13 del report UX nelle voci 76-88. La precisazione dell utente associa le cose dell audio al riassunto, senza una voce audio generica aggiuntiva. Riordinare su richiesta esplicita tutte le 34 attivita aperte per facilita stimata: 72,74,88,76,79,87,81,77,78,80,67,82,83,85,86,84,68,33,70,73,69,7,9,20,71,5,63,56,59,38,75,32,31,17. Conservare stati conclusi, identificativi e rinvii precedenti.
+- **Motivazione:** L utente richiede di unificare idee nuove, riassunto e interventi del report nelle liste future e LISTA_ORDINE dalla piu facile. Separare difficolta e gravita UX, diagnosi dei guasti ed estensioni di funzioni concluse evita duplicazioni e false dichiarazioni di completamento.
+- **Impatto:** Solo documentazione: 12 attivita residue e 22 nuove aperte, prima voce72 Breve Media Lunga con Breve iniziale. Richieste conservate per copia serale con frase manuale, pause rigeneranti, limite YouTube da valutare, consenso GitHub per corso, errore course-rag ask, stima studio, dizionario italiano e rendering matematico. Report con mappatura completa e criteri originali preservati; indici aggiornati. Controllate 34 posizioni consecutive, 88 identificativi stabili unici, corrispondenza dei 13 rilievi e collegamenti locali; diff senza errori. Nessuna implementazione, nuova dipendenza, installazione o chiamata AI.
+- **Follow-up:** Alla prossima invocazione LISTA_ORDINE affrontare soltanto la voce72 con la guida skill e le regole AGENTS. Concordare le soglie delle tre lunghezze quando si implementa. Per le altre voci risolvere solo allora gli orari definitivi della copia, migrazione GitHub, fonte monolingue, perimetro YouTube e alternative UX. I guasti segnalati restano da riprodurre e correggere; nessun collaudo applicativo richiesto per questa modifica documentale.
+- **File coinvolti:** docs/product/idee-future-2026-10-13.md, docs/product/attivita-future.md, docs/quality/audit-ux-ui-2026-10-21.md, docs/README.md
+
+## D-0391 — Conferma delle prime diciassette attivita e diagnosi RAG
+
+- **Data:** 2026-10-22
+- **Stato:** accettata
+- **Area:** requisiti-22-ottobre
+- **Decisione:** Implementare insieme le prime17posizioni della coda D0390 e la voce69 RAG su richiesta diretta dopo grilling. Breve sotto200parole Media200-400 Lungaoltre400; blocco copia configurabile08:00-17:30ogni giorno a ogni copia gruppo/tutto con frasi locali15-25parole confronto spazi/maiuscole tollerante. GitHub abilitato per corsi esistenti, scelta esplicita per nuovi, disabilitazione senza rimozione remota. Clic lezioni immediato rinomina menu/F2 senza doppio clic. Elabora archivio con ambito esplicito; FocusLock conserva15secondi uscita pause immediate Esc ritorno CtrlT. Memo nomenclatura unica e testi espandibili, barre compatte. In Focus conservare soltanto icona Musica esistente senza aggiungere informazioni visibili, riorganizzando il pannello al clic. Suggerimenti pausa5/15/30minuti. Autorizzati massimo4invii Gemini con dati sintetici per prova RAG. Dopo verifiche rigenerare installer con backup entro14Europe/Rome.
+- **Motivazione:** L utente conferma le proposte del grilling con correzioni esplicite su fascia copia, migrazione GitHub e assenza di distrazioni musicali in Focus. Il perimetro diretto autorizza18attivita nella stessa sessione.
+- **Impatto:** Conservare modifiche preesistenti, fonti locali, pubblicazioni remote e credenziali. Nessuna nuova dipendenza pianificata. Scadenza22ottobre2026ore14Europe/Rome con richiamo impostato. Non dichiarare risolti guasti non riprodotti o completate verifiche non eseguite.
+- **Follow-up:** Implementare diagnosi regressioni UI e gate completo; aggiornare caselle solo su esito verificato e consegnare setup senza installazione o pubblicazione automatica.
+- **File coinvolti:** docs/product/idee-future-2026-10-13.md, docs/product/interventi-2026-10-22.md, src, shared, electron, tests
+
+## D-0392 — Prime diciassette attivita e recupero RAG implementati e collaudati
+
+- **Data:** 2026-10-22
+- **Stato:** accettata
+- **Area:** qna-memo-ux-rag-publishing
+- **Decisione:** Completare le posizioni1-17 e21 della coda D0390 secondo D0391. Q&A Breve Media Lunga con istruzioni sotto200 tra200e400 oltre400, controlli semantici e bozza. Clic lezione immediato con rinomina menu/F2, Elabora archivio esplicito, FocusLock con focus confinato sfondo inerte ritorno e scroll200percento conservando dizionario CtrlT, pause con suggerimenti. Copia Memo08:00-17:30configurabile ogni giorno a ogni tentativo, frasi locali e input manuale, fuori fascia copia immediata. Memo coerente espandibile, player nel pannello senza nuovi elementi nel Focus, chat con composizione separata copertura e sezioni delle fonti. Consenso GitHub per corso con legacy abilitati, nuovi espliciti, nessuna rimozione remota, controlli prima del push e su commit locali pendenti. RAG schema JSON valido, categoria invalid_output e fallback per JSON o citazioni invalidi, errori sanitizzati e retry senza duplicati.
+- **Motivazione:** Attuare le18attivita autorizzate preservando fonti, comportamento di studio e consensi. Le regressioni riproducono l output RAG incompleto classificato unknown, la perdita della bozza al fallimento e il focus sottratto da FocusLock al portale del dizionario; i casi passano dopo le correzioni. La migrazione GitHub modifica solo il metadato raw per evitare di ricifrare credenziali all avvio.
+- **Impatto:** Gate npm run check completo superato: typecheck lint680Vitest in53file24Python41Node suite Electron con riavvio build PDF reali. Scenari dedicati ottobre22 e player scorrevole superati con immagini sintetiche ispezionate; contrasto colori interessati almeno4.5a1 nei due temi. Quattro invii Gemini reali esatti: prova completamento riuscita, una prova end-to-end non riuscita, due end-to-end successive riuscite con risposta e citazione verificata. Contatore esaurito, nessuna altra chiamata autorizzata. Nessuna dipendenza nuova o fonte personale modificata, pubblicazione GitHub reale commit push o installazione. Coda18concluse16aperte.
+- **Follow-up:** Generare setup NSIS x64 con publish never e verificare ASAR build runtime manifesto e backup in local-artifacts/installer-backups/20261022-diciassette-rag. NVDA non collaudato; il payload personale RAG fallito non era disponibile e le prove reali sono sintetiche. Prima voce residua33, nessun altra attivita avviata. Uso verifiche e limiti in docs/product/interventi-2026-10-22.md.
+- **File coinvolti:** src, shared/archive.ts, shared/courseRag.ts, electron/main/archive.ts, electron/main/archiveValidation.ts, electron/main/settings.ts, electron/main/courseRag.ts, electron/main/ai/courseRagCompletion.ts, electron/main/publishing, electron/main/index.ts, electron/preload/index.ts, tests, tools/run_hook_regressions.cjs, tools/run_course_rag_real.cjs, tools/verify_installer.cjs, docs/product/idee-future-2026-10-13.md, docs/product/interventi-2026-10-22.md, docs/product/attivita-future.md, docs/quality/audit-ux-ui-2026-10-21.md, docs/README.md, STRUTTURA_PROGETTO.md
+
+## D-0393 — Installer delle diciassette attivita UX e del recupero RAG
+
+- **Data:** 2026-10-22
+- **Stato:** accettata
+- **Area:** packaging-windows
+- **Decisione:** Generare su richiesta diretta il setup NSIS x64 0.1.0 con D0392 dopo gate completo e prova RAG finale, usando npx --no-install electron-builder --win --publish never. Conservare i tre file precedenti con hash in local-artifacts/installer-backups/20261022-diciassette-rag. Consegnare il setup senza installazione o pubblicazione automatica.
+- **Motivazione:** L utente richiede installer aggiornato dopo implementazione e test entro14Europe/Rome. Backup e confronto della build con ASAR rendono verificabile il contenuto distribuito e conservano la versione precedente.
+- **Impatto:** Packaging codice0. Setup190823255byte SHA256e46df73801fa84accb9823a121c923b1f6153aebe9579b1fbdd17f4aaca62665. Verificati372file out identici nel pacchetto, marcatori nuove funzioni, FFmpeg e runtime offline. Manifesto SHA512 dimensione blockmap e tre backup con hash coerenti. Nessun artefatto privato incluso. Il verificatore riusa asar esistente e usa separatori nativi Windows; nessuna modifica al pacchetto per correggere il controllo iniziale del percorso. Gate finale salvato in local-artifacts/interventi-2026-10-22/check-final.log. Quattro invii reali Gemini complessivi, budget esaurito; ultime due prove RAG complete positive.
+- **Follow-up:** Chiudere Lezionify e avviare dist/Lezionify-Setup-0.1.0.exe. Uso e limiti in docs/product/interventi-2026-10-22.md, verifica e backup nella cartella dedicata. NVDA non collaudato e caso personale RAG da osservare nell uso dopo aggiornamento. Prima voce residua33; nessuna altra attivita avviata. Disattivare il richiamo delle14a lavoro concluso.
+- **File coinvolti:** dist/Lezionify-Setup-0.1.0.exe, dist/Lezionify-Setup-0.1.0.exe.blockmap, dist/latest.yml, local-artifacts/installer-backups/20261022-diciassette-rag, tools/verify_installer.cjs, docs/product/interventi-2026-10-22.md, docs/README.md
+
+## D-0394 — Indice GitHub senza residui esclusi e setup definitivo delle diciotto attivita
+
+- **Data:** 2026-10-22
+- **Stato:** accettata
+- **Area:** pubblicazione-packaging
+- **Decisione:** Limitare anche l indice principale GitHub alle lezioni del lotto autorizzato e alle coppie schema trascrizione gia note sul remoto. Escludere nomi e conteggi delle cartelle rimaste solo nel clone dopo tentativi falliti. Consegnare il setup definitivo D0394 in sostituzione del primo D0393, conservato in backup.
+- **Motivazione:** La revisione finale ha riprodotto con una regressione fallita la presenza nell indice di un corso locale escluso e il conteggio di una lezione mai pubblicata. Il filtro esplicito evita di diffondere anche questi metadati, senza eliminare materiale remoto o locale.
+- **Impatto:** Regressione rossa poi verde e 91 test publishing superati. Gate finale equivalente a tutti i passaggi npm run check con Vitest maxWorkers2: typecheck lint 681 test in53file 24Python 41Node intera suite Electron riavvio build e PDF reali superati. Due worker risolvono conflitti IO temporanei Windows senza alterare timeout o asserzioni. Prova scroll Focus sincronizzata con evento e frame. Setup NSIS codice0: 190823200 byte SHA256 b41b969c05b93dffa0ea1eefae9438e85a9c5a67efed9a909aac1a70fb29129b. Verificati372file build identici ASAR, runtime FFmpeg manifesto blockmap e tre backup originali; verificati anche tre hash del setup intermedio. Nessun artefatto privato nel pacchetto.
+- **Follow-up:** Lavoro concluso prima delle14Europe/Rome. Chiudere Lezionify e avviare dist/Lezionify-Setup-0.1.0.exe. Quattro invii Gemini esauriti, nessun altro invio; ultime due prove RAG end-to-end sintetiche positive. NVDA e risposta personale RAG storica non verificati. Coda18concluse16aperte, prossima voce33, nessuna altra avviata. Report docs/product/interventi-2026-10-22.md.
+- **File coinvolti:** electron/main/publishing/readmeGenerator.ts, electron/main/publishing/publishService.ts, tests/unit/publishing.test.ts, tests/integration/hookRegression.browser.tsx, src/components/LectureList.tsx, docs/product/interventi-2026-10-22.md, STRUTTURA_PROGETTO.md, dist/Lezionify-Setup-0.1.0.exe, tools/verify_installer.cjs, local-artifacts/installer-backups/20261022-diciassette-rag
+
+## D-0395 — Recupero bounded della domanda RAG e confronto verificato delle lezioni RL
+
+- **Data:** 2026-10-22
+- **Stato:** accettata
+- **Area:** rag-recupero-pertinenza
+- **Decisione:** Su richiesta di maggiore robustezza mantenere la domanda attiva con fino a tre giri dei modelli, backoff crescente e limite condiviso12invii10minuti inclusi approfondimenti. Prima risposta60secondi poi90 e inattivita90; limite tentativo ridotto alla deadline residua. Stati visibili, annullamento durante attese, bozza conservata e Riprova domanda senza prefisso IPC. Politica Gemini predefinita resta normalmente6tentativi. Recupero terminale fermo per permessi annullamento e quota giornaliera. Aggiungere metadati derivati ordinali teorici e data, ricerca comparativa bilanciata per lezione e tipo, normalizzazione Q_pi LaTeX e parlato, priorita al simbolo e filtro delle altre lezioni nei confronti. Validare una citazione per ciascuna lezione richiesta disponibile negli estratti.
+- **Motivazione:** Riprodotta offline la chiusura dopo un solo giro di timeout503 anche quando il giro successivo avrebbe risposto. La prova reale richiesta successivamente dall utente ha evidenziato anche risposte completate ma confronto incompleto o deviato verso epsilon greedy. L utente richiede espressamente questa verifica sulle fonti RL prima dell installer: la richiesta autorizza la domanda e gli estratti reali del solo corso RL, distinta dal precedente collaudo sintetico esaurito.
+- **Impatto:** Typecheck lint695Vitest53file e build finali superati. Regressioni per budget assoluto condiviso deadline annullamento terminali attese pertinenza simbolica equilibrio del confronto e copertura citazioni. Scenario Electron recupero stop bozza e retry positivo.17invii fisici reali cumulativi in4prove della stessa domanda RL con contatore locale e limite18. Prime3prove non accettate come verifica qualitativa sufficiente. Quarta prova dopo3errori transitori completata al quarto invio, tre citazioni5/6/7 lette e confronto principale supportato: Q gia definita, greedy argmax Q gia esplicito, poi ruolo senza modello da stimare tramite esperienza. Profili di prova separati senza scritture alle conversazioni originali; payload e risposte privati solo in local-artifacts ignorato, nessuna chiave nei report o log. Nessuna dipendenza nuova.
+- **Follow-up:** L installer precedente e stato fermato su richiesta prima della prova qualitativa; rigenerare soltanto ora con build verificata e backup20261022-rag-recovery. Non fare altri invii reali non necessari. Non si garantisce disponibilita Google o correttezza di ogni frase futura: leggere criticamente assoluti e distinguere miglioramento da ottimalita. Uso e prove in docs/quality/rag-recupero-2026-10-22.md. Coda invariata18concluse16aperte, nessun altra voce avviata.
+- **File coinvolti:** electron/main/ai/geminiRequestManager.ts, electron/main/ai/courseRagCompletion.ts, electron/main/courseRag.ts, electron/main/courseRagIndex.ts, electron/main/archive.ts, electron/main/index.ts, shared/courseRag.ts, src/components/CourseChat.tsx, tests/unit/courseRag.test.ts, tests/unit/courseRagCompletion.test.ts, tests/integration/courseChatScenarios.browser.tsx, tools/verify_installer.cjs, docs/quality/rag-recupero-2026-10-22.md, docs/product/interventi-2026-10-22.md, docs/product/idee-future-2026-10-13.md, STRUTTURA_PROGETTO.md
+
+## D-0396 — Setup finale dopo verifica della domanda RL reale
+
+- **Data:** 2026-10-22
+- **Stato:** accettata
+- **Area:** packaging-windows
+- **Decisione:** Generare e consegnare il setup NSIS x64 aggiornato con D0395 solo dopo risposta RL riuscita e lettura delle citazioni5/6/7, come richiesto dall utente. Conservare il precedente setupD0394 e manifesto e blockmap in20261022-rag-recovery. Non installare o pubblicare automaticamente.
+- **Motivazione:** L utente richiede la verifica di una domanda concreta prima del nuovo installer. Il primo packaging e stato interrotto; il setup consegnato viene dalla build successiva alla verifica qualitativa e ai controlli finali.
+- **Impatto:** Gate finale typecheck lint695Vitest53file e build superati. Scenario Electron corso con recupero attesa interruzione bozza retry positivo. Packaging codice0. Setup190825697byte SHA256207481346116f2a84424f669ad8dae7d9f621fd3606df55bb354aa090e787748. Verificati372file build identici ASAR, nuove funzioni, FFmpeg runtime offline SHA512 manifesto blockmap e tre backup con hash. Nessun artefatto personale incluso. Prova richiestaRL17invii fisici cumulativi, quarta risposta supportata da tre citazioni lette; nessun altro invio necessario o effettuato.
+- **Follow-up:** Chiudere Lezionify e avviare dist/Lezionify-Setup-0.1.0.exe per usare il recupero. Report docs/quality/rag-recupero-2026-10-22.md e risposta privata locale in local-artifacts/interventi-2026-10-22/rl-question/answer.md. Il servizio Google puo restare indisponibile oltre i limiti e ogni risposta va letta criticamente; miglioramento non equivale sempre a ottimalita. Nessun altra voce della coda avviata.
+- **File coinvolti:** dist/Lezionify-Setup-0.1.0.exe, dist/Lezionify-Setup-0.1.0.exe.blockmap, dist/latest.yml, local-artifacts/installer-backups/20261022-rag-recovery, docs/quality/rag-recupero-2026-10-22.md, docs/product/interventi-2026-10-22.md, docs/README.md, tools/verify_installer.cjs
+
+## D-0397 — Recupero RAG strutturato e semantico locale
+
+- **Data:** 2026-10-22
+- **Stato:** accettata
+- **Area:** rag-architettura
+- **Decisione:** Attuare su richiesta diretta il piano docs/product/rag-implementazione-2026-10-22.md entro le17Europe/Rome. Separare piano della domanda e vincoli sulle lezioni; riselezionare il contesto a ogni strumento entro24passaggi32000caratteri; conservare sezioni e blocchi strutturali e rendere recuperabile il vicinato. Esporre provenienza e copertura, distinguendo derivazioni della stessa lezione da conferme indipendenti. Separare corpus immutabile content-addressed da conversazioni con migrazione compatibile e riusare indice MiniSearch aggiornato per fonte. Aggiungere ricerca ibrida con embedding CPU locali multilingue e fusione dei ranghi, modello opzionale scaricato esplicitamente e cache dei vettori per contenuto e revisione.
+- **Motivazione:** L analisi e le prove riproducono recupero fuori lezione, confronti vuoti e risultati strumenti non presenti nel prompt saturo. Il modello locale aggiunge parafrasi e ricerche multilingui senza inviare testi a un provider. La dipendenza @huggingface/transformers4.3.1 risolve questo bisogno concreto, con runtimeONNX isolato in worker e modello Xenova/paraphrase-multilingual-MiniLM-L12-v2q8 revisione2c4055b12046f11709e9df2c122e59ffbdc2f900. Il wrapper carica esplicitamente il tokenizer locale per evitare la scoperta dei file main ignorando la revisione nel runtime4.3.1.
+- **Impatto:** Nuova dipendenza esatta e lockfile; worker e configurazione ASAR per librerie native. Download pubblico circa135MB soltanto esplicito; inferenza senza rete e fallback testuale su errore o timeout. Corpus e citazioni storiche conservati; nessuna fonte originale modificata. Benchmark sintetico22casi e collaudo locale autorizzato su4corsi33lezioni66fonti1602passaggi. Test correnti37RAG positivi; consuntivo finale separato dopo gate.
+- **Follow-up:** Concludere gate e documentare risultati e limiti. Nessun invio personale o nuovo benchmark Gemini; nessun installer richiesto in questa attivita. Misurare in seguito correttezza e completezza delle risposte su un insieme annotato piu ampio; citazioni valide non certificano supporto semantico.
+- **File coinvolti:** electron/main/courseRag.ts, electron/main/courseRagIndex.ts, electron/main/courseRagQuery.ts, electron/main/courseRagContext.ts, electron/main/courseRagSemantic.ts, resources/course-rag/embedding-worker.cjs, shared/courseRag.ts, src/components/CourseChat.tsx, electron/main/index.ts, electron/preload/index.ts, electron/main/archive.ts, electron.vite.config.ts, electron-builder.yml, eslint.config.js, package.json, package-lock.json, tests, tools, docs/product/rag-implementazione-2026-10-22.md
+
+## D-0398 — Evoluzione RAG verificata entro le17
+
+- **Data:** 2026-10-22
+- **Stato:** accettata
+- **Area:** rag-collaudo
+- **Decisione:** Concludere la richiesta con query strutturata, contesto sostituibile, passaggi gerarchici, provenienza e copertura visibili, corpus separato, indice incrementale e ricerca ibrida locale opzionale D0397. Conservare benchmark e comandi riproducibili nel report docs/product/rag-implementazione-2026-10-22.md. Nessun installer o invio Gemini in questa attivita.
+- **Motivazione:** I difetti riprodotti nell analisi sono coperti da regressioni. Il modello reale aggiunge recupero multilingue senza servizi remoti e il test a freddo ha consentito di correggere la scoperta del tokenizer. Gli esiti sono separati fra contratti software, recupero sintetico, fonti personali e correttezza delle risposte future.
+- **Impatto:** 37RAG superati. Suite completa700di703nel sandbox con3blocchi ambientali;102di102nelle due suite rieseguite fuori sandbox coprono tutti i3casi. Typecheck lint senza avvisi build24Python41Node suite Electron completa con riavvio e PDF reali passati. Embedding reali Node ed Electron offline passati.22casi benchmark: recall sui20con evidenza0.85lessicale1.00ibrida;MRR0.7821e0.9375;due vincoli impossibili rispettati. Prova personale autorizzata4corsi33lezioni66fonti1602passaggi, coperturaRL5/6/7; fonti immutate e nessun documento online. Risultati privati solo local-artifacts. Nessuna segnalazione npm audit per nuove famiglie runtime.
+- **Follow-up:** Il setup D0396 non contiene queste modifiche; sorgenti e build sono aggiornati. Scaricare esplicitamente il modello nell app per attivare ricerca ibrida nel profilo: il modello di collaudo resta separato. Packaging e test ASAR dedicati non eseguiti. Nessuna garanzia di correttezza semantica delle singole affermazioni; proseguire con benchmark annotato delle risposte. Nessuna nuova voce backlog avviata.
+- **File coinvolti:** docs/product/rag-implementazione-2026-10-22.md, STRUTTURA_PROGETTO.md, DECISIONI.md, tests/unit/courseRagArchitecture.test.ts, tests/fixtures/courseRagBenchmark.ts, tests/integration/courseRagBenchmark.ts, tests/integration/courseRagPrivateLocal.ts, tests/integration/courseSemanticLocal.ts, tools/benchmark_course_rag.mjs, tools/run_course_rag_private_local.mjs, tools/run_course_semantic_local.mjs, electron, shared, src/components/CourseChat.tsx, resources/course-rag/embedding-worker.cjs, package.json, package-lock.json
+
+## D-0399 — Lavori residui RAG e qualita dei collaudi in coda
+
+- **Data:** 2026-10-22
+- **Stato:** accettata
+- **Area:** backlog-rag
+- **Decisione:** Su richiesta diretta aggiungere dieci attivita aperte89-98 alle posizioni35-44 della coda operativa, conservando posizioni1-34 e prima voce aperta33. Registrare benchmark rappresentativo con evidenze annotate e casi negativi, qualita end-to-end delle risposte, supporto delle affermazioni, ranking e astensione, indice preparabile e riprendibile, cache e revisioni, PDF complessi e OCR da valutare, numerazione stabile delle lezioni, robustezza e CI offline, installerWindowsASAR. Ogni voce ha criteri di completamento e rimandi alla base D0397-D0398.
+- **Motivazione:** Trasformare i limiti espliciti del RAG e del benchmark in lavoro concreto riprendibile senza duplicare funzioni gia implementate, riaprire voci concluse o avviare nuove implementazioni. Separare qualita del recupero, correttezza delle risposte, robustezza operativa e distribuzione reale.
+- **Impatto:** Coda44attivita con18concluse26aperte. Aggiornati elenco storico con rimando alla coda unica e report RAG con rinvio ai follow-up. Nessun cambiamento al codice, dipendenza, modello, installazione o chiamata AI. Fonti e annotazioni personali restano in artefatti locali; le nuove voci non costituiscono approvazione preventiva di servizi o dipendenze.
+- **Follow-up:** Alla prossima invocazione LISTA_ORDINE seguire ancora la prima voce aperta33. Le voci RAG verranno affrontate nell ordine aggiunto oppure su richiesta diretta dell utente, con verifiche prima di chiudere le caselle.
+- **File coinvolti:** docs/product/idee-future-2026-10-13.md, docs/product/attivita-future.md, docs/product/rag-implementazione-2026-10-22.md, DECISIONI.md
+
+## D-0400 — Completamento diretto dei residui RAG con indice preparabile e controllo del supporto
+
+- **Data:** 2026-10-23
+- **Stato:** accettata
+- **Area:** rag-affidabilita
+- **Decisione:** Su richiesta diretta del 23 ottobre lavorare sulle voci89-98 entro le14Europe/Rome, senza avviare altre voci. Aggiungere indice locale esplicito con checkpoint e ripresa, priorita alle domande, cache limitata e ricostruibile, numerazione RAG persistente con numero ufficiale esplicito, controllo AI fallibile delle affermazioni con una correzione entro budget condiviso, benchmark di calibrazione separato dalla verifica, estrazione prudente PDF e finestre di token complete. Generare e verificare installer in profilo isolato.
+- **Motivazione:** L utente autorizza tutte le fonti dei corsi per prove Gemini, massimo60invii fisici con gestore quote e rotazione esistente, e installer. Il primo indice non deve dipendere da domande ripetute e le citazioni esistenti non dimostrano il supporto delle affermazioni. Riprodotto rischio di archivio vuoto quando manca il corpus: la lettura deve conservare e segnalare.
+- **Impatto:** Nessuna nuova dipendenza. Fonti originali e profilo personale conservati. Download modello resta esplicito. Test API e risultati privati in local-artifacts con contatore persistente; nessuna chiave nei log. Il controllo AI usa il medesimo limite12invii10minuti della domanda ed espone indisponibilita e incertezza.
+- **Follow-up:** Concludere collaudi, leggere risposte e citazioni, verificare ASAR reale e aggiornare soltanto le caselle soddisfatte. Registrare consuntivo distinto con limiti residui e invii effettivi.
+- **File coinvolti:** shared/courseGrounding.ts, shared/courseRag.ts, electron/main/courseRag.ts, electron/main/courseRagSemantic.ts, electron/main/courseRagGrounding.ts, electron/main/courseRagIndex.ts, electron/main/ai/courseRagCompletion.ts, src/components/CourseChat.tsx, resources/course-rag, tests, tools, .github/workflows/ci.yml
+
+## D-0401 — Annullamento ONNX cooperativo e controlli parziali delle affermazioni
+
+- **Data:** 2026-10-23
+- **Stato:** accettata
+- **Area:** rag-robustezza
+- **Decisione:** Sostituire terminate durante inferenza con annullamento dell attesa e conclusione naturale del lotto nativo. Serializzare messaggi del worker e chiusura, negare rete a fetch http e https durante embed, usare finestre384token e pooling normalizzato versionato. Limitare ogni auditAI a3tentativi90secondi nel budget condiviso12invii10minuti; collegare citazioni di frase tollerando soltanto formattazione, mostrare omissioni e avvisi locali su recap e assenza globale, rifiutare ID inventati e caratteri di controllo. Esporre fine indice soltanto dopo persistenza e validare dati salvati prima di lettura o riscrittura. Non integrare OCR automatico.
+- **Motivazione:** Due chiusure native riprodotte offline con8passaggi sono causate dalla terminazione del worker durante ONNX; stessa prova positiva dopo il cambiamento. I replay reali mostrano quote Markdown e delimitatori LaTeX rimossi dal revisore, oltre a ID inventati da rifiutare. Un recap non prova la prima introduzione e una ricerca parziale non prova assenza nell intero corso. Il pilota OCR locale altera un simbolo in un campione stampato.
+- **Impatto:** Nessuna nuova dipendenza o modello. Worker RAG e runtime nativi estratti da ASAR. Cache bounded e riprendibile, priorita alle domande, pulizia derivazioni con backup e citazioni conservati. Modello opzionale con download esplicito. Test rosso poi verde per crash e messaggio persistito malformato; prove di disco pieno simulato, priorita, modifiche fonte, conservazione revisioni e PDF multicolonna reali. Il controllo AI resta fallibile e quello locale non e una certificazione semantica.
+- **Follow-up:** Concludere gate e verificatore statico del pacchetto gia positivo nel runtime, conservare voci90-92 aperte per giudizi umani e calibrazione residua. Non fare altri invii API:59di60avviati, risultati e annotazioni privati locali, nessuna chiave stampata.
+- **File coinvolti:** electron/main/courseRag.ts, electron/main/courseRagSemantic.ts, electron/main/courseRagIndex.ts, electron/main/courseRagGrounding.ts, electron/main/courseRagPackageCheck.ts, electron/main/ai/courseRagCompletion.ts, electron/main/ai/geminiTransport.ts, shared/courseGrounding.ts, shared/courseAnswerSections.ts, shared/courseRag.ts, src/components/CourseChat.tsx, resources/course-rag, electron-builder.yml, tests, tools, docs/product/rag-completamento-2026-10-23.md
+
+## D-0402 — Consegna RAG verificata con sette voci concluse e tre validazioni qualitative aperte
+
+- **Data:** 2026-10-23
+- **Stato:** accettata
+- **Area:** rag-collaudo-distribuzione
+- **Decisione:** Concludere la richiesta diretta con indice esplicito riprendibile, cache e revisioni sicure, riferimenti stabili, controlli AI e locali fallibili, benchmark esteso e setupWindows verificato. Chiudere voci89e93-98 sulla base dei collaudi; lasciare90-92parziali per giudizi umani, conflitti reali annotati e ulteriore ranking astensione e ridondanza. Conservare ordine e prima voce33 della coda.
+- **Motivazione:** Separare implementazione e verifica meccanica dalla correttezza delle risposte. Le prove reali mostrano sia risposte utili sia limiti di ipotesi, generalizzazione, cronologia e assenza globale. La presenza di un giudice AI non sostituisce annotazioni umane. Non dichiarare completata una certificazione qualitativa non eseguita.
+- **Impatto:** Gate724Vitest56file positivo fuori sandbox a packaging fermo; typecheck lint build24Python41Node suiteReactElectron completa riavvio PDF reali e scenarioRAG mirato passati. Benchmark33casi8calibrazione25verifica: precisioneibrida0.551a0.650 recall1MRR0.95stabili; negativi3su5ancora con candidati affini. Base22casi recall1MRR0.9375. Corpus personale4corsi66fonti2205passaggi completato e originali immutati.59di60invii fisici inclusi2interrotti,12risposte annotate preliminarmente e4di4prove del giudice; replay3collegabili e1IDinventato correttamente respinto. Nessun altro invio necessario.
+- **Follow-up:** Setup294211309byteSHA2562a2d554adcc50ac05f2531e2797da2caf957af228fb9c2877aa7b642aa8499e4. Verificati374filebuildidenticiASAR manifesto e3backup. Runtime finale in profilo temporaneo: inferenza offline fredda1396mscalda10ms, fallback modello assente, vettori corrotti, ripristino pesi, migrazione citazioni ePDF passati; modello corrotto rifiutato con controllo negativo. Non installato o pubblicato. Uso e limiti in docs/product/rag-completamento-2026-10-23.md; giudizi umani da aggiungere al materiale privato pronto. Preparare esplicitamente modello e indice nel pannello Fonti dopo aggiornamento.
+- **File coinvolti:** docs/product/rag-completamento-2026-10-23.md, docs/product/idee-future-2026-10-13.md, docs/product/attivita-future.md, docs/README.md, STRUTTURA_PROGETTO.md, tests/README.md, dist/Lezionify-Setup-0.1.0.exe, tools/verify_installer.cjs, tools/check_packaged_rag.mjs, local-artifacts/installer-backups/20261023-rag-completion, local-artifacts/rag-completion-2026-10-23, local-artifacts/rag-package-2026-10-23
+
+## D-0403 — Setup RAG definitivo con download pubblico ASAR e recupero del backup validati
+
+- **Data:** 2026-10-23
+- **Stato:** accettata
+- **Area:** packaging-rag-recupero
+- **Decisione:** Sostituire soltanto il pacchetto intermedio indicato in D0402 con il setup definitivo che include il recupero da backup valido quando manca il file principale. Validare anche il download pubblico esplicito dal vero pacchetto in profilo temporaneo vuoto, seguito da inferenza con rete negata. Il recupero legge e valida il backup senza ripristini fuori dal mutex; la successiva scrittura conserva lo storico e ripristina i metadati. Nessuna installazione o pubblicazione automatica.
+- **Motivazione:** Il controllo finale ha riprodotto una chat vuota nonostante un backup valido: regressione rossa poi verde. Il requisito98 richiede anche il download dal pacchetto, distinto dalla sola inferenza con una copia dei pesi. Il nuovo controllo CLI esplicito scarica soltanto pesi pubblici e non legge credenziali o documenti personali.
+- **Impatto:** 725Vitest56file passati a packaging fermo, typecheck lint senza avvisi e build positivi. Setup294212024byteSHA2563809e2e37b66b25fac190ea8d066c5d59eff40daa6e98da826c2a3fab85f84c5. Verificati374file build identici ASAR, manifestoSHA512 blockmap e3backup. Stesso ASARd7fa76069f5fbbb162d72c6c88c80fe0589d8e7ef9b7871e4599412173c2c723 per download pubblico riuscito, controllo negativo del tokenizer corrotto e controllo positivo completo: inferenza fredda1188mscalda8ms, fallback modello assente, cache corrotta, ripristino, migrazione citazioni ePDF. Nessun dato personale nel pacchetto o nel download.
+- **Follow-up:** D0402 resta valido per implementazione benchmark e limiti; il suo hash setup e solo intermedio e viene sostituito dal presente. Nessun ulteriore invio Gemini:59di60totali. Allineare 89e93-98comeconcluse e90-92parziali, coda25concluse19aperte prima33. Uso in docs/product/rag-completamento-2026-10-23.md. Chiudere Lezionify e avviare il setup; preparare esplicitamente modello e indice dalle Fonti. Profili e prove personali conservati in artefatti locali ignorati.
+- **File coinvolti:** electron/main/courseRag.ts, electron/main/courseRagPackageCheck.ts, electron/main/index.ts, tests/unit/courseRagMaintenance.test.ts, tools/check_packaged_rag.mjs, tools/verify_installer.cjs, dist/Lezionify-Setup-0.1.0.exe, dist/Lezionify-Setup-0.1.0.exe.blockmap, dist/latest.yml, local-artifacts/rag-package-2026-10-23, local-artifacts/installer-backups/20261023-rag-completion, docs/product/rag-completamento-2026-10-23.md
+
+## D-0404 — Uscita Focus dopo cinque minuti, traduzione contestuale e risposte Spotify
+
+- **Data:** 2026-10-23
+- **Stato:** accettata
+- **Area:** studio-traduzione-musica
+- **Decisione:** Autorizzati e avviati gli interventi 99-104 richiesti direttamente: uscita immediata nei primi cinque minuti di ogni ingresso Focus, Ctrl+T sulla selezione con lingua della dispensa e apertura prima del lavoro, fallback Bergamot per parole mancanti, supplemento collusion/collusione, rimozione testo pausa scaduta, gestione successi Spotify senza JSON.
+- **Motivazione:** Le visite brevi non devono subire attrito; la selezione e la lingua sono gia disponibili localmente. Riprodotto errore Spotify con successo HTTP 200 vuoto anche senza suoni: sette regressioni prima rosse e poi verdi. Collusion assente nei dati reali; precedente lacuna trascrivere gia documentata.
+- **Impatto:** Nessuna nuova dipendenza o chiamata Gemini; traduzione resta offline con modelli esplicitamente installati. Dizionari integrati con coppia verificata e provenienza, senza copiare definizioni. Installer rigenerato e verificato in profilo isolato a lavoro concluso.
+- **Follow-up:** Completare regressioni temporali e Ctrl+T, suite e verifica pacchetto; riportare separatamente il limite del collaudo Spotify con account reale.
+- **File coinvolti:** src/hooks/useStudyTracker.ts, src/hooks/useDictionaryShortcut.ts, src/components/DictionaryOverlay.tsx, src/components/LectureDrawer.tsx, src/App.tsx, src/components/PauseTimerOverlay.tsx, electron/main/spotify.ts, tools/build_dictionary.py, public/dictionaries/eng-ita.json, public/dictionaries/ita-eng.json, tests/unit/spotify.test.ts, tests/unit/dictionary.test.ts, docs/product/idee-future-2026-10-13.md
+
+## D-0405 — Concluse voci 99-104 e installer finale dopo il RAG
+
+- **Data:** 2026-10-23
+- **Stato:** accettata
+- **Area:** collaudo-distribuzione
+- **Decisione:** Completati gli interventi D-0404 e i relativi collaudi. Pacchetto finale dist/Lezionify-Setup-0.1.0.exe: 294213454 byte, SHA256 1b6edf310a21ed746b0ddcb5a461524a76d8e6ec41ed72c1a6e73df0bac633ed. Chiuse le voci 99-104 nella lista unica, senza avviare le altre aperte.
+- **Motivazione:** 734 test Vitest in 56 file, typecheck e lint puliti, scenari React/Electron completi e ripresa dopo riavvio superati. Soglia Focus a 299999 e 300000 ms, reset al rientro, Ctrl+T nelle due lingue, fallback con suggerimenti e quattro prove Bergamot WASM reali. Il difetto Spotify e riprodotto con successo 200 vuoto senza audio; play/pausa testati anche con un vero loop Web Audio sintetico.
+- **Impatto:** Installer verificato senza eseguirlo: otto componenti estratti dal NSIS identici al runtime, 372 file della build confrontati, manifest e tre file di backup verificati. RAG nel nuovo eseguibile supera modello assente, download pubblico esplicito, inferenza senza rete, cache corrotta, ripristino, migrazione citazioni e PDF. Nessun nuovo invio Gemini; resta 59 su 60 per il precedente lavoro. Nessuna pubblicazione o installazione sul profilo personale.
+- **Follow-up:** Limite esplicito: nessuna cattura HTTP della sessione Spotify personale, account simulato nel collaudo combinato. Il modello offline richiede installazione esplicita e puo sbagliare termini. Le voci RAG 90-92 restano parziali; prima voce aperta della coda resta 33. Istruzioni e hash nel report focus-traduttore-spotify-2026-10-23.md.
+- **File coinvolti:** docs/product/focus-traduttore-spotify-2026-10-23.md, docs/product/idee-future-2026-10-13.md, docs/product/rag-completamento-2026-10-23.md, STRUTTURA_PROGETTO.md, tests/README.md, tests/integration/hookRegression.browser.tsx, tests/integration/dictionaryScenarios.browser.tsx, tests/integration/musicTranslationScenarios.browser.tsx, tools/run_offline_translation_regressions.cjs, dist/Lezionify-Setup-0.1.0.exe, local-artifacts/installer-backups/20261023-focus-traduttore-spotify/verification.json, local-artifacts/rag-package-2026-10-23
+
+## D-0406 — Domande realistiche, copertura tra lezioni e obblighi di risposta
+
+- **Data:** 2026-10-23
+- **Stato:** accettata
+- **Area:** rag-studio
+- **Decisione:** Usare gli otto esempi dell utente per estendere benchmark e collaudi. Le richieste esplicite sul corso intero prevalgono sul vincolo di lezione ereditato dallo storico, conservando i vincoli numerici espliciti correnti. Nel recupero trasversale distribuire prima i risultati tra lezioni; per attribuzioni al docente preferire una fonte originale nella stessa lezione. Aggiungere regole per esame, dimostrazioni da studiare, esercizi generati e cambiamenti delle ipotesi. Allineare prompt e catalogo alla numerazione stabile o ufficiale gia implementata.
+- **Motivazione:** Due regressioni prima rosse: richiesta trasversale vincolata erroneamente alla lezione 3 precedente, e dodici dispense della stessa lezione che escludono otto originali di lezioni diverse. Le domande su obblighi d esame non sono risolte dalla sola presenza di una spiegazione matematica; gli esercizi nuovi sono derivazioni.
+- **Impatto:** Nessuna dipendenza o chiamata AI aggiuntiva obbligatoria. Test offline su fixture pubbliche sintetiche e fonti locali gia autorizzate, con risultati personali soltanto negli artefatti ignorati. Nuovo installer necessario per includere le correzioni RAG successive a D-0405.
+- **Follow-up:** Misurare recupero sugli otto tipi di domanda e dichiarare il limite: non sono valutazioni umane delle risposte generate. Conservare stato parziale 90-92 e tetto complessivo di 60 invii Gemini, attualmente 59. Rigenerare e verificare il setup a codice congelato.
+- **File coinvolti:** electron/main/courseRagQuery.ts, electron/main/courseRagIndex.ts, electron/main/courseRag.ts, electron/main/courseRagGrounding.ts, shared/courseRag.ts, tests/unit/courseRagArchitecture.test.ts, tests/fixtures/courseRagBenchmark.ts, tests/integration/courseRagBenchmark.ts, tests/integration/courseRagPrivateLocal.ts, tools/run_course_rag_private_local.mjs, docs/product/rag-completamento-2026-10-23.md
+
+## D-0407 — Domande di studio collaudate e installer conclusivo
+
+- **Data:** 2026-10-23
+- **Stato:** accettata
+- **Area:** rag-collaudo-distribuzione
+- **Decisione:** Completata la ripresa D-0406 sugli otto esempi dell utente. Integrati recupero trasversale, vincoli correnti, passaggi originali bilingui sulle modalita di esame, regole di risposta per obblighi ed esercizi generati, avvisi mai parlato e numerazione nel prompt. Setup conclusivo dist/Lezionify-Setup-0.1.0.exe: 294215067 byte, SHA256 ab37b1cbc4fcd58f353800038025917d1c330f27e5d0bdcf26d5e2262bc8327e.
+- **Motivazione:** Cinque nuove regressioni e suite completa 739 test in 56 file, typecheck e lint puliti, chat RAG collaudata in Electron. Benchmark 8 nuovi casi e 22 precedenti con recall@8 1 e MRR@8 0.9375. Trentadue varianti di recupero su quattro corsi, 33 lezioni, 66 fonti, 2205 passaggi. Il conteggio iniziale delle menzioni di esame era soltanto italiano: il controllo bilingue corretto trovava gia una menzione originale exam in ciascun corso, senza attribuire a tutte le prove reali il difetto sintetico.
+- **Impatto:** Nessun nuovo invio Gemini: 59 di 60. Installer include anche D-0404/D-0405 e conserva il precedente in backup. Verificati 372 file build, manifesto, blockmap, tre file backup e otto componenti estratti dal NSIS; nessun installer eseguito o pubblicato. Runtime finale in profili temporanei supera download pubblico esplicito, inferenza senza rete, cache fredda e calda, modello assente o corrotto, recupero vettori, ripristino, migrazione citazioni e worker PDF.
+- **Follow-up:** Le prove nuove misurano recupero e contratti software, non certificano risposte generate. Restano parziali 90-92 e prima voce aperta 33; nessuna attivita estranea avviata. I riferimenti temporali ambigui richiedono chiarimento. Limiti e impronta nel report rag-domande-studio-2026-10-23.md; chiudere l app prima di installare il setup.
+- **File coinvolti:** electron/main/courseRag.ts, electron/main/courseRagQuery.ts, electron/main/courseRagIndex.ts, electron/main/courseRagGrounding.ts, shared/courseRag.ts, tests/unit/courseRagArchitecture.test.ts, tests/unit/courseRagMaintenance.test.ts, tests/fixtures/courseRagBenchmark.ts, tests/integration/courseRagBenchmark.ts, tests/integration/courseRagPrivateLocal.ts, tools/run_course_rag_private_local.mjs, docs/product/rag-domande-studio-2026-10-23.md, docs/product/idee-future-2026-10-13.md, STRUTTURA_PROGETTO.md, tests/README.md, dist/Lezionify-Setup-0.1.0.exe, local-artifacts/installer-backups/20261023-rag-domande-studio/verification.json
+
+## D-0408 — Allineamento GitHub allo snapshot locale del 25 ottobre
+
+- **Data:** 2026-10-25
+- **Stato:** accettata
+- **Area:** pubblicazione-github
+- **Decisione:** Su richiesta diretta pubblicare su main lo snapshot locale con gli interventi D-0379-D-0407, i test e la documentazione. Conservare esclusi dati personali, credenziali, build e installer; nessuna release binaria o chiamata AI.
+- **Motivazione:** Il ramo locale e quello GitHub condividono la base 3e6cd69 del 20 ottobre, ma 85 file modificati e 80 nuovi file non sono ancora pubblicati. Rendere disponibile e riproducibile lo sviluppo locale autorizzato.
+- **Impatto:** Scansione candidati senza credenziali rilevate. npm run check completo passato fuori sandbox: 739 Vitest in 56 file, 24 Python, 41 Node, scenari Electron e riavvio, typecheck, lint, build e PDF reali. Gate RAG pubblico offline passato; nessun aggiornamento di dipendenze per la pubblicazione.
+- **Follow-up:** Verificare hash remoto dopo push e CI Windows sul nuovo commit. Restano aperti i limiti qualitativi RAG 90-92 e gli altri limiti documentati. Il primo tentativo sandbox si e fermato prima dei test per EPERM sulla cache Vitest.
+- **File coinvolti:** DECISIONI.md, STRUTTURA_PROGETTO.md, docs/README.md, docs/quality/pubblicazione-github-2026-10-25.md, sorgenti e test dello snapshot D-0379-D-0407

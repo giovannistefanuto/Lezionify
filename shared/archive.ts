@@ -106,6 +106,8 @@ export interface CourseTimeSlot {
 }
 
 export interface CourseDefinition {
+  /** Explicit choice for new courses; legacy courses retain their prior publication behavior. */
+  publishToGithub?: boolean
   code: string // Identificativo/Sigla univoca (es. "Sistemi Distribuiti")
   name?: string // Nome esteso (opzionale)
   cfu: number // Crediti Formativi Universitari (es. 6, 9, 12)
@@ -160,6 +162,8 @@ export interface AppSettings {
   autoRotateOnQuota: boolean
   model: GeminiModel
   courses?: Record<string, CourseDefinition>
+  /** One-time snapshot: only these unconfigured legacy courses may publish without a new choice. */
+  legacyPublishingCourseCodes?: string[]
   /** Corsi esclusi dalle liste attive; assente nelle impostazioni precedenti. */
   archivedCourseCodes?: string[]
   courseConfigs?: Record<string, CourseConfig>
@@ -428,6 +432,7 @@ export type StudySessionMode =
   'focus' | 'reading' | 'quiz' | 'flashcard' | 'qna' | 'manual'
 
 export interface StudySession {
+  corrections?: Array<{ seconds: number; createdAt: string }>
   id: string
   lectureId: string | null
   courseCode: string | null
@@ -678,11 +683,15 @@ export interface ArchiveApi extends CourseRagApi {
   generateQnaResponse: (
     lectureId: string,
     thread: QnaThread,
-    useFullContext: boolean
+    useFullContext: boolean,
+    includeOtherQna?: boolean,
+    responseLength?: 'brief' | 'medium' | 'long'
   ) => Promise<{ success: boolean; text?: string; error?: string }>
   saveStudySession: (session: StudySession) => Promise<void>
   getLectureStudySeconds: (lectureId: string, excludedSessionId: string) => Promise<number>
   getStudyAnalytics: () => Promise<StudyAnalytics>
+  getStudyTimeRemovalTargets: () => Promise<import('./studyCorrections').StudyTimeRemovalTarget[]>
+  removeStudyTime: (targetId: string, minutes: number) => Promise<void>
   addManualStudyTime: (
     courseCode: string,
     minutes: number,
@@ -718,6 +727,7 @@ export interface ArchiveApi extends CourseRagApi {
     lectureId: string,
     highlights: LectureHighlight[]
   ) => Promise<void>
+  getBatteryStatus: () => Promise<import('./battery').BatteryStatus>
   getAppLogs: () => Promise<AppLogEntry[]>
   getAppLogDay: (day?: string) => Promise<import('./appLogs').AppLogDay>
   clearAppLogs: () => Promise<void>

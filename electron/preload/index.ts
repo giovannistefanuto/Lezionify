@@ -13,6 +13,9 @@ import type {
 
 const archiveApi: ArchiveApi = {
   getCourseRag: course => ipcRenderer.invoke('course-rag:state', course),
+  prepareCourseSemantic: course => ipcRenderer.invoke('course-rag:prepare-semantic', course),
+  manageCourseIndex: (course, action) => ipcRenderer.invoke('course-rag:manage-index', course, action),
+  setCourseLectureNumber: (course, lectureId, number) => ipcRenderer.invoke('course-rag:lecture-number', course, lectureId, number),
   linkCourseFolder: course => ipcRenderer.invoke('course-rag:link', course),
   setCourseFolderEnabled: (course, enabled) => ipcRenderer.invoke('course-rag:enabled', course, enabled),
   syncCourseRag: course => ipcRenderer.invoke('course-rag:sync', course),
@@ -132,17 +135,23 @@ const archiveApi: ArchiveApi = {
   generateQnaResponse: (
     lectureId: string,
     thread: QnaThread,
-    useFullContext: boolean
+    useFullContext: boolean,
+    includeOtherQna = false,
+    responseLength: 'brief' | 'medium' | 'long' = 'brief'
   ) =>
     ipcRenderer.invoke(
       'archive:generate-qna',
       lectureId,
       thread,
-      useFullContext
+      useFullContext,
+      includeOtherQna,
+      responseLength
     ),
   saveStudySession: (session: StudySession) =>
     ipcRenderer.invoke('archive:save-study-session', session),
   getStudyAnalytics: () => ipcRenderer.invoke('archive:get-study-analytics'),
+  getStudyTimeRemovalTargets: () => ipcRenderer.invoke('archive:get-study-time-removal-targets'),
+  removeStudyTime: (targetId, minutes) => ipcRenderer.invoke('archive:remove-study-time', targetId, minutes),
   getLectureStudySeconds: (lectureId: string, excludedSessionId: string) =>
     ipcRenderer.invoke('archive:get-lecture-study-seconds', lectureId, excludedSessionId),
   addManualStudyTime: (courseCode: string, minutes: number, date?: string) =>
@@ -183,6 +192,7 @@ const archiveApi: ArchiveApi = {
     ipcRenderer.invoke('archive:get-highlights', lectureId),
   saveHighlights: (lectureId, highlights) =>
     ipcRenderer.invoke('archive:save-highlights', lectureId, highlights),
+  getBatteryStatus: () => ipcRenderer.invoke('archive:battery-status'),
   getAppLogs: () => ipcRenderer.invoke('archive:get-app-logs'),
   getAppLogDay: day => ipcRenderer.invoke('archive:get-app-log-day', day),
   clearAppLogs: () => ipcRenderer.invoke('archive:clear-app-logs'),

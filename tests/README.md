@@ -1,5 +1,73 @@
 # Test
 
+Aggiornamento del 23 ottobre (D-0400–D-0407): 739 Vitest in 56 file.
+
+`node tools/benchmark_course_rag.mjs --study-questions --semantic` esegue gli
+otto casi realistici sintetici; senza il flag resta il benchmark storico di
+22 casi. `node tools/run_course_rag_private_local.mjs --study-questions`
+ispeziona 32 varianti sulle fonti reali: richiede autorizzazione e conserva
+gli estratti soltanto in local-artifacts, senza chiamate Gemini. Entrambi
+misurano recupero, non correttezza delle risposte generate. Regressioni su
+vincoli ereditati, copertura tra lezioni, originale exam in inglese, ricerca
+riformulata e avvisi mai parlato nelle suite courseRagArchitecture/Maintenance.
+
+Le regressioni successive al RAG coprono risposte Spotify 200 vuote per tutti
+i comandi, JSON malformato nelle letture e dati reali collusion/collusione.
+`--study-pause-only` verifica il limite esatto di cinque minuti, continua,
+rientro e rimozione del testo della pausa scaduta. `--dictionary-only` copre
+Ctrl+T con selezione IT/EN, apertura prima della traduzione e fallback anche
+con suggerimenti. `--music-only` combina i controlli Spotify con un vero loop
+Web Audio su WAV sintetico silenzioso; il confine account Spotify è simulato.
+`node tools/run_offline_translation_regressions.cjs` usa modelli già presenti
+per quattro prove WASM reali: frasi protette e parole singole nelle due lingue.
+`courseRagMaintenance.test.ts` copre ripresa, cache corrotta, ENOSPC simulato,
+priorità, conservazione dei backup/citazioni, schema malformato, numerazione,
+istruzioni ostili e controlli parziali. `courseRagPdfLayout.test.ts` usa PDF reali
+sintetici multicolonna, tabella e pagina grafica. Il gate pubblico
+`node tools/evaluate_course_rag.mjs --gate` entra in CI senza modello o API.
+I collaudi semantici espliciti richiedono i pesi locali e falliscono se mancanti;
+`check_semantic_cancellation.mjs` verifica il crash nativo corretto.
+`check_packaged_rag.mjs` verifica il vero eseguibile in profilo temporaneo:
+`--download-model` scarica esplicitamente solo pesi pubblici, `--corrupt-model`
+è un controllo negativo atteso. Il runner remoto della giornata ha consumato
+59 dei 60 invii autorizzati: non azzerare il contatore, non confondere questo
+budget con il precedente runner sintetico e non ripetere chiamate non necessarie.
+[Uso, risultati e limiti](../docs/product/rag-completamento-2026-10-23.md).
+
+Aggiornamento del 22 ottobre: `--october22-only` esegue tastiera nativa, Q&A
+Media/bozza/ritorno al focus, contrasto in entrambi i temi, Focus Lock 100/200%,
+copia protetta e fuori fascia, chat lunga e scelta esplicita per i corsi nuovi.
+Incluso nella suite completa. Le regressioni RAG coprono JSON invalido,
+citazioni non inviate, fallback e retry senza duplicare la domanda; quelle
+GitHub coprono esclusione, cambio consenso durante l'invio, commit locali
+pendenti e migrazione senza ricifrare credenziali.
+
+`node tools/run_course_rag_real.cjs --end-to-end` è **opzionale e invia a Gemini**:
+richiede autorizzazione esplicita, legge le chiavi configurate in memoria e usa
+solo fonti sintetiche. Il contatore locale per questa sessione limita a quattro
+invii complessivi ed è già esaurito; non azzerarlo per ripetere una prova senza
+un nuovo budget autorizzato. Non è incluso in `npm run check`.
+Il collaudo non apre né modifica conversazioni personali. [Esiti e limiti](../docs/product/interventi-2026-10-22.md).
+
+Aggiornamento del 21 ottobre: `studyCorrections.test.ts` verifica rettifiche
+persistenti, riavvio, concorrenza e nuovi snapshot del timer;
+`connectivity.test.ts` copre offline prima di generazione/upload/polling e
+rete persa senza fallback, `soundShuffle.test.ts` i giri casuali senza ripetizioni.
+`--today-only` include ora CSS Q&A caricato per ultimo, Breve/Lunga persistente,
+Memo piatto con appunti conservati e dialogo Togli tempo. `--study-pause-only`
+verifica sospensione Memo e conservazione della pausa esplicita;
+`--dictionary-only` controlla frasi lunghe e riquadri con caratteri uguali.
+
+Aggiornamento del 20 ottobre: `node tools/run_hook_regressions.cjs --today-only`
+verifica zoom/larghezze Q&A, consenso al contesto, riapertura tra lezioni,
+Memo Invio/Esc/focusout, emoji batteria e fullscreen, catalogo/download e
+rendering del Fictitious Play. Incluso nel runner completo. Le regressioni
+unitarie coprono opt-in nel servizio, estratti pertinenti e limiti, prompt,
+soglia batteria, integrità e download parziali; il PDF reale include il caso
+Mermaid completo. Gli audio pubblici eventualmente presenti in
+`local-artifacts/today-sounds/` sono decodificati e verificati anche con Web Audio,
+senza renderli necessari alla CI. [Esiti e limiti](../docs/product/interventi-2026-10-20.md).
+
 Il test di estrazione PDF.js reale in `unit/courseRag.test.ts` ha un budget
 specifico di 30 secondi per l'avvio a freddo del worker nei runner Windows
 condivisi. Le asserzioni su testo e pagine e il timeout globale restano
@@ -252,6 +320,17 @@ per isolarlo: `node tools/run_hook_regressions.cjs --study-tools-only`.
 La prova non usa dati personali o chiamate AI e non equivale a una validazione
 motivazionale su lezioni reali. Uso e limiti nel documento prodotto del 17 ottobre.
 
+## Orari audio, Musica e comandi Memo (21 ottobre 2026)
+
+`tests/unit/lectureRecordingTimes.test.ts` copre orari mancanti, dati non validi,
+fine calcolata e passaggio del giorno. `interfacePolishScenarios.browser.tsx`
+esercita sidebar con pagina lunga e molti corsi, viewport bassa/ridotta,
+Memo adattabile, menu, cancellazione conservativa e salvataggio. Invocazione
+mirata: `node tools/run_hook_regressions.cjs --interface-polish-only`;
+è inclusa anche nella suite completa. `todayScenarios` verifica gli orari nel
+drawer reale. Schermate sintetiche opzionali con la variabile già esistente
+`LEZIONIFY_VIDEO_SCREENSHOT_DIR`. Nessuna libreria personale o chiamata AI.
+
 ## Chat RAG del corso (17 ottobre 2026)
 
 `tests/unit/courseRag.test.ts` verifica ricerca, sincronizzazione, persistenza,
@@ -280,3 +359,14 @@ coprono diagrammi alterati, omessi, aggiunti e la conservazione degli altri
 controlli. Suite completa: 619 test in 41 file; typecheck, lint mirato e build
 verificati. Replay offline della risposta reale rifiutata alla sezione 28:
 accettata con un solo diagramma originale recuperato, senza nuove chiamate AI.
+
+## RAG: architettura e ricerca semantica locale
+
+Regressioni: `npx --no-install vitest run tests/unit/courseRag.test.ts tests/unit/courseRagCompletion.test.ts tests/unit/courseRagArchitecture.test.ts --maxWorkers=2`.
+Benchmark senza modello: `node tools/benchmark_course_rag.mjs`.
+Download pubblico esplicito e prova locale: `node tools/run_course_semantic_local.mjs --download-model`.
+Prova nel runtime desktop: `node tools/run_course_semantic_local.mjs --electron`.
+Benchmark ibrido: `node tools/benchmark_course_rag.mjs --semantic`.
+`node tools/run_course_rag_private_local.mjs` legge le fonti personali: eseguirlo
+solo con autorizzazione dell'utente; risultati ed estratti restano in local-artifacts.
+Piano, revisioni, metriche e limiti in docs/product/rag-implementazione-2026-10-22.md.

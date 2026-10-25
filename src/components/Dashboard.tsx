@@ -1,4 +1,5 @@
 import { captureGroups } from '../utils/quickCapture'
+import { StudyTimeRemovalDialog } from './StudyTimeRemovalDialog'
 import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import type {
   CourseStats,
@@ -118,6 +119,7 @@ export function Dashboard({
   const [storedScratchpad, setStoredScratchpad] = useState<ScratchpadData | null>(null)
   const scratchpad = scratchpadData ?? storedScratchpad
   const [showManualModal, setShowManualModal] = useState(false)
+  const [showRemovalModal, setShowRemovalModal] = useState(false)
   const [manualCourse, setManualCourse] = useState(
     courseStats[0]?.courseCode || ''
   )
@@ -469,6 +471,7 @@ export function Dashboard({
             >
               ➕ Aggiungi Studio Manuale
             </button>
+            <button className="secondary-button small" onClick={() => setShowRemovalModal(true)}>Togli tempo di studio</button>
           </div>
 
           {/* Hero KPI Studio */}
@@ -899,9 +902,9 @@ export function Dashboard({
             <div className="dashboard-scratchpad-section">
               <div className="study-analytics-header">
                 <div className="study-analytics-title">
-                  <h2>📝 Note Rapide & To-Do dello Scratchpad</h2>
+                  <h2>📝 Memo</h2>
                   <span className="study-analytics-subtitle">
-                    Raccolti durante le sessioni con il Brain Dump (premi Ctrl+M
+                    Raccolti durante le sessioni con il Memo (premi Ctrl+M
                     o Ctrl+P)
                   </span>
                 </div>
@@ -909,9 +912,9 @@ export function Dashboard({
                   <button
                     className="secondary-button small"
                     onClick={onOpenQuickCapture}
-                    title="Apri overlay note rapide (Ctrl+M)"
+                    title="Apri Memo (Ctrl+M)"
                   >
-                    📌 Apri Note Rapide
+                    📌 Apri Memo
                   </button>
                 )}
               </div>
@@ -961,6 +964,7 @@ export function Dashboard({
       </section>
 
       {/* Manual Study Time Modal */}
+      {showRemovalModal && <StudyTimeRemovalDialog onClose={() => setShowRemovalModal(false)} onSaved={loadAnalytics} />}
       {showManualModal && (
         <div
           className="modal-overlay"

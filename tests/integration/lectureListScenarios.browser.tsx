@@ -6,6 +6,7 @@ import { LectureList } from '../../src/components/LectureList'
 declare const require: any
 
 export async function runLectureListScenarios(root: Root) {
+  window.scrollTo(0, 0)
   const check = (value: unknown, message: string) => {
     if (!value) throw new Error(message)
   }
@@ -52,6 +53,7 @@ export async function runLectureListScenarios(root: Root) {
     /></div>))
   }
   await render()
+  await act(async () => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))))
   const rows = () => Array.from(document.querySelectorAll<HTMLElement>('.lecture-row'))
   const title = document.querySelector<HTMLElement>('.lecture-row-title')!
   check(getComputedStyle(title).whiteSpace === 'nowrap' && getComputedStyle(title).textOverflow === 'ellipsis' && title.scrollWidth > title.clientWidth, 'Long titles must truncate with ellipsis')
@@ -156,15 +158,12 @@ export async function runLectureListScenarios(root: Root) {
       const beforeOpen = opened
       const row = rows()[0]
       await act(async () => {
-        row.dispatchEvent(new MouseEvent('click', { bubbles: true, detail: 1 }))
-        row.dispatchEvent(new MouseEvent('click', { bubbles: true, detail: 2 }))
-        row.dispatchEvent(new MouseEvent('dblclick', { bubbles: true, detail: 2 }))
+        row.dispatchEvent(new KeyboardEvent('keydown', { key: 'F2', bubbles: true }))
       })
-      await act(async () => new Promise(resolve => setTimeout(resolve, 550)))
       await waitForTitles()
       const titleInput = document.querySelector<HTMLInputElement>('[name="title-it"]')!
       const enInput = document.querySelector<HTMLInputElement>('[name="title-en"]')!
-      check(opened === beforeOpen && document.querySelector<HTMLDialogElement>('.lecture-title-dialog')?.open, 'Double click must open title editing without opening the lecture in every filter')
+      check(opened === beforeOpen && document.querySelector<HTMLDialogElement>('.lecture-title-dialog')?.open, 'F2 must open title editing without opening the lecture in every filter')
       check(document.activeElement === titleInput && enInput.value.startsWith('English title'), `Editor must focus IT and load English: filter=${filter}, active=${document.activeElement?.getAttribute('name')}, disabled=${titleInput.disabled}, en=${enInput.value}`)
       if (filter === 'tutti') {
         await require('electron').ipcRenderer.invoke('capture-video-import', 'lecture-title-light')

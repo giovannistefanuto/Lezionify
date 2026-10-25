@@ -229,7 +229,7 @@ export function Sidebar({
                   }
                   aria-label="Apri registratore USB"
                 >
-                  🎙️
+                  🎙️<span className="sidebar-action-label">Audio</span>
                   {isUsbConnected && (
                     <span
                       className="usb-indicator-dot"
@@ -240,28 +240,28 @@ export function Sidebar({
               )}
 
               {onOpenCourseChat && <button className="settings-gear-btn" onClick={onOpenCourseChat}
-                title="Chat del corso" aria-label="Apri chat del corso">💬</button>}
+                title="Chat del corso" aria-label="Apri chat del corso">💬<span className="sidebar-action-label">Chat corso</span></button>}
               {onOpenQuickCapture && (
                 <button
                   className="settings-gear-btn"
                   onClick={onOpenQuickCapture}
-                  title="Note Rapide & Brain Dump (Ctrl+M o Ctrl+P)"
-                  aria-label="Apri note rapide"
+                  title="Memo (Ctrl+M o Ctrl+P)"
+                  aria-label="Apri Memo"
                 >
-                  📌
+                  📌<span className="sidebar-action-label">Memo</span>
                 </button>
               )}
 
-              {onOpenLogViewer && (
+              {onOpenLogViewer && (<details className="sidebar-more-actions"><summary aria-label="Altri strumenti">⋯</summary>
                 <button
                   className="settings-gear-btn"
                   onClick={onOpenLogViewer}
                   title="Log di Sistema & Diagnostica (Ctrl+Shift+L)"
                   aria-label="Apri log di sistema"
                 >
-                  📜
+                  📜 Log di sistema
                 </button>
-              )}
+              </details>)}
 
               <button
                 className="settings-gear-btn"
@@ -269,7 +269,7 @@ export function Sidebar({
                 title="Impostazioni"
                 aria-label="Apri impostazioni"
               >
-                ⚙️
+                ⚙️<span className="sidebar-action-label">Impostazioni</span>
                 {!hasConfiguredKey && (
                   <span className="settings-warning-dot" title="Nessuna chiave API configurata">
                     •
@@ -330,6 +330,9 @@ export function Sidebar({
 
       {!isCollapsed && (
         <>
+          <div className="sidebar-music-access">
+            <MusicButton />
+          </div>
           <div className="sidebar-search">
             <input
               ref={searchInputRef}
@@ -426,6 +429,7 @@ export function Sidebar({
       {/* Collapsed sidebar: show icon-only nav */}
       {isCollapsed && (
         <div className="sidebar-collapsed-nav">
+          <MusicButton compact />
           <button
             className={`sidebar-icon-btn ${mainView === 'archive' ? 'is-active' : ''}`}
             onClick={() => setMainView('archive')}
@@ -449,8 +453,8 @@ export function Sidebar({
             <button
               className="sidebar-icon-btn"
               onClick={onOpenQuickCapture}
-              title="Note Rapide & Brain Dump (Ctrl+M o Ctrl+P)"
-              aria-label="Note Rapide"
+              title="Memo (Ctrl+M o Ctrl+P)"
+              aria-label="Memo"
             >
               📌
             </button>
@@ -489,7 +493,6 @@ export function Sidebar({
           </button>
         </div>
       )}
-      <MusicButton compact={isCollapsed} />
       {courseMenu && !isCollapsed && createPortal(
         <div className="course-context-menu" ref={menuRef} role="menu"
           aria-label={`Azioni corso ${formatCourseDisplayName(courseMenu.course, courseDefinitions)}`}

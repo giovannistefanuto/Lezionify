@@ -39,6 +39,7 @@ export async function runCourseChatScenarios(root: Root, api: any) {
       enabled: false,
       syncing: false,
       sources: [source],
+      semantic: { status: 'ready' },
       threads: []
     },
     OTHER: {
@@ -86,6 +87,12 @@ export async function runCourseChatScenarios(root: Root, api: any) {
   }
   api.syncCourseRag = async (course: string) => structuredClone(states[course])
   api.addCourseDocuments = api.syncCourseRag
+  api.manageCourseIndex = async (course: string, action: string) => {
+    if (action === 'start') states[course].indexing = { status: 'running', revision: 'synthetic', total: 12, completed: 8, sources: [{ sourceId: 'pdf', completed: 8, total: 12 }], updatedAt: '' }
+    if (action === 'cancel') states[course].indexing!.status = 'cancelled'
+    if (action === 'storage') states[course].storage = { modelBytes: 140 * 1048576, vectorBytes: 1048576, corpusBytes: 1000, revisions: 2 }
+    return structuredClone(states[course])
+  }
   api.openCoursePdf = async () => ({
     id: 'course-test-pdf',
     name: source.title,
@@ -119,6 +126,7 @@ export async function runCourseChatScenarios(root: Root, api: any) {
         text: 'Dalle fonti del corso: esempio con $x=1$.',
         createdAt: '',
         citations: [{ source, passage }],
+        grounding: { status: 'reviewed', claims: [{ text: 'esempio', kind: 'course', support: 'uncertain', passageIds: ['p1'], reason: 'Controllo sintetico fallibile.' }], contradictions: ['Le due fonti non concordano.'] },
         trace: [{ action: 'send_context', sourceIds: ['pdf'], at: '' }]
       }
     )
@@ -200,6 +208,13 @@ export async function runCourseChatScenarios(root: Root, api: any) {
     )
     await click('Collega cartella')
     check(states.GAME.enabled, 'Folder activation not connected')
+    await click('Prepara / riprendi indice locale')
+    check(document.querySelector('[aria-label="Preparazione indice locale"]')?.textContent?.includes('8/12'), 'Index coverage missing')
+    check(sent.length === 0, 'Local indexing triggered AI')
+    await click('Interrompi preparazione')
+    check(states.GAME.indexing?.status === 'cancelled', 'Index cancellation not connected')
+    await click('Misura spazio locale')
+    check(document.querySelector('[aria-label="Fonti del corso"]')?.textContent?.includes('140.0 MB'), 'Local storage missing')
     await click('Apri / scegli pagine')
     await until(
       () =>
@@ -234,6 +249,8 @@ export async function runCourseChatScenarios(root: Root, api: any) {
         !!document.querySelector('.course-citations button'),
       'Course answer or citation missing'
     )
+    check(document.querySelector('.course-grounding')?.textContent?.includes('1 affermazioni da verificare'), 'Uncertain claim hidden')
+    check(document.querySelector('.course-grounding')?.textContent?.includes('Le due fonti non concordano'), 'Contradictory evidence hidden')
     check(
       sent[0][4]?.[0]?.page === 2 && sent[0][5] === 'pdf',
       'Send did not include selected page provenance'
@@ -287,6 +304,24 @@ export async function runCourseChatScenarios(root: Root, api: any) {
     )
     await click('Lezione sintetica')
     check(openedLecture === 'lecture-1', 'Count result did not open lecture')
+    const answerNormally = api.askCourse
+    let rejectRecovery!: (error: Error) => void
+    api.askCourse = async (course: string, _thread: string, _question: string, requestId: string) => {
+      notify({ course, requestId, message: 'Riprovo automaticamente tra 15 secondi; la domanda è conservata.' })
+      return new Promise((_resolve, reject) => { rejectRecovery = reject })
+    }
+    api.stopCourseAnswer = async () => rejectRecovery(new Error("Error invoking remote method 'course-rag:ask': Error: Risposta interrotta. La domanda è stata conservata."))
+    await input(document.querySelector('textarea')!, 'Domanda durante il recupero')
+    await click('Invia a Gemini')
+    await until(() => !!document.querySelector('[role="status"]')?.textContent?.includes('Riprovo automaticamente'), 'Automatic recovery status missing')
+    check(document.querySelector<HTMLTextAreaElement>('textarea')!.value === 'Domanda durante il recupero', 'Recovery lost question')
+    await click('Interrompi')
+    await until(() => !!document.querySelector('[role="alert"]')?.textContent?.includes('Risposta interrotta'), 'Cancellation result missing')
+    check(!document.querySelector('[role="alert"]')?.textContent?.includes('Error invoking remote method'), 'Raw IPC wrapper shown to user')
+    check(document.querySelector<HTMLTextAreaElement>('textarea')!.value === 'Domanda durante il recupero', 'Cancellation lost draft')
+    api.askCourse = answerNormally
+    await click('Riprova domanda')
+    await until(() => document.querySelector<HTMLTextAreaElement>('textarea')?.value === '', 'Retry failed to recover question')
     await act(async () => {
       const select = document.querySelector<HTMLSelectElement>(
         '[aria-label="Corso della chat"]'

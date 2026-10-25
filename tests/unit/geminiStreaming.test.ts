@@ -23,6 +23,16 @@ function deferred<T>() {
   return { resolve, reject, promise }
 }
 
+it('retains stream usage metadata so authorized RAG evaluations can account for consumed tokens', async () => {
+  const transport = new GeminiTransport()
+  vi.spyOn(transport, 'getClient').mockReturnValue({ models: { generateContentStream: async () => (async function* () {
+    yield { text: 'Risposta sintetica' }
+    yield { usageMetadata: { promptTokenCount: 12, candidatesTokenCount: 4, totalTokenCount: 16 } }
+  })() } } as never)
+  const result = await transport.generateContentStream({ apiKey: 'synthetic', model: 'synthetic', contents: 'test', onChunk: () => {} })
+  expect(result).toMatchObject({ data: 'Risposta sintetica', usageMetadata: { totalTokenCount: 16 } })
+})
+
 function request(
   transport: GeminiTransport,
   options: Record<string, unknown> = {}

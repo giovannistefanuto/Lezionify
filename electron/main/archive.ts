@@ -1,3 +1,5 @@
+import { relatedQnaContext } from '../../shared/qnaContext'
+import { effectiveStudySeconds, studyTimeRemovalTargets, removeStudySeconds } from '../../shared/studyCorrections'
 import { ragHash, splitCourseSource, type IndexedCourseSource } from './courseRagIndex'
 import { calculateScheduleOverlap } from './courseSchedule'
 export { calculateScheduleOverlap, parseTimeToMinutes } from './courseSchedule'
@@ -174,6 +176,7 @@ export class ArchiveService {
     this.publishService = new PublishService(this.rootDirectory, {
       listLectures: () => this.listLectures(),
       getCourses: async () => (await this.settingsService.getSettings()).courses ?? {},
+      getLegacyCourseCodes: async () => (await this.settingsService.getSettings()).legacyPublishingCourseCodes ?? [],
       getSettings: async () => (await this.settingsService.getSettings()).publishing,
       storage: this.storage
     })
@@ -352,6 +355,8 @@ export class ArchiveService {
     )
     await this.storage.initialize()
     await this.repository.initialize()
+    const initialLibrary = await this.repository.readLibrary()
+    await this.settingsService.initializeCoursePublicationConsent(initialLibrary.lectures.flatMap(lecture => lecture.courseCode ? [lecture.courseCode] : []))
     await this.applyScheduledLaboratories()
     await this.jobStore.initialize()
     await this.videoImporter.initialize()
@@ -2134,6 +2139,7 @@ export class ArchiveService {
   async courseRagSources(course: string): Promise<{ sources: IndexedCourseSource[]; missingTranscripts: number }> {
     const library = await this.repository.readLibrary()
     const lectures = library.lectures.filter(lecture => lecture.courseCode === course)
+    const theoryOrder = new Map(this.sortLectures(lectures).filter(lecture => !lecture.isLaboratory).map((lecture, index) => [lecture.id, index + 1]))
     const sources: IndexedCourseSource[] = []
     let missingTranscripts = 0
     for (const lecture of lectures) {
@@ -2142,7 +2148,8 @@ export class ArchiveService {
         try { text = kind === 'transcript' ? await this.readTranscript(lecture.id) : await this.readMarkdown(lecture.id) } catch { /* Coverage is exposed explicitly. */ }
         if (!text?.trim()) { if (kind === 'transcript') missingTranscripts++; continue }
         const source = splitCourseSource({ id: ragHash(`${kind}:${lecture.id}`), title: `${lecture.title || lecture.sourceAudioFileName} · ${kind === 'transcript' ? 'Trascrizione grezza' : 'Dispensa AI'}`,
-          kind, version: ragHash(text), status: 'ready', lectureId: lecture.id }, [{ text }])
+          kind, provenance: kind === 'notes' ? 'ai-derived' : 'original', derivedFrom: kind === 'notes' ? [ragHash(`transcript:${lecture.id}`)] : undefined,
+          version: ragHash(text), status: 'ready', lectureId: lecture.id, lectureOrdinal: theoryOrder.get(lecture.id), recordedDate: lecture.recordedAt?.slice(0, 10) }, [{ text }])
         if (kind === 'transcript') source.rawText = text
         sources.push(source)
       }
@@ -2151,7 +2158,7 @@ export class ArchiveService {
     let information: string | null = null
     try { information = await this.readCourseInfo(course) } catch { /* The original lessons remain searchable. */ }
     for (const [name, text] of [['Configurazione e calendario del corso', definition ? JSON.stringify(definition) : ''], ['Informazioni corso (sintesi generata)', information ?? '']]) {
-      if (text) sources.push(splitCourseSource({ id: ragHash(`${course}:${name}`), title: name, kind: 'course', version: ragHash(text), status: 'ready' }, [{ text }]))
+      if (text) sources.push(splitCourseSource({ id: ragHash(`${course}:${name}`), title: name, kind: 'course', provenance: name.includes('sintesi') ? 'ai-derived' : 'metadata', version: ragHash(text), status: 'ready' }, [{ text }]))
     }
     return { sources, missingTranscripts }
   }
@@ -2159,11 +2166,14 @@ export class ArchiveService {
   async generateQnaResponse(
     lectureId: string,
     thread: unknown,
-    useFullContext: unknown
+    useFullContext: unknown,
+    includeOtherQna: unknown = false,
+    responseLength: unknown = 'brief'
   ): Promise<{ success: boolean; text?: string; error?: string }> {
     try {
       validateQnaThread(thread)
-      if (typeof useFullContext !== 'boolean') {
+      if (responseLength !== 'brief' && responseLength !== 'medium' && responseLength !== 'long') throw new Error('Lunghezza Q&A non valida.')
+      if (typeof useFullContext !== 'boolean' || typeof includeOtherQna !== 'boolean') {
         throw new Error('Opzione del contesto Q&A non valida.')
       }
       const images = await this.qnaImages.forRequest(thread.attachmentIds, lectureId, thread.id)
@@ -2189,6 +2199,8 @@ export class ArchiveService {
         fullLectureText = markdown ?? undefined
       }
 
+      const otherQnaContext = includeOtherQna ? relatedQnaContext(thread, await this.loadQnaThreads(lectureId)) : undefined
+
       const totalKeysCount =
         settings.apiKeys && settings.apiKeys.length > 0
           ? settings.apiKeys.length
@@ -2202,7 +2214,7 @@ export class ArchiveService {
         `Avvio richiesta QnA con modello ${QNA_PRIMARY_MODEL}; ${images.length} slide allegate.`
       )
 
-      if (Buffer.byteLength(JSON.stringify({ thread, fullLectureText, images }), 'utf8') > 18_000_000) throw new Error('Contesto troppo grande: riduci le slide o disattiva il contesto completo.')
+      if (Buffer.byteLength(JSON.stringify({ thread, fullLectureText, otherQnaContext, images }), 'utf8') > 18_000_000) throw new Error('Contesto troppo grande: riduci le slide o disattiva il contesto completo.')
 
       const stream = this.geminiService.generateQnaResponse({
         keys: managedKeys,
@@ -2211,6 +2223,8 @@ export class ArchiveService {
         lectureTitle: lecture?.title || null,
         thread,
         fullLectureText,
+        otherQnaContext,
+        responseLength,
         images,
         onAttempt: (info) => {
           const previous = attemptState.current
@@ -2321,9 +2335,11 @@ export class ArchiveService {
       const existingIdx = sessions.findIndex((s) => s.id === session.id)
       if (existingIdx >= 0) {
         if (JSON.stringify(sessions[existingIdx]) === JSON.stringify(session)) return
-        sessions[existingIdx] = session
+        const previous = sessions[existingIdx]
+        if (previous.lectureId !== session.lectureId || previous.courseCode !== session.courseCode) throw new Error('La sessione appartiene a un altro contesto di studio.')
+        sessions[existingIdx] = { ...session, durationSeconds: Math.max(previous.durationSeconds, session.durationSeconds), corrections: previous.corrections }
       } else {
-        sessions.push(session)
+        sessions.push({ ...session, corrections: undefined })
       }
       await this.storage.writeStudySessions(sessions)
     })
@@ -2363,6 +2379,27 @@ export class ArchiveService {
     await this.saveStudySession(session)
   }
 
+  async getStudyTimeRemovalTargets() {
+    return this.repository.runExclusive(async () => {
+      const sessions = await this.storage.readStudySessions()
+      const library = await this.repository.readLibrary()
+      return studyTimeRemovalTargets(sessions, library.lectures, formatLocalCalendarDate())
+    })
+  }
+
+  async removeStudyTime(targetId: unknown, minutes: unknown): Promise<void> {
+    if (typeof targetId !== 'string' || targetId.length > 250 || typeof minutes !== 'number' || !Number.isInteger(minutes) || minutes < 1 || minutes > 43200) throw new Error('Rettifica del tempo non valida.')
+    return this.repository.runExclusive(async () => {
+      const sessions = await this.storage.readStudySessions()
+      const library = await this.repository.readLibrary()
+      const today = formatLocalCalendarDate()
+      const target = studyTimeRemovalTargets(sessions, library.lectures, today).find(item => item.id === targetId)
+      if (!target) throw new Error('La destinazione non è più disponibile. Riapri Togli tempo.')
+      const updated = removeStudySeconds(sessions, target.id, minutes * 60, today, new Date().toISOString())
+      await this.storage.writeStudySessions(updated)
+    })
+  }
+
   async getLectureStudySeconds(lectureId: unknown, excludedSessionId: unknown): Promise<number> {
     if (typeof lectureId !== 'string' || !lectureId.trim() || lectureId.length > 200 ||
         typeof excludedSessionId !== 'string' || !excludedSessionId.trim() || excludedSessionId.length > 200) {
@@ -2371,7 +2408,7 @@ export class ArchiveService {
     return this.repository.runExclusive(async () => {
       const sessions = await this.storage.readStudySessions()
       return sessions.reduce((total, session) => total + (
-        session.lectureId === lectureId && session.id !== excludedSessionId ? session.durationSeconds : 0
+        session.lectureId === lectureId && session.id !== excludedSessionId ? effectiveStudySeconds(session) : 0
       ), 0)
     })
   }
@@ -2388,7 +2425,8 @@ export class ArchiveService {
     const coursesByDate = new Map<string, Record<string, number>>()
     const courseTotals: Record<string, number> = {}
     let totalSemesterSeconds = 0
-    for (const s of sessions) {
+    for (const original of sessions) {
+      const s = { ...original, durationSeconds: effectiveStudySeconds(original) }
       const lecture = s.lectureId ? lectures.get(s.lectureId) : undefined
       const code = lecture ? lecture.courseCode : s.courseCode
       if (code && archived.has(code)) continue
@@ -2499,7 +2537,7 @@ export class ArchiveService {
     const list = Object.values(coursesMap).filter((c): c is CourseDefinition =>
       Boolean(c && c.code)
     )
-    return list.sort((a, b) => a.code.localeCompare(b.code))
+    return list.map(course => ({ ...course, publishToGithub: course.publishToGithub ?? (settings.legacyPublishingCourseCodes?.includes(course.code) ?? true) })).sort((a, b) => a.code.localeCompare(b.code))
   }
 
   async getArchivedCourseCodes(): Promise<string[]> {
@@ -2547,6 +2585,7 @@ export class ArchiveService {
 
     courses[code] = {
       ...course,
+      publishToGithub: course.publishToGithub ?? courses[code]?.publishToGithub ?? (settings.legacyPublishingCourseCodes?.includes(code) ?? false),
       code,
       cfu,
       lectureHours,
@@ -2651,7 +2690,7 @@ export class ArchiveService {
       try {
         await this.repository.writeLibrary(updatedLibrary)
         await this.storage.renameOrMergeCourseInfo(trimmedOld, trimmedNew)
-        await this.settingsService.saveSettings({ courses, courseConfigs, archivedCourseCodes })
+        await this.settingsService.saveSettings({ courses, courseConfigs, archivedCourseCodes, legacyPublishingCourseCodes: settings.legacyPublishingCourseCodes?.map(code => code === trimmedOld ? trimmedNew : code) })
         await this.storage.writeStudySessions(updatedSessions)
       } catch (error) {
         const rollbackErrors: unknown[] = []
@@ -2668,6 +2707,7 @@ export class ArchiveService {
           () =>
             this.settingsService.saveSettings({
               courses: settings.courses || {},
+              legacyPublishingCourseCodes: settings.legacyPublishingCourseCodes,
               archivedCourseCodes: settings.archivedCourseCodes || [],
               courseConfigs: settings.courseConfigs || {}
             }),

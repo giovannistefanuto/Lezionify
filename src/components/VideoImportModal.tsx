@@ -354,7 +354,7 @@ export function VideoImportModal({
             <p className="modal-description">
               L’audio viene salvato nell’archivio locale e associato al corso e
               alla data scelti. L’orario è quello della lezione: la durata audio
-              resta quella effettiva dei video. Poi usa “Elabora tutto” per
+              resta quella effettiva dei video. Poi usa “Elabora archivio” per
               trascrizione, dispensa e traduzione.
             </p>
           </>

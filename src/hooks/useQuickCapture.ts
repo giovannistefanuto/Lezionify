@@ -162,6 +162,9 @@ export function useQuickCapture() {
 
       // Se l'overlay è aperto, Escape chiude SOLO l'overlay
       if (isOpen && e.key === 'Escape') {
+        if (document.querySelector('[data-memo-copy-dialog]')) return
+        if (e.target instanceof HTMLElement && e.target.closest('[data-memo-editing]')) return
+        if (e.target instanceof HTMLElement && e.target.closest('.memo-group-actions[open]')) return
         if (document.querySelector('[data-dictionary-overlay]')) return
         e.preventDefault()
         e.stopPropagation()
@@ -254,7 +257,7 @@ export function useQuickCapture() {
     (groupId = latestDataRef.current.selectedGroupId ?? '') => {
       updateData(
         latestDataRef.current.todos.filter(
-          (item) => !item.completed || (item.groupId ?? '') !== groupId
+          (item) => !item.completed || (groupId !== 'all' && (item.groupId ?? '') !== groupId)
         ),
         latestDataRef.current.notes
       )

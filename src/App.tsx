@@ -8,6 +8,7 @@ import {
   useCallback
 } from 'react'
 import { ToolSettingsContext, type ToolSettingsSection } from './components/ToolSettingsContext'
+import { BatteryIndicator } from './components/BatteryIndicator'
 import { AmbientSoundProvider } from './components/AmbientSoundContext'
 import type { StudyStatus, VideoImportSelection } from '../shared/archive'
 import { Sidebar } from './components/Sidebar'
@@ -24,7 +25,7 @@ import { useDictionaryShortcut } from './hooks/useDictionaryShortcut'
 import { useFinalLectureReturn } from './hooks/useFinalLectureReturn'
 
 const CourseChat = lazy(() => import('./components/CourseChat').then(module => ({ default: module.CourseChat })))
-const DictionaryOverlay = lazy(() => import('./components/DictionaryOverlay').then(module => ({ default: module.DictionaryOverlay })))
+import { DictionaryOverlay } from './components/DictionaryOverlay'
 
 const LectureDrawer = lazy(() =>
   import('./components/LectureDrawer').then((module) => ({
@@ -584,6 +585,7 @@ export default function App() {
         <Suspense fallback={<LazyFallback />}>
           <ErrorBoundary fallbackTitle="Errore nel pannello della lezione">
             <LectureDrawer
+              memoOpen={quickCapture.isOpen}
               selectedLecture={selectedLecture}
               isReturningToList={finalLecture.isReturning}
               allLectures={lectures}
@@ -640,7 +642,7 @@ export default function App() {
       )}
 
       <Suspense fallback={null}>
-        {dictionary.isOpen && <DictionaryOverlay onClose={dictionary.close} />}
+        {dictionary.isOpen && <DictionaryOverlay onClose={dictionary.close} selection={dictionary.selection} />}
         {showCourseModal && (
           <CourseManagementModal
             isOpen
@@ -724,11 +726,12 @@ export default function App() {
           onClose={() => setVideoSelection(null)}
           onImported={lecture => {
             setSelectedCourse(lecture.courseCode ?? 'tutti')
-            setNotice('✅ Audio dei video importato. Usa “Elabora tutto” per trascrizione, dispensa e traduzione.')
+            setNotice('✅ Audio dei video importato. Usa “Elabora archivio” per trascrizione, dispensa e traduzione.')
             void refreshLibrary().catch(() => setNotice('⚠️ Audio salvato. Aggiorna l’archivio per visualizzare la lezione.'))
           }}
         />}
       </Suspense>
+      <BatteryIndicator />
     </main>
     </AmbientSoundProvider>
     </ToolSettingsContext.Provider>

@@ -50,6 +50,7 @@ export function CourseManagementModal({
   const [editingCourseCode, setEditingCourseCode] = useState<string | null>(null)
 
   const [formCode, setFormCode] = useState('')
+  const [formPublishing, setFormPublishing] = useState<boolean | null>(null)
   const [formName, setFormName] = useState('')
   const [formCfu, setFormCfu] = useState<number>(6)
   const [formColor, setFormColor] = useState('#10b981')
@@ -84,6 +85,7 @@ export function CourseManagementModal({
 
   function handleOpenCreate() {
     setEditingCourseCode(null)
+    setFormPublishing(null)
     setFormCode('')
     setFormName('')
     setFormCfu(6)
@@ -107,6 +109,7 @@ export function CourseManagementModal({
 
   function handleOpenEdit(course: CourseDefinition) {
     setEditingCourseCode(course.code)
+    setFormPublishing(course.publishToGithub ?? true)
     setFormCode(course.code)
     setFormName(course.name || '')
     setFormCfu(course.cfu ?? 6)
@@ -143,6 +146,7 @@ export function CourseManagementModal({
   async function handleSaveCourse(e: React.FormEvent) {
     e.preventDefault()
     const trimmedCode = formCode.trim()
+    if (formPublishing === null) { setFormError('Scegli se pubblicare le lezioni di questo corso su GitHub.'); return }
     if (!trimmedCode) {
       setFormError('Il codice / sigla del corso è obbligatorio.')
       return
@@ -188,6 +192,7 @@ export function CourseManagementModal({
 
     const courseDef: CourseDefinition = {
       code: trimmedCode,
+      publishToGithub: formPublishing,
       name: formName.trim() || undefined,
       cfu,
       lectureHours,
@@ -416,6 +421,7 @@ export function CourseManagementModal({
                         </div>
                       </div>
 
+                      <p className="course-publication-status">GitHub: {course.publishToGithub === false ? 'disattivato' : 'abilitato'}</p>
                       <div
                         style={{
                           display: 'grid',
@@ -493,6 +499,12 @@ export function CourseManagementModal({
               </div>
             )}
 
+            <fieldset className="course-publication-choice">
+              <legend>Vuoi che queste lezioni vadano su GitHub?</legend>
+              <label><input type="radio" name="course-publication" checked={formPublishing === true} onChange={() => setFormPublishing(true)} required /> Sì, pubblica le lezioni</label>{' '}
+              <label><input type="radio" name="course-publication" checked={formPublishing === false} onChange={() => setFormPublishing(false)} required /> No, solo sul computer</label>
+              <p>Si applica ai prossimi invii automatici. I file già pubblicati non vengono eliminati.</p>
+            </fieldset>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
               <div>
                 <label>

@@ -105,9 +105,6 @@ export function LectureList({
   onOpenSettings
 }: LectureListProps) {
   const [editingTitle, setEditingTitle] = useState<{ lecture: Lecture; trigger: HTMLElement } | null>(null)
-  const openTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const cancelOpen = () => { if (openTimer.current) { clearTimeout(openTimer.current); openTimer.current = null } }
-  useEffect(() => () => { if (openTimer.current) clearTimeout(openTimer.current) }, [selectedCourse, selectedStudyStatus])
   const isArchiveCompleteNotice = notice?.trim() ===
     '⚠️ Archivio già completo: non ci sono elaborazioni da avviare.'
   const isUsbCleanupNotice = /^Eliminati \d+ file dal registratore USB per liberare spazio\. Copie locali al sicuro in Lezionify!$/.test(notice?.trim() ?? '')
@@ -161,10 +158,10 @@ export function LectureList({
   }, [lectureMenu])
 
   const openLectureMenu = (lecture: Lecture, trigger: HTMLElement, x: number, y: number) => {
-    if (!onSetLaboratory || savingLaboratory) return
+    if ((!onSetLaboratory && !onRenameLecture) || savingLaboratory) return
     setLectureMenu({ lecture, trigger,
       x: Math.max(8, Math.min(x, window.innerWidth - 198)),
-      y: Math.max(8, Math.min(y, window.innerHeight - 64)) })
+      y: Math.max(8, Math.min(y, window.innerHeight - 110)) })
   }
 
   const readableDate = (value: string | null) => {
@@ -278,6 +275,7 @@ export function LectureList({
           </span>
         </div>
         <div className="actions">
+          <span className="archive-pipeline-scope">{isPipelinePaused ? 'Riprende il piano in pausa · audio e testi a Gemini' : isPipelineRunning ? 'Elaborazione in corso · ambito e fasi nel pannello' : 'Intero archivio · audio e testi a Gemini · fasi mancanti ITA/ENG'}</span>
           <PdfExportButton request={{ kind: 'course', courseCode: selectedCourse, language: 'it' }} />
           <button
             className="secondary-button small"
@@ -286,23 +284,23 @@ export function LectureList({
             title={
               isPipelinePaused
                 ? 'Riprendi l’elaborazione archivio interrotta'
-                : 'Trascrive gli audio, genera le dispense italiane e le versioni inglesi mancanti'
+                : 'Intero archivio, inclusi gli altri corsi: invia a Gemini audio e testi per completare trascrizioni e dispense ITA/ENG mancanti'
             }
           >
             {isPipelineRunning
               ? '⏳ Elaborazione in corso'
               : isPipelinePaused
                 ? '▶ Riprendi elaborazione'
-                : '▶ Elabora tutto'}
+                : '▶ Elabora archivio'}
           </button>
           <button
             className="secondary-button small"
             disabled={isImporting || isPipelineRunning}
             onClick={onManualSync}
-            title="Sincronizza cartelle"
-            aria-label="Sincronizza cartelle"
+            title="Aggiorna cartelle"
+            aria-label="Aggiorna cartelle"
           >
-            🔄 Sync
+            🔄 Aggiorna cartelle
           </button>
 
           {/* Import dropdown (C-04) */}
@@ -463,24 +461,16 @@ export function LectureList({
                 <article
                   className={`lecture-row ${selectedLectureId === lecture.id ? 'is-selected' : ''} ${lecture.isLaboratory ? 'is-laboratory' : ''}`}
                   key={lecture.id}
-                  onClick={event => {
-                    cancelOpen()
-                    if (!onRenameLecture || event.detail === 0) { onSelectLecture(lecture.id); return }
-                    if (event.detail === 1) openTimer.current = setTimeout(() => { openTimer.current = null; onSelectLecture(lecture.id) }, 500)
-                  }}
-                  onDoubleClick={onRenameLecture ? event => {
-                    cancelOpen(); setEditingTitle({ lecture, trigger: event.currentTarget })
-                  } : undefined}
+                  onClick={() => onSelectLecture(lecture.id)}
                   onContextMenu={(e) => {
-                    cancelOpen()
-                    if (!onSetLaboratory) return
+                    if (!onSetLaboratory && !onRenameLecture) return
                     e.preventDefault()
                     openLectureMenu(lecture, e.currentTarget, e.clientX, e.clientY)
                   }}
                   onKeyDown={(e) => {
                     if (onRenameLecture && e.key === 'F2') {
-                      e.preventDefault(); cancelOpen(); setEditingTitle({ lecture, trigger: e.currentTarget })
-                    } else if (onSetLaboratory && (e.key === 'ContextMenu' || (e.shiftKey && e.key === 'F10'))) {
+                      e.preventDefault(); setEditingTitle({ lecture, trigger: e.currentTarget })
+                    } else if ((onSetLaboratory || onRenameLecture) && (e.key === 'ContextMenu' || (e.shiftKey && e.key === 'F10'))) {
                       e.preventDefault()
                       const rect = e.currentTarget.getBoundingClientRect()
                       openLectureMenu(lecture, e.currentTarget, rect.left + 24, rect.bottom)
@@ -562,7 +552,10 @@ export function LectureList({
         <div className="course-context-menu lecture-context-menu" ref={menuRef}
           role="menu" aria-label="Opzioni lezione"
           style={{ left: lectureMenu.x, top: lectureMenu.y }}>
-          <button type="button" role="menuitemcheckbox"
+          {onRenameLecture && <button type="button" role="menuitem" onClick={() => {
+            const { lecture, trigger } = lectureMenu; setLectureMenu(null); setEditingTitle({ lecture, trigger })
+          }}>Rinomina titoli… <small>F2</small></button>}
+          {onSetLaboratory && <button type="button" role="menuitemcheckbox"
             aria-checked={Boolean(lectureMenu.lecture.isLaboratory)}
             onClick={async () => {
               const { lecture, trigger } = lectureMenu
@@ -576,7 +569,7 @@ export function LectureList({
               }
             }}>
             <span aria-hidden="true">{lectureMenu.lecture.isLaboratory ? '✓' : '□'}</span> Laboratorio
-          </button>
+          </button>}
         </div>, document.body
       )}
     </section>

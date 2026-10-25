@@ -130,7 +130,9 @@ export class SpotifyService {
     if (response.status === 403) throw new Error('Spotify non consente questo comando: controlla Premium, utenti autorizzati e quota dell’app nel Developer Dashboard.')
     if (response.status === 404) throw new Error('Apri Spotify sul PC, avvia un brano e aggiorna i dispositivi.')
     if (!response.ok) throw new Error('Comando Spotify non riuscito. Riprova dal client ufficiale.')
-    if (response.status === 204) return null
+    // Player commands acknowledge success without a JSON payload (200 or 204).
+    // Reads still require JSON so malformed playback/device data stays visible.
+    if (response.status === 204 || method !== 'GET') return null
     try { return await response.json() } catch { throw new Error('Risposta Spotify non leggibile. Riprova.') }
   }
   async devices(): Promise<SpotifyDevice[]> {

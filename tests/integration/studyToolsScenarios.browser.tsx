@@ -86,10 +86,11 @@ export async function runStudyToolsScenarios(root: Root, api: any) {
     )
     await act(async () => capture.selectGroup('all'))
     check(
-      document.querySelectorAll('.capture-group').length === 3,
-      'All view did not render groups'
+      document.querySelectorAll('.todo-item-row').length === 2 && document.querySelectorAll('.memo-all-notes > details').length === 3,
+      'All view must flatten activities and retain notes for every group'
     )
     await act(async () => capture.selectGroup(studio))
+    await act(async () => document.querySelector<HTMLElement>('.memo-group-actions summary')!.click())
     await click('Elimina gruppo')
     check(capture.groups.length === 2, 'Group removed before confirmation')
     await click('Conferma eliminazione')
@@ -119,6 +120,8 @@ export async function runStudyToolsScenarios(root: Root, api: any) {
       'Create group form unavailable'
     )
     await click('Annulla')
+    await act(async () => capture.clearCompletedTodos('all'))
+    check(capture.todos.every((item: any) => !item.completed) && capture.todos.some((item: any) => item.id === 'old'), 'Clear all completed must preserve unfinished historical activities')
   } finally {
     await act(async () => root.render(null))
     api.getScratchpad = previousLoad

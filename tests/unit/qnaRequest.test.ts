@@ -61,6 +61,13 @@ it('invia solo le immagini attive come parti PNG e la domanda corrente senza alt
 })
 
 describe('Q&A centralizzato', () => {
+  it.each(['brief', 'medium', 'long'] as const)('applica lunghezza %s e stile diretto al prompt SDK', async responseLength => {
+    const gemini = new GeminiService()
+    for await (const chunk of gemini.generateQnaResponse({ apiKey: 'synthetic', model: 'gemini-3.6-flash', responseLength, thread })) expect(chunk).toBe('risposta')
+    expect(sdk.config.config.systemInstruction).toContain(responseLength === 'long' ? 'più di 400 parole' : responseLength === 'medium' ? 'tra 200 e 400 parole' : 'meno di 200 parole')
+    expect(sdk.config.config.systemInstruction).toContain('Non usare frasi di apertura o chiusura')
+    expect(sdk.config.config.systemInstruction).toContain('Non aggiungere domande di verifica in chiusura')
+  })
   const thread = {
     id: 'qna-central-test',
     quote: 'Testo selezionato',
@@ -299,4 +306,17 @@ describe('Q&A centralizzato', () => {
       })
     ).rejects.toThrow(/nessun contenuto/i)
   })
+})
+
+it('limita i riferimenti successivi al contesto completo e distingue gli altri Q&A dalle fonti', async () => {
+ const gemini = new GeminiService({ requestManager: new GeminiRequestManager({ ...DEFAULT_GEMINI_POLICY, rpmLimit: 10000 }, new GeminiTransport()) })
+ const thread: any = { quote: 'Introduzione', messages: [{ role: 'user', text: 'Spiega' }] }
+ for await (const _chunk of gemini.generateQnaResponse({ apiKey: 'test', model: 'gemini-3.6-flash', thread })) { expect(_chunk).toBe('risposta') }
+ expect(sdk.config.config.systemInstruction).toContain('CONTESTO LIMITATO:')
+ expect(sdk.config.config.systemInstruction).not.toContain('PARAGRAFI SUCCESSIVI:')
+ for await (const _chunk of gemini.generateQnaResponse({ apiKey: 'test', model: 'gemini-3.6-flash', thread, fullLectureText: 'Introduzione e capitoli successivi', otherQnaContext: 'Estratto sintetico precedente' })) { expect(_chunk).toBe('risposta') }
+ expect(sdk.config.config.systemInstruction).toContain('PARAGRAFI SUCCESSIVI:')
+ expect(sdk.config.config.systemInstruction).toContain('soltanto se la posizione è verificabile')
+ expect(sdk.config.config.systemInstruction).toContain('derivazioni potenzialmente errate, non fonti originali')
+ expect(sdk.config.config.systemInstruction).toContain('Estratto sintetico precedente')
 })

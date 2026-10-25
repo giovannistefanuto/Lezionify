@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react'
 import type { FocusPdfDocument } from '../../shared/archive'
 import { focusLayout } from '../utils/focusLayout'
 import { PaneDivider } from './PaneDivider'
+import { useNumericPreference } from '../hooks/useNumericPreference'
 import { PdfExportButton } from './PdfExportButton'
 import { MusicButton } from './MusicButton'
 import { MermaidCollapseContext, useMermaidCollapseGroup } from './MermaidDiagram'
@@ -9,17 +10,18 @@ import type { PdfExportRequest } from '../../shared/pdfExport'
 
 const FocusPdfViewer = React.lazy(() => import('./FocusPdfViewer').then(module => ({ default: module.FocusPdfViewer })))
 
-export function FocusWorkspace({ lectureId, children, qna, onCloseQna, onTextZoom, textZoom, exportRequest, onAttachPages, canSelectSlides = false }: {
+export function FocusWorkspace({ lectureId, children, qna, onCloseQna, onTextZoom, textZoom, exportRequest, onAttachPages, canSelectSlides = false, qnaButton }: {
   lectureId: string; children: React.ReactNode; qna: React.ReactNode; onCloseQna: () => void
   onTextZoom: (delta: number) => void; textZoom: number
   exportRequest?: PdfExportRequest
   onAttachPages?: (images: import('../../shared/qnaImages').QnaImageInput[]) => Promise<void>
+  qnaButton?: React.ReactNode
   canSelectSlides?: boolean
 }) {
   const root = useRef<HTMLDivElement>(null)
   const [width, setWidth] = useState(window.innerWidth)
   const [ratio, setRatio] = useState(0.5)
-  const [qnaRatio, setQnaRatio] = useState(0.29)
+  const [qnaRatio, setQnaRatio] = useNumericPreference('lezionify:qna-width:focus:v1', 0.29, 0.15, 0.85)
   const [pdf, setPdf] = useState<FocusPdfDocument | null>(null)
   const [showPdf, setShowPdf] = useState(true)
   const [busy, setBusy] = useState(false)
@@ -96,6 +98,7 @@ export function FocusWorkspace({ lectureId, children, qna, onCloseQna, onTextZoo
       <div className="focus-pane-toolbar">
         <span className="focus-pane-label">Spiegazione</span>
         <MusicButton compact />
+        {qnaButton}
         {exportRequest && <PdfExportButton key={`${lectureId}-${exportRequest.language}`} request={exportRequest} />}
         {mermaid.hasDiagrams && <button type="button" onClick={mermaid.toggleAll}>
           {mermaid.allHidden ? 'Mostra tutti gli schemi' : 'Nascondi tutti gli schemi'}
@@ -117,7 +120,6 @@ export function FocusWorkspace({ lectureId, children, qna, onCloseQna, onTextZoo
         if (bounds) resizeQna((bounds.right - clientX) / bounds.width)
       }} />}
     {qna && <section className="focus-qna-column" style={{ width: layout.qnaWidth }} aria-label="Domande a Gemini">
-      <button className="focus-qna-dismiss" aria-label="Chiudi domanda e ripristina colonne" onClick={onCloseQna}>× Chiudi domanda</button>
       {qna}
     </section>}
   </div>

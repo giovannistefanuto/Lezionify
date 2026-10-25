@@ -1,3 +1,6 @@
+import { runOctober22Scenarios } from './october22Scenarios.browser'
+import { runInterfacePolishScenarios } from './interfacePolishScenarios.browser'
+import { runTodayScenarios } from './todayScenarios.browser'
 import { runMemoLogsExportScenarios } from './memoLogsExportScenarios.browser'
 import { runCourseChatScenarios } from './courseChatScenarios.browser'
 import { runStudyToolsScenarios } from './studyToolsScenarios.browser'
@@ -131,6 +134,7 @@ const api: any = {
 ;(window as any).archive = api
 
 async function runExpiredPauseScenario() {
+  const performanceNowDescriptor = Object.getOwnPropertyDescriptor(performance, 'now')
   const originalNow = Date.now
   const originalInterval = window.setInterval
   const originalClearInterval = window.clearInterval
@@ -143,7 +147,9 @@ async function runExpiredPauseScenario() {
   let nextId = 0
   let hidden = false
   let exited = false
+  let memoOpen = false
   Date.now = () => now
+  Object.defineProperty(performance, 'now', { configurable: true, value: () => now })
   window.setInterval = ((callback: () => void) => {
     callbacks.set(++nextId, callback)
     return nextId
@@ -153,7 +159,7 @@ async function runExpiredPauseScenario() {
   api.saveStudySession = async (session: any) => { persisted.set(session.id, session) }
   api.getLectureStudySeconds = async () => 120
   function PauseHarness() {
-    output = useStudyTracker({ activeLectureId: 'pause-synthetic', courseCode: 'TEST', isFocusMode: true, activeTab: 'markdown', isEnabled: true })
+    output = useStudyTracker({ activeLectureId: 'pause-synthetic', courseCode: 'TEST', isFocusMode: true, activeTab: 'markdown', isEnabled: true, suspended: memoOpen })
     return <PauseTimerOverlay show={output.pauseTimerActive} minutes={output.pauseMinutes}
       onReturnToStudy={output.resumeFromPause} onQuit={output.exitFromPause} />
   }
@@ -171,15 +177,46 @@ async function runExpiredPauseScenario() {
   }
   try {
     await act(async () => root.render(<React.StrictMode><PauseHarness /></React.StrictMode>))
+    let quickExits = 0
+    await act(async () => output.requestExitFocus(() => { quickExits++ }))
+    check(quickExits === 1 && !output.showFocusLock, 'Fresh Focus entry must exit immediately')
+    now += 299999
+    await act(async () => output.requestExitFocus(() => { quickExits++ }))
+    check(quickExits === 2 && !output.showFocusLock, 'Focus exit must remain immediate before five minutes')
+    now++
+    await act(async () => output.requestExitFocus(() => { quickExits++ }))
+    check(quickExits === 2 && output.showFocusLock && output.isPaused, 'Five-minute boundary must activate Focus Lock')
+    await act(async () => output.handleContinueFocus())
+    await act(async () => output.requestExitFocus(() => { quickExits++ }))
+    check(output.showFocusLock && quickExits === 2, 'Continuing Focus must not reset the grace period')
+    await act(async () => root.render(null))
+    await act(async () => root.render(<React.StrictMode><PauseHarness /></React.StrictMode>))
+    await act(async () => output.requestExitFocus(() => { quickExits++ }))
+    check(quickExits === 3 && !output.showFocusLock, 'Reentering Focus must start a new grace period')
     for (let second = 0; second < 60; second++) await tick()
     check(output.activeSeconds === 60 && output.lectureTotalSeconds === 180, 'Study baseline or lesson total incorrect')
+    memoOpen = true
+    await act(async () => root.render(<React.StrictMode><PauseHarness /></React.StrictMode>))
+    for (let second = 0; second < 10; second++) {
+      await act(async () => window.dispatchEvent(new MouseEvent('mousemove')))
+      await tick()
+    }
+    check(output.activeSeconds === 60 && output.isPaused, 'Memo counted study time or its interactions resumed tracking')
+    memoOpen = false
+    await act(async () => root.render(<React.StrictMode><PauseHarness /></React.StrictMode>))
+    check(output.activeSeconds === 60 && !output.isPaused, 'Closing Memo reset or failed to resume the session')
     await act(async () => output.startPauseTimer(5))
+    memoOpen = true
+    await act(async () => root.render(<React.StrictMode><PauseHarness /></React.StrictMode>))
+    memoOpen = false
+    await act(async () => root.render(<React.StrictMode><PauseHarness /></React.StrictMode>))
+    check(output.pauseTimerActive && output.isPaused, 'Closing Memo resumed an explicit pause')
     const resumeButton = document.querySelector('.pause-timer-resume-btn') as HTMLButtonElement
     resumeButton.focus()
     await tick(5 * 60 * 1000)
     check(document.querySelector('.pause-timer-title')?.textContent === 'Pausa terminata', 'Five-minute pause did not expire')
     check(document.activeElement === resumeButton && resumeButton.isConnected, 'Expiry replaced the focused resume button')
-    check(document.querySelector('.pause-timer-subtext')?.textContent?.includes('resta fermo'), 'Expired pause does not explain frozen study time')
+    check(!document.querySelector('.pause-timer-subtext'), 'Expired pause must omit the removed paragraph')
     // Another 25 minutes away, including PC suspension and a return to the app.
     await visibility(true)
     await tick(25 * 60 * 1000)
@@ -222,6 +259,8 @@ async function runExpiredPauseScenario() {
   } finally {
     await act(async () => root.render(null))
     Date.now = originalNow
+    if (performanceNowDescriptor) Object.defineProperty(performance, 'now', performanceNowDescriptor)
+    else Reflect.deleteProperty(performance, 'now')
     window.setInterval = originalInterval
     window.clearInterval = originalClearInterval
     if (hiddenDescriptor) Object.defineProperty(document, 'hidden', hiddenDescriptor)
@@ -315,6 +354,21 @@ async function runFinalLectureScenario() {
 }
 
 async function run() {
+  if (new URLSearchParams(location.search).has('october22-only')) {
+    await runOctober22Scenarios(root, api)
+    require('electron').ipcRenderer.send('done', 'PASS: October22 accessibility, copy guard, Q&A Medium, course consent and long chat')
+    return
+  }
+  if (new URLSearchParams(location.search).has('interface-polish-only')) {
+    await runInterfacePolishScenarios(root, api)
+    require('electron').ipcRenderer.send('done', 'PASS interface polish')
+    return
+  }
+  if (new URLSearchParams(location.search).has('today-only')) {
+    await runTodayScenarios(root, api)
+    require('electron').ipcRenderer.send('done', 'PASS: today Q&A zoom, context, resize, Memo, battery, downloads and Mermaid')
+    return
+  }
   if (new URLSearchParams(location.search).has('lecture-list-only')) {
     await runLectureListScenarios(root)
     require('electron').ipcRenderer.send('done', 'PASS: lecture list and two-step course PDF export with optional laboratory')
@@ -564,6 +618,7 @@ async function run() {
   generation = deferred()
   await act(async () => { job = output.sendMessage('t1', 'Seconda domanda', false); await Promise.resolve() })
   check(!JSON.stringify(request).includes('risposta parziale fallita'), 'Q&A retry used failed partial history')
+  check(request.messages.filter((message: any) => message.role === 'user' && message.text === 'Seconda domanda').length === 1, 'Q&A retry duplicated the unanswered question')
   await act(async () => {
     chunk({ threadId: 't1', chunk: 'nuova risposta' })
     generation.resolve({ success: true, text: 'nuova risposta' })
@@ -1057,7 +1112,12 @@ async function run() {
     await output.flushCurrentSession()
   })
   check(output.activeSeconds === 65 && output.lectureTotalSeconds === 7265, 'Periodic checkpoints doubled lecture total')
+  const focusPerformanceDescriptor = Object.getOwnPropertyDescriptor(performance, 'now')
+  const focusPerformanceNow = performance.now.bind(performance)
+  Object.defineProperty(performance, 'now', { configurable: true, value: () => focusPerformanceNow() + 300_000 })
   await act(async () => output.requestExitFocus(() => {}))
+  if (focusPerformanceDescriptor) Object.defineProperty(performance, 'now', focusPerformanceDescriptor)
+  else Reflect.deleteProperty(performance, 'now')
   const frozenTotal = output.lectureTotalSeconds
   await act(async () => { for (let tick = 0; tick < 15; tick++) for (const callback of intervals.values()) callback() })
   check(output.activeSeconds === 65 && output.lectureTotalSeconds === frozenTotal, 'Focus Lock countdown increased study time')
@@ -1752,7 +1812,10 @@ flowchart TD
   check(!floatingButton(), 'Focus shortcut should not float at the top')
   const drawerBody = document.querySelector<HTMLElement>('.detail-body')!
   await waitForDrawer(() => drawerBody.scrollHeight > drawerBody.clientHeight + 1000, 'Long lecture has not finished rendering')
-  drawerBody.scrollTop = 500
+  await act(async () => {
+    drawerBody.scrollTop = 500
+    drawerBody.dispatchEvent(new Event('scroll'))
+  })
   await waitForDrawer(() => Boolean(floatingButton()), 'Focus shortcut missing after actions scroll away')
   const floatingTop = floatingButton()!.getBoundingClientRect().top
   drawerBody.scrollTop = 850
@@ -1764,7 +1827,7 @@ flowchart TD
   check(!floatingButton(), 'Focus shortcut visible on another tab')
   await act(async () => root.render(<LectureDrawer {...drawerProps} />))
   await waitForDrawer(() => drawerBody.scrollHeight > drawerBody.clientHeight + 1000, 'Long lecture not restored after switching tabs')
-  drawerBody.scrollTop = 0
+  await act(async () => { drawerBody.scrollTop = 0; drawerBody.dispatchEvent(new Event('scroll')); await new Promise(resolve => requestAnimationFrame(resolve)) })
   await act(async () => new Promise(resolve => setTimeout(resolve, 60)))
   await waitForDrawer(() => !floatingButton(), 'Focus shortcut remained when original actions returned')
   const focusButton = () =>
@@ -1808,9 +1871,14 @@ flowchart TD
   await pressLanguage()
   check(String(shortcutLanguage) === 'it', 'Ctrl+L must switch back in Focus Mode')
   await verifyDrawerAlignment(true)
+  const drawerFocusPerformanceDescriptor = Object.getOwnPropertyDescriptor(performance, 'now')
+  const drawerFocusPerformanceNow = performance.now.bind(performance)
+  Object.defineProperty(performance, 'now', { configurable: true, value: () => drawerFocusPerformanceNow() + 300_000 })
   await act(async () =>
     window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
   )
+  if (drawerFocusPerformanceDescriptor) Object.defineProperty(performance, 'now', drawerFocusPerformanceDescriptor)
+  else Reflect.deleteProperty(performance, 'now')
   check(
     Boolean(document.querySelector('.focus-lock-overlay')),
     'Escape did not open Focus Lock'
@@ -1885,6 +1953,9 @@ flowchart TD
   await runStudyToolsScenarios(root, api)
   require('electron').ipcRenderer.send('test-checkpoint', 'runMusicTranslationScenarios')
   await runMusicTranslationScenarios(root, api)
+  await runInterfacePolishScenarios(root, api)
+  await runTodayScenarios(root, api)
+  await runOctober22Scenarios(root, api)
   require('electron').ipcRenderer.send(
     'done',
     'PASS: React regression scenarios (Markdown alerts, literals and formula contrast; Focus Lock lecture/session totals, checkpoints, pauses, reentry, errors and stale responses; PDF.js mixed pages, reading position, zoom, native divider, Q&A and hidden panes; dashboard, settings, video import, course archive, Q&A, pipeline, AI isolation, translation, search, Quick Capture, highlights, reminders, Mermaid, study tabs and fullscreen)'

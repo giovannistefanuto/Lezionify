@@ -6,6 +6,16 @@ import { detectDictionaryDirection, DictionaryIndex, type DictionaryEntry } from
 import { LocalDictionaryService } from '../../electron/main/localDictionary'
 
 const entry = (word: string, partOfSpeech = 'v'): DictionaryEntry => ({ word, partOfSpeech, pronunciation: '', senses: [{ translations: ['traduzione'], definitions: ['definizione'] }] })
+
+it('collusion e collusions sono presenti EN IT e collusione IT EN nei dati distribuiti', async () => {
+  const service = new LocalDictionaryService(resolve('public/dictionaries'))
+  for (const word of ['collusion', 'Collusion', 'collusions']) {
+    const result = await service.lookup(word, 'en-it')
+    expect(result.lemma).toBe('collusion')
+    expect(result.entries[0].senses[0].translations).toContain('collusione')
+  }
+  expect((await service.lookup('collusione', 'it-en')).entries[0].senses[0].translations).toContain('collusion')
+})
 const index = new DictionaryIndex({ entries: ['search', 'run', 'study', 'make', 'lie', 'go'].map(word => entry(word)).concat([entry('cat', 'n'), entry('news', 'n'), entry('look up')]) })
 afterEach(() => vi.unstubAllGlobals())
 
