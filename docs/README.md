@@ -2,6 +2,8 @@
 
 La documentazione è divisa per scopo, così il README principale resta leggibile.
 
+[Sala di consultazione del 25 ottobre](product/sala-consultazione-2026-10-25.md): nuovo ingresso RAG essenziale, perimetro scelto, verifiche e installer.
+
 [Allineamento GitHub del 25 ottobre](quality/pubblicazione-github-2026-10-25.md): perimetro dei sorgenti, collaudi e limiti della pubblicazione.
 
 [RAG: otto famiglie di domande realistiche](product/rag-domande-studio-2026-10-23.md), con correzioni, benchmark locale e installer finale successivo.
@@ -26,6 +28,7 @@ La documentazione è divisa per scopo, così il README principale resta leggibil
 
 ## Pubblicazione
 
+- [Roadmap di distribuzione](publishing/roadmap-distribuzione-2026-10-25.md): cose da chiarire e verificare per prova sul Mac M3 Pro, beta studenti, release, aggiornamenti e portfolio; attività con criteri di completamento.
 - [Presentazione inglese](../README.md) e [italiana](../README.it.md): accessi ad appunti, avvio locale e scelte tecniche con prove consultabili.
 - [Tour visuale di 48 secondi](assets/demo/README.md): schermate Electron sintetiche, alternativa testuale bilingue e rigenerazione locale.
 - [Checklist GitHub](publishing/launch-checklist.md): controlli prima e dopo il primo push pubblico.

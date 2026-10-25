@@ -4501,3 +4501,69 @@ Non modificare manualmente la sezione `Registro`: aggiungi le nuove decisioni es
 - **Impatto:** Scansione candidati senza credenziali rilevate. npm run check completo passato fuori sandbox: 739 Vitest in 56 file, 24 Python, 41 Node, scenari Electron e riavvio, typecheck, lint, build e PDF reali. Gate RAG pubblico offline passato; nessun aggiornamento di dipendenze per la pubblicazione.
 - **Follow-up:** Verificare hash remoto dopo push e CI Windows sul nuovo commit. Restano aperti i limiti qualitativi RAG 90-92 e gli altri limiti documentati. Il primo tentativo sandbox si e fermato prima dei test per EPERM sulla cache Vitest.
 - **File coinvolti:** DECISIONI.md, STRUTTURA_PROGETTO.md, docs/README.md, docs/quality/pubblicazione-github-2026-10-25.md, sorgenti e test dello snapshot D-0379-D-0407
+
+## D-0409 — Commit e push automatici dopo ogni rigenerazione installer
+
+- **Data:** 2026-10-25
+- **Stato:** accettata
+- **Area:** workflow-github
+- **Decisione:** Aggiunta in AGENTS.md la regola permanente richiesta dall'utente: ogni rigenerazione dell'installer generale, richiesta o avviata dall'agente, comporta verifiche pertinenti, commit e push automatici di tutte le modifiche pubblicabili del checkout sulla repository GitHub collegata, senza ulteriori conferme.
+- **Motivazione:** Mantenere GitHub allineato al lavoro locale ogni volta che viene prodotto un nuovo installer, evitando pubblicazioni dei sorgenti dimenticate.
+- **Impatto:** Include modifiche preesistenti, test, configurazioni e documentazione; restano esclusi dati personali, credenziali e artefatti ignorati, inclusi gli installer in dist. Il completamento richiede la verifica del commit remoto; eventuali blocchi vanno segnalati senza force push.
+- **Follow-up:** Applicare la regola dalla prossima rigenerazione; questo intervento aggiorna soltanto le istruzioni e non rigenera l'installer.
+- **File coinvolti:** AGENTS.md, DECISIONI.md
+
+## D-0410 — Pull automatico all'inizio di ogni nuova chat
+
+- **Data:** 2026-10-25
+- **Stato:** accettata
+- **Area:** workflow-github
+- **Decisione:** Aggiunta in AGENTS.md la sincronizzazione obbligatoria da GitHub una volta all'inizio di ogni nuova chat, dopo la lettura delle istruzioni e prima degli altri documenti o delle modifiche: controllo Git, fetch e pull --ff-only dall'upstream del ramo corrente senza ulteriori conferme, quindi rilettura delle istruzioni aggiornate.
+- **Motivazione:** Iniziare il lavoro dai sorgenti e dalle decisioni aggiornati sulla repository collegata, preservando il lavoro locale.
+- **Impatto:** Checkout con modifiche non committate, upstream assente, HEAD scollegata, divergenze o errori di rete e autenticazione richiedono la segnalazione del blocco; nessun reset distruttivo, stash, merge o rebase automatico. Sono ammesse soltanto attivita indipendenti dalla sincronizzazione finche il pull resta bloccato.
+- **Follow-up:** Applicare dalla prossima nuova chat; la chat corrente prosegue con le modifiche documentali D-0409 gia presenti e conservate.
+- **File coinvolti:** AGENTS.md, DECISIONI.md
+
+## D-0411 — Valutazione preliminare Mac, beta studenti e portfolio
+
+- **Data:** 2026-10-25
+- **Stato:** accettata
+- **Area:** ricerca-distribuzione
+- **Decisione:** Registrata la richiesta di esplorare una prova privata su Mac e la distribuzione agli studenti. Salvate fonti primarie, inventario del checkout e priorita proposte in un documento di ricerca; nessuna licenza, provider o architettura nuova adottati, nessuna voce della coda avviata.
+- **Motivazione:** Distinguere installazione privata da distribuzione pubblica e fatti verificati da proposte, riusando benvenuto e audit UX gia esistenti. Chiarire condizioni Apple, termini Gemini, diritti del bundle e limiti di compatibilita prima di implementare.
+- **Impatto:** Sola documentazione. Evidenziati packaging e CI Windows, updater assente, fallback Gemini in chiaro senza safeStorage, licenza riservata e verifica necessaria delle licenze di terzi. Nessuna build, release, lettura di credenziali o chiamata AI. Fetch riuscito; pull ancora da completare per modifiche locali preesistenti.
+- **Follow-up:** Identificare chip e macOS della prima tester; chiarire condizioni Gemini per utenti esterni e scelta di licenza; concordare il perimetro della prima prova prima delle modifiche software. Le tappe della beta restano proposte.
+- **File coinvolti:** docs/research/distribuzione-studenti-fonti-2026-10-25.md, docs/research/README.md, DECISIONI.md
+
+## D-0412 — Roadmap dalla prova Mac alla distribuzione per studenti
+
+- **Data:** 2026-10-25
+- **Stato:** accettata
+- **Area:** pianificazione-distribuzione
+- **Decisione:** Creata su richiesta una roadmap documentale in otto fasi e 35 attivita PUB: perimetro, condizioni API e licenze, preparazione Mac, prova privata, uso autonomo, release e aggiornamenti, beta limitata, pubblicazione e manutenzione. Prima destinazione M3 Pro arm64; versione macOS ancora da conoscere.
+- **Motivazione:** Trasformare la valutazione D-0411 in un percorso ordinato di domande, decisioni e verifiche, distinguendo prerequisiti della prima consegna da funzionalita successive e riusando audit e documentazione esistenti.
+- **Impatto:** Aggiunti criteri di completamento, dipendenze, punti di avanzamento e prossime azioni. Nessun intervento applicativo, licenza, costo o servizio nuovo adottato. Coda LISTA_ORDINE invariata; installer e pubblicazioni non avviati. Modifiche locali preesistenti conservate.
+- **Follow-up:** Raccogliere versione macOS e caso di studio; chiarire Gemini e costi, condizioni di consegna e licenze del bundle; preparare il piano di build Mac offline. Eseguire le attivita dopo richiesta di avvio del relativo lavoro.
+- **File coinvolti:** docs/publishing/roadmap-distribuzione-2026-10-25.md, docs/research/distribuzione-studenti-fonti-2026-10-25.md, docs/README.md, STRUTTURA_PROGETTO.md, DECISIONI.md
+
+## D-0413 — Sala di consultazione: schermata iniziale essenziale
+
+- **Data:** 2026-10-25
+- **Stato:** accettata
+- **Area:** ux-consultazione
+- **Decisione:** Implementata soltanto la proposta visiva 1 scelta dall utente: corsi selezionabili, nuova ricerca pulita, esempi modificabili e invio esplicito Consulta il corso. Cronologia e materiali accessibili su richiesta; risultati esistenti mantenuti. All apertura del corso viene riutilizzata una ricerca vuota o creata senza eliminare lo storico.
+- **Motivazione:** Comunicare la consultazione dei propri materiali e ridurre l associazione con un assistente AI generalista, conservando bozze, fonti e strumenti avanzati.
+- **Impatto:** Nessuna nuova dipendenza o chiamata AI automatica. Cambio corso ed esempi sono locali; PDF, controllo citazioni, recupero errori e indice mantengono i servizi esistenti. Rigenerazione installer e pubblicazione GitHub richieste esplicitamente.
+- **Follow-up:** Completare suite, controllo visuale chiaro/scuro e finestre ridotte, verifica installer e commit remoto. Le proposte risultati 2 e 3 restano non implementate.
+- **File coinvolti:** src/components/CourseChat.tsx, src/components/Sidebar.tsx, src/styles.css, tests/integration/courseChatScenarios.browser.tsx, tests/integration/october22Scenarios.browser.tsx, docs/product/sala-consultazione-2026-10-25.md, design-qa.md
+
+## D-0414 — Schermata iniziale collaudata e installer rigenerato
+
+- **Data:** 2026-10-25
+- **Stato:** accettata
+- **Area:** distribuzione-consultazione
+- **Decisione:** Conclusa la proposta 1 della Sala di consultazione, senza implementare i nuovi layout dei risultati. Rigenerato il setup Windows 0.1.0 e predisposta la pubblicazione di tutte le modifiche pubblicabili, comprese istruzioni Git e roadmap documentali preesistenti. Installer di 294217195 byte, SHA256 4cd7fb9dd8ed4efd51f6d6761c75564bb73e14b224a1fd1984f4d82bfe28aad2.
+- **Motivazione:** Suite completa superata: 739 Vitest in 56 file, 24 Python, 41 Node, typecheck, lint, scenari Electron e PDF. Controlli mirati finali e gate RAG offline verdi; confronto visivo chiaro/scuro e finestre ridotte passato. La fixture storica e stata aggiornata alla creazione della ricerca vuota, preservando le venti risposte precedenti.
+- **Impatto:** Verificati 372 file build, manifesto, blockmap, tre backup e otto componenti estratti dal NSIS. Runtime RAG offline con cache fredda/calda, ripristino, migrazione citazioni, worker PDF e rifiuto modello corrotto. Nessun nuovo invio AI, download modello o esecuzione installer sul profilo personale.
+- **Follow-up:** Verificare commit sul remoto dopo push. Chiudere l app prima di installare il nuovo setup. Restano aperte le validazioni qualitative RAG 90-92 e i layout risultati 2 e 3 non sono stati adottati.
+- **File coinvolti:** src/components/CourseChat.tsx, src/components/Sidebar.tsx, src/styles.css, tests/integration/courseChatScenarios.browser.tsx, tests/integration/october22Scenarios.browser.tsx, tools/verify_installer.cjs, docs/product/sala-consultazione-2026-10-25.md, design-qa.md, STRUTTURA_PROGETTO.md, docs/README.md, dist/Lezionify-Setup-0.1.0.exe

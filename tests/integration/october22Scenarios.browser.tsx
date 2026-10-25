@@ -138,8 +138,13 @@ export async function runOctober22Scenarios(root: Root, api: any) {
     api.getCourses = async () => [{ code: 'GAME', name: 'Teoria dei giochi', cfu: 6, publishToGithub: true, schedule: [] }]
     const state = { course: 'GAME', enabled: false, syncing: false, sources: [{ id: 'partial', title: 'Fonte parziale', kind: 'pdf', version: 'one', status: 'partial' }], missingTranscripts: 2, threads: [{ id: 'chat', title: 'Domande sintetiche', draft: '', updatedAt: '', messages: Array.from({ length: 20 }, (_, i) => ({ id: `m-${i}`, role: 'assistant', text: '## Dalle fonti del corso\n' + 'Spiegazione sintetica. '.repeat(40) + '\n## Deduzione\nUna deduzione.\n## Integrazione generale\nApprofondimento generale.', createdAt: '' })) }] }
     api.getCourseRag = async () => structuredClone(state)
+    api.saveCourseThread = async (_course: string, thread: any) => {
+      if (!state.threads.some(item => item.id === thread.id)) state.threads.push(structuredClone(thread))
+    }
     api.onCourseRagEvent = () => () => {}
     await render(<CourseChat open courses={['GAME']} initialCourse="GAME" onClose={() => {}} onOpenLecture={() => {}} />)
+    await click('Ricerche recenti')
+    await click('Domande sintetiche')
     const scroller = document.querySelector<HTMLElement>('.course-chat-messages')!
     scroller.scrollTop = 100
     const composer = document.querySelector('.course-chat-composer')!.getBoundingClientRect()

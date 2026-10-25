@@ -58,6 +58,7 @@ export async function runCourseChatScenarios(root: Root, api: any) {
     new Blob([syntheticPdf(2)], { type: 'application/pdf' })
   )
   api.getCourseRag = async (course: string) => structuredClone(states[course])
+  api.getCourses = async () => [{ code: 'GAME', name: 'Teoria dei giochi' }, { code: 'OTHER', name: 'Intelligent Robotics' }]
   api.saveCourseThread = async (course: string, thread: any) => {
     const existing = states[course].threads.find(
       (item) => item.id === thread.id
@@ -190,6 +191,41 @@ export async function runCourseChatScenarios(root: Root, api: any) {
         !!document.querySelector('textarea'),
       'Initial course thread not created'
     )
+    check(!!document.querySelector('.course-consultation-start'), 'New research did not show consultation start')
+    check(document.querySelector<HTMLElement>('[aria-label="Conversazioni del corso"]')!.hidden, 'History dominates new research')
+    check(!document.querySelector('.course-coverage') && !document.querySelector('.course-count-tool'), 'Technical details leaked onto consultation start')
+    await click('Dove abbiamo introdotto')
+    check(document.querySelector<HTMLTextAreaElement>('textarea')!.value.includes('questo concetto') && sent.length === 0, 'Example sent AI instead of preparing an editable draft')
+    check(document.activeElement === document.querySelector('textarea'), 'Example did not focus question')
+    await click('OTHER')
+    await until(() => states.OTHER.threads.length === 1, 'Segmented course switch did not load target')
+    await input(document.querySelector('textarea')!, 'Bozza del secondo corso')
+    await click('GAME')
+    await until(() => document.querySelector<HTMLTextAreaElement>('textarea')?.value.includes('questo concetto') === true, 'Course switch lost original draft')
+    check(sent.length === 0, 'Course selection contacted AI')
+    await click('Ricerche recenti')
+    check(!document.querySelector<HTMLElement>('[aria-label="Conversazioni del corso"]')!.hidden, 'History cannot be reached')
+    await click('Ricerche recenti')
+    await input(document.querySelector('textarea')!, '')
+    const ipc = require('electron').ipcRenderer
+    await ipc.invoke('feature-test-window-size', { width: 1440, height: 960 })
+    await settle()
+    await ipc.invoke('capture-video-import', 'oct22-consultation-start')
+    document.documentElement.setAttribute('data-theme', 'dark')
+    await ipc.invoke('capture-video-import', 'oct22-consultation-dark')
+    document.documentElement.removeAttribute('data-theme')
+    await ipc.invoke('feature-test-window-size', { width: 900, height: 640 })
+    await settle()
+    const consult = document.querySelector<HTMLButtonElement>('.course-consultation-submit')!.getBoundingClientRect()
+    check(consult.top >= 0 && consult.bottom <= innerHeight, 'Short window hides consult action')
+    await ipc.invoke('capture-video-import', 'oct22-consultation-low')
+    await ipc.invoke('feature-test-window-size', { width: 390, height: 844 })
+    await settle()
+    const form = document.querySelector('.course-chat-composer')!.getBoundingClientRect()
+    check(form.left >= 0 && form.right <= innerWidth + 1, 'Narrow consultation overflows horizontally')
+    await ipc.invoke('capture-video-import', 'oct22-consultation-narrow')
+    await ipc.invoke('feature-test-window-size', { width: 1240, height: 820 })
+    await settle()
     await input(document.querySelector('textarea')!, 'Bozza da conservare')
     await click('Chiudi')
     check(closed, 'Close handler missing')
@@ -199,7 +235,7 @@ export async function runCourseChatScenarios(root: Root, api: any) {
       document.querySelector('textarea')!.value === 'Bozza da conservare',
       'Closing course chat lost draft'
     )
-    await click('Fonti')
+    await click('Materiali del corso')
     check(
       document
         .querySelector('[aria-label="Fonti del corso"]')
@@ -242,7 +278,7 @@ export async function runCourseChatScenarios(root: Root, api: any) {
       'Visual send disclosure missing'
     )
     check(sent.length === 0, 'Page selection sent AI before explicit send')
-    await click('Invia a Gemini')
+    await click('Consulta il corso')
     await until(
       () =>
         sent.length === 1 &&
@@ -337,6 +373,7 @@ export async function runCourseChatScenarios(root: Root, api: any) {
       !document.querySelector('.course-citations button'),
       'Other course leaked previous citations'
     )
+    check(document.querySelector('.course-consultation-title')?.textContent?.includes('Intelligent Robotics'), 'Selected course name not used on start')
     await input(document.querySelector('textarea')!, 'Nuova bozza')
     await render(false)
     await act(async () => root.render(null))

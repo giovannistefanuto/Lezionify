@@ -49,6 +49,7 @@ export function CourseChat({
   const [status, setStatus] = useState('')
   const [error, setError] = useState('')
   const [showSources, setShowSources] = useState(false)
+  const [showHistory, setShowHistory] = useState(false)
   const [citation, setCitation] = useState<CourseCitation | null>(null)
   const [pdf, setPdf] = useState<{
     document: FocusPdfDocument & { sourceVersion: string }
@@ -81,6 +82,23 @@ export function CourseChat({
     wasOpen.current = open
   }, [open, initialCourse, courses, busy])
   const active = data?.threads.find((thread) => thread.id === threadId)
+  const isStart = !active?.messages.length
+  const chooseCourse = (code: string) => {
+    void flushDraft()
+    setCourse(code)
+    setPdf(null)
+    setShowHistory(false)
+  }
+  const updateDraft = (value: string) => {
+    setDraft(value)
+    if (!active) return
+    draftCache.current.set(`${course}:${active.id}`, value)
+    setData(previous => previous ? {
+      ...previous,
+      threads: previous.threads.map(thread => thread.id === threadId ? { ...thread, draft: value } : thread)
+    } : previous)
+    pendingDraft.current = { course, thread: { ...active, draft: value } }
+  }
   const refresh = useCallback(async () => {
     const selected = currentCourse.current
     if (!selected) return
@@ -135,20 +153,20 @@ export function CourseChat({
       .getCourseRag(course)
       .then(async (result) => {
         if (generation.current !== token) return
-        if (!result.threads.length) {
+        if (!result.threads.some(thread => !thread.messages.length)) {
           const initial: CourseThread = {
             id: crypto.randomUUID(),
-            title: 'Nuova conversazione',
+            title: 'Nuova ricerca',
             messages: [],
             draft: '',
             updatedAt: new Date().toISOString()
           }
           await window.archive.saveCourseThread(course, initial)
           if (generation.current !== token) return
-          result.threads = [initial]
+          result.threads = [...result.threads, initial]
         }
         setData(result)
-        const first = result.threads.at(-1)
+        const first = result.threads.filter(thread => !thread.messages.length).at(-1)
         setThreadId(first?.id ?? null)
         setDraft(
           first
@@ -227,7 +245,7 @@ export function CourseChat({
     await flushDraft()
     const next: CourseThread = {
       id: crypto.randomUUID(),
-      title: 'Nuova conversazione',
+      title: 'Nuova ricerca',
       messages: [],
       draft: '',
       updatedAt: new Date().toISOString()
@@ -236,6 +254,8 @@ export function CourseChat({
     await refresh()
     setThreadId(next.id)
     setDraft('')
+    setShowHistory(false)
+    setShowSources(false)
   }
   const send = async () => {
     if (!draft.trim() || busy) return
@@ -316,10 +336,10 @@ export function CourseChat({
   return (
     <div className="course-chat-overlay">
       <div
-        className="course-chat"
+        className={`course-chat${isStart ? ' course-consultation-start' : ''}`}
         role="dialog"
         aria-modal="true"
-        aria-label="Chat del corso"
+        aria-label={isStart ? 'Sala di consultazione' : 'Chat del corso'}
         tabIndex={-1}
         ref={panel}
         onKeyDown={(event) => {
@@ -330,9 +350,9 @@ export function CourseChat({
           if (event.key !== 'Tab') return
           const focusable = Array.from(
             panel.current?.querySelectorAll<HTMLElement>(
-              'button:not(:disabled), select:not(:disabled), input:not(:disabled), textarea:not(:disabled), [tabindex="0"]'
+              'button:not(:disabled), select:not(:disabled), input:not(:disabled), textarea:not(:disabled), summary, [tabindex="0"]'
             ) ?? []
-          )
+          ).filter(element => element.getClientRects().length && !element.closest('[hidden], [inert]'))
           const first = focusable[0],
             last = focusable.at(-1)
           if (
@@ -348,16 +368,21 @@ export function CourseChat({
           }
         }}
       >
-        <header>
+        {isStart ? <header className="course-consultation-toolbar">
+          <div className="course-consultation-brand"><span className="brand-mark" aria-hidden="true">L</span><strong>Lezionify</strong><span>Sala di consultazione</span></div>
+          <nav aria-label="Strumenti del corso">
+            <button type="button" disabled={busy} aria-expanded={showHistory} aria-controls="course-history" onClick={() => { setShowHistory(value => !value); setShowSources(false) }}>Ricerche recenti</button>
+            <button type="button" disabled={busy} aria-expanded={showSources} aria-controls="course-materials" onClick={() => { setShowSources(value => !value); setShowHistory(false) }}>Materiali del corso</button>
+            <button onClick={close} aria-label="Chiudi chat del corso">Chiudi</button>
+          </nav>
+        </header> : <header>
           <h2>Chat del corso</h2>
           <select
             aria-label="Corso della chat"
             value={course}
             disabled={busy}
             onChange={(event) => {
-              void flushDraft()
-              setCourse(event.target.value)
-              setPdf(null)
+              chooseCourse(event.target.value)
             }}
           >
             {courses.map((code) => (
@@ -367,9 +392,10 @@ export function CourseChat({
           <button onClick={() => setShowSources((value) => !value)}>
             Fonti ({data?.sources.length ?? 0})
           </button>
+          <button type="button" disabled={busy} onClick={() => void createThread().catch(() => setError('Impossibile creare la ricerca.'))}>Nuova ricerca</button>
           <button onClick={close} aria-label="Chiudi chat del corso">Chiudi</button>
-        </header>
-        {course && data && <div className="course-coverage" aria-label="Copertura del corso">
+        </header>}
+        {course && data && (!isStart || showSources) && <div className="course-coverage" aria-label="Copertura del corso">
           <strong>{courseNames[course] || course}</strong>
           <span>{data.sources.filter(source => source.status === 'ready' || source.status === 'partial').length} fonti consultabili · {data.sources.filter(source => source.status !== 'ready').length} fonti con limiti · {data.missingTranscripts ?? 0} trascrizioni mancanti</span>
           <button type="button" onClick={() => setShowSources(value => !value)}>Vedi copertura e lacune</button>
@@ -377,11 +403,11 @@ export function CourseChat({
         </div>}
         {!courses.length && <p>Aggiungi un corso per iniziare.</p>}
         {error && <p role="alert">{error}</p>}
-        <p role="status">
-          {busy || semanticBusy || data?.syncing ? status || 'Aggiornamento delle fonti…' : ''}
+        <p role="status" className="course-request-status">
+          {busy || (showSources && (semanticBusy || data?.syncing)) ? status || 'Aggiornamento delle fonti…' : !data && course && !error ? 'Caricamento del corso…' : ''}
         </p>
         {showSources && (
-          <section className="course-chat-sources" aria-label="Fonti del corso">
+          <section id="course-materials" className="course-chat-sources" aria-label="Fonti del corso">
             <p>
               Collega la cartella di questo corso: autorizzi download e
               indicizzazione dei PDF presenti e futuri mentre l’app è aperta. La
@@ -437,7 +463,7 @@ export function CourseChat({
               setSemanticBusy(true)
               void perform(() => window.archive.prepareCourseSemantic(course)).finally(() => setSemanticBusy(false))
             }}>{semanticBusy ? 'Preparazione modello locale…' : 'Scarica modello semantico locale (circa 140 MB)'}</button>}
-            <small>Il download contatta Hugging Face per i pesi pubblici. Testi e vettori restano sul computer; la risposta viene inviata a Gemini solo con il comando Invia.</small>
+            <small>Il download contatta Hugging Face per i pesi pubblici. Testi e vettori restano sul computer; domanda ed estratti vengono inviati a Gemini solo con il comando esplicito di consultazione.</small>
             {data?.semantic?.status === 'ready' && <div className="course-chat-actions">
               <button type="button" disabled={busy || data.indexing?.status === 'running'} onClick={() => void perform(() => window.archive.manageCourseIndex(course, 'start'))}>Prepara / riprendi indice locale</button>
               {data.indexing?.status === 'running' && <button type="button" onClick={() => void perform(() => window.archive.manageCourseIndex(course, 'cancel'))}>Interrompi preparazione</button>}
@@ -494,8 +520,8 @@ export function CourseChat({
             </ul>
           </section>
         )}
-        <div className="course-chat-layout">
-          <aside aria-label="Conversazioni del corso">
+        <div hidden={isStart && showSources} className={`course-chat-layout${isStart && showHistory ? ' with-history' : ''}`}>
+          <aside id="course-history" aria-label="Conversazioni del corso" hidden={isStart && !showHistory}>
             <button
               disabled={!course || busy}
               onClick={() =>
@@ -504,7 +530,7 @@ export function CourseChat({
                 )
               }
             >
-              + Conversazione
+              Nuova ricerca
             </button>
             {data?.threads.map((thread) => (
               <div key={thread.id}>
@@ -514,6 +540,7 @@ export function CourseChat({
                   onClick={() => {
                     void flushDraft()
                     setThreadId(thread.id)
+                    setShowHistory(false)
                     setDraft(
                       draftCache.current.get(`${course}:${thread.id}`) ??
                         thread.draft
@@ -548,13 +575,14 @@ export function CourseChat({
             aria-label="Conversazione del corso"
           >
             <div className="course-chat-messages" aria-label="Messaggi del corso">
-            {!active?.messages.length && (
-              <p>
-                Confronta lezioni, cerca esercizi o chiedi cosa ha detto il
-                docente. Le risposte distinguono fonti, deduzioni e integrazioni
-                generali.
-              </p>
-            )}
+            {isStart && <div className="course-consultation-intro">
+              <div className="course-consultation-courses" role="group" aria-label="Corso da consultare">
+                {courses.map(code => <button key={code} type="button" disabled={busy} aria-pressed={course === code} onClick={() => chooseCourse(code)}><strong>{code}</strong><span>{courseNames[code] || code}</span></button>)}
+              </div>
+              <div className="course-consultation-title"><div><h2>{courseNames[course] || course || 'I tuoi corsi'}</h2><p>Consulta lezioni e materiali del tuo corso.</p></div><button type="button" disabled={busy} onClick={() => { setShowSources(true); setShowHistory(false) }}>Materiali disponibili</button></div>
+              {data && !data.sources.some(source => source.status === 'ready' || source.status === 'partial') && <p className="course-consultation-notice">Nessun materiale consultabile per questo corso. Aggiungi una trascrizione o apri Materiali disponibili.</p>}
+              {(data?.issue || data?.indexing?.status === 'error') && <p className="course-consultation-notice" role="note">Alcuni materiali richiedono attenzione. Apri Materiali disponibili per controllarli.</p>}
+            </div>}
             {active?.messages.map((message) => (
               <article
                 key={message.id}
@@ -696,7 +724,7 @@ export function CourseChat({
             )}
             </div>
             <div className="course-chat-composer">
-            <details className="course-count-tool"><summary>Conteggio esatto locale nelle trascrizioni</summary>
+            {!isStart && <details className="course-count-tool"><summary>Conteggio esatto locale nelle trascrizioni</summary>
             <form
               className="course-count"
               onSubmit={(event) => {
@@ -742,7 +770,7 @@ export function CourseChat({
                 </div>
               )}
             </form>
-            </details>
+            </details>}
             <form
               onSubmit={(event) => {
                 event.preventDefault()
@@ -750,36 +778,15 @@ export function CourseChat({
               }}
             >
               <label>
-                Domanda sul corso
+                {isStart ? 'Che cosa vuoi ritrovare nel corso?' : 'Domanda sul corso'}
                 <textarea
                   aria-label="Domanda sul corso"
                   value={draft}
-                  disabled={busy}
+                  disabled={busy || !data}
                   maxLength={10000}
+                  placeholder={isStart ? 'Un concetto, un confronto tra lezioni, un passaggio del docente…' : undefined}
                   onChange={(event) => {
-                    setDraft(event.target.value)
-                    if (active)
-                      draftCache.current.set(
-                        `${course}:${active.id}`,
-                        event.target.value
-                      )
-                    setData((previous) =>
-                      previous
-                        ? {
-                            ...previous,
-                            threads: previous.threads.map((thread) =>
-                              thread.id === threadId
-                                ? { ...thread, draft: event.target.value }
-                                : thread
-                            )
-                          }
-                        : previous
-                    )
-                    if (active)
-                      pendingDraft.current = {
-                        course,
-                        thread: { ...active, draft: event.target.value }
-                      }
+                    updateDraft(event.target.value)
                   }}
                 />
               </label>
@@ -798,12 +805,12 @@ export function CourseChat({
                   </button>
                 </p>
               )}
-              <p>
+              {!isStart && <p>
                 Invia la domanda con gli estratti selezionati dal corso e fino a
                 tre approfondimenti automatici. Include un controllo AI fallibile delle principali affermazioni, entro il medesimo limite di invii e tempo.
-              </p>
-              <button disabled={!course || !data || busy || !draft.trim()}>
-                {error ? 'Riprova domanda' : 'Invia a Gemini'}
+              </p>}
+              <button className={isStart ? 'course-consultation-submit' : undefined} disabled={!course || !data || busy || !draft.trim()}>
+                {error ? 'Riprova domanda' : isStart ? 'Consulta il corso' : 'Invia a Gemini'}
               </button>
               {busy && (
                 <button
@@ -820,7 +827,9 @@ export function CourseChat({
                   Interrompi
                 </button>
               )}
+              {isStart && <p className="course-consultation-disclosure">Usa Gemini per riordinare gli estratti del corso. Invia la domanda e i passaggi pertinenti solo quando scegli Consulta il corso.</p>}
             </form>
+            {isStart && <div className="course-consultation-examples"><p>Esempi di ricerca</p>{['Dove abbiamo introdotto questo concetto?', 'Come cambia questo argomento tra le lezioni?'].map(example => <button key={example} type="button" disabled={busy} onClick={() => { updateDraft(example); panel.current?.querySelector('textarea')?.focus() }}>{example}</button>)}</div>}
             </div>
           </section>
         </div>
@@ -838,6 +847,7 @@ export function CourseChat({
                   setImageSourceId(pdf.sourceId)
                   setImageSourceVersion(pdf.document.sourceVersion)
                   setPdf(null)
+                  setShowSources(false)
                 }}
               />
             </React.Suspense>

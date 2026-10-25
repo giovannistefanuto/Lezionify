@@ -2,6 +2,11 @@
 
 ## Stato attuale
 
+La Sala di consultazione (D-0413) introduce l'ingresso RAG essenziale scelto
+dall'utente: corsi, domanda ed esempi locali, con cronologia e materiali aperti
+su richiesta. I risultati conservano il layout precedente. Uso e verifiche in
+`docs/product/sala-consultazione-2026-10-25.md` e confronto in `design-qa.md`.
+
 Lezionify è un'applicazione desktop Electron con React e TypeScript in fase alpha:
 
 - **Backend:** `ArchiveService`, validazioni runtime, scritture atomiche serializzate, recovery, cache in memoria, ricerca MiniSearch, credenziali protette tramite `safeStorage`, gestione e verifica suoni di sottofondo offline e pipeline archivio persistente e riprendibile.
@@ -131,7 +136,7 @@ Lezionify/
 |-- docs/
 |   |-- assets/                # logo, screenshot sintetici e tour visuale del README
 |   |-- product/               # proposte di prodotto future
-|   |-- publishing/            # checklist GitHub e bozza LinkedIn
+|   |-- publishing/            # roadmap distribuzione, checklist GitHub e bozza LinkedIn
 |   |-- quality/               # checklist e report di collaudo
 |   `-- research/              # ricerca ASR, Q&A, traduzione offline e musica durante lo studio
 |-- electron/

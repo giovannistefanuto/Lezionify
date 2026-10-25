@@ -34,6 +34,7 @@ async function main() {
     if (name.endsWith('.js') && !name.includes('translation-runtime')) javascript += packed.toString('utf8')
   }
   for (const marker of ['Risposta media: tra 200 e 400 parole.', '08:00', '17:30', 'Copia appunti', 'publishToGithub', 'legacyPublishingCourseCodes', 'responseJsonSchema', 'Elabora archivio', 'gemini_recovery_wait', 'lectureOrdinal', 'Riprova domanda']) assert(javascript.includes(marker), 'Missing feature: ' + marker)
+  for (const marker of ['Sala di consultazione', 'Consulta il corso', 'Ricerche recenti', 'Materiali disponibili']) assert(javascript.includes(marker), 'Missing consultation start: ' + marker)
   assert(fs.statSync(path.join(archive + '.unpacked', 'node_modules', 'ffmpeg-static', 'ffmpeg.exe')).size > 1000000, 'FFmpeg missing')
   assert(entries.some(item => item.startsWith('out/main/translation-runtime/') && item.endsWith('.wasm')), 'Offline runtime missing')
   if (process.argv.includes('--rag')) {

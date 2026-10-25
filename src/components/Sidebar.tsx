@@ -240,7 +240,7 @@ export function Sidebar({
               )}
 
               {onOpenCourseChat && <button className="settings-gear-btn" onClick={onOpenCourseChat}
-                title="Chat del corso" aria-label="Apri chat del corso">💬<span className="sidebar-action-label">Chat corso</span></button>}
+                title="Sala di consultazione" aria-label="Apri consultazione del corso">💬<span className="sidebar-action-label">Consulta</span></button>}
               {onOpenQuickCapture && (
                 <button
                   className="settings-gear-btn"

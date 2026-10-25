@@ -12,6 +12,7 @@ Deep Research e la possibile indagine con REA; nessuna prova hardware eseguita.
 
 | Documento | Contenuto |
 | --- | --- |
+| [Distribuzione agli studenti: Mac, beta e portfolio](distribuzione-studenti-fonti-2026-10-25.md) | Fonti Apple/Gemini/licenze, inventario del codice, piano proposto per prova privata e beta; nessuna build Mac o nuova funzione implementata |
 | [Suoni equivalenti — catalogo candidato](suoni-equivalenti-catalogo-2026-10-16.md) | Sei audio con provenienza, licenze, URL e hash; acquisizione e decodifica tecnica per valutazione, catalogo adottato in D-0340, player offline implementato e dissolvenze in D-0370 |
 | [Suoni di sottofondo Apple — valutazione](suoni-sottofondo-apple-valutazione-2026-10-16.md) | Funzione e download Apple, grant per Windows non individuato, catalogo incompleto e alternative da concordare; nessun asset scaricato o implementazione |
 | [Lara di Translated — valutazione](lara-translated-valutazione-2026-10-16.md) | Lara 3, pesi offline non individuati, quota API distinta dal web, privacy e SDK, claim di latenza vs misure Bergamot; nessuna chiamata o integrazione |

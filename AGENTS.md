@@ -11,6 +11,26 @@ Leggi, nell'ordine:
 
 Questi file descrivono rispettivamente le regole di lavoro, l'obiettivo del prodotto, la struttura prevista e le decisioni gia' prese.
 
+### Pull automatico all'inizio di ogni chat
+
+All'inizio di ogni nuova chat su questo progetto, dopo aver letto `AGENTS.md`
+e prima di leggere gli altri documenti o modificare file, sincronizza il ramo
+di lavoro con la repository GitHub collegata. Questa regola autorizza il pull
+senza ulteriori conferme e si applica una volta per chat.
+
+1. Controlla stato del checkout, ramo, remoto e upstream configurato.
+2. Esegui `git fetch` dal remoto GitHub collegato e `git pull --ff-only`
+   dall'upstream del ramo corrente quando il checkout e' pulito. Conserva gli
+   eventuali commit locali; se il ramo e' gia' aggiornato, prosegui.
+3. Rileggi `AGENTS.md` dopo la sincronizzazione, quindi continua con gli altri
+   documenti nell'ordine previsto sopra, usando le versioni aggiornate.
+
+Se ci sono modifiche locali non committate, upstream assente, HEAD scollegata,
+storie divergenti o errori di rete/autenticazione, conserva il lavoro e segnala
+il blocco concreto: il pull resta da completare. Prosegui soltanto con le parti
+indipendenti dalla sincronizzazione. Non eseguire reset distruttivi, stash,
+merge o rebase automatici per aggirare il blocco.
+
 ## Registro obbligatorio delle decisioni
 
 Per ogni modifica non banale a prodotto, architettura, dipendenze, dati, flusso utente, modello AI, sicurezza o configurazione, registra una decisione. Non modificare mai direttamente `DECISIONI.md` nella sezione `Registro`.
@@ -40,6 +60,27 @@ Non richiedono una voce: correzioni puramente tipografiche, formattazione senza 
 - Conserva sempre l'audio originale e la trascrizione grezza: il materiale generato dall'AI e' una derivazione, non la fonte primaria.
 - Mantieni `IDEA_INIZIALE.md` come punto di partenza storico. Le scelte successive vanno in `DECISIONI.md`; aggiorna `STRUTTURA_PROGETTO.md` quando cambia la struttura reale del repository.
 - Prima di aggiungere una dipendenza, verifica se risolve un bisogno concreto e registra la scelta.
+
+## Push automatico dopo la rigenerazione dell'installer generale
+
+Ogni volta che viene rigenerato l'installer generale di Lezionify, sia su
+richiesta dell'utente sia per iniziativa dell'agente, completa le verifiche
+pertinenti e poi esegui automaticamente commit e push sulla repository GitHub
+collegata. Questa regola autorizza commit e push senza ulteriori conferme.
+
+- Includi tutte le modifiche pubblicabili presenti nel checkout, anche quelle
+  precedenti alla rigenerazione: sorgenti, test, configurazioni e documentazione,
+  compreso il registro decisioni aggiornato.
+- Controlla il diff prima del commit e rispetta `.gitignore` e le regole sui dati
+  personali e sulle credenziali. Gli installer e gli altri artefatti ignorati
+  restano esclusi dal push; la loro distribuzione tramite release e' separata.
+- Usa il remoto GitHub collegato e il ramo di lavoro con la destinazione Git
+  configurata; verifica che il commit finale sia presente sul remoto prima di
+  dichiarare conclusa l'attivita'. Se non ci sono nuove modifiche, pubblica
+  comunque eventuali commit locali ancora da inviare.
+- Se verifiche, rete, autenticazione o conflitti impediscono il push, conserva
+  il lavoro, segnala il blocco concreto e indica il push come ancora da
+  completare. Non usare force push per superare il blocco.
 
 ## Comando LISTA_ORDINE
 
