@@ -96,7 +96,8 @@ describe('Streaming: deadline, abort e pulizia', () => {
       const parent = new AbortController()
       const manager = new GeminiRequestManager({
         ...DEFAULT_GEMINI_POLICY,
-        maxTotalAttempts: 1
+        maxTotalAttempts: 1,
+        maxAttemptsPerKey: 1
       })
       const call = vi.fn(
         (_key: string, _model: string, signal: AbortSignal) =>

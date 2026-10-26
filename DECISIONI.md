@@ -4567,3 +4567,124 @@ Non modificare manualmente la sezione `Registro`: aggiungi le nuove decisioni es
 - **Impatto:** Verificati 372 file build, manifesto, blockmap, tre backup e otto componenti estratti dal NSIS. Runtime RAG offline con cache fredda/calda, ripristino, migrazione citazioni, worker PDF e rifiuto modello corrotto. Nessun nuovo invio AI, download modello o esecuzione installer sul profilo personale.
 - **Follow-up:** Verificare commit sul remoto dopo push. Chiudere l app prima di installare il nuovo setup. Restano aperte le validazioni qualitative RAG 90-92 e i layout risultati 2 e 3 non sono stati adottati.
 - **File coinvolti:** src/components/CourseChat.tsx, src/components/Sidebar.tsx, src/styles.css, tests/integration/courseChatScenarios.browser.tsx, tests/integration/october22Scenarios.browser.tsx, tools/verify_installer.cjs, docs/product/sala-consultazione-2026-10-25.md, design-qa.md, STRUTTURA_PROGETTO.md, docs/README.md, dist/Lezionify-Setup-0.1.0.exe
+
+## D-0415 — Assegnazione manuale di una lezione al corso richiesto
+
+- **Data:** 2026-10-26
+- **Stato:** accettata
+- **Area:** archivio-locale
+- **Decisione:** Su richiesta diretta assegnata una singola lezione locale al corso indicato, senza cambiare le regole automatiche.
+- **Motivazione:** La sovrapposizione con l orario configurato e inferiore alla soglia automatica del 60 per cento; la conferma esplicita dell utente risolve l assegnazione.
+- **Impatto:** Modificato soltanto courseCode nell archivio personale con applicazione chiusa, backup preventivo e verifica su disco. Audio e altri campi conservati; nessuna chiamata AI.
+- **Follow-up:** Verificare la lezione alla prossima apertura dell applicazione; nessuna modifica all orario richiesta.
+- **File coinvolti:** Archivio locale non versionato: library.json
+
+## D-0416 — Recupero locale della trascrizione interrotta
+
+- **Data:** 2026-10-26
+- **Stato:** accettata
+- **Area:** recupero-trascrizione
+- **Decisione:** Su richiesta esplicita avviato recupero della lezione bloccata usando una copia locale e le chiavi configurate non raggiunte dai precedenti tentativi. Per il fallback audio vengono provati modelli Flash completi e singole chiavi con limite per tentativo, senza cambiare la configurazione generale. Dispensa e traduzione usano servizi e controlli applicativi abituali.
+- **Motivazione:** I tentativi precedenti hanno raggiunto dieci minuti su poche chiavi e due modelli, con HTTP 503, timeout e risposta ASR vuota. I checkpoint delle prime quattro parti permettono la ripresa senza rifare il lavoro.
+- **Impatto:** Chiamate Gemini esplicitamente autorizzate; credenziali decifrate soltanto in memoria. Audio originale e archivio personale conservati; risultati inizialmente nella copia ignorata local-artifacts. Nessuna dipendenza, installer o modifica ai sorgenti applicativi.
+- **Follow-up:** Completare recupero, verificare parti e controlli della traduzione, riportare i risultati verificati nell archivio con backup e controllo delle modifiche concorrenti; documentare esito e limiti.
+- **File coinvolti:** DECISIONI.md, local-artifacts/recovery-20261026, archivio personale non versionato
+
+## D-0417 — Estensione autorizzata del recupero a dispensa e traduzione
+
+- **Data:** 2026-10-26
+- **Stato:** accettata
+- **Area:** recupero-generazione
+- **Decisione:** Dopo il recupero e il salvataggio della trascrizione, l utente autorizza esplicitamente l uso delle altre chiavi configurate e dei modelli completi di riserva anche per dispensa e traduzione. Il runner locale riusa i servizi di generazione, i prompt, i checkpoint e le validazioni esistenti, con rotazione locale delle chiavi e limite per tentativo. Nessuna modifica alle impostazioni del profilo personale o ai sorgenti applicativi.
+- **Motivazione:** Il flusso abituale incontra ripetuti HTTP 503 e timeout su titolo e panoramica. La verifica dei segmenti brevi recupera 1106 parole nella parte 5 invece delle 169 iniziali e 743 nella parte 6 invece delle 674 iniziali, conservando entrambe le lingue. La trascrizione corretta di sei parti e gia salvata con backup nell archivio.
+- **Impatto:** Chiamate AI aggiuntive autorizzate. Prime quattro parti preservate byte per byte, audio originale confrontato, sei segmenti brevi verificati. Nuove derivazioni preparate nella copia ignorata; trasferimento solo dopo esito positivo dei servizi abituali e controllo di concorrenza.
+- **Follow-up:** Completare le tre sezioni, la traduzione con controllo integrita e il trasferimento con backup. Dichiarare il limite: nessuna revisione umana parola per parola e prime quattro parti riusate dai checkpoint.
+- **File coinvolti:** DECISIONI.md, local-artifacts/recovery-20261026, archivio personale non versionato
+
+## D-0418 — Lezione recuperata e derivazioni salvate nell archivio
+
+- **Data:** 2026-10-26
+- **Stato:** accettata
+- **Area:** recupero-collaudo
+- **Decisione:** Completati e riportati nell archivio personale la trascrizione corretta di sei parti, la dispensa italiana e la traduzione inglese della lezione bloccata. Usate chiavi configurate 9 e 10 per il recupero, 9 e 10 per le sezioni, 11 per la traduzione, con gemini-3.5-flash completo. Le tre attivita della singola lezione sono allineate a succeeded; le altre lezioni restano in coda.
+- **Motivazione:** La trascrizione finale contiene 5374 parole. Le ultime due parti recuperate da sei segmenti brevi contengono 1106 e 743 parole; prime quattro parti identiche ai checkpoint. La dispensa contiene 3169 parole e quella inglese 3033; controllo integrita applicativo superato, 33 titoli per lingua, 12 blocchi di codice identici e quattro diagrammi Mermaid conservati strutturalmente.
+- **Impatto:** Trasferimento con app chiusa, backup preventivo, confronto SHA256 dei tre file e dell audio originale, verifica dei metadati concorrenti e conservazione delle altre 37 lezioni. Nessun installer rigenerato, impostazione personale modificata o sorgente applicativo cambiato. Le note generali del corso restano invariate: la fusione aggiuntiva e stata bloccata dalla revisione automatica per ambito e invio di contenuti personali esistenti.
+- **Follow-up:** Riaprire Lezionify e consultare la lezione. Restano tre altre lezioni nella pipeline sospesa. Unione delle note generali del corso subordinata ad autorizzazione esplicita. Limite: nessuna revisione umana integrale dell audio, prime quattro parti riusate.
+- **File coinvolti:** DECISIONI.md, local-artifacts/recovery-20261026/quality-result.json, local-artifacts/recovery-20261026/final-verification.json, archivio personale non versionato
+
+## D-0419 — Elaborazione RL del 26 ottobre alle 09:44
+
+- **Data:** 2026-10-26
+- **Stato:** accettata
+- **Area:** elaborazione-lezione
+- **Decisione:** Su richiesta diretta avviato lo stesso lavoro di recupero e completamento per la lezione RL del 26 ottobre alle 09:44: trascrizione, dispensa italiana e traduzione inglese. Audio di 95 minuti elaborato su copia locale in venti segmenti di massimo cinque minuti, preservando tutte le lingue comprensibili e usando le chiavi configurate e modelli completi gia autorizzati.
+- **Motivazione:** La lezione e ancora audio-only senza checkpoint. I segmenti brevi hanno recuperato omissioni nella precedente lezione e permettono una ripresa granulare. Dispensa e traduzione mantengono prompt, servizi e controlli applicativi abituali.
+- **Impatto:** Chiamate Gemini esplicite e tracciate; credenziali solo in memoria, risultati privati nella copia ignorata. Audio e metadati personali preservati; trasferimento finale con backup, confronto delle modifiche concorrenti e verifica dei file. Nessuna modifica alle impostazioni personali, ai sorgenti applicativi o all installer.
+- **Follow-up:** Completare i venti segmenti e controllarne la copertura, generare e verificare ITA ed ENG, riportare i risultati nell archivio con app chiusa. Note generali del corso escluse dalla fusione aggiuntiva bloccata in precedenza, salvo nuova autorizzazione esplicita.
+- **File coinvolti:** DECISIONI.md, local-artifacts/recovery-rl-20261026, archivio personale non versionato
+
+## D-0420 — RL passa alla trascrizione manuale dell utente
+
+- **Data:** 2026-10-26
+- **Stato:** accettata
+- **Area:** recupero-manuale
+- **Decisione:** Su richiesta dell utente interrotti i tentativi automatici sulla lezione RL del 26 ottobre alle 09:44. Preparata una copia locale ignorata dell MP3 con nome riconoscibile per la trascrizione esterna da parte dell utente; conservati i segmenti intermedi riusciti e l audio originale.
+- **Motivazione:** Il recupero incontra errori di quota, HTTP 503, timeout e problemi di rete; l utente preferisce produrre personalmente la trascrizione. Nessuna ulteriore chiamata Gemini viene avviata per questa elaborazione.
+- **Impatto:** Dispensa e traduzione RL non completate, stato della pipeline personale lasciato aperto. Copia MP3 confrontata tramite SHA256 con l originale. Nessuna modifica ai sorgenti, alle impostazioni personali o all installer.
+- **Follow-up:** Attendere la trascrizione fornita dall utente, associarla alla lezione corretta e riprendere le derivazioni soltanto su sua richiesta. Checkpoint e progressi conservati in local-artifacts/recovery-rl-20261026.
+- **File coinvolti:** DECISIONI.md, local-artifacts/recovery-rl-20261026, archivio personale non versionato
+
+## D-0421 — RL da trascrizione fornita dall utente
+
+- **Data:** 2026-10-26
+- **Stato:** accettata
+- **Area:** generazione-dispense
+- **Decisione:** Su richiesta ripresa la lezione RL del 26 ottobre alle 09:44 importando la trascrizione TXT fornita nella cartella di recupero. Generare soltanto dispensa italiana e traduzione inglese tramite i servizi, prompt e controlli abituali, usando le chiavi e il modello completo gia autorizzati.
+- **Motivazione:** La trascrizione esterna e ora disponibile; evitare ulteriori invii audio e riusare il runner locale riduce lavoro e consumo di contesto Codex, come richiesto dall utente.
+- **Impatto:** TXT originale conservato, copia di lavoro privata ignorata, impostazioni personali invariate. Trasferimento nell archivio subordinato a verifiche, backup e assenza di modifiche concorrenti. Nessuna dipendenza o installer nuovo.
+- **Follow-up:** Verificare integrita della traduzione e conservazione esatta del TXT, salvare i risultati nell archivio e nella cartella richiesta. Le trascrizioni AI parziali precedenti restano separate.
+- **File coinvolti:** DECISIONI.md, local-artifacts/recovery-rl-20261026, archivio personale non versionato
+
+## D-0422 — RL italiana salvata e traduzione lasciata all utente
+
+- **Data:** 2026-10-26
+- **Stato:** accettata
+- **Area:** salvataggio-locale
+- **Decisione:** Su richiesta fermati i tentativi Gemini della versione inglese e salvate nell archivio personale la trascrizione TXT fornita dall utente e la dispensa italiana RL del 26 ottobre alle 09:44. Traduzione non segnata come completata e pipeline lasciata sospesa; l utente esportera l italiana e la tradurra esternamente.
+- **Motivazione:** Generazione italiana riuscita; le richieste inglesi incontrano quote, HTTP 503, errori di rete e timeout. L utente sceglie esplicitamente di interrompere e procedere manualmente.
+- **Impatto:** Backup preventivo, copia TXT identica all originale fornito, SHA256 delle copie verificati, audio originale e altre 37 lezioni conservati. Nell archivio trascrizione e dispensa riuscite, inglese ancora da produrre. Copia italiana disponibile anche nella cartella di recupero con nome riconoscibile.
+- **Follow-up:** Riaprire Lezionify ed esportare l italiana. Attendere eventuale versione inglese fornita dall utente; nessun altro tentativo AI autorizzato per questa traduzione dopo lo stop.
+- **File coinvolti:** DECISIONI.md, local-artifacts/recovery-rl-20261026, archivio personale non versionato
+
+## D-0423 — Generazione archivio estesa al pool completo di chiavi e modelli
+
+- **Data:** 2026-10-26
+- **Stato:** accettata
+- **Area:** gemini-pool
+- **Decisione:** Rimosse deadline complessiva implicita e soglia globale di sei invii per la generazione archivio; budget finito proporzionale alle coppie chiave-modello con tre tentativi per coppia. Q&A e recupero esplicito conservano i limiti precedenti.
+- **Motivazione:** Il test riproduce la terminazione dopo quattro timeout prima di raggiungere la tredicesima chiave; le chiavi successive possono essere utilizzabili.
+- **Impatto:** Restano timeout dei singoli tentativi, stop, RPM, cooldown, sospensioni per progetto e fallback su saturazione. Nessuna chiamata AI reale o dipendenza nuova; maggior durata possibile se molte chiavi falliscono.
+- **Follow-up:** Completare suite e verificare il pacchetto aggiornato; collaudo reale di quote e disponibilita dipende da Google.
+- **File coinvolti:** electron/main/ai/geminiPolicy.ts, electron/main/ai/geminiRequestManager.ts, tests/unit/geminiPhaseB.test.ts, tests/unit/geminiStreaming.test.ts, docs/quality/gemini-pool-revisione-dispense-2026-10-26.md, STRUTTURA_PROGETTO.md, docs/README.md
+
+## D-0424 — Confronto trascrizione ITA ENG e correzioni editoriali locali
+
+- **Data:** 2026-10-26
+- **Stato:** accettata
+- **Area:** revisione-dispense
+- **Decisione:** Confrontate le due dispense della lezione richiesta con la trascrizione fornita. Corrette entrambe e salvate nell archivio con backup e verifica di concorrenza. Precisazioni tecniche editoriali dichiarate, algoritmo delle slide non certificato.
+- **Motivazione:** Rilevati errori matematici nella derivazione, omissioni di esempi e indicazioni di lettura, affermazioni troppo generali e titoli HTML non interpretati. Inglese prevalentemente fedele alla derivazione italiana.
+- **Impatto:** Audio, trascrizione e metadati conservati identici. Renderer reale: 39 titoli, 222 elementi KaTeX e cinque diagrammi per lingua senza errori. Dati e schermate privati esclusi da Git, nessuna API invocata.
+- **Follow-up:** Per certificare la variante di pseudocodice richiesta all esame servono le slide; nessun riascolto integrale dell audio effettuato.
+- **File coinvolti:** Archivio personale non versionato, local-artifacts/rl-audit-20261026, docs/quality/gemini-pool-revisione-dispense-2026-10-26.md
+
+## D-0425 — Installer con pool Gemini completo verificato
+
+- **Data:** 2026-10-26
+- **Stato:** accettata
+- **Area:** distribuzione-gemini
+- **Decisione:** Rigenerato il setup Windows 0.1.0 con D-0423; predisposti commit e push di tutte le modifiche pubblicabili, comprese le decisioni locali precedenti. Setup di 294217156 byte, SHA256 a4bc35e7a2122e6ffa375bfa216adff281e6e748e2ee8d0ac89a6e7123fd689e.
+- **Motivazione:** Rendere utilizzabile la correzione nell applicazione installata, dopo 743 test unitari, typecheck main e renderer, lint e build riusciti. Revisione dei contenuti e renderer completata separatamente.
+- **Impatto:** Verificati 372 file build, manifesto e blockmap, tre backup e otto componenti NSIS. Runtime RAG isolato senza rete superato. Nessuna installazione, release binaria o invio AI; artefatti e dati privati restano ignorati.
+- **Follow-up:** Verificare commit remoto dopo push; installare il nuovo setup con Lezionify chiuso. Vecchio installer conservato in local-artifacts/installer-backups/20261026-rl-pool-audit.
+- **File coinvolti:** DECISIONI.md, STRUTTURA_PROGETTO.md, docs/README.md, docs/quality/gemini-pool-revisione-dispense-2026-10-26.md, electron/main/ai/geminiPolicy.ts, electron/main/ai/geminiRequestManager.ts, tests/unit/geminiPhaseB.test.ts, tests/unit/geminiStreaming.test.ts, dist/Lezionify-Setup-0.1.0.exe

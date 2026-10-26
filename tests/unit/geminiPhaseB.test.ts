@@ -39,6 +39,37 @@ class VirtualClock implements Clock {
 }
 
 describe('Fase B — Gestore Condiviso e Trasporto AI', () => {
+  it.each(['sections', 'translation', 'asr_transcribe'] as const)('raggiunge la tredicesima chiave per %s anche oltre dieci minuti', async purpose => {
+    const clock = new VirtualClock()
+    const manager = new GeminiRequestManager(DEFAULT_GEMINI_POLICY, new GeminiTransport(), clock)
+    const keys = Array.from({ length: 13 }, (_, i) => ({ key: `synthetic-pool-${i}`, quotaGroup: `project-${i}` }))
+    const calls: string[] = []
+    await expect(manager.execute({ jobId: 'full-pool', purpose, keys, preferredModel: 'full',
+      call: async key => {
+        calls.push(key)
+        if (key !== keys[12].key) {
+          clock.advance(purpose === 'asr_transcribe' ? 300_000 : 180_000)
+          throw new GeminiError({ category: 'timeout', isRetryable: true, isDailyQuota: false, sanitizedMessage: 'Timeout simulato' })
+        }
+        return 'ok'
+      }
+    })).resolves.toBe('ok')
+    expect(calls).toEqual(keys.map(key => key.key))
+  })
+  it('esaurisce il pool archivio con tentativi finiti per coppia e rispetta una scadenza esplicita', async () => {
+    const keys = Array.from({ length: 13 }, (_, i) => ({ key: `synthetic-limit-${i}`, quotaGroup: `project-${i}` }))
+    const clock = new VirtualClock()
+    const manager = new GeminiRequestManager(DEFAULT_GEMINI_POLICY, new GeminiTransport(), clock)
+    const call = vi.fn(async () => { throw new GeminiError({ category: 'timeout', isRetryable: true, isDailyQuota: false, sanitizedMessage: 'Timeout simulato' }) })
+    await expect(manager.execute({ jobId: 'finite-pool', purpose: 'translation', keys, preferredModel: 'full', call })).rejects.toMatchObject({ category: 'timeout' })
+    expect(call).toHaveBeenCalledTimes(39)
+
+    const limitedClock = new VirtualClock()
+    const limited = new GeminiRequestManager(DEFAULT_GEMINI_POLICY, new GeminiTransport(), limitedClock)
+    const slow = vi.fn(async () => { limitedClock.advance(180_000); throw new GeminiError({ category: 'timeout', isRetryable: true, isDailyQuota: false, sanitizedMessage: 'Timeout simulato' }) })
+    await expect(limited.execute({ jobId: 'explicit-deadline', purpose: 'sections', keys, preferredModel: 'full', timeoutMs: 300_000, call: slow })).rejects.toMatchObject({ category: 'timeout' })
+    expect(slow).toHaveBeenCalledTimes(2)
+  })
   it('una quota legacy non verificata non sospende le altre chiavi, mantenendo RPM e cooldown condivisi', async () => {
     const clock = new VirtualClock()
     const manager = new GeminiRequestManager({ ...DEFAULT_GEMINI_POLICY, rpmLimit: 5 }, new GeminiTransport(), clock)
@@ -87,16 +118,17 @@ describe('Fase B — Gestore Condiviso e Trasporto AI', () => {
     expect(models).toEqual(['gemini-3.7-flash', 'gemini-3.5-flash', 'gemini-3.8-flash'])
   })
 
-  it('il pool legacy conserva il tetto assoluto di sei richieste e non riprova chiavi duplicate', async () => {
+  it('il pool archivio raggiunge tutte le chiavi legacy e non riprova chiavi duplicate sospese', async () => {
     const manager = new GeminiRequestManager({ ...DEFAULT_GEMINI_POLICY, rpmLimit: 100 }, new GeminiTransport(), new VirtualClock())
     const keys = Array.from({ length: 18 }, (_, i) => ({ key: `synthetic-${i}`, quotaGroup: 'default-project', quotaGroupKnown: false }))
     const quota = new GeminiError({ category: 'quota_exhausted', isDailyQuota: true, isRetryable: false, sanitizedMessage: 'Quota' })
     const call = vi.fn(async () => { throw quota })
     await expect(manager.execute({ jobId: 'legacy-budget', purpose: 'translation', keys, preferredModel: 'full', fallbackModels: ['other-full'], call })).rejects.toBe(quota)
-    expect(call).toHaveBeenCalledTimes(6)
+    expect(call).toHaveBeenCalledTimes(36)
     const next = vi.fn(async (_key: string) => 'ok')
-    await manager.execute({ jobId: 'legacy-duplicates', purpose: 'translation', keys: [{ ...keys[0], id: 'different-position' }, keys[6]], preferredModel: 'full', call: next })
-    expect(next).toHaveBeenCalledExactlyOnceWith(keys[6].key, 'full', expect.any(AbortSignal))
+    const fresh = { key: 'synthetic-fresh', quotaGroup: 'default-project', quotaGroupKnown: false }
+    await manager.execute({ jobId: 'legacy-duplicates', purpose: 'translation', keys: [{ ...keys[0], id: 'different-position' }, fresh], preferredModel: 'full', call: next })
+    expect(next).toHaveBeenCalledExactlyOnceWith(fresh.key, 'full', expect.any(AbortSignal))
   })
 
   it('mostra in ordine tentativi, rotazione, saturazione e fallback senza esporre segreti', async () => {
@@ -142,7 +174,7 @@ describe('Fase B — Gestore Condiviso e Trasporto AI', () => {
     const warn = vi.spyOn(logger, 'warn').mockImplementation(capture)
     try {
       const manager = new GeminiRequestManager({ ...DEFAULT_GEMINI_POLICY, maxTotalAttempts: 2, maxAttemptsPerKey: 2, rpmLimit: 100 }, new GeminiTransport(), new VirtualClock())
-      await expect(manager.execute({ jobId: 'wait-budget', purpose: 'translation', keys: [{ key: 'synthetic-secret' }], preferredModel: 'first', fallbackModels: ['second'],
+      await expect(manager.execute({ jobId: 'wait-budget', purpose: 'qna', keys: [{ key: 'synthetic-secret' }], preferredModel: 'first', fallbackModels: ['second'],
         call: async () => { throw new GeminiError({ category: 'rate_limited', statusCode: 429, retryDelayMs: 15000, isRetryable: true, isDailyQuota: false, sanitizedMessage: 'Rate limit' }) }
       })).rejects.toMatchObject({ category: 'rate_limited' })
       expect(entries.some(entry => entry.event === 'gemini_retry_wait' && entry.message.includes('15 s'))).toBe(true)
@@ -430,7 +462,7 @@ describe('Fase B — Gestore Condiviso e Trasporto AI', () => {
 
       const executePromise = manager.execute({
         jobId: 'budget-exhaustion-test',
-        purpose: 'sections',
+        purpose: 'qna',
         priority: 'background',
         keys: failingKeys,
         preferredModel: 'gemini-3.6-flash',
@@ -463,7 +495,7 @@ describe('Fase B — Gestore Condiviso e Trasporto AI', () => {
       await expect(
         manager.execute({
           jobId: 'large-pool-budget',
-          purpose: 'translation',
+          purpose: 'qna',
           keys: Array.from({ length: 17 }, (_, index) => ({
             key: `key-${index}`,
             quotaGroup: `project-${index}`
@@ -528,7 +560,7 @@ describe('Fase B — Gestore Condiviso e Trasporto AI', () => {
       ])
     })
 
-    it('con una sola chiave percorre i fallback senza superare sei tentativi', async () => {
+    it('con una sola chiave percorre i fallback rispettando tre tentativi per coppia', async () => {
       const clock = new VirtualClock()
       const manager = new GeminiRequestManager(
         { ...DEFAULT_GEMINI_POLICY, maxTotalAttempts: 6, rpmLimit: 100 },
@@ -562,6 +594,7 @@ describe('Fase B — Gestore Condiviso e Trasporto AI', () => {
         'gemini-3.7-flash',
         'gemini-3.5-flash-lite',
         'gemini-3.5-flash-lite',
+        'gemini-3.1-flash-lite',
         'gemini-3.1-flash-lite',
         'gemini-3.1-flash-lite'
       ])

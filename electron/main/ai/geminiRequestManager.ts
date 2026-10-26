@@ -73,7 +73,7 @@ export interface LogicalRequestOptions<T> {
   fallbackModels?: string[]
   /** Interactive Q&A can advance immediately when a model produces no usable answer. */
   preferModelFallback?: boolean
-  /** Explicit bounded recovery; defaults preserve the global six-attempt policy. */
+  /** Explicit bounded recovery, independent of the archive pool policy. */
   recovery?: { maxTotalAttempts: number; modelPasses: number; passDelayMs: number }
   signal?: AbortSignal
   timeoutMs?: number
@@ -103,6 +103,19 @@ export class GeminiRequestManager {
   private policy: GeminiPolicyConfig
   private transport: GeminiTransport
   private clock: Clock
+
+  private usesArchivePool(options: LogicalRequestOptions<unknown>): boolean {
+    return !options.recovery && ['overview', 'sections', 'translation', 'studyset', 'asr_transcribe', 'asr_fallback', 'course_logistics'].includes(options.purpose)
+  }
+
+  private attemptBudget(options: LogicalRequestOptions<unknown>): number {
+    if (options.recovery) return options.recovery.maxTotalAttempts
+    if (!this.usesArchivePool(options)) return this.policy.maxTotalAttempts
+    // Every configured key/model can be reached; retries remain finite per pair.
+    const keys = new Set(options.keys.map(key => `${key.quotaGroup || 'unknown-project'}:${key.key.slice(-6)}`)).size
+    const models = new Set([options.preferredModel, ...(options.fallbackModels || [])]).size
+    return Math.max(this.policy.maxTotalAttempts, keys * models * this.policy.maxAttemptsPerKey)
+  }
 
   // Concorrenza
   private activeCount = 0
@@ -320,7 +333,7 @@ export class GeminiRequestManager {
     }
 
     const priority = options.priority || 'background'
-    const deadline = this.clock.now() + (options.timeoutMs ?? this.policy.logicalDeadlineMs)
+    const deadline = this.clock.now() + (options.timeoutMs ?? (this.usesArchivePool(options) ? Number.POSITIVE_INFINITY : this.policy.logicalDeadlineMs))
     const telemetry: RequestTelemetry = {
       startedAt: this.clock.now(),
       physicalAttempts: 0,
@@ -374,7 +387,7 @@ export class GeminiRequestManager {
       lifecycle('gemini_queue_enqueued', `Richiesta accodata con priorità ${priority}; ${this.queue.length} richieste in coda, ${this.activeCount} attive.`, {
         priority, queueLength: this.queue.length, activeCount: this.activeCount,
         models: [options.preferredModel, ...(options.fallbackModels || [])],
-        keyCount: options.keys.length, maxTotalAttempts: options.recovery?.maxTotalAttempts ?? this.policy.maxTotalAttempts
+        keyCount: options.keys.length, maxTotalAttempts: this.attemptBudget(options)
       })
       this.processQueue()
     })
@@ -469,12 +482,11 @@ export class GeminiRequestManager {
     const attemptsPerKeyModel = new Map<string, number>()
     let lastError: GeminiError | null = null
 
-    // È un budget assoluto per la richiesta logica, non un valore minimo.
-    // Moltiplicarlo per chiavi e modelli permetteva a un pool grande di
-    // consumare decine di chiamate prima di restituire un errore.
-    const effectiveMaxAttempts = options.recovery?.maxTotalAttempts ?? this.policy.maxTotalAttempts
+    // Archive generation exhausts its finite pool; interactive recovery retains
+    // its explicitly bounded budget and deadline.
+    const effectiveMaxAttempts = this.attemptBudget(options)
     const modelPasses = options.recovery?.modelPasses ?? 1
-    if (!Number.isInteger(effectiveMaxAttempts) || effectiveMaxAttempts < 1 || effectiveMaxAttempts > 12 || !Number.isInteger(modelPasses) || modelPasses < 1 || modelPasses > 3) throw new Error('Budget di recupero Gemini non valido.')
+    if (!Number.isSafeInteger(effectiveMaxAttempts) || effectiveMaxAttempts < 1 || (options.recovery && effectiveMaxAttempts > 12) || !Number.isInteger(modelPasses) || modelPasses < 1 || modelPasses > 3) throw new Error('Budget di recupero Gemini non valido.')
 
     for (let pass = 0; pass < modelPasses; pass++) {
       const attemptsBeforePass = totalPhysicalAttempts

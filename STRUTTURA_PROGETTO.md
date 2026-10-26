@@ -2,6 +2,12 @@
 
 ## Stato attuale
 
+Il gestore Gemini estende la generazione dell'archivio all'intero pool finito
+di chiavi e modelli, senza deadline complessiva implicita. Restano timeout
+per tentativo, quote e annullamento; Q&A conserva i budget interattivi.
+Diagnosi, regressioni e revisione locale delle dispense in
+`docs/quality/gemini-pool-revisione-dispense-2026-10-26.md`.
+
 La Sala di consultazione (D-0413) introduce l'ingresso RAG essenziale scelto
 dall'utente: corsi, domanda ed esempi locali, con cronologia e materiali aperti
 su richiesta. I risultati conservano il layout precedente. Uso e verifiche in
@@ -11,7 +17,7 @@ Lezionify è un'applicazione desktop Electron con React e TypeScript in fase alp
 
 - **Backend:** `ArchiveService`, validazioni runtime, scritture atomiche serializzate, recovery, cache in memoria, ricerca MiniSearch, credenziali protette tramite `safeStorage`, gestione e verifica suoni di sottofondo offline e pipeline archivio persistente e riprendibile.
 - **Frontend:** renderer React modulare con caricamento differito per Dashboard, drawer, Q&A, Markdown/KaTeX, Mermaid, suoni di sottofondo offline Web Audio e strumenti di studio; sidebar con corsi attivi e archiviati, menu contestuale e liste di studio limitate ai corsi attivi.
-- **Qualità:** 739 test Vitest in 56 file, 24 regressioni Python (14 ASR e 10 ricerca Q&A), 41 test Node Q&A, scenari React in Electron, typecheck, lint e build locali. CI Windows disponibile; snapshot dei sorgenti del 25 ottobre con gli interventi del 20–23 ottobre, verificato prima della pubblicazione in `docs/quality/pubblicazione-github-2026-10-25.md`.
+- **Qualità:** 743 test Vitest in 56 file dopo la correzione Gemini del 26 ottobre; restano disponibili 24 regressioni Python (14 ASR e 10 ricerca Q&A), 41 test Node Q&A, scenari React in Electron, typecheck, lint e build locali. CI Windows disponibile; snapshot dei sorgenti del 25 ottobre con gli interventi del 20–23 ottobre, verificato prima della pubblicazione in `docs/quality/pubblicazione-github-2026-10-25.md`.
 
 Gli interventi D-0404 sullo studio introducono la soglia di cinque minuti per
 l'attrito di uscita Focus, Ctrl+T con selezione e lingua della dispensa,
@@ -49,7 +55,9 @@ Mermaid D-0361 e limita i fallback automatici ENG ai modelli completi.
 `ArchiveService.getManagedKeys()` distingue gruppi configurati da appartenenze
 legacy non verificate: queste conservano RPM e cooldown condivisi, ma una
 quota giornaliera sospende soltanto la chiave effettivamente provata. I gruppi
-noti conservano la sospensione per progetto, con budget assoluto di sei invii.
+noti conservano la sospensione per progetto. Il budget assoluto di sei invii
+di D-0364 è stato successivamente esteso al pool finito per l'archivio;
+resta valido per le richieste interattive ordinarie.
 
 Le voci Memo, log giornalieri e nuova esportazione sono implementate in
 D-0367–D-0369: `MemoActivityPreview` e `memo.css` affiancano le catture esistenti;

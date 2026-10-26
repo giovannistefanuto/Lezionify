@@ -28,11 +28,11 @@ export interface GeminiPolicyConfig {
 }
 
 export const DEFAULT_GEMINI_POLICY: GeminiPolicyConfig = {
-  maxTotalAttempts: 6,
+  maxTotalAttempts: 6, // Budget interattivo; l'archivio lo estende al pool finito chiavi/modelli.
   maxAttemptsPerKey: 3,
   backoffBaseMs: 2_000,
   backoffCapMs: 30_000,
-  logicalDeadlineMs: 600_000, // 10 minuti per la singola richiesta logica
+  logicalDeadlineMs: 600_000, // Default interattivo; l'archivio non ha scadenza complessiva implicita.
   rpmLimit: 5,               // 5 RPM per finestra mobile di 60s
   concurrencyLimit: 1        // 1 sola richiesta fisica attiva globalmente
 }
