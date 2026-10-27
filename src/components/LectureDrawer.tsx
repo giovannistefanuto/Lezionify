@@ -667,7 +667,7 @@ export function LectureDrawer({
               </span>
             </div>
             <div className="focus-toolbar-right">
-              {studyEstimate.label && <span className="study-estimate">{studyEstimate.label}</span>}
+              {studyEstimate.preference && <span className="study-estimate" title="La stima richiede almeno 10 minuti e il 60% del tratto consolidato; compare sotto 30 minuti residui.">{studyEstimate.label ?? (isPaused || showFocusLock || pauseTimerActive ? 'Stima sospesa' : 'Stima: raccolta dati')}</span>}
               {studyEstimate.preference && <button type="button" onClick={studyEstimate.recalculate}
                 title="Azzera i campioni e riprendi la stima da questa posizione">Ricalcola da qui</button>}
               <FocusReminders />
@@ -719,6 +719,7 @@ export function LectureDrawer({
               <React.Suspense fallback={<p className="loading">Caricamento Q&amp;A…</p>}>
                 <QnaSidebar threads={threads} activeThreadId={activeThreadId} setActiveThreadId={setActiveThreadId}
                   onCompositionChange={setIsQnaComposing}
+                  onSelectSlides={() => setIsQnaComposing(true)}
                   isGenerating={isGeneratingQna || isAttachingImages} qnaStatus={activeThreadId ? (qnaStatuses[activeThreadId] ?? null) : null}
                   error={qnaError} onSendMessage={sendMessage} onDeleteThread={deleteThread}
                   onClose={() => setIsQnaSidebarOpen(false)} onRemoveImage={removeImage} />

@@ -4688,3 +4688,102 @@ Non modificare manualmente la sezione `Registro`: aggiungi le nuove decisioni es
 - **Impatto:** Verificati 372 file build, manifesto e blockmap, tre backup e otto componenti NSIS. Runtime RAG isolato senza rete superato. Nessuna installazione, release binaria o invio AI; artefatti e dati privati restano ignorati.
 - **Follow-up:** Verificare commit remoto dopo push; installare il nuovo setup con Lezionify chiuso. Vecchio installer conservato in local-artifacts/installer-backups/20261026-rl-pool-audit.
 - **File coinvolti:** DECISIONI.md, STRUTTURA_PROGETTO.md, docs/README.md, docs/quality/gemini-pool-revisione-dispense-2026-10-26.md, electron/main/ai/geminiPolicy.ts, electron/main/ai/geminiRequestManager.ts, tests/unit/geminiPhaseB.test.ts, tests/unit/geminiStreaming.test.ts, dist/Lezionify-Setup-0.1.0.exe
+
+## D-0426 — Recupero futuro degli import durante una coda attiva
+
+- **Data:** 2026-10-27
+- **Stato:** accettata
+- **Area:** pipeline-backlog
+- **Decisione:** Aggiunta la voce 105 alla posizione 51 della Coda LISTA_ORDINE: conservare gli import arrivati durante una pipeline attiva e ricontrollare il lavoro mancante al termine normale, avviando la successiva elaborazione nel perimetro autorizzato.
+- **Motivazione:** L utente ha richiesto di registrare il miglioramento fra le attivita future. Il codice attuale rifiuta il secondo avvio senza conservare la richiesta e non ricontrolla l archivio alla fine.
+- **Impatto:** Solo documentazione: 51 posizioni, 31 concluse e 20 aperte. Criteri su deduplicazione, checkpoint, UI, consenso AI, preferenze, stop, pause e regressioni; nessuna modifica alla pipeline in corso.
+- **Follow-up:** Implementare e collaudare la voce quando raggiunta nell ordine o su richiesta diretta, senza riordinare la coda.
+- **File coinvolti:** docs/product/idee-future-2026-10-13.md, DECISIONI.md
+
+## D-0427 — Pulizia autorizzata della coda personale
+
+- **Data:** 2026-10-27
+- **Stato:** accettata
+- **Area:** pipeline-locale
+- **Decisione:** Su richiesta diretta pulito lo stato della coda personale con app chiusa, spostando archive-pipeline.json e tredici copie di recupero o temporanee correlate in un backup locale ignorato.
+- **Motivazione:** Consentire al successivo avvio manuale di Elabora archivio di ricostruire le attivita mancanti per tutte le lezioni, inclusi gli import successivi alla vecchia pianificazione.
+- **Impatto:** Verificati invariati tramite SHA256 library.json e gli altri 46 file di checkpoint. Audio, trascrizioni e dispense non modificati; nessuna nuova richiesta AI, nessuna modifica di modello o impostazioni. La riapertura non avvia da sola una scansione.
+- **Follow-up:** Riaprire Lezionify e avviare Elabora archivio. Backup in local-artifacts/queue-reset-20261027-141520; verifica locale in verification.json.
+- **File coinvolti:** DECISIONI.md, local-artifacts/queue-reset-20261027-141520, stato pipeline personale non versionato
+
+## D-0428 — Seconda pulizia autorizzata della coda personale
+
+- **Data:** 2026-10-27
+- **Stato:** accettata
+- **Area:** pipeline-locale
+- **Decisione:** Ripetuta su richiesta diretta la pulizia con app chiusa: tre file di stato della pipeline spostati nel nuovo backup locale ignorato.
+- **Motivazione:** L utente richiede nuovamente di svuotare la coda ricreata dopo la pulizia precedente.
+- **Impatto:** Verificati invariati SHA256 di library.json e degli altri 46 file di checkpoint; materiali personali e impostazioni non modificati. Nessuna chiamata AI avviata.
+- **Follow-up:** Riaprire e avviare manualmente Elabora archivio per ricostruire tutte le attivita mancanti. Backup local-artifacts/queue-reset-20261027-141705-386.
+- **File coinvolti:** DECISIONI.md, local-artifacts/queue-reset-20261027-141705-386, stato pipeline personale non versionato
+
+## D-0429 — Terza pulizia autorizzata della coda personale
+
+- **Data:** 2026-10-27
+- **Stato:** accettata
+- **Area:** pipeline-locale
+- **Decisione:** Ripetuta su richiesta diretta la pulizia con app chiusa: tre file di stato della pipeline spostati in un nuovo backup locale ignorato.
+- **Motivazione:** L utente richiede nuovamente la pulizia della coda.
+- **Impatto:** Verificati invariati tramite SHA256 library.json e gli altri 46 file di checkpoint. Materiali e impostazioni personali non modificati; nessuna chiamata AI avviata.
+- **Follow-up:** Riaprire e avviare manualmente Elabora archivio per ricostruire le attivita mancanti. Backup local-artifacts/queue-reset-20261027-141804-518.
+- **File coinvolti:** DECISIONI.md, local-artifacts/queue-reset-20261027-141804-518, stato pipeline personale non versionato
+
+## D-0430 — Inglese mancante ricostruito localmente e salvato
+
+- **Data:** 2026-10-27
+- **Stato:** accettata
+- **Area:** traduzione-recupero
+- **Decisione:** Su richiesta diretta ricostruita localmente la traduzione inglese della dispensa senza versione EN, poiche la risposta Gemini rifiutata non era conservata. Tradotti manualmente tutti i 213 frammenti, ricomposti con i letterali originali e applicato validateTranslationPlan. Salvata nell archivio e allineata a succeeded la sola attivita fallita; pipeline ora completed.
+- **Motivazione:** La risposta precedente conteneva un frammento vuoto. Il tentativo di preparare un nuovo invio completo a Gemini con credenziali locali e stato respinto dalla revisione automatica prima dell esecuzione; scelta alternativa interamente locale, senza nuove chiamate API o accesso alle chiavi.
+- **Impatto:** 40 sezioni e 7 diagrammi verificati; formule e codice conservati. Etichette dei flowchart tradotte, diagramma di stato conservato originale. App chiusa normalmente e riaperta; backup dei metadati e coda, SHA256 italiano e trascrizione invariati, altre lezioni confrontate. Testo tradotto fedelmente senza revisione scientifica della fonte.
+- **Follow-up:** Consultare la versione inglese in Lezionify. Artefatti privati e verifica in local-artifacts/translation-repair-20261027; nessun installer o impostazione modificato.
+- **File coinvolti:** DECISIONI.md, local-artifacts/translation-repair-20261027, versione inglese e metadati dell archivio personale non versionato
+
+## D-0431 — Dodici idee future e indagine iniziale dei problemi di studio
+
+- **Data:** 2026-10-27
+- **Stato:** accettata
+- **Area:** backlog-diagnosi
+- **Decisione:** Registrate undici nuove voci 106-116 in fondo alla coda e ribadita la 71 senza duplicarla. Conservate riproduzioni diagnostiche dei dollari sbilanciati e del rifiuto degli stili stateDiagram; nessuna correzione applicativa o casella chiusa.
+- **Motivazione:** La richiesta distingue raccolta futura e successiva indagine. Le prove isolano cause riproducibili senza attribuire ai dati personali o all hardware difetti non misurati.
+- **Impatto:** Coda di 62 posizioni, 31 concluse e 31 aperte. Sei file di test: 25 casi superati e due fallimenti attesi che documentano difetti aperti. Nessuna chiamata Gemini, dipendenza o installer; modifiche locali preesistenti conservate.
+- **Follow-up:** Correggere le voci su richiesta o quando raggiunte; rimuovere it.fails dopo le correzioni. Per USB servono misure hardware, per slide prova UI, per modelli benchmark reale con budget. Pull sospeso per checkout non pulito; fetch riuscito e HEAD allineato al remoto.
+- **File coinvolti:** docs/product/idee-future-2026-10-13.md, docs/quality/indagine-segnalazioni-2026-10-27.md, tests/unit/october27Diagnosis.test.ts, STRUTTURA_PROGETTO.md, DECISIONI.md
+
+## D-0432 — Precisazioni slide e campionamento residuo per schermate
+
+- **Data:** 2026-10-27
+- **Stato:** accettata
+- **Area:** diagnosi-studio
+- **Decisione:** Aggiornate le voci 113 e 114 con i dettagli dell utente. Riprodotta in React ed Electron l assenza della stima leggendo schermate consecutive: il campionamento della sola cima lascia intervalli visibili senza dwell. Esteso il test allegati alla domanda gia digitata; caso personale ancora aperto.
+- **Motivazione:** Il PDF e interno a Focus e l utente scrive gia la domanda; il residuo non e mai apparso in piu sessioni. Le spiegazioni iniziali non sono sufficienti.
+- **Impatto:** Solo indagine, documentazione e scenari sintetici, nessuna correzione o casella chiusa. Prova della stima prima fallita sull aspettativa desiderata, poi conservata come caratterizzazione esplicita del difetto aperto. Nessuna chiamata AI o modifica a materiali personali.
+- **Follow-up:** Correggere il campionamento e convertire la caratterizzazione in regressione positiva; osservare il caso allegati nella versione personale, non accessibile tramite Computer Use in questa sessione.
+- **File coinvolti:** docs/product/idee-future-2026-10-13.md, docs/quality/indagine-segnalazioni-2026-10-27.md, tests/integration/studyToolsScenarios.browser.tsx, tests/integration/focusPdfScenarios.browser.tsx, DECISIONI.md
+
+## D-0433 — Campionamento della viewport e ingresso esplicito agli allegati
+
+- **Data:** 2026-10-27
+- **Stato:** accettata
+- **Area:** focus-studio
+- **Decisione:** La stima accredita la porzione visibile di ogni intervallo in proporzione, conservando tempo totale e controlli su pause e salti. In Focus il Q&A espone Allega slide per attivare esplicitamente la selezione PDF. Indicatore di raccolta dati o sospensione quando la stima numerica non e disponibile.
+- **Motivazione:** Riprodotto il blocco della stima dopo dodici minuti di lettura per schermate: il campionamento precedente lasciava buchi. Per gli allegati il caso storico personale non e riprodotto, ma mancava un ingresso esplicito indipendente dal focus automatico della composizione.
+- **Impatto:** Nessuna dipendenza o chiamata AI aggiunta. Soglie e schema locale conservati; non inventata lettura nei tratti saltati. Test del drawer completo verifica selezione, PNG, salvataggio, anteprima, bozza conservata e nessun invio AI. Typecheck, lint e 747 test unitari riusciti, oltre a due fallimenti attesi per difetti matematici e Mermaid ancora aperti.
+- **Follow-up:** Completare regressioni Electron generali, build, verifica setup e pubblicazione richiesta. Osservare il nuovo percorso allegati nella sessione personale senza dichiarare identificata la causa storica.
+- **File coinvolti:** src/utils/studyEstimate.ts, src/hooks/useStudyEstimate.ts, src/components/LectureDrawer.tsx, src/components/QnaSidebar.tsx, src/qna.css, tests/unit/studyEstimate.test.ts, tests/integration/studyToolsScenarios.browser.tsx, tests/integration/focusPdfScenarios.browser.tsx, docs/quality/indagine-segnalazioni-2026-10-27.md, docs/product/idee-future-2026-10-13.md, STRUTTURA_PROGETTO.md
+
+## D-0434 — Installer con stima corretta e ingresso esplicito agli allegati
+
+- **Data:** 2026-10-27
+- **Stato:** accettata
+- **Area:** distribuzione-focus
+- **Decisione:** Rigenerato e verificato il setup Windows 0.1.0 con D-0433. Pubblicazione binaria disabilitata; commit e push delle modifiche pubblicabili autorizzati da AGENTS, incluse quelle precedenti. Setup di 294217750 byte, SHA256 c8024721ff6df03831b75ae8a0736f7b2f992781e867ab0d790ab3b7374374b0.
+- **Motivazione:** Rendere disponibili le correzioni nell app installata dopo typecheck, lint, 747 test unitari riusciti, due fallimenti diagnostici attesi estranei alla correzione, regressioni Electron generali e riavvio, PDF reali e verifica visiva sintetica.
+- **Impatto:** Verificati 372 file build, manifesto, blockmap, tre backup e otto componenti critici NSIS. Runtime RAG isolato passato con modello locale e inferenza senza rete. Nessuna installazione, release binaria o chiamata AI; caso storico personale degli allegati non dichiarato riprodotto.
+- **Follow-up:** Verificare la presenza del commit sul remoto dopo push. Installare con Lezionify chiuso e provare Allega slide nel Q&A Focus; la conferma personale resta aperta. Backup local-artifacts/installer-backups/20261027-focus-slides-estimate.
+- **File coinvolti:** DECISIONI.md, STRUTTURA_PROGETTO.md, docs/README.md, docs/product/idee-future-2026-10-13.md, docs/quality/indagine-segnalazioni-2026-10-27.md, sorgenti e test D-0433, dist/Lezionify-Setup-0.1.0.exe

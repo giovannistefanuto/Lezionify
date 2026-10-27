@@ -20,6 +20,7 @@ interface QnaSidebarProps {
   onClose: () => void
   onRemoveImage?: (threadId: string, id: string) => void
   onCompositionChange?: (active: boolean) => void
+  onSelectSlides?: () => void
 }
 
 function AnchorContext({ thread }: { thread: QnaThread }) {
@@ -70,7 +71,8 @@ export function QnaSidebar({
   onDeleteThread,
   onClose,
   onRemoveImage,
-  onCompositionChange
+  onCompositionChange,
+  onSelectSlides
 }: QnaSidebarProps) {
   const [inputText, setInputText] = React.useState('')
   const [useFullContext, setUseFullContext] = React.useState(false)
@@ -284,6 +286,11 @@ export function QnaSidebar({
       </div>
 
       <div className="qna-input-container">
+        {onSelectSlides && <div className="qna-slide-actions">
+          <button type="button" className="secondary-button small" aria-label="Allega slide dal PDF"
+            disabled={isGenerating} onClick={onSelectSlides}>Allega slide</button>
+          <small>Seleziona le pagine nella colonna PDF, poi premi Allega.</small>
+        </div>}
         <div role="group" aria-label="Lunghezza risposta Q&A" className="qna-length-toggle">
           {(['brief', 'medium', 'long'] as const).map(value => <button key={value} type="button" aria-pressed={responseLength === value} disabled={isGenerating} onClick={() => setResponseLength(value)}>{value === 'brief' ? 'Breve' : value === 'medium' ? 'Media' : 'Lunga'}</button>)}
         </div>

@@ -2,6 +2,18 @@
 
 ## Stato attuale
 
+L'indagine del 27 ottobre conserva le dodici segnalazioni nella lista futura
+(voci 106–116 e richiamo alla 71). D-0433 corregge la stima: il campionamento
+accredita tutta la porzione visibile, con peso proporzionale ai bordi, e il
+Focus espone lo stato di raccolta dati. Il Q&A Focus aggiunge Allega slide
+come ingresso esplicito alla selezione PDF, collaudato nel LectureDrawer fino
+al salvataggio e all'anteprima senza invio AI. Causa storica del caso personale
+allegati non riprodotta; il nuovo percorso è verificato.
+`tests/unit/october27Diagnosis.test.ts` riproduce il rifiuto degli stili nei
+diagrammi di stato e la prosa interpretata come matematica dopo dollari
+sbilanciati, con due fallimenti attesi finché le voci restano aperte.
+Evidenze e limiti in `docs/quality/indagine-segnalazioni-2026-10-27.md`.
+
 Il gestore Gemini estende la generazione dell'archivio all'intero pool finito
 di chiavi e modelli, senza deadline complessiva implicita. Restano timeout
 per tentativo, quote e annullamento; Q&A conserva i budget interattivi.

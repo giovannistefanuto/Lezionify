@@ -1,7 +1,7 @@
 # Idee e modifiche future — 13 ottobre 2026
 
 Raccolta delle richieste dell’utente per lo sviluppo futuro di Lezionify,
-iniziata il 13 ottobre e aggiornata con nuove idee fino al 23 ottobre 2026.
+iniziata il 13 ottobre e aggiornata con nuove idee fino al 27 ottobre 2026.
 La classificazione è preliminare: gli interventi immediati hanno un obiettivo
 già definito e non richiedono una ricerca preventiva; restano necessari i normali
 controlli del codice e i collaudi. Gli approfondimenti richiedono invece una
@@ -52,7 +52,7 @@ avviata da questo aggiornamento documentale (D-0390).
 | 16. [x] | Chat di corso: corso, copertura e certezza visibili — U09 | 84 | D-0392: implementata e collaudata; dettagli e limiti nel report del 22 ottobre. |
 | 17. [x] | Scelta per corso delle lezioni da pubblicare su GitHub | 68 | D-0392: implementata e collaudata; dettagli e limiti nel report del 22 ottobre. |
 | 18. [ ] | Ctrl / Ctrl+L e cerchio bianco attorno al mouse | 33 | Media incerta: test nativi positivi e cerchio spiegato; serve l'episodio personale storico. |
-| 19. [ ] | Diagnosi della stima di studio che non funziona | 70 | Media incerta: distinguere soglie intenzionali, campionamento e difetto reale. |
+| 19. [x] | Diagnosi della stima di studio che non funziona | 70 | D-0433: corretti i buchi di campionamento della viewport; regressioni Electron e comunicazione delle soglie verificate. |
 | 20. [ ] | Formule Q&A: caso epsilon-greedy / epsilon-soft | 73 | Media incerta: isolare testo ricevuto, normalizzazione, KaTeX/CSS e streaming. |
 | 21. [x] | Diagnosi errore course-rag:ask «Risposta non completata» | 69 | D-0392: output strutturato, fallback e retry collaudati; due prove RAG complete reali riuscite con fonti sintetiche. D-0395: recupero da timeout/503 e confronto RL reale verificato, con 12 invii e 10 minuti condivisi: [diagnosi](../quality/rag-recupero-2026-10-22.md). |
 | 22. [ ] | Collaudi residui del traduttore offline | 7 | Media: prove tecniche, formule/codice e glossario; funzione base già integrata. |
@@ -84,6 +84,18 @@ avviata da questo aggiornamento documentale (D-0390).
 | 48. [x] | Dizionario: lacuna collusion e casi precedenti | 102 | D-0404/D-0405: supplemento verificato e regressioni sui dati reali. |
 | 49. [x] | Rimuovere testo della pausa scaduta | 103 | D-0404/D-0405: testo rimosso, statistiche conservate. |
 | 50. [x] | Spotify: correggere play/pausa e rigenerare installer | 104 | D-0404/D-0405: regressioni trasporto e suoni attivi; installer verificato. |
+| 51. [ ] | Pipeline: recuperare automaticamente gli import arrivati durante la coda | 105 | Media: conservare le richieste, ricontrollare il lavoro mancante a fine coda e rispettare stop, pause e consenso AI. |
+| 52. [ ] | Comandi delle cuffiette EarFun per musica e suoni | 106 | Media: integrazione comandi multimediali e prova hardware. |
+| 53. [ ] | Dollari monetari e formule: prosa deformata | 107 | Media: distinguere sorgente generata, delimitatori e rendering. |
+| 54. [ ] | Sveglia: minuti rimanenti nel tooltip | 108 | Bassa: durata aggiornata e gestione della scadenza. |
+| 55. [ ] | Chiedi a Gemini: focus domanda e impostazioni iniziali | 109 | Media: focus, invio e contesto esplicito. |
+| 56. [ ] | Ordine modelli per schemi e confronto Gemini 3.8 / 4 | 110 | Media: benchmark reale con quote, tempi e costi tracciati. |
+| 57. [ ] | Sottolineatura Focus e collaudo evidenziatore | 111 | Media: persistenza e selezione nel documento reale. |
+| 58. [ ] | Ricerca online facoltativa nelle domande Gemini | 112 | Media/alta: consenso, costi, fonti e compatibilità dei modelli. |
+| 59. [ ] | Stima per paragrafo: parole, numeri e ritmo di oggi | 113 | Alta: dati disponibili, calibrazione e validazione predittiva. |
+| 60. [ ] | Rendere reperibile Allega slide | 114 | D-0433: ingresso esplicito e percorso completo collaudati; resta la verifica dell'episodio personale non riprodotto. |
+| 61. [ ] | Misurare e ridurre l'attesa di scansione del registratore | 115 | Media: separare rilevamento, checksum e durata. |
+| 62. [ ] | Diagramma di stato AB rifiutato per direttiva non consentita | 116 | Media: compatibilità Mermaid e controlli di sicurezza. |
 
 Le prime 17 posizioni e la 21 sono concluse in D-0392 su richiesta diretta dopo grilling (D-0391). [Uso, verifiche e limiti](interventi-2026-10-22.md).
 La prima attività ancora aperta è la **voce 33, diagnosi Ctrl+L personale**, posizione 18. Ogni invocazione
@@ -1625,7 +1637,13 @@ risolto soltanto sostituendo il messaggio. Distinta da U05/U09 sulla presentazio
 
 ### 70. Diagnosi della stima «quanto manca alla fine della lezione»
 
-- [ ] Verificare la segnalazione «la stima non funziona» e correggere il comportamento o la comunicazione del limite effettivamente riscontrato.
+- [x] Verificare la segnalazione «la stima non funziona» e correggere il comportamento o la comunicazione del limite effettivamente riscontrato.
+
+Completata in D-0433: riprodotta l'assenza dopo lettura regolare per schermate,
+corretto il campionamento dell'intera porzione visibile e aggiunto lo stato
+di raccolta dati/sospensione con condizioni nel tooltip. Prove Electron su
+scroll, pause, Q&A, ripresa, lingue e rigenerazione riuscite. Il testo seguente
+conserva i requisiti iniziali; [diagnosi e correzione](../quality/indagine-segnalazioni-2026-10-27.md).
 
 Riferimento iniziale: stima dello **studio restante** della voce 36, non fine
 della registrazione o orario programmato. Se il sintomo riguarda un altro
@@ -1643,6 +1661,11 @@ come studio e campioni locali conservati correttamente. Non abbassare soglie
 alla cieca né promettere precisione sulla comprensione della lezione.
 
 ### 71. Ctrl+T: switch Traduttore / Dizionario italiano
+
+Richiesta ribadita il 27 ottobre: «A che punto siamo sull'aggiungere un
+dizionario lì del traduttore?». Ancora aperta, posizione 25: il vocabolario
+bilingue esistente e il fallback Bergamot non equivalgono alle definizioni
+monolingui italiane. Nessuna nuova voce duplicata in coda.
 
 - [ ] Mantenere il traduttore automatico come modalità iniziale e aggiungere lo switch esplicito verso **Dizionario italiano**.
 - [ ] Inserendo una parola italiana nel riquadro sinistro, mostrare a destra una definizione italiana nella modalità dizionario.
@@ -2114,6 +2137,164 @@ resta la voce 33. Le tre valutazioni RAG 90–92 mantengono lo stato parziale.
 Autorizzazione diretta dell'utente del 23 ottobre: queste sei richieste sono
 implementabili nello stesso intervento, dopo il completamento del lavoro RAG
 (D-0404). Non modificano ordine o stato delle precedenti attività aperte.
+
+## Aggiunta del 27 ottobre 2026 — continuità della pipeline
+
+### 105. Elaborare automaticamente gli import arrivati durante una coda attiva
+
+- [ ] Conservare la richiesta di elaborazione dei nuovi audio importati mentre la pipeline è occupata; al termine normale della coda ricontrollare l'archivio e avviare automaticamente le trascrizioni, dispense italiane e traduzioni inglesi mancanti nel perimetro autorizzato.
+
+Problema verificato nel codice: `ArchivePipeline.start()` rifiuta un nuovo avvio
+quando esiste una lavorazione attiva; `queueAutomaticLectureProcessing()` non
+conserva gli import respinti e il completamento non ricostruisce la coda.
+L'audio resta importato, ma oggi richiede un nuovo avvio manuale di Elabora archivio.
+
+Criteri di completamento:
+
+- Raccogliere anche import multipli e quelli arrivati durante il passaggio fra
+  due code, senza perdere richieste né avviare pipeline concorrenti.
+- Rilevare le derivazioni ancora mancanti, saltare quelle già disponibili e
+  riusare i checkpoint senza sovrascrivere audio originale e trascrizione grezza.
+- Rispettare `autoProcessOnImport`, il perimetro autorizzato e le chiamate AI
+  esplicite e tracciabili; nessun nuovo consenso implicito per lavori estranei.
+- Non riavviare automaticamente dopo stop dell'utente o pausa per errori,
+  quote o autenticazione; evitare cicli di retry senza fine.
+- Mostrare il lavoro aggiunto o la successiva coda nella UI e verificare con
+  regressioni import durante l'esecuzione, import multipli, completamento,
+  preferenza disabilitata, stop e pausa.
+
+Aggiunta in fondo alla coda senza riordinare le attività precedenti: **51
+posizioni, 31 concluse e 20 aperte**. Questa richiesta registra lavoro futuro;
+nessuna modifica al comportamento della pipeline è implementata qui.
+
+## Aggiunte del 27 ottobre 2026 — studio, audio e problemi segnalati
+
+Le dodici richieste sono conservate: undici nuove voci 106–116 e richiamo
+alla 71 già aperta. Aggiunte in fondo senza riordinare: **62 posizioni,
+31 concluse e 31 aperte**. Indagine iniziale autorizzata separatamente dalla
+futura implementazione; [risultati, riproduzioni e limiti](../quality/indagine-segnalazioni-2026-10-27.md).
+Le caselle restano aperte anche quando la causa è riprodotta.
+
+### 106. Comandi delle cuffiette EarFun
+
+- [ ] Gestire pausa/ripresa con un tocco e prossimo suono/brano con due tocchi, nei limiti dei comandi effettivamente configurati nelle cuffie.
+
+L'utente riferisce che i gesti funzionano già su PC e telefono: non assumere
+che serva riattivarli. Verificare instradamento al player attivo, suoni offline,
+Spotify e YouTube, disponibilità del comando successivo e prova con il modello
+EarFun personale. Non inviare comandi contemporanei a più player.
+
+### 107. Prosa deformata vicino ai prezzi in dollari
+
+- [ ] Indagare e correggere il caso della guerra dei prezzi: testo senza spazi, lettere matematiche e dollari visibili impropriamente.
+
+Esempio segnalato: prezzi `1.00\$$`, `0.99,$`, `$0.98,$$`, costo
+`c = 0.50\$$` e chiusura `\Pi < 0$`; la prosa «accaparrandosi il 100% della
+clientela» e «l'impresa opererebbe in perdita» appare deformata. Conservare
+il Markdown originale e distinguere errore generato da errore del renderer.
+Verificare insieme valuta, percentuali, formule vere, codice e streaming;
+nessuna sostituzione globale dei dollari che danneggi la matematica valida.
+
+### 108. Sveglia con tempo rimanente al passaggio del mouse
+
+- [ ] Mostrare ad esempio `Sveglia: 11:28 (35 minuti rimanenti)` nell'anteprima dell'orologio.
+
+Aggiornare il residuo nel tempo, con singolare/plurale, meno di un minuto,
+passaggio a domani e stato scaduto; mantenere l'ora già presente.
+
+### 109. Domanda Gemini subito digitabile e impostazioni iniziali
+
+- [ ] Dopo selezione testo → Chiedi a Gemini, portare automaticamente il cursore nel campo domanda e consentire l'invio diretto con Invio.
+- [ ] Impostare **SÌ** per tutta la lezione, **NO** per includere le altre discussioni Q&A e **Breve** come scelta automatica richiesta.
+
+Le opzioni devono restare visibili prima dell'invio; nessuna chiamata AI alla
+sola apertura. Collaudare nuova discussione, riapertura, selezione e Focus,
+Shift+Invio e composizione IME. Coordinare con la voce 114: il focus abilita
+anche lo stato di composizione necessario per selezionare le slide.
+
+### 110. Ordine dei modelli per gli schemi e disponibilità del 3.8
+
+- [ ] Documentare e testare l'ordine reale dei modelli usati per generare dispense/schemi, il momento in cui si raggiunge il 3.8 e il confronto con Gemini 4.
+
+L'uscita di un modello nuovo non dimostra minore saturazione dei precedenti.
+Distinguere fallback dell'archivio da Q&A e trascrizione; confrontare qualità,
+latenza, errori, quote e costo con budget esplicito. Riutilizzare i benchmark
+esistenti; non cambiare automaticamente modelli o preferenze durante l'indagine.
+
+### 111. Modalità sottolineatura in Focus e verifica evidenziatore
+
+- [ ] Aggiungere una modalità sottolineatura analoga all'evidenziatore e verificare se l'evidenziatore attuale funziona correttamente nel documento reale.
+
+Collaudare creazione, sovrapposizione, rimozione, persistenza, riapertura,
+cambio IT/EN, selezione vicino a formule e Q&A. Conservare le evidenziazioni
+esistenti; i soli test dell'algoritmo non certificano selezione e resa visiva.
+
+### 112. Ricerca online facoltativa nel Q&A Gemini
+
+- [ ] Valutare fattibilità, costi e integrazione di una scelta esplicita Cerca online per la singola domanda.
+
+Mostrare fonti e distinguere contenuto della lezione da risultati web;
+verificare supporto dei modelli, fallback, quote, costo delle query e dati
+inviati. Nessuna ricerca implicita o preattivata. Prima valutazione e fonti
+ufficiali nel report diagnostico; funzione ancora da implementare.
+
+### 113. Stima del tempo per paragrafo con parole, numeri e ritmo personale
+
+Precisazione dell'utente: dopo più sessioni di studio il residuo non è mai
+comparso. Indagine successiva: riprodotto un difetto del campionamento della
+sola cima della colonna durante la lettura per schermate consecutive; non
+attribuire più il caso alle sole soglie. Vedi aggiornamento del report.
+
+- [ ] Verificare i dati locali già raccolti e stimare il tempo di un paragrafo in funzione di parole e quantità di numeri/formule.
+- [ ] Combinare il ritmo storico per tipo di paragrafo con il ritmo di oggi per stimare intera lezione e tempo residuo.
+- [ ] Spiegare perché il residuo non si vede e cosa fa Ricalcola da qui, coordinandosi con la diagnosi già aperta della voce 70.
+
+Non assumere che i tempi aggregati disponibili identifichino il tempo di ogni
+paragrafo. Prima inventariare granularità e qualità dei dati; confrontare una
+baseline semplice con formule pesate, calibrazione giornaliera e validazione
+su lezioni non usate per adattare il modello. Esplicitare incertezza e campione
+insufficiente; nessuna promessa di una formula affidabile senza misure.
+
+### 114. Allega slide non compare
+
+Precisazione dell'utente: domanda aperta e già in scrittura, PDF nella colonna
+interna di Focus, ma nessun modo di allegare. Questo esclude la spiegazione
+iniziale del solo campo domanda non attivato. Test sintetico Electron positivo
+anche con domanda digitata; episodio personale ancora da riprodurre.
+
+- [ ] Riprodurre il percorso personale in cui manca il comando e rendere comprensibile e reperibile l'allegato delle pagine PDF alla domanda.
+- [x] D-0433: aggiungere Allega slide nel Q&A Focus e verificare nel drawer completo selezione, preparazione PNG, salvataggio, anteprima, bozza conservata e nessun invio AI implicito.
+
+Il nuovo percorso è implementato e collaudato; resta da confermare nel caso
+personale originale, che non è stato riprodotto. La casella principale e la
+posizione 60 restano aperte per questo limite. Dopo la chiusura della sola
+voce 70 la coda conta **62 posizioni, 32 concluse e 30 aperte**; nessun riordino.
+
+Controllare Focus, PDF aperto, discussione attiva, campo domanda focalizzato,
+caricamento del documento e invio già in corso. Il codice attuale abilita la
+selezione soltanto durante la composizione: verificare se questo spiega il
+caso personale, senza considerare l'apertura del solo Q&A sufficiente.
+
+### 115. Scansione del registratore lenta
+
+- [ ] Misurare separatamente ricerca unità, elenco file, checksum, lettura durata e preparazione import; ottimizzare il collo di bottiglia dimostrato.
+
+Registrare tempi e conteggi locali senza nomi o contenuti personali; confrontare
+prima scansione e ripetizione, molti file e percorso esplicito. Conservare la
+deduplicazione affidabile e l'audio originale. Il rilevamento attuale attende
+anche il checksum completo e la durata degli MP3: misurare sul dispositivo
+prima di attribuire la lentezza a USB, scansione unità o parsing.
+
+### 116. stateDiagram-v2 AB: direttiva non consentita
+
+- [ ] Gestire correttamente il diagramma di stato fornito, mantenendo controlli su direttive e SVG; verificare compatibilità del parser oltre al validatore locale.
+
+Riproduzione originale conservata in `tests/unit/october27Diagnosis.test.ts`:
+stati A e B, inizio 1/8 e 7/8, ricompense 0 e 1 con percentuali 100%, 75%,
+25%, `accTitle`, `accDescr` e due direttive `style` per riempimento, bordo e
+spessore. Messaggio: «Diagramma non disponibile. Il diagramma contiene una
+direttiva non consentita». Isolare validatore, sintassi del diagramma e
+renderer; non abilitare stili o direttive arbitrarie come aggiramento.
 
 ## Nota sulla classificazione
 

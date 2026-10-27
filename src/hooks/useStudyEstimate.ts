@@ -5,13 +5,27 @@ import {
   isStudyEstimateEnabled,
   newStudyEstimate,
   restoreStudyEstimate,
-  sampleStudy,
+  sampleVisibleStudy,
   STUDY_BINS,
   studyEstimateLabel,
   type StudyEstimateState
 } from '../utils/studyEstimate'
 
 const PREFIX = 'lezionify.study-estimate.v1:'
+/** Measure both viewport edges using the same text weighting as recalculation. */
+export function studyVisibleRange(root: HTMLElement): { start: number; end: number } | null {
+  const body = root.querySelector<HTMLElement>('.markdown-body')
+  if (!body || !root.clientHeight) return null
+  const blocks = Array.from(body.children).map(element => ({
+    bounds: element.getBoundingClientRect(), weight: Math.max(1, element.textContent?.length ?? 0)
+  })).filter(block => block.bounds.height > 0)
+  const total = blocks.reduce((sum, block) => sum + block.weight, 0)
+  if (!total) return null
+  const progressAt = (y: number) => blocks.reduce((sum, block) => sum + block.weight *
+    Math.max(0, Math.min(1, (y - block.bounds.top) / block.bounds.height)), 0) / total * STUDY_BINS
+  const top = root.getBoundingClientRect().top + root.clientTop
+  return { start: progressAt(top), end: progressAt(top + root.clientHeight) }
+}
 /** Uses document coordinates only; neither lesson text nor questions are persisted. */
 export function studyBin(root: HTMLElement): number | null {
   const body = root.querySelector<HTMLElement>('.markdown-body')
@@ -155,7 +169,7 @@ export function useStudyEstimate({
       }
       const root = rootRef.current
       if (!root || !root.getBoundingClientRect().height) return
-      state = sampleStudy(state, delta, documentSurface ? studyBin(root) : null)
+      state = sampleVisibleStudy(state, delta, documentSurface ? studyVisibleRange(root) : null)
       if (now - lastSave >= 10_000) {
         persist()
         lastSave = now

@@ -339,3 +339,5 @@
 .qna-text-controls::before { content: 'Zoom Q&A'; font-size: 11px; color: var(--text-secondary); }
 
 .qna-thread-summary[aria-current="true"] { border-color: var(--primary-accent); }
+.qna-slide-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-bottom: 8px; }
+.qna-slide-actions small { color: var(--text-muted); }

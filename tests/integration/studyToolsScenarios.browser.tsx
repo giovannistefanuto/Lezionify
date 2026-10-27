@@ -154,11 +154,13 @@ export async function runStudyToolsScenarios(root: Root, api: any) {
   function EstimateHarness({
     paused = false,
     language = 'it',
-    markdown = 'source'
+    markdown = 'source',
+    viewport = 1000
   }: {
     paused?: boolean
     language?: string
     markdown?: string
+    viewport?: number
   }) {
     const ref = useRef<HTMLDivElement>(null)
     output = useStudyEstimate({
@@ -173,7 +175,7 @@ export async function runStudyToolsScenarios(root: Root, api: any) {
       <>
         <div
           ref={ref}
-          style={{ height: 400, overflow: 'auto' }}
+          style={{ height: viewport, overflow: 'auto' }}
           data-estimate-root
         >
           <div className="markdown-body">
@@ -289,6 +291,16 @@ export async function runStudyToolsScenarios(root: Root, api: any) {
         snapshot().seconds <= 1,
       'Regeneration kept old samples'
     )
+    localStorage.removeItem(key)
+    await act(async () => root.render(<EstimateHarness viewport={2000} />))
+    // Read successive complete viewports for 12 minutes: no content is skipped.
+    for (let page = 0; page < 8; page++) {
+      scroller().scrollTop = page * 2000
+      scroller().dispatchEvent(new WheelEvent('wheel', { bubbles: true }))
+      await tick(90)
+    }
+    check(output.label?.includes('Studio restante'),
+      'Reading successive full viewports never produced a study estimate: ' + JSON.stringify(snapshot()))
   } finally {
     await act(async () => root.render(null))
     Date.now = originalNow

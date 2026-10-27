@@ -55,6 +55,24 @@ export function sampleStudy(
     dwell[bin] += seconds
   return { ...state, seconds: state.seconds + seconds, dwell }
 }
+/** Credit only the portion currently visible, never the path of a scroll jump.
+ * Coordinates are fractional bins (0..STUDY_BINS). Partial bins receive
+ * proportional dwell, so a thin visible edge cannot count as a whole page.
+ */
+export function sampleVisibleStudy(
+  state: StudyEstimateState,
+  seconds: number,
+  visible: { start: number; end: number } | null
+): StudyEstimateState {
+  const next = sampleStudy(state, seconds, null)
+  if (next === state || !visible || !Number.isFinite(visible.start) || !Number.isFinite(visible.end) ||
+    visible.start < 0 || visible.end > STUDY_BINS || visible.end <= visible.start) return next
+  for (let bin = Math.max(state.baseline, Math.floor(visible.start)); bin < Math.ceil(visible.end); bin++) {
+    const fraction = Math.max(0, Math.min(bin + 1, visible.end) - Math.max(bin, visible.start))
+    next.dwell[bin] += seconds * fraction
+  }
+  return next
+}
 export function estimateStudyMinutes(state: StudyEstimateState): number | null {
   let end = state.baseline
   while (end < STUDY_BINS && state.dwell[end] >= STUDY_DWELL_SECONDS) end++

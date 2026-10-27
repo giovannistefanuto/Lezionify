@@ -4,6 +4,7 @@ import { FocusWorkspace } from '../../src/components/FocusWorkspace'
 import { QnaSidebar } from '../../src/components/QnaSidebar'
 import { usePaneZoom } from '../../src/hooks/usePaneZoom'
 import { MarkdownViewer } from '../../src/components/MarkdownViewer'
+import { LectureDrawer } from '../../src/components/LectureDrawer'
 
 declare const require: any
 
@@ -97,6 +98,13 @@ export async function runFocusPdfScenarios(root: Root, api: any) {
     // The headless Electron window may not own OS focus; dispatch the native focusin too.
     await act(async () => { const field = document.querySelector<HTMLTextAreaElement>('.qna-input-row textarea')!; field.focus(); field.dispatchEvent(new FocusEvent('focusin', { bubbles: true })) })
     await until(() => Boolean(document.querySelector('.pdf-attach-toolbar')), `Focusing an empty question must enable slide selection; active=${document.activeElement?.outerHTML.slice(0, 140)}`)
+    const composingInput = document.querySelector<HTMLTextAreaElement>('.qna-input-row textarea')!
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')!.set!.call(composingInput, 'Domanda in corso sulle slide')
+      composingInput.dispatchEvent(new Event('input', { bubbles: true }))
+    })
+    check(composingInput.value === 'Domanda in corso sulle slide' && Boolean(document.querySelector('.pdf-attach-toolbar')) &&
+      Boolean(document.querySelector('.pdf-page-select')), 'Typing a question with PDF open must retain both attachment toolbar and page selection')
     await act(async () => document.querySelector<HTMLButtonElement>('[aria-label="Adatta PDF alla colonna"]')!.focus())
     check(Boolean(document.querySelector('.pdf-attach-toolbar')), 'Moving focus from question to PDF must keep composition active')
     await act(async () => {
@@ -266,6 +274,7 @@ export async function runFocusPdfScenarios(root: Root, api: any) {
     await act(async () => root.render(null))
     await act(async () => finishSelection({ ...source, id: 'late-pdf' }))
     check(releases.includes('late-pdf'), 'Late native selection was not revoked after unmount')
+    await runDrawerAttachmentScenario(root, api, source, until, check)
   } finally {
     await act(async () => root.render(null))
     URL.revokeObjectURL(url)
@@ -273,5 +282,75 @@ export async function runFocusPdfScenarios(root: Root, api: any) {
     URL.revokeObjectURL(brokenUrl)
     document.documentElement.removeAttribute('data-theme')
     style.remove()
+  }
+}
+
+async function runDrawerAttachmentScenario(root: Root, api: any, source: any,
+  until: (condition: () => boolean, message: string) => Promise<void>,
+  check: (condition: unknown, message: string) => void) {
+  const lecture = { id: 'attachment-drawer', courseCode: 'TEST', studyStatus: 'in-corso', sourceAudioFileName: 'synthetic.mp3' }
+  const keys = ['loadQnaThreads', 'getReminders', 'getHighlights', 'getLectureWordCounts', 'saveQnaImage', 'readQnaImage', 'saveQnaThreads', 'generateQnaResponse']
+  const previous = Object.fromEntries(keys.map(key => [key, api[key]]))
+  const thread = { id: 'attachment-thread', quote: 'Passaggio sintetico', anchorString: '', contextHeading: null, createdAt: '', updatedAt: '', messages: [] }
+  const noop = () => {}
+  api.loadQnaThreads = async () => [thread]
+  api.getReminders = async () => []
+  api.getHighlights = async () => []
+  api.getLectureWordCounts = async () => ({})
+  api.getFocusPdf = async () => source
+  let persisted: any[] = []
+  let imageInput: any
+  let aiCalls = 0
+  api.saveQnaImage = async (owner: string, threadId: string, input: any) => {
+    check(owner === lecture.id && threadId === thread.id, 'Slide saved to the wrong discussion')
+    imageInput = input
+    return { id: 'drawer-slide', page: input.page, day: '2026-10-27' }
+  }
+  api.readQnaImage = async () => ({ image: { page: 1, day: '2026-10-27' }, data: imageInput.data })
+  api.saveQnaThreads = async (_owner: string, threads: any[]) => { persisted = structuredClone(threads) }
+  api.generateQnaResponse = async () => { aiCalls++; throw new Error('No AI call allowed in attachment test') }
+  const props: any = {
+    selectedLecture: lecture, allLectures: [lecture], onClose: noop, activeTab: 'markdown', setActiveTab: noop,
+    markdownText: '# Capitolo\n\n' + 'Testo sintetico.\n\n'.repeat(70), transcriptText: '', studySet: null,
+    isGeneratingStudySet: false, onGenerateStudySet: noop, isLoadingContent: false, isGenerating: false,
+    isTranscribing: false, setIsEditingMetadata: noop, setEditCourseCode: noop, setEditRecordedAt: noop,
+    setShowDeleteConfirm: noop, existingCourses: [], settingsModel: 'gemini-3.8-flash',
+    onStudyStatusChange: noop, onGenerateLectureNotes: noop, onPrintNotes: noop, onCopyMarkdown: noop,
+    onCopyTranscript: noop, onAttachTranscript: noop, onTranscribeAudio: noop, onPasteFromClipboard: noop,
+    onSaveMetadata: noop, onDeleteLecture: noop, onOpenSettings: noop, formatDate: () => '', formatFileSize: () => '',
+    studyStatusLabels: Object.fromEntries(['da-studiare', 'in-corso', 'completata'].map(status => [status, { label: status, icon: '', className: '' }]))
+  }
+  try {
+    await act(async () => root.render(<LectureDrawer {...props} />))
+    await until(() => Boolean(document.querySelector('[title="Modalità studio immersiva"]')), 'Drawer not ready')
+    await act(async () => document.querySelector<HTMLButtonElement>('[title="Modalità studio immersiva"]')!.click())
+    await until(() => Boolean(document.querySelector('.focus-pdf-page-count')), 'Drawer PDF did not load')
+    await act(async () => document.querySelector<HTMLButtonElement>('[aria-label="Apri domande Q&A"]')!.click())
+    await until(() => Boolean(document.querySelector('.qna-input-row textarea')), 'Drawer Q&A did not load')
+    const attachButton = document.querySelector<HTMLButtonElement>('[aria-label="Allega slide dal PDF"]')
+    check(attachButton, 'Q&A has no explicit attachment entry point')
+    await act(async () => attachButton!.click())
+    await until(() => Boolean(document.querySelector('.pdf-page-select')), 'Explicit attachment command did not enable PDF selection')
+    const field = document.querySelector<HTMLTextAreaElement>('.qna-input-row textarea')!
+    await act(async () => {
+      field.focus(); field.dispatchEvent(new FocusEvent('focusin', { bubbles: true }))
+      Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')!.set!.call(field, 'Spiega questa slide')
+      field.dispatchEvent(new Event('input', { bubbles: true }))
+    })
+    await until(() => Boolean(document.querySelector('.pdf-attach-toolbar')), 'Drawer hides attachment controls while typing')
+    const control = document.querySelector<HTMLElement>('.pdf-attach-toolbar')!
+    const bounds = control.getBoundingClientRect()
+    check(bounds.width > 0 && bounds.height > 0 && bounds.top >= 0 && bounds.bottom <= window.innerHeight,
+      'Drawer attachment toolbar is outside the visible window')
+    await act(async () => document.querySelector<HTMLInputElement>('[aria-label="Seleziona pagina 1 per Gemini"]')!.click())
+    await act(async () => document.querySelector<HTMLButtonElement>('.pdf-attach-toolbar button')!.click())
+    await until(() => Boolean(document.querySelector('.qna-active-images img')), 'Drawer did not show the locally saved slide preview')
+    check(imageInput.page === 1 && imageInput.data.startsWith('iVBOR') && persisted[0].attachmentIds[0] === 'drawer-slide',
+      'Drawer did not persist the selected page and its discussion reference')
+    check(field.value === 'Spiega questa slide' && aiCalls === 0, 'Attaching lost the draft or sent an AI request')
+    await require('electron').ipcRenderer.invoke('capture-video-import', 'focus-pdf-qna')
+  } finally {
+    await act(async () => root.render(null))
+    Object.assign(api, previous)
   }
 }
