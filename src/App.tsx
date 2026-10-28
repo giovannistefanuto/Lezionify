@@ -62,12 +62,13 @@ const LogViewerModal = lazy(() =>
     default: module.LogViewerModal
   }))
 )
-const UsbRecorderModal = lazy(() =>
-  import('./components/UsbRecorderModal').then((module) => ({
-    default: module.UsbRecorderModal
+const RecorderEntry = lazy(() =>
+  import('./components/RecorderEntry').then((module) => ({
+    default: module.RecorderEntry
   }))
 )
 const VideoImportModal = lazy(() => import('./components/VideoImportModal').then(module => ({ default: module.VideoImportModal })))
+const RepetitionWindow = lazy(() => import('./components/RepetitionWindow').then(module => ({ default: module.RepetitionWindow })))
 
 function LazyFallback() {
   return <p className="loading">Caricamento…</p>
@@ -119,6 +120,7 @@ export default function App() {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
   const [showCourseModal, setShowCourseModal] = useState(false)
   const [showUsbModal, setShowUsbModal] = useState(false)
+  const [showRepetitions, setShowRepetitions] = useState(false)
   const [videoSelection, setVideoSelection] = useState<VideoImportSelection | null>(null)
   const [isSelectingVideos, setIsSelectingVideos] = useState(false)
   const [isUsbConnected, setIsUsbConnected] = useState(false)
@@ -477,6 +479,7 @@ export default function App() {
         onOpenQuickCapture={quickCapture.toggleOpen}
         onOpenLogViewer={() => setShowLogModal(true)}
         onOpenUsbRecorder={() => setShowUsbModal(true)}
+        onOpenRepetitions={() => setShowRepetitions(true)}
         isUsbConnected={isUsbConnected}
       />
 
@@ -712,14 +715,14 @@ export default function App() {
         )}
 
         {showUsbModal && (
-          <UsbRecorderModal
-            isOpen
+          <RecorderEntry
             onClose={() => setShowUsbModal(false)}
             onRefreshLibrary={refreshLibrary}
             onNotice={setNotice}
             courses={Object.values(settings.courses || {})}
           />
         )}
+        {showRepetitions && <RepetitionWindow onClose={() => setShowRepetitions(false)} />}
         {videoSelection && <VideoImportModal
           selection={videoSelection}
           courses={Object.values(settings.courses || {}).filter(course => !archivedCourseCodes.includes(course.code))}

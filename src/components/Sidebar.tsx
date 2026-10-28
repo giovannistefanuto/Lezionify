@@ -33,6 +33,7 @@ interface SidebarProps {
   onOpenQuickCapture?: () => void
   onOpenLogViewer?: () => void
   onOpenUsbRecorder?: () => void
+  onOpenRepetitions?: () => void
   isUsbConnected?: boolean
 }
 
@@ -65,6 +66,7 @@ export function Sidebar({
   onOpenQuickCapture,
   onOpenLogViewer,
   onOpenUsbRecorder,
+  onOpenRepetitions,
   isUsbConnected
 }: SidebarProps) {
   
@@ -239,6 +241,7 @@ export function Sidebar({
                 </button>
               )}
 
+              {onOpenRepetitions && <button className="settings-gear-btn" onClick={onOpenRepetitions} title="Sessioni RIPETERE" aria-label="Apri RIPETERE">↻<span className="sidebar-action-label">RIPETERE</span></button>}
               {onOpenCourseChat && <button className="settings-gear-btn" onClick={onOpenCourseChat}
                 title="Sala di consultazione" aria-label="Apri consultazione del corso">💬<span className="sidebar-action-label">Consulta</span></button>}
               {onOpenQuickCapture && (

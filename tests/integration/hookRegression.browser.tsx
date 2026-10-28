@@ -1,4 +1,5 @@
 import { runOctober22Scenarios } from './october22Scenarios.browser'
+import { runRepetitionScenarios } from './repetitionScenarios.browser'
 import { runInterfacePolishScenarios } from './interfacePolishScenarios.browser'
 import { runTodayScenarios } from './todayScenarios.browser'
 import { runMemoLogsExportScenarios } from './memoLogsExportScenarios.browser'
@@ -354,6 +355,11 @@ async function runFinalLectureScenario() {
 }
 
 async function run() {
+  if (new URLSearchParams(location.search).has('repetition-only')) {
+    await runRepetitionScenarios(root, api)
+    require('electron').ipcRenderer.send('done', 'PASS: RIPETERE automatic start, reference, local archive, resume, STUDIO and responsive layout')
+    return
+  }
   if (new URLSearchParams(location.search).has('october22-only')) {
     await runOctober22Scenarios(root, api)
     require('electron').ipcRenderer.send('done', 'PASS: October22 accessibility, copy guard, Q&A Medium, course consent and long chat')
@@ -1956,6 +1962,7 @@ flowchart TD
   await runInterfacePolishScenarios(root, api)
   await runTodayScenarios(root, api)
   await runOctober22Scenarios(root, api)
+  await runRepetitionScenarios(root, api)
   require('electron').ipcRenderer.send(
     'done',
     'PASS: React regression scenarios (Markdown alerts, literals and formula contrast; Focus Lock lecture/session totals, checkpoints, pauses, reentry, errors and stale responses; PDF.js mixed pages, reading position, zoom, native divider, Q&A and hidden panes; dashboard, settings, video import, course archive, Q&A, pipeline, AI isolation, translation, search, Quick Capture, highlights, reminders, Mermaid, study tabs and fullscreen)'

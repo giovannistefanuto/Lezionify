@@ -6,6 +6,7 @@ const { spawnSync } = require('node:child_process')
 const { buildSync } = require('esbuild')
 const directory = mkdtempSync(join(tmpdir(), 'lezionify-hooks-'))
 const screenshotDirectory = process.env.LEZIONIFY_VIDEO_SCREENSHOT_DIR || null
+const repetitionOnly = process.argv.includes('--repetition-only')
 const october22Only = process.argv.includes('--october22-only')
 const interfacePolishOnly = process.argv.includes('--interface-polish-only')
 const todayOnly = process.argv.includes('--today-only')
@@ -115,14 +116,14 @@ try {
       });
       ipcMain.handle('capture-video-import', async (_, name) => {
         const directory = ${JSON.stringify(screenshotDirectory)};
-        if (!directory || (!/^oct22-[a-z0-9-]+$/.test(name) && !['polish-sidebar', 'polish-sidebar-narrow', 'polish-sidebar-collapsed', 'polish-memo-light', 'polish-memo-dark', 'polish-memo-narrow', 'polish-info', 'study-removal', 'dictionary-long', 'today-qna', 'today-memo', 'today-sounds', 'today-mermaid', 'today-battery', 'logs-light', 'logs-dark', 'sounds-light', 'sounds-dark', 'memo-narrow', 'export-narrow', 'memo-light', 'memo-dark', 'export-light', 'export-dark', 'tools-settings-translation', 'tools-settings-music', 'music-youtube-light', 'music-youtube-dark', 'music-light', 'music-dark', 'dictionary-light', 'dictionary-dark', 'discussion-light', 'discussion-dark', 'markdown-alerts-light', 'markdown-alerts-dark', 'focus-lock-times', 'dashboard-light', 'dashboard-dark', 'order', 'destination-light', 'destination-dark', 'home-light', 'home-dark', 'lecture-title-light', 'lecture-title-dark', 'drawer-focus-floating', 'focus-pdf-light', 'focus-pdf-dark', 'focus-pdf-qna'].includes(name))) return;
+        if (!directory || (!/^repeat-[a-z0-9-]+$/.test(name) && !/^oct22-[a-z0-9-]+$/.test(name) && !['polish-sidebar', 'polish-sidebar-narrow', 'polish-sidebar-collapsed', 'polish-memo-light', 'polish-memo-dark', 'polish-memo-narrow', 'polish-info', 'study-removal', 'dictionary-long', 'today-qna', 'today-memo', 'today-sounds', 'today-mermaid', 'today-battery', 'logs-light', 'logs-dark', 'sounds-light', 'sounds-dark', 'memo-narrow', 'export-narrow', 'memo-light', 'memo-dark', 'export-light', 'export-dark', 'tools-settings-translation', 'tools-settings-music', 'music-youtube-light', 'music-youtube-dark', 'music-light', 'music-dark', 'dictionary-light', 'dictionary-dark', 'discussion-light', 'discussion-dark', 'markdown-alerts-light', 'markdown-alerts-dark', 'focus-lock-times', 'dashboard-light', 'dashboard-dark', 'order', 'destination-light', 'destination-dark', 'home-light', 'home-dark', 'lecture-title-light', 'lecture-title-dark', 'drawer-focus-floating', 'focus-pdf-light', 'focus-pdf-dark', 'focus-pdf-qna'].includes(name))) return;
         await win.webContents.executeJavaScript('new Promise(resolve => setTimeout(() => requestAnimationFrame(() => requestAnimationFrame(resolve)), 200))');
         await win.webContents.capturePage();
         await new Promise(resolve => setTimeout(resolve, 250));
         const screenshot = await win.webContents.capturePage();
         require('node:fs').writeFileSync(require('node:path').join(directory, name + '.png'), screenshot.toPNG());
       });
-      win.loadFile(${JSON.stringify(join(directory, 'index.html'))}, process.argv.includes('--resume-reading') ? { query: { resumeReading: '1' } } : ${JSON.stringify(october22Only ? { query: { 'october22-only': '1' } } : interfacePolishOnly ? { query: { 'interface-polish-only': '1' } } : todayOnly ? { query: { 'today-only': '1' } } : memoLogsExportOnly ? { query: { 'memo-logs-export-only': '1' } } : lectureListOnly ? { query: { 'lecture-list-only': '1' } } : courseRagOnly ? { query: { 'course-rag-only': '1' } } : studyToolsOnly ? { query: { 'study-tools-only': '1' } } : languageShortcutOnly ? { query: { languageShortcutOnly: '1' } } : focusPdfOnly ? { query: { focusPdfOnly: '1' } } : musicOnly ? { query: { musicOnly: '1' } } : mathRenderingOnly ? { query: { mathRenderingOnly: '1' } } : dictionaryOnly ? { query: { dictionaryOnly: '1' } } : studyPauseOnly ? { query: { studyPauseOnly: '1' } } : readingPositionOnly ? { query: { readingPositionOnly: '1' } } : readingRestartOnly ? { query: { readingRestartOnly: '1' } } : {})});
+      win.loadFile(${JSON.stringify(join(directory, 'index.html'))}, process.argv.includes('--resume-reading') ? { query: { resumeReading: '1' } } : ${JSON.stringify(repetitionOnly ? { query: { 'repetition-only': '1' } } : october22Only ? { query: { 'october22-only': '1' } } : interfacePolishOnly ? { query: { 'interface-polish-only': '1' } } : todayOnly ? { query: { 'today-only': '1' } } : memoLogsExportOnly ? { query: { 'memo-logs-export-only': '1' } } : lectureListOnly ? { query: { 'lecture-list-only': '1' } } : courseRagOnly ? { query: { 'course-rag-only': '1' } } : studyToolsOnly ? { query: { 'study-tools-only': '1' } } : languageShortcutOnly ? { query: { languageShortcutOnly: '1' } } : focusPdfOnly ? { query: { focusPdfOnly: '1' } } : musicOnly ? { query: { musicOnly: '1' } } : mathRenderingOnly ? { query: { mathRenderingOnly: '1' } } : dictionaryOnly ? { query: { dictionaryOnly: '1' } } : studyPauseOnly ? { query: { studyPauseOnly: '1' } } : readingPositionOnly ? { query: { readingPositionOnly: '1' } } : readingRestartOnly ? { query: { readingRestartOnly: '1' } } : {})});
     });
     setTimeout(() => { console.error('Hook tests timed out'); app.exit(1) }, 180000);
   `
@@ -140,7 +141,7 @@ try {
   process.stdout.write(result.stdout || '')
   process.stderr.write(result.stderr || '')
   process.exitCode = result.status ?? 1
-  if (result.status === 0 && !october22Only && !interfacePolishOnly && !todayOnly && !memoLogsExportOnly && !lectureListOnly && !courseRagOnly && !studyToolsOnly && !focusPdfOnly && !musicOnly && !readingPositionOnly && !studyPauseOnly && !dictionaryOnly && !mathRenderingOnly && !languageShortcutOnly) {
+  if (result.status === 0 && !repetitionOnly && !october22Only && !interfacePolishOnly && !todayOnly && !memoLogsExportOnly && !lectureListOnly && !courseRagOnly && !studyToolsOnly && !focusPdfOnly && !musicOnly && !readingPositionOnly && !studyPauseOnly && !dictionaryOnly && !mathRenderingOnly && !languageShortcutOnly) {
     const restarted = spawnSync(require('electron'), [join(directory, 'main.cjs'), '--resume-reading'], { env, encoding: 'utf8', windowsHide: true, timeout: 190000 })
     process.stdout.write(restarted.stdout || '')
     process.stderr.write(restarted.stderr || '')

@@ -4,6 +4,7 @@
  */
 
 export type RequestPurpose =
+  | 'repetition'
   | 'overview'
   | 'sections'
   | 'translation'
@@ -38,6 +39,7 @@ export const DEFAULT_GEMINI_POLICY: GeminiPolicyConfig = {
 }
 
 export const TIMEOUTS_BY_PURPOSE: Record<RequestPurpose, number> = {
+  repetition: 180_000,
   overview: 180_000,
   sections: 180_000,
   translation: 180_000,

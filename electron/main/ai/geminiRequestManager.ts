@@ -105,7 +105,7 @@ export class GeminiRequestManager {
   private clock: Clock
 
   private usesArchivePool(options: LogicalRequestOptions<unknown>): boolean {
-    return !options.recovery && ['overview', 'sections', 'translation', 'studyset', 'asr_transcribe', 'asr_fallback', 'course_logistics'].includes(options.purpose)
+    return !options.recovery && ['overview', 'sections', 'translation', 'studyset', 'repetition', 'asr_transcribe', 'asr_fallback', 'course_logistics'].includes(options.purpose)
   }
 
   private attemptBudget(options: LogicalRequestOptions<unknown>): number {

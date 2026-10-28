@@ -2,6 +2,9 @@
 
 La documentazione è divisa per scopo, così il README principale resta leggibile.
 
+[RIPETERE: studio a voce alta](product/ripetere-2026-10-28.md): scelta Audio,
+confronto con appunti personali Markdown/TXT, archivio locale e ripresa.
+
 [Stima di studio, allegati slide e segnalazioni del 27 ottobre](quality/indagine-segnalazioni-2026-10-27.md): riproduzioni, correzione della viewport, ingresso esplicito agli allegati, verifiche e limiti del caso personale.
 
 [Pool Gemini e revisione dispense del 26 ottobre](quality/gemini-pool-revisione-dispense-2026-10-26.md): rotazione completa, limiti per tentativo, controlli del contenuto e del renderer.

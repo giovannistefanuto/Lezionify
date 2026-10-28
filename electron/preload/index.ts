@@ -12,6 +12,12 @@ import type {
 } from '../../shared/archive'
 
 const archiveApi: ArchiveApi = {
+  repetitionState: () => ipcRenderer.invoke('repetition:state'),
+  selectRepetitionReference: () => ipcRenderer.invoke('repetition:reference'),
+  startRepetition: () => ipcRenderer.invoke('repetition:start'),
+  resumeRepetition: id => ipcRenderer.invoke('repetition:resume', id),
+  stopRepetition: () => ipcRenderer.invoke('repetition:stop'),
+  readRepetition: id => ipcRenderer.invoke('repetition:read', id),
   getCourseRag: course => ipcRenderer.invoke('course-rag:state', course),
   prepareCourseSemantic: course => ipcRenderer.invoke('course-rag:prepare-semantic', course),
   manageCourseIndex: (course, action) => ipcRenderer.invoke('course-rag:manage-index', course, action),

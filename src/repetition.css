@@ -1,0 +1,229 @@
+.repetition-overlay {
+  z-index: 1100;
+}
+.modal-content.repetition-window {
+  background: var(--bg-surface);
+  color: var(--text-main);
+  width: min(1180px, 96vw);
+  max-width: 1180px;
+  height: min(850px, 94vh);
+  display: flex;
+  flex-direction: column;
+  padding: 24px;
+  gap: 16px;
+  overflow: hidden;
+}
+.repetition-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+}
+.repetition-header h2 {
+  margin: 4px 0;
+}
+.repetition-eyebrow {
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  color: var(--text-muted);
+}
+.repetition-reference {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--border-subtle, #8885);
+  border-radius: 10px;
+}
+.repetition-reference > div {
+  flex: 1;
+  min-width: 180px;
+  overflow-wrap: anywhere;
+}
+.repetition-reference span {
+  display: block;
+  font-size: 13px;
+  margin-top: 5px;
+}
+.repetition-layout {
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr);
+  flex: 1;
+  min-height: 0;
+  border-top: 1px solid var(--border-subtle, #8885);
+}
+.repetition-history {
+  overflow-y: auto;
+  padding: 14px 14px 14px 0;
+  border-right: 1px solid var(--border-subtle, #8885);
+}
+.repetition-history h3 {
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.repetition-session {
+  width: 100%;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: inherit;
+  padding: 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+.repetition-session span {
+  font-size: 12px;
+  opacity: 0.75;
+}
+.repetition-session.is-selected {
+  background: var(--bg-hover, #80808018);
+  border-color: var(--border-subtle, #8885);
+}
+.repetition-detail {
+  overflow-y: auto;
+  padding: 18px 24px;
+  min-width: 0;
+}
+.repetition-detail > h3 {
+  overflow-wrap: anywhere;
+  margin-top: 0;
+}
+.repetition-detail audio {
+  width: 100%;
+  height: 38px;
+  margin: 8px 0 16px;
+}
+.repetition-source,
+.repetition-footer {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.repetition-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+.repetition-tabs [aria-pressed='true'] {
+  outline: 2px solid var(--primary, #39836b);
+  outline-offset: 1px;
+}
+.repetition-transcript {
+  white-space: pre-wrap;
+  font: inherit;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+.repetition-progress {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px 16px;
+  font-size: 13px;
+}
+.repetition-progress span,
+.repetition-progress progress {
+  grid-column: 1;
+  width: 100%;
+}
+.repetition-progress button {
+  grid-column: 2;
+  grid-row: 1 / 4;
+}
+.repetition-error {
+  color: var(--text-main);
+  background: #c66a1720;
+  border-left: 3px solid #b86a29;
+  padding: 12px;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.repetition-empty {
+  max-width: 540px;
+  margin: 48px auto;
+  line-height: 1.8;
+}
+.modal-content.recorder-choice {
+  background: var(--bg-surface);
+  color: var(--text-main);
+  width: min(780px, 94vw);
+  max-width: 780px;
+  padding: 28px;
+}
+.recorder-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+  margin-top: 24px;
+}
+.recorder-option {
+  text-align: left;
+  padding: 24px;
+  color: inherit;
+  background: var(--bg-surface, #8080800b);
+  border: 1px solid var(--border-subtle, #8885);
+  border-radius: 12px;
+  cursor: pointer;
+}
+.recorder-option:hover {
+  background: var(--bg-hover, #80808018);
+  border-color: var(--primary, #39836b);
+}
+.recorder-option > span {
+  display: block;
+  font-size: 32px;
+  margin-bottom: 22px;
+}
+.recorder-option strong {
+  font-size: 23px;
+  letter-spacing: 0.04em;
+}
+.recorder-option p {
+  line-height: 1.65;
+  min-height: 80px;
+}
+.recorder-option small {
+  color: var(--text-muted);
+}
+@media (max-width: 780px) {
+  .repetition-window {
+    padding: 16px;
+  }
+  .repetition-layout {
+    grid-template-columns: 180px minmax(0, 1fr);
+  }
+  .repetition-detail {
+    padding: 14px;
+  }
+  .recorder-options {
+    grid-template-columns: 1fr;
+  }
+  .recorder-choice {
+    max-height: 94vh;
+    overflow: auto;
+  }
+  .recorder-option p {
+    min-height: 0;
+  }
+}
+@media (max-width: 500px) {
+  .repetition-layout {
+    grid-template-columns: 1fr;
+    overflow-y: auto;
+  }
+  .repetition-history {
+    max-height: 180px;
+    border-right: 0;
+  }
+  .repetition-detail {
+    overflow-y: visible;
+  }
+  .repetition-header {
+    align-items: flex-start;
+  }
+}

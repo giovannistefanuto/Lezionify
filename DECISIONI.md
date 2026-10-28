@@ -4787,3 +4787,25 @@ Non modificare manualmente la sezione `Registro`: aggiungi le nuove decisioni es
 - **Impatto:** Verificati 372 file build, manifesto, blockmap, tre backup e otto componenti critici NSIS. Runtime RAG isolato passato con modello locale e inferenza senza rete. Nessuna installazione, release binaria o chiamata AI; caso storico personale degli allegati non dichiarato riprodotto.
 - **Follow-up:** Verificare la presenza del commit sul remoto dopo push. Installare con Lezionify chiuso e provare Allega slide nel Q&A Focus; la conferma personale resta aperta. Backup local-artifacts/installer-backups/20261027-focus-slides-estimate.
 - **File coinvolti:** DECISIONI.md, STRUTTURA_PROGETTO.md, docs/README.md, docs/product/idee-future-2026-10-13.md, docs/quality/indagine-segnalazioni-2026-10-27.md, sorgenti e test D-0433, dist/Lezionify-Setup-0.1.0.exe
+
+## D-0435 — RIPETERE automatico con riferimento personale e archivio separato
+
+- **Data:** 2026-10-28
+- **Stato:** accettata
+- **Area:** ripetizione-orale
+- **Decisione:** Dopo intervista grilling e conferma dell utente, Audio presenta RIPETERE e STUDIO. RIPETERE elabora automaticamente l ultimo audio del registratore, di qualsiasi durata, e lo confronta tramite Gemini con un file Markdown o TXT scelto e ricordato. Risultato in tre sezioni: comprensione, difficolta superate e punti da rivedere. Salvataggio automatico separato con audio, trascrizione grezza, copia degli appunti e valutazione; riuso per checksum e ripresa locale.
+- **Motivazione:** La fonte e una sessione di studio a voce alta con lettura, tentativi e autocorrezioni. Serve distinguerli dagli errori rimasti e confrontarli con il riferimento esplicito, preservando il flusso STUDIO e la provenienza dei risultati.
+- **Impatto:** Nuovo servizio, contratti IPC e interfaccia RIPETERE. Riutilizzati ASR intelligente, checkpoint e pool completo Gemini; fallback ASR specifico conserva lingua originale e tentativi anche brevi. Valutazione progressiva per trascrizioni lunghe, checkpoint atomico e impronte delle fonti. Appunti UTF-8 entro 1 MiB senza troncamento. Nessuna dipendenza, API reale o installer nuovo.
+- **Follow-up:** Completare regressioni generali e verifica finale. Osservare nell uso reale il confronto didattico: test sintetici non certificano correttezza scientifica o qualita del modello. Riferimenti modificati valgono per nuove registrazioni; le sessioni esistenti conservano la copia originale.
+- **File coinvolti:** electron/main/repetition.ts, electron/main/ai/repetitionPrompt.ts, electron/main/gemini.ts, electron/main/ai/geminiPolicy.ts, electron/main/ai/geminiRequestManager.ts, electron/main/archive.ts, electron/main/index.ts, electron/preload/index.ts, shared/repetition.ts, shared/archive.ts, src/components/RecorderEntry.tsx, src/components/RepetitionWindow.tsx, src/components/Sidebar.tsx, src/App.tsx, src/repetition.css, tests/unit/repetition.test.ts, tests/unit/geminiAudioOwnership.test.ts, tests/unit/geminiPhaseB.test.ts, tests/integration/repetitionScenarios.browser.tsx, tests/integration/hookRegression.browser.tsx, tools/run_hook_regressions.cjs, docs/product/ripetere-2026-10-28.md, STRUTTURA_PROGETTO.md, docs/README.md
+
+## D-0436 — Installer generale con RIPETERE verificato
+
+- **Data:** 2026-10-28
+- **Stato:** accettata
+- **Area:** distribuzione-ripetere
+- **Decisione:** Rigenerato su richiesta il setup Windows 0.1.0 con la modalita RIPETERE D-0435, senza pubblicazione binaria. Commit e push di tutte le modifiche pubblicabili autorizzati da AGENTS.md. Setup di 294223702 byte, SHA256 3e9dbe8b51edd99563302e03642bf4739eb96af2814bacf30ca45f1c53651575.
+- **Motivazione:** Rendere disponibile nell applicazione installata il flusso approvato, dopo typecheck, lint, build, 761 test riusciti e due fallimenti diagnostici attesi preesistenti, regressioni Electron generali e riavvio, oltre al collaudo visivo sintetico.
+- **Impatto:** Verificati 374 file build identici al pacchetto, marcatori RIPETERE, manifesto, blockmap, tre backup del setup precedente e otto componenti critici estratti da NSIS. Runtime RAG isolato passato con modello gia locale, inferenza senza rete e worker PDF. Nessuna installazione, release binaria o chiamata AI reale; artefatti e materiali privati esclusi da Git.
+- **Follow-up:** Verificare commit finale sul remoto dopo push. Installare il setup con Lezionify chiuso e scegliere il file appunti al primo uso di RIPETERE; qualita della valutazione personale da osservare nell uso reale. Backup local-artifacts/installer-backups/20261028-ripetere.
+- **File coinvolti:** DECISIONI.md, STRUTTURA_PROGETTO.md, docs/README.md, docs/product/ripetere-2026-10-28.md, tools/verify_installer.cjs, sorgenti test e strumenti D-0435, dist/Lezionify-Setup-0.1.0.exe

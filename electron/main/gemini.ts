@@ -1,4 +1,5 @@
 import { GoogleGenAI, createPartFromUri } from '@google/genai'
+import { REPETITION_INSTRUCTION, validateRepetitionAssessment } from './ai/repetitionPrompt'
 import { stat } from 'node:fs/promises'
 import { setTimeout as delay } from 'node:timers/promises'
 import type {
@@ -684,6 +685,27 @@ export function trimOverlapWords(leftText: string, rightText: string, maxWords: 
 }
 
 export class GeminiService {
+  async evaluateRepetition(params: {
+    keys: KeyConfig[]; model?: string; reference: string; transcript: string;
+    previous: string; final: boolean; id: string; signal: AbortSignal
+  }): Promise<string> {
+    const { preferred, fallbacks } = getModelFallbackChain(params.model)
+    return this.requestManager.execute({
+      jobId: `ripetere-${params.id}`, purpose: 'repetition', priority: 'background',
+      keys: params.keys, preferredModel: preferred, fallbackModels: fallbacks, signal: params.signal,
+      call: async (key, model, signal) => {
+        const response = await this.requestManager.getTransport().getClient(key).models.generateContent({
+          model,
+          contents: JSON.stringify({ appuntiDiRiferimento: params.reference, valutazionePrecedente: params.previous,
+            trattoSuccessivoDellaRipetizione: params.transcript, ultimoTratto: params.final }),
+          config: { systemInstruction: REPETITION_INSTRUCTION, temperature: 0.1, abortSignal: signal }
+        })
+        signal.throwIfAborted()
+        return validateRepetitionAssessment(cleanMarkdownOutput(response.text?.trim() || ''))
+      }
+    })
+  }
+
   private readonly requestManager: GeminiRequestManager
   private readonly jobStore?: AiJobStore
 
@@ -1293,6 +1315,7 @@ ${sectionOutputs.join('\n\n---\n\n')}`
   }
 
   async transcribeAudioFile(params: {
+    context?: 'repetition'
     apiKey?: string
     keys?: KeyConfig[]
     audioFilePath: string
@@ -1663,7 +1686,12 @@ ${sectionOutputs.join('\n\n---\n\n')}`
           }
           try {
             const isItalian = languageCodes && languageCodes.length === 1 && languageCodes[0] === 'it-IT'
-            const fallbackPrompt = isItalian
+            const fallbackPrompt = params.context === 'repetition'
+              ? `Trascrivi integralmente e letteralmente questa sessione di studio a voce alta nella lingua originale, senza tradurre.
+La persona legge, ragiona, sbaglia, ripete e si corregge. Conserva tentativi, esitazioni, domande, ripetizioni e autocorrezioni: non migliorare né correggere ciò che dice.
+Non è una lezione del docente. Non riassumere e non aggiungere spiegazioni. Anche poche parole sono una trascrizione valida.
+Se non c'è parlato comprensibile rispondi esattamente [NESSUN_PARLATO]. Restituisci solo la trascrizione.`
+              : isItalian
               ? `Sei un trascrittore fedele e scrupoloso. Trascrivi integralmente parola per parola l'audio allegato.
 È una lezione universitaria.
 Trascrivi tutto il parlato senza omettere nulla, comprese formule matematiche e terminologia tecnica.
@@ -1701,7 +1729,7 @@ Return ONLY the verbatim transcript:`
             })
 
             const fallbackWords = fallbackRaw.split(/\s+/).filter(Boolean).length
-            if (fallbackRaw && !fallbackRaw.includes('[NESSUN_PARLATO]') && fallbackWords >= 10) {
+            if (fallbackRaw && !fallbackRaw.includes('[NESSUN_PARLATO]') && fallbackWords >= (params.context === 'repetition' ? 1 : 10)) {
               chunkText = cleanMarkdownOutput(fallbackRaw)
               transcribeErrorObj = null
               wasFallback = true

@@ -1,4 +1,5 @@
 import type { CourseRagApi } from './courseRag'
+import type { RepetitionApi } from './repetition'
 import type { DictionaryDirection, DictionaryResult } from './dictionary'
 import type { PdfExportDocument, PdfExportRequest, PdfExportResult } from './pdfExport'
 
@@ -594,7 +595,7 @@ export interface FocusPdfDocument {
   url: string
 }
 
-export interface ArchiveApi extends CourseRagApi {
+export interface ArchiveApi extends CourseRagApi, RepetitionApi {
   languageShortcutDiagnosticsEnabled?: boolean
   exportNotesPdf: (request: PdfExportRequest) => Promise<PdfExportResult>
   getPdfExportDocument: (token: string) => Promise<PdfExportDocument>

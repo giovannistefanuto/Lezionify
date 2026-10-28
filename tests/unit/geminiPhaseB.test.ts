@@ -39,7 +39,7 @@ class VirtualClock implements Clock {
 }
 
 describe('Fase B — Gestore Condiviso e Trasporto AI', () => {
-  it.each(['sections', 'translation', 'asr_transcribe'] as const)('raggiunge la tredicesima chiave per %s anche oltre dieci minuti', async purpose => {
+  it.each(['sections', 'translation', 'asr_transcribe', 'repetition'] as const)('raggiunge la tredicesima chiave per %s anche oltre dieci minuti', async purpose => {
     const clock = new VirtualClock()
     const manager = new GeminiRequestManager(DEFAULT_GEMINI_POLICY, new GeminiTransport(), clock)
     const keys = Array.from({ length: 13 }, (_, i) => ({ key: `synthetic-pool-${i}`, quotaGroup: `project-${i}` }))

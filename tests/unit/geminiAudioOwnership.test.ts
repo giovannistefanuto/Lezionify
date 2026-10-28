@@ -10,6 +10,7 @@ import { DEFAULT_GEMINI_POLICY } from '../../electron/main/ai/geminiPolicy'
 import { GeminiError, normalizeGeminiError } from '../../electron/main/ai/geminiErrors'
 import { pipelineFailureFromError } from '../../electron/main/ai/pipelineFailure'
 import { logger } from '../../electron/main/logger'
+import { REPETITION_HEADINGS } from '../../shared/repetition'
 
 vi.mock('../../electron/main/audioChunker', () => ({
   getAudioDuration: vi.fn(async () => 120),
@@ -134,6 +135,30 @@ describe('Audio Gemini: proprietà dei file durante la rotazione', () => {
     expect(a.files.upload).toHaveBeenCalledTimes(1)
     expect(a.files.delete).toHaveBeenCalledTimes(1)
     expect(b.files.upload).not.toHaveBeenCalled()
+  })
+
+  it('RIPETERE conserva anche poche parole nel fallback e non forza la lingua inglese', async () => {
+    const { a, service } = setup()
+    a.interactions.create.mockResolvedValue({ output_text: '' })
+    a.models.generateContent.mockResolvedValue({ text: 'Non ho capito.' })
+    await expect(service.transcribeAudioFile({ keys, audioFilePath: audio, context: 'repetition', language: 'auto' })).resolves.toBe('Non ho capito.')
+    const request = a.models.generateContent.mock.calls[0][0]
+    expect(request.contents[1]).toContain('nella lingua originale, senza tradurre')
+    expect(request.contents[1]).toContain('esitazioni')
+    expect(request.contents[1]).not.toContain('taught in English')
+  })
+
+  it('RIPETERE invia riferimento, tratto e valutazione precedente tramite il gestore condiviso', async () => {
+    const { a, service } = setup()
+    const text = REPETITION_HEADINGS.map(title => `## ${title}\n\nEvidenza sintetica.`).join('\n\n')
+    a.models.generateContent.mockResolvedValue({ text })
+    const controller = new AbortController()
+    await expect(service.evaluateRepetition({ keys, reference: 'Appunti sintetici', transcript: 'Ora mi correggo', previous: 'Prima avevo sbagliato', final: true,
+      id: 'synthetic-repetition', signal: controller.signal })).resolves.toBe(text)
+    expect(a.models.generateContent).toHaveBeenCalledWith(expect.objectContaining({
+      contents: JSON.stringify({ appuntiDiRiferimento: 'Appunti sintetici', valutazionePrecedente: 'Prima avevo sbagliato', trattoSuccessivoDellaRipetizione: 'Ora mi correggo', ultimoTratto: true }),
+      config: expect.objectContaining({ systemInstruction: expect.stringContaining('autocorrezione'), abortSignal: expect.any(AbortSignal) })
+    }))
   })
 
   it('non presume accesso condiviso quando due chiavi hanno lo stesso quotaGroup', async () => {

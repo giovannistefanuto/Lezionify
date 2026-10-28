@@ -1,4 +1,5 @@
 import { relatedQnaContext } from '../../shared/qnaContext'
+import { RepetitionService } from './repetition'
 import { effectiveStudySeconds, studyTimeRemovalTargets, removeStudySeconds } from '../../shared/studyCorrections'
 import { ragHash, splitCourseSource, type IndexedCourseSource } from './courseRagIndex'
 import { calculateScheduleOverlap } from './courseSchedule'
@@ -134,6 +135,7 @@ export function isRetryableApiError(errorText: string): boolean {
 }
 
 export class ArchiveService {
+  public readonly repetition: RepetitionService
   private readonly wordCountCache = new Map<string, { signature: string; words: number }>()
   private readonly rootDirectory: string
   readonly qnaImages: QnaImageStore
@@ -194,6 +196,16 @@ export class ArchiveService {
         jobStore: this.jobStore
       })
     this.searchIndex = new SearchIndexService()
+    this.repetition = new RepetitionService(path.join(this.rootDirectory, 'RIPETERE'), {
+      scan: () => this.detectUsbRecorder(),
+      transcribe: async (audioFilePath, lectureId, signal, onProgress) => this.geminiService.transcribeAudioFile({
+        keys: await this.getManagedKeys(), audioFilePath, lectureId, language: 'auto', context: 'repetition', signal, onProgress
+      }),
+      evaluate: async (reference, transcript, previous, final, id, signal) => this.geminiService.evaluateRepetition({
+        keys: await this.getManagedKeys(), model: (await this.settingsService.getSettings()).model,
+        reference, transcript, previous, final, id, signal
+      })
+    })
     this.archivePipeline = new ArchivePipeline(this.jobStore, {
       listLectures: () => this.listLectures(),
       hasConfiguredKey: async () => (await this.getManagedKeys()).length > 0,

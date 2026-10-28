@@ -2,6 +2,17 @@
 
 ## Stato attuale
 
+La modalità RIPETERE affianca STUDIO nell'ingresso Audio: prende automaticamente
+l'ultimo audio USB, lo trascrive e confronta il ragionamento a voce alta con un
+file di appunti scelto dall'utente. `electron/main/repetition.ts` conserva fonti,
+risultati e checkpoint separati in `library/RIPETERE`; `shared/repetition.ts`
+definisce il contratto IPC e `ai/repetitionPrompt.ts` le regole del confronto.
+`RecorderEntry` presenta la scelta; `RepetitionWindow` permette avvio, sospensione,
+ripresa e consultazione locale dallo storico laterale. Nessuna nuova dipendenza.
+Uso, limiti e collaudi in `docs/product/ripetere-2026-10-28.md`.
+Setup Windows 0.1.0 rigenerato: 374 file build confrontati con il pacchetto e
+runtime RAG verificato in profilo isolato senza inferenza in rete.
+
 L'indagine del 27 ottobre conserva le dodici segnalazioni nella lista futura
 (voci 106–116 e richiamo alla 71). D-0433 corregge la stima: il campionamento
 accredita tutta la porzione visibile, con peso proporzionale ai bordi, e il

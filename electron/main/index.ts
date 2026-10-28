@@ -155,6 +155,8 @@ function registerProtocols(): void {
         if (rawPath && existsSync(rawPath)) {
           filePath = rawPath
         }
+      } else if (url.hostname === 'repetition') {
+        filePath = await archive.repetition.audioPath(url.pathname.slice(1))
       } else {
         const lectureId = (
           url.hostname === 'audio'
@@ -222,7 +224,28 @@ function registerProtocols(): void {
   })
 }
 
+async function repetitionIpc<T>(action: () => Promise<T>): Promise<T> {
+  try { return await action() } catch (cause) {
+    if (cause && typeof cause === 'object' && 'code' in cause) {
+      throw new Error('File RIPETERE non disponibile. Controlla il registratore e i permessi della cartella locale.', { cause })
+    }
+    throw cause
+  }
+}
+
 function registerIpcHandlers(): void {
+  ipcMain.handle('repetition:state', () => repetitionIpc(() => archive.repetition.state()))
+  ipcMain.handle('repetition:reference', () => repetitionIpc(async () => {
+    const selection = await dialog.showOpenDialog({ title: 'Appunti di riferimento per RIPETERE',
+      properties: ['openFile'], filters: [{ name: 'Appunti Markdown o TXT', extensions: ['md', 'txt', 'markdown'] }] })
+    if (selection.canceled || !selection.filePaths[0]) return false
+    await archive.repetition.setReference(selection.filePaths[0])
+    return true
+  }))
+  ipcMain.handle('repetition:start', () => repetitionIpc(() => archive.repetition.startLatest()))
+  ipcMain.handle('repetition:resume', (_event, id: string) => repetitionIpc(() => archive.repetition.resume(id)))
+  ipcMain.handle('repetition:stop', () => repetitionIpc(() => archive.repetition.stop()))
+  ipcMain.handle('repetition:read', (_event, id: string) => repetitionIpc(() => archive.repetition.read(id)))
   ipcMain.handle('course-rag:state', (_event, course: string) => courseRag.state(course))
   ipcMain.handle('course-rag:prepare-semantic', (_event, course: string) => courseRag.prepareSemantic(course))
   ipcMain.handle('course-rag:manage-index', (_event, course: string, action: string) => courseRag.manageIndex(course, action))
