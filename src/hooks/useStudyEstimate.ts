@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef, type RefObject } from 'react'
 import { contentFingerprint } from '../utils/readingPosition'
+import { observeParagraphs } from '../utils/paragraphObservation'
 import {
   estimateStudyMinutes,
   isStudyEstimateEnabled,
@@ -93,6 +94,7 @@ export function useStudyEstimate({
     setLabel(null)
     if (!lectureId || !fingerprint || !enabled || !preference) return
     const key = PREFIX + lectureId
+    const paragraphs = observeParagraphs(`${lectureId}:${fingerprint}:${englishFingerprint}`, language)
     let state: StudyEstimateState
     let savedEnglish = ''
     try {
@@ -115,6 +117,7 @@ export function useStudyEstimate({
     let documentSurface = true
     const history: number[] = []
     const persist = () => {
+      paragraphs.save()
       try {
         localStorage.setItem(
           key,
@@ -131,6 +134,7 @@ export function useStudyEstimate({
       const bin = rootRef.current ? studyBin(rootRef.current) : null
       if (bin === null) return
       state = newStudyEstimate(fingerprint, bin)
+      paragraphs.reset()
       history.length = 0
       lastDisplay = 0
       setLabel(null)
@@ -170,12 +174,15 @@ export function useStudyEstimate({
       const root = rootRef.current
       if (!root || !root.getBoundingClientRect().height) return
       state = sampleVisibleStudy(state, delta, documentSurface ? studyVisibleRange(root) : null)
+      const paragraphLabel = documentSurface ? paragraphs.tick(root, delta) : null
+      if (paragraphLabel) { setLabel(paragraphLabel); lastDisplay = now }
       if (now - lastSave >= 10_000) {
         persist()
         lastSave = now
       }
       const minutes = estimateStudyMinutes(state)
       if (!documentSurface || minutes === null) {
+        if (paragraphLabel) return
         setLabel(null)
         return
       }

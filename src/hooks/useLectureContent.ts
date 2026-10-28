@@ -60,6 +60,17 @@ export function useLectureContent({
   const [isLoadingContent, setIsLoadingContent] = useState(false)
   const [isGeneratingStudySet, setIsGeneratingStudySet] = useState(false)
   const [studySetError, setStudySetError] = useState<string | null>(null)
+  useEffect(() => {
+    const revised = (event: Event) => {
+      const detail = (event as CustomEvent<{ id: string; markdown: string }>).detail
+      if (!detail || detail.id !== currentLecture.current) return
+      invalidateLectureContentCache(detail.id)
+      setMarkdownText(detail.markdown)
+      void onRefreshLibrary()
+    }
+    window.addEventListener('lecture-section-revised', revised)
+    return () => window.removeEventListener('lecture-section-revised', revised)
+  }, [onRefreshLibrary])
 
   // Metadata editor state
   const [isEditingMetadata, setIsEditingMetadata] = useState(false)

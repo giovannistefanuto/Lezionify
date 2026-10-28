@@ -829,6 +829,7 @@ ${transcript}`
   }
 
   async generateSectionNotes(params: {
+    revision?: { before: string; instructions: string }
     apiKey?: string
     keys?: KeyConfig[]
     model: GeminiModel
@@ -855,7 +856,7 @@ ${transcript}`
     const keyConfigs = toKeyConfigs(apiKey, keys)
     const { preferred, fallbacks } = getModelFallbackChain(model)
 
-    const prompt = `INFORMAZIONI SEZIONE:
+    const prompt = `${params.revision ? `RIGENERAZIONE MIRATA: riscrivi soltanto la sezione richiesta in italiano. La trascrizione seguente è completa e può contenere altri argomenti: usala come fonte, senza estendere la sezione ad essi. Non inventare un allineamento temporale. Mantieni il titolo e non introdurre titoli dello stesso livello o superiore. Restituisci solo il Markdown della sezione.\nISTRUZIONI DELLO STUDENTE:\n${params.revision.instructions}\nVERSIONE PRECEDENTE DELLA SEZIONE:\n${params.revision.before}\n` : ''}INFORMAZIONI SEZIONE:
 - Corso: ${courseCode ?? 'Ingegneria Magistrale'}
 - Sezione: ${sectionIndex + 1} di ${totalSections} — ${sectionTitle}
 
@@ -2028,6 +2029,7 @@ Return ONLY the verbatim transcript:`
     thread: QnaThread
     otherQnaContext?: string
     responseLength?: 'brief' | 'medium' | 'long'
+    searchOnline?: boolean
     fullLectureText?: string
     onRetry?: (attempt: number, delayMs: number, reason: string) => void
     onAttempt?: (info: RequestAttemptInfo) => void
@@ -2068,6 +2070,7 @@ Vai subito al punto. Non usare frasi di apertura o chiusura, preamboli, riepilog
 Mantieni il contesto del discorso.
 
 METODO DIDATTICO:
+${params.searchOnline ? '- Ricerca online attivata esplicitamente: distingui le informazioni web dalle fonti della lezione, segnala conflitti e cita le fonti restituite dallo strumento. Non attribuire al docente contenuti trovati online.' : ''}
 - Punta alla comprensione: rispondi al dubbio concreto e spiega il perché, con passaggi o un esempio pertinente quando aiutano.
 - Valuta il ragionamento prima di approvarlo. Se la domanda contiene una premessa errata, correggila esplicitamente e spiega l'errore prima di proseguire. Mantieni un tono rispettoso e diretto.
 - Se lo studente propone una risposta parziale, distingui ciò che è corretto da ciò che manca o va corretto; completa il passaggio senza approvare l'intera risposta per compiacenza.
@@ -2110,6 +2113,8 @@ ${params.otherQnaContext ? `ALTRI Q&A PERTINENTI DELLA STESSA LEZIONE (estratti 
     }
 
     const { preferred, fallbacks } = getQnaModelFallbackChain(model)
+    const webModels = new Set(['gemini-3.5-flash-lite', 'gemini-3.6-flash', 'gemini-3.8-flash', 'gemini-3.1-pro-preview', 'gemini-2.5-pro', 'gemini-2.5-flash', 'gemini-2.5-flash-lite'])
+    const webSources = new Map<string, string>()
 
     this.requestManager.execute({
       jobId: `qna-${thread.id}`,
@@ -2118,7 +2123,7 @@ ${params.otherQnaContext ? `ALTRI Q&A PERTINENTI DELLA STESSA LEZIONE (estratti 
       priority: 'interactive',
       keys: keyConfigs,
       preferredModel: preferred,
-      fallbackModels: fallbacks,
+      fallbackModels: params.searchOnline ? fallbacks.filter(candidate => webModels.has(candidate)) : fallbacks,
       signal,
       call: async (activeApiKey, activeModel, attemptSignal) => {
         let emittedChunk = false
@@ -2132,8 +2137,10 @@ ${params.otherQnaContext ? `ALTRI Q&A PERTINENTI DELLA STESSA LEZIONE (estratti 
             ] }] : lastUserMessage,
             config: {
               systemInstruction,
+              ...(params.searchOnline ? { tools: [{ googleSearch: {} }] } : {}),
               temperature: 0.2
             },
+            onGrounding: sources => { if (params.searchOnline) for (const source of sources) webSources.set(source.uri, source.title) },
             signal: attemptSignal,
             onChunk: (text) => {
               if (!text.trim() && !emittedChunk) return
@@ -2176,6 +2183,10 @@ ${params.otherQnaContext ? `ALTRI Q&A PERTINENTI DELLA STESSA LEZIONE (estratti 
       if (evt.type === 'chunk') {
         yield evt.text
       } else if (evt.type === 'done') {
+        if (params.searchOnline) {
+          const links = [...webSources].map(([uri, title]) => `- [${title.replace(/[[\]\\\r\n]/g, '')}](${encodeURI(uri).replace(/[()]/g, char => char === '(' ? '%28' : '%29')})`).join('\n')
+          yield `\n\n### Fonti web · ricerca online richiesta\n${links || 'Nessuna fonte web restituita dal provider: questa risposta non ha evidenze web verificabili.'}`
+        }
         break
       } else if (evt.type === 'error') {
         throw evt.error

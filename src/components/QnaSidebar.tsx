@@ -7,6 +7,8 @@ import type { QnaThread, QnaStatusUpdate } from '../../shared/archive'
 import '../qna.css'
 import { useNumericPreference } from '../hooks/useNumericPreference'
 import { QnaImagePreview } from './QnaImagePreview'
+import { normalizeDisplayMath } from '../utils/markdownMath'
+import { copyRenderedMath } from '../utils/copyMath'
 
 interface QnaSidebarProps {
   threads: QnaThread[]
@@ -15,7 +17,7 @@ interface QnaSidebarProps {
   isGenerating: boolean
   qnaStatus?: QnaStatusUpdate | null
   error: string | null
-  onSendMessage: (threadId: string, text: string, useFullContext: boolean, includeOtherQna?: boolean, responseLength?: 'brief' | 'medium' | 'long') => void | boolean | Promise<void | boolean>
+  onSendMessage: (threadId: string, text: string, useFullContext: boolean, includeOtherQna?: boolean, responseLength?: 'brief' | 'medium' | 'long', searchOnline?: boolean) => void | boolean | Promise<void | boolean>
   onDeleteThread: (threadId: string) => void
   onClose: () => void
   onRemoveImage?: (threadId: string, id: string) => void
@@ -47,7 +49,7 @@ function AnchorContext({ thread }: { thread: QnaThread }) {
       <div className="qna-context-label">Ancorato a:</div>
       <div ref={quoteRef} id={quoteId} className={`qna-context-quote ${expanded ? 'is-expanded' : 'is-collapsed'}`}>
         <ReactMarkdown remarkPlugins={[remarkMath, remarkGfm]} rehypePlugins={[rehypeKatex]}>
-          {thread.quote}
+          {normalizeDisplayMath(thread.quote)}
         </ReactMarkdown>
       </div>
       {(overflows || expanded) && (
@@ -75,16 +77,20 @@ export function QnaSidebar({
   onSelectSlides
 }: QnaSidebarProps) {
   const [inputText, setInputText] = React.useState('')
-  const [useFullContext, setUseFullContext] = React.useState(false)
+  const [useFullContext, setUseFullContext] = React.useState(true)
   const [includeOtherQna, setIncludeOtherQna] = React.useState(false)
+  const [searchOnline, setSearchOnline] = React.useState(false)
   const activeThreadRef = React.useRef(activeThreadId)
   activeThreadRef.current = activeThreadId
-  const [responseLength, setResponseLength] = React.useState<'brief' | 'medium' | 'long'>(() => {
-    try { const saved = localStorage.getItem('lezionify:qna-length:v1'); return saved === 'long' || saved === 'medium' ? saved : 'brief' } catch { return 'brief' }
-  })
-  React.useEffect(() => {
-    try { localStorage.setItem('lezionify:qna-length:v1', responseLength) } catch { return }
-  }, [responseLength])
+  const [responseLength, setResponseLength] = React.useState<'brief' | 'medium' | 'long'>('brief')
+  const questionRef = useRef<HTMLTextAreaElement>(null)
+  useEffect(() => {
+    if (!activeThreadId) return
+    setUseFullContext(true)
+    setIncludeOtherQna(false)
+    setSearchOnline(false)
+    setResponseLength('brief')
+  }, [activeThreadId])
   const [textZoom, setTextZoom] = useNumericPreference('lezionify:qna-text-zoom:v1', 1, 0.8, 2)
   const sidebarRef = useRef<HTMLDivElement>(null)
   const lastThreadId = useRef<string | null>(null)
@@ -110,6 +116,7 @@ export function QnaSidebar({
   useEffect(() => {
     setInputText('')
     onCompositionChange?.(false)
+    if (activeThreadId) questionRef.current?.focus({ preventScroll: true })
     return () => onCompositionChange?.(false)
   }, [activeThreadId, onCompositionChange])
   const userCount = activeThread?.messages.filter(message => message.role === 'user').length ?? 0
@@ -201,7 +208,8 @@ export function QnaSidebar({
       }
     }
     try {
-      if (await onSendMessage(threadId, draft, useFullContext, includeOtherQna, responseLength) === false) restoreDraft()
+      if (await onSendMessage(threadId, draft, useFullContext, includeOtherQna, responseLength, searchOnline) === false) restoreDraft()
+      else setSearchOnline(false)
     } catch { restoreDraft() }
   }
 
@@ -237,15 +245,13 @@ export function QnaSidebar({
         )}
         {activeThread.messages.map((m, idx) => {
           // Converte i delimitatori standard LaTeX usati da Gemini in dollari (supportati da remark-math)
-          const sanitizedText = m.text
-            .replace(/\\\((.*?)\\\)/g, '$$$1$$')
-            .replace(/\\\[(.*?)\\\]/gs, '$$$$$1$$$$')
+          const sanitizedText = normalizeDisplayMath(m.text)
 
           return (
             <div key={idx} className={`qna-message ${m.role}`}>
               <div className="qna-message-role">{m.role === 'user' ? 'Tu' : 'Gemini'}</div>
               {Boolean(m.attachmentIds?.length) && <small>{m.attachmentIds!.length} slide allegate a questa domanda</small>}
-              <div className="qna-message-content">
+              <div className="qna-message-content" onCopy={copyRenderedMath}>
                 {m.role === 'ai' && !m.text && isGenerating && idx === activeThread.messages.length - 1 ? (
                   <div className="qna-typing-log" role="status" aria-live="polite">
                     <div className="qna-typing-spinner">
@@ -308,8 +314,11 @@ export function QnaSidebar({
           Includi altri Q&amp;A pertinenti di questa lezione
         </label>
         {includeOtherQna && <small>Invia anche estratti di altre discussioni pertinenti (massimo 5). Le risposte AI non sono fonti originali.</small>}
+        <label className="qna-context-toggle"><input type="checkbox" checked={searchOnline} disabled={isGenerating} onChange={event => setSearchOnline(event.target.checked)} />Cerca online per questa domanda</label>
+        {searchOnline && <small>Gemini può inviare query derivate dalla domanda e dal contesto a Google Search. Possono applicarsi costi aggiuntivi secondo il tuo piano. Le fonti web saranno separate dalla lezione.</small>}
         <div className="qna-input-row">
           <textarea aria-label="Domanda sulla lezione"
+            ref={questionRef}
             value={inputText}
             onFocus={() => onCompositionChange?.(true)}
             onChange={e => { setInputText(e.target.value); onCompositionChange?.(true) }}

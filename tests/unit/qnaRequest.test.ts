@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-const sdk = vi.hoisted(() => ({ config: null as any, message: null as any }))
+const sdk = vi.hoisted(() => ({ config: null as any, message: null as any, grounding: null as any }))
 vi.mock('@google/genai', () => ({
   GoogleGenAI: class {
     models = {
@@ -8,6 +8,7 @@ vi.mock('@google/genai', () => ({
         sdk.message = params.contents
         return (async function* () {
           yield { text: 'risposta' }
+          if (sdk.grounding) yield { candidates: [{ groundingMetadata: { groundingChunks: sdk.grounding } }] }
         })()
       }
     }
@@ -19,6 +20,24 @@ import { GeminiTransport } from '../../electron/main/ai/geminiTransport'
 import { DEFAULT_GEMINI_POLICY } from '../../electron/main/ai/geminiPolicy'
 import { GeminiError, normalizeGeminiError } from '../../electron/main/ai/geminiErrors'
 import { getQnaModelFallbackChain } from '../../shared/qnaModelPolicy'
+
+it('abilita Google Search solo su richiesta e conserva fonti web separate dalla lezione', async () => {
+  const gemini = new GeminiService({ requestManager: new GeminiRequestManager({ ...DEFAULT_GEMINI_POLICY, rpmLimit: 10000 }) })
+  const thread: any = { id: 'web-request', quote: 'frase', messages: [{ role: 'user', text: 'Domanda corrente?' }] }
+  sdk.grounding = [{ web: { title: 'Fonte verificabile', uri: 'https://example.org/documento' } }, { web: { title: 'Non ammessa', uri: 'javascript:alert(1)' } }]
+  try {
+    let output = ''
+    for await (const chunk of gemini.generateQnaResponse({ apiKey: 'synthetic', model: 'gemini-3.8-flash', thread, searchOnline: true })) output += chunk
+    expect(sdk.config.config.tools).toEqual([{ googleSearch: {} }])
+    expect(output).toContain('### Fonti web')
+    expect(output).toContain('https://example.org/documento')
+    expect(output).not.toContain('javascript:')
+    output = ''
+    for await (const chunk of gemini.generateQnaResponse({ apiKey: 'synthetic', model: 'gemini-3.8-flash', thread })) output += chunk
+    expect(sdk.config.config.tools).toBeUndefined()
+    expect(output).toBe('risposta')
+  } finally { sdk.grounding = null }
+})
 
 it('invia al SDK la vera domanda e uno storico senza domanda duplicata o placeholder', async () => {
   const gemini = new GeminiService()

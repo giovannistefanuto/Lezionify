@@ -1,4 +1,5 @@
 import { runOctober22Scenarios } from './october22Scenarios.browser'
+import { runOctober28Scenarios } from './october28Scenarios.browser'
 import { runRepetitionScenarios } from './repetitionScenarios.browser'
 import { runInterfacePolishScenarios } from './interfacePolishScenarios.browser'
 import { runTodayScenarios } from './todayScenarios.browser'
@@ -411,6 +412,11 @@ async function run() {
     require('electron').ipcRenderer.send('test-checkpoint', 'runMusicTranslationScenarios')
     await runMusicTranslationScenarios(root, api)
     require('electron').ipcRenderer.send('done', 'PASS: music artwork, automatic PC selection, consent, player commands and YouTube cards')
+    return
+  }
+  if (new URLSearchParams(window.location.search).has('october28-only')) {
+    await runOctober28Scenarios(root, api)
+    require('electron').ipcRenderer.send('done', 'PASS: October 28 study improvements, real rendering and persistent annotations')
     return
   }
   if (new URLSearchParams(window.location.search).has('mathRenderingOnly')) {
@@ -1415,6 +1421,8 @@ async function run() {
     'Editing a zero-CFU course did not preserve zero on save'
   )
 
+  const nativeCss = Object.getOwnPropertyDescriptor(globalThis, 'CSS')!
+  const nativeHighlight = Object.getOwnPropertyDescriptor(window, 'Highlight')!
   class TestHighlight {
     ranges: Range[]
     constructor(...ranges: Range[]) {
@@ -1458,6 +1466,9 @@ async function run() {
     highlightRegistry.get('lezionify-highlight-yellow')?.ranges.length === 1,
     'Unmounting one MarkdownViewer removed another viewer highlight'
   )
+  await act(async () => root.render(null))
+  Object.defineProperty(globalThis, 'CSS', nativeCss)
+  Object.defineProperty(window, 'Highlight', nativeHighlight)
 
   const studyReaderStyle = document.createElement('style')
   studyReaderStyle.textContent = await require('electron').ipcRenderer.invoke('video-import-styles')
@@ -1963,6 +1974,8 @@ flowchart TD
   await runTodayScenarios(root, api)
   await runOctober22Scenarios(root, api)
   await runRepetitionScenarios(root, api)
+  require('electron').ipcRenderer.send('test-checkpoint', 'runOctober28Scenarios')
+  await runOctober28Scenarios(root, api)
   require('electron').ipcRenderer.send(
     'done',
     'PASS: React regression scenarios (Markdown alerts, literals and formula contrast; Focus Lock lecture/session totals, checkpoints, pauses, reentry, errors and stale responses; PDF.js mixed pages, reading position, zoom, native divider, Q&A and hidden panes; dashboard, settings, video import, course archive, Q&A, pipeline, AI isolation, translation, search, Quick Capture, highlights, reminders, Mermaid, study tabs and fullscreen)'

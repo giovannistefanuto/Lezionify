@@ -4809,3 +4809,113 @@ Non modificare manualmente la sezione `Registro`: aggiungi le nuove decisioni es
 - **Impatto:** Verificati 374 file build identici al pacchetto, marcatori RIPETERE, manifesto, blockmap, tre backup del setup precedente e otto componenti critici estratti da NSIS. Runtime RAG isolato passato con modello gia locale, inferenza senza rete e worker PDF. Nessuna installazione, release binaria o chiamata AI reale; artefatti e materiali privati esclusi da Git.
 - **Follow-up:** Verificare commit finale sul remoto dopo push. Installare il setup con Lezionify chiuso e scegliere il file appunti al primo uso di RIPETERE; qualita della valutazione personale da osservare nell uso reale. Backup local-artifacts/installer-backups/20261028-ripetere.
 - **File coinvolti:** DECISIONI.md, STRUTTURA_PROGETTO.md, docs/README.md, docs/product/ripetere-2026-10-28.md, tools/verify_installer.cjs, sorgenti test e strumenti D-0435, dist/Lezionify-Setup-0.1.0.exe
+
+## D-0437 — Formule Q&A, dollari monetari e stili degli stati
+
+- **Data:** 2026-10-28
+- **Stato:** accettata
+- **Area:** rendering-studio
+- **Decisione:** Normalizzazione matematica condivisa per Q&A e lettura, preservando codice e formule valide; riparazioni mirate dei delimitatori monetari e copia KaTeX senza doppio testo. Stili statici ammessi anche in stateDiagram-v2 con whitelist invariata di colori e spessore.
+- **Motivazione:** Le regressioni riproducono la prosa trasformata in matematica e il rifiuto locale degli stili; Q&A non usava la riparazione dei blocchi display.
+- **Impatto:** Fonti salvate invariate, nessuna formula ricostruita per supposizione. Test prima rossi e poi verdi; parser e SVG Mermaid reali verificati in Electron. Nessuna dipendenza nuova.
+- **Follow-up:** Concludere gate generale e conservare i limiti del testo storico incollato; correttezza scientifica separata dal rendering.
+- **File coinvolti:** src/utils/markdownMath.ts, src/utils/copyMath.ts, src/components/QnaSidebar.tsx, src/components/MarkdownViewer.tsx, src/components/MermaidDiagram.tsx, tests/unit/markdownMath.test.ts, tests/unit/october27Diagnosis.test.ts, tests/integration/october28Scenarios.browser.tsx
+
+## D-0438 — Import conservati durante pianificazione ed esecuzione
+
+- **Data:** 2026-10-28
+- **Stato:** accettata
+- **Area:** pipeline-import
+- **Decisione:** Persistiti gli ID degli import autorizzati arrivati durante una coda; al completamento normale viene riservato il passaggio a una successiva coda con le sole derivazioni mancanti. Ricontrollata la preferenza automatica, serializzati gli avvii e mantenute le richieste durante gli errori.
+- **Motivazione:** Il secondo start prima veniva rifiutato senza conservare il lavoro; esistono anche finestre di concorrenza durante pianificazione e passaggio.
+- **Impatto:** Nessuna pipeline concorrente; stop, pausa, errori e preferenza disabilitata impediscono il riavvio. Pending visibili nella UI e conservati nel checkpoint; audio e trascrizioni non sovrascritti.
+- **Follow-up:** Concludere gate generale; dopo riavvio il lavoro interrotto richiede ripresa esplicita.
+- **File coinvolti:** electron/main/ai/archivePipeline.ts, electron/main/archive.ts, shared/archive.ts, src/components/ArchivePipelinePanel.tsx, tests/unit/archivePipeline.test.ts
+
+## D-0439 — Corpus monolingue offline con forme flesse
+
+- **Data:** 2026-10-28
+- **Stato:** accettata
+- **Area:** dizionario-italiano
+- **Decisione:** Aggiunta modalita Dizionario italiano in Ctrl+T, mantenendo Traduttore iniziale. Corpus koreader-dicts v1.2.0 da Wiktionary e Kaikki, CC BY-SA 4.0, 68755 lemmi e 543083 forme distinte. Conversione riproducibile con Python standard, hash sorgente verificato e licenze incluse.
+- **Motivazione:** Il corpus bilingue non offre definizioni italiane sufficienti; serve un corpus monolingue reale e distribuibile offline.
+- **Impatto:** Nuovo dato gzip caricato dal main solo su richiesta; HTML convertito in testo. Input preservato al cambio modalita, frasi rifiutate esplicitamente nella modalita monolingue e nessun fallback online. Nessuna nuova dipendenza.
+- **Follow-up:** Copertura parziale e refusi della fonte dichiarati; aggiornamenti solo mediante conversione verificata e attribuita.
+- **File coinvolti:** tools/build_italian_dictionary.py, public/dictionaries/ita-ita.json.gz, public/dictionaries/italian-ATTRIBUTION, public/dictionaries/italian-LICENSE, shared/dictionary.ts, electron/main/localDictionary.ts, src/components/DictionaryOverlay.tsx
+
+## D-0440 — Focus domanda, opzioni iniziali e residuo sveglia
+
+- **Data:** 2026-10-28
+- **Stato:** accettata
+- **Area:** qna-promemoria
+- **Decisione:** Ogni apertura di una discussione porta il focus alla domanda e ripristina intera lezione attiva, altri Q&A esclusi e Breve; le opzioni restano modificabili prima di inviare. Tooltip sveglia con minuti residui, singolare, meno di un minuto, domani e scadenza.
+- **Motivazione:** Applicare i default richiesti esplicitamente e rendere immediata la digitazione; mostrare il residuo senza perdere la ora della sveglia.
+- **Impatto:** Le vecchie preferenze di lunghezza non prevalgono sul nuovo default richiesto. Invio, Shift+Invio e IME collaudati; apertura non invia richieste AI. Residuo aggiornato con il timer esistente.
+- **Follow-up:** Concludere regressioni generali con aspettative aggiornate ai nuovi default.
+- **File coinvolti:** src/components/QnaSidebar.tsx, src/components/FocusReminders.tsx, tests/integration/todayScenarios.browser.tsx, tests/integration/october22Scenarios.browser.tsx, tests/unit/october28Features.test.ts
+
+## D-0441 — Sottolineature persistenti e verifica del selettore reale
+
+- **Data:** 2026-10-28
+- **Stato:** accettata
+- **Area:** annotazioni
+- **Decisione:** Aggiunto stile underline alle annotazioni, con registro CSS separato; conservate le evidenziazioni legacy e consentita sovrapposizione tra stili. Caricamento protetto rispetto ai salvataggi pendenti e segnalazione degli errori; fusione transitiva per lo stesso stile.
+- **Motivazione:** I vecchi test del solo algoritmo non verificavano selezione DOM, formule e persistenza; evitare contaminazioni tra lingue e lezioni durante caricamenti.
+- **Impatto:** Schema compatibile con dati precedenti; selezione reale, sovrapposizione, rimozione, riapertura, IT/EN e attraversamento KaTeX collaudati in Electron senza contare MathML nascosto.
+- **Follow-up:** La rigenerazione modifica gli offset: le annotazioni della derivazione precedente non costituiscono un allineamento semantico garantito.
+- **File coinvolti:** shared/archive.ts, electron/main/archiveValidation.ts, src/hooks/useHighlights.ts, src/components/MarkdownViewer.tsx, src/components/LectureDrawer.tsx, src/styles.css, tests/integration/october28Scenarios.browser.tsx
+
+## D-0442 — Ricerca web esplicita per singola domanda
+
+- **Data:** 2026-10-28
+- **Stato:** accettata
+- **Area:** qna-web
+- **Decisione:** Aggiunto Cerca online disattivato di default, propagato con validazione IPC al tool Google Search del SDK; consenso azzerato dopo un invio riuscito. Fonti web restituite dal provider separate dalla lezione e limitate a URL HTTP/S; fallback limitati ai modelli documentati compatibili.
+- **Motivazione:** Integrare informazioni aggiornate senza ricerche implicite o attribuzioni inventate al docente.
+- **Impatto:** Avviso visibile su dati inviati e possibili costi del piano; log del flag senza query o contenuti. Contratto SDK e metadati verificati con simulazioni. Nessuna API reale, chiave letta per benchmark o spesa avviata nella sessione.
+- **Follow-up:** Disponibilita, quote e qualita reali dipendono dal progetto Google; documentazione ufficiale verificata il 28 ottobre, nessuna tariffa garantita dal codice.
+- **File coinvolti:** shared/archive.ts, electron/preload/index.ts, electron/main/index.ts, electron/main/archive.ts, electron/main/gemini.ts, electron/main/ai/geminiTransport.ts, src/hooks/useQna.ts, src/components/QnaSidebar.tsx, tests/unit/qnaRequest.test.ts
+
+## D-0443 — Stima per paragrafi e conferma della inattivita
+
+- **Data:** 2026-10-28
+- **Stato:** accettata
+- **Area:** ritmo-studio
+- **Decisione:** Dopo conferma utente, raccolta locale versionata di conteggi e tempi di esposizione dei blocchi, baseline parole e pesi numeri/formule selezionati solo se migliorano validazione fra lezioni. Ritmo giornaliero smussato, stima provvisoria anche oltre trenta minuti. Osservazione inattivita volontaria nella app, proposta dopo almeno tre sessioni e una ora, soglia applicata solo dopo conferma.
+- **Motivazione:** I dati precedenti sono aggregati e non ricostruiscono tempi per paragrafo. La assenza di input non dimostra assenza dallo studio o dall iPad.
+- **Impatto:** Nessun testo o tasto registrato nei campioni. Dialogo Stai ancora studiando con timer fermo da quel momento, nessuna sottrazione retroattiva e scelta di studio senza input per trenta minuti. Soglie legacy disponibili durante raccolta; nessuna promessa di comprensione o precisione scientifica.
+- **Follow-up:** Calibrare sul nuovo uso personale: test sintetici e confronto baseline non certificano accuratezza sul singolo studente. Preferenze e cancellazione dati nelle impostazioni.
+- **File coinvolti:** src/utils/paragraphEstimate.ts, src/utils/paragraphObservation.ts, src/utils/studyInactivity.ts, src/hooks/useStudyEstimate.ts, src/hooks/useStudyTracker.ts, src/components/StudyInactivitySettings.tsx, src/components/StudyEstimateSettings.tsx, src/components/FocusLockModal.tsx, tests/unit/october28Features.test.ts
+
+## D-0444 — Anteprima confermata di una sezione con ripristino
+
+- **Data:** 2026-10-28
+- **Stato:** accettata
+- **Area:** rigenerazione-sezione
+- **Decisione:** Dopo conferma utente, rigenerazione della sezione italiana dal titolo al successivo di pari o maggiore livello; istruzioni e invio esplicito, trascrizione completa entro un MB quando manca mapping certo, anteprima e conferma. Versioni precedenti salvate e ripristinabili, controlli hash su fonti e compare-and-swap alla scrittura, mutazioni serializzate.
+- **Motivazione:** Non esiste mapping affidabile tra tutti i sottotitoli e intervalli della trascrizione; la rigenerazione deve conservare provenienza e offrire una sostituzione verificabile.
+- **Impatto:** Audio e grezza conservati. Inglese mantenuto con indicatore da aggiornare e traduzione separata. Azione disponibile in lettura e Focus; selezione sezione esplicita. Revisioni in section_revisions, nessuna dipendenza o chiamata reale durante i test.
+- **Follow-up:** Correttezza della nuova esposizione e citazioni da controllare prima di confermare; dopo ripristino il flag ENG resta conservativamente da aggiornare finche non viene ritradotto. Gate generale in completamento.
+- **File coinvolti:** shared/sectionRevision.ts, electron/main/sectionRevision.ts, electron/main/archive.ts, electron/main/gemini.ts, electron/main/index.ts, electron/preload/index.ts, src/components/SectionRegenerator.tsx, src/components/LectureDrawer.tsx, src/hooks/useLectureContent.ts, tests/unit/archive.test.ts, tests/unit/october28Features.test.ts
+
+## D-0445 — Gate finale dei dodici interventi di studio
+
+- **Data:** 2026-10-28
+- **Stato:** accettata
+- **Area:** collaudo-studio
+- **Decisione:** Concluse implementazione e verifiche dei dodici punti richiesti, con aggiornamento delle rispettive caselle e del report. Coda a 44 concluse e 18 aperte, ordine invariato e prima voce aperta 33.
+- **Motivazione:** Separare gli esiti effettivi dalle ricerche iniziali, dal checkpoint di arresto e dalle validazioni personali ancora dipendenti da nuovi dati o dal provider.
+- **Impatto:** 783 test unit su 59 file, 24 Python, 41 Node, typecheck, lint, build finale e PDF reali riusciti. Suite Electron generale e riavvio completo superati; ultima regressione monetaria aggiuntiva verificata con test mirati e nuova esportazione. Corrette interferenze tra fixture senza ridurre controlli o aumentare timeout. Nessun installer, commit, push o API reale.
+- **Follow-up:** Per usare le modifiche nella versione installata serve rigenerare il setup e seguire la pubblicazione automatica prevista da AGENTS. Osservare precisione del ritmo personale e qualita reale delle risposte; controllare le annotazioni dopo una rigenerazione.
+- **File coinvolti:** docs/product/studio-dodici-interventi-2026-10-28.md, docs/product/idee-future-2026-10-13.md, STRUTTURA_PROGETTO.md, docs/README.md, DECISIONI.md, sorgenti e test D-0437-D-0444
+
+## D-0446 — Installer generale con i dodici interventi verificato
+
+- **Data:** 2026-10-28
+- **Stato:** accettata
+- **Area:** distribuzione-studio
+- **Decisione:** Rigenerato su richiesta il setup Windows 0.1.0 con D-0437-D-0445, senza release binaria. Setup di 299967302 byte, SHA256 ae1e97e69bb9e523d8053f3c37ec5ce4476aaa6d062fb0328d5d3ea5a78a5667. Commit e push di tutte le modifiche pubblicabili autorizzati dalla regola AGENTS.
+- **Motivazione:** Rendere utilizzabili nella app installata le funzioni gia collaudate con 783 test unit, 24 Python, 41 Node, typecheck, lint, build, regressioni Electron generali e riavvio, oltre a PDF reali.
+- **Impatto:** 378 file build identici al pacchetto, corpus italiano con licenze e marcatori nuove funzioni verificati; manifesto, blockmap e tre backup controllati. Otto componenti NSIS estratti e confrontati senza eseguire il setup. Runtime RAG isolato con modello gia locale, inferenza senza rete e worker PDF superato. Nessuna installazione o API reale.
+- **Follow-up:** Verificare il commit finale sul remoto dopo push. Installare il nuovo setup con Lezionify chiuso. Backup in local-artifacts/installer-backups/20261028-studio-dodici; limiti personali e provider nel report dei dodici interventi.
+- **File coinvolti:** DECISIONI.md, STRUTTURA_PROGETTO.md, docs/product/studio-dodici-interventi-2026-10-28.md, tools/verify_installer.cjs, sorgenti e test D-0437-D-0445, dist/Lezionify-Setup-0.1.0.exe

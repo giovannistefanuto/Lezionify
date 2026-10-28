@@ -8,6 +8,7 @@ import remarkGfm from 'remark-gfm'
 import type { LectureHighlight } from '../../shared/archive'
 import { MermaidDiagram } from './MermaidDiagram'
 import { normalizeDisplayMath } from '../utils/markdownMath'
+import { copyRenderedMath } from '../utils/copyMath'
 
 export interface MarkdownViewerProps {
   content: string
@@ -135,17 +136,17 @@ const MARKDOWN_COMPONENTS: Components = {
   pre: MarkdownPre
 }
 
-const viewerHighlightRanges = new Map<symbol, Range[]>()
+const viewerHighlightRanges = new Map<symbol, { range: Range; style: string }[]>()
 
 function updateSharedHighlightRegistry(): void {
   if (typeof CSS === 'undefined' || !('highlights' in CSS)) return
-  const ranges = Array.from(viewerHighlightRanges.values()).flat()
-  if (ranges.length === 0) {
-    ;(CSS as any).highlights.delete('lezionify-highlight-yellow')
-    return
+  for (const style of ['highlight', 'underline']) {
+    const ranges = Array.from(viewerHighlightRanges.values()).flat().filter(item => item.style === style).map(item => item.range)
+    const name = style === 'underline' ? 'lezionify-underline' : 'lezionify-highlight-yellow'
+    if (!ranges.length) { (CSS as any).highlights.delete(name); continue }
+    const highlight = new (window as any).Highlight(...ranges)
+    ;(CSS as any).highlights.set(name, highlight)
   }
-  const highlight = new (window as any).Highlight(...ranges)
-  ;(CSS as any).highlights.set('lezionify-highlight-yellow', highlight)
 }
 
 import { ErrorBoundary } from './ErrorBoundary'
@@ -277,10 +278,10 @@ function RawMarkdownViewer({
     if (!container || typeof CSS === 'undefined' || !('highlights' in CSS)) return
     const highlightOwner = highlightOwnerRef.current
 
-    const ranges: Range[] = []
+    const ranges: { range: Range; style: string }[] = []
     for (const h of highlights || []) {
       const r = createRangeFromOffsets(container, h.startOffset, h.endOffset)
-      if (r) ranges.push(r)
+      if (r) ranges.push({ range: r, style: h.style ?? 'highlight' })
     }
 
     try {
@@ -350,6 +351,7 @@ function RawMarkdownViewer({
       ref={containerRef}
       className={`markdown-body ${isHighlightMode ? 'is-highlight-mode' : ''}`}
       onMouseUp={handleMouseUp}
+      onCopy={copyRenderedMath}
     >
       <ReactMarkdown
         disallowedElements={allowImages === false ? ['img'] : undefined}

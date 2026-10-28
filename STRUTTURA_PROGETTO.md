@@ -2,6 +2,21 @@
 
 ## Stato attuale
 
+D-0437–D-0444 implementano i dodici interventi di studio richiesti il 28 ottobre.
+`sectionRevision` separa anteprima, conferma e ripristino con controllo delle
+fonti; `paragraphEstimate`, `paragraphObservation` e `studyInactivity` raccolgono
+conteggi locali e gestiscono stime/soglie esplicitamente confermate. Il corpus
+monolingue compresso e le licenze sono in `public/dictionaries`, con conversione
+riproducibile in `tools/build_italian_dictionary.py`. Pipeline conserva import
+pendenti; Q&A ha ricerca web per domanda, rendering condiviso e nuovi default;
+annotazioni compatibili con sottolineature. Uso e limiti in
+`docs/product/studio-dodici-interventi-2026-10-28.md`. Nessuna dipendenza aggiunta.
+Gate D-0445: 783 test unit in 59 file, typecheck, lint, 24 Python, 41 Node,
+regressioni Electron generali con riavvio, build e PDF reali riusciti.
+D-0446 rigenera il setup generale con questi interventi: 378 file confrontati,
+corpus e licenze verificati, NSIS e runtime RAG isolato superati. Per usare
+l’aggiornamento serve installare il nuovo setup con Lezionify chiuso.
+
 La modalità RIPETERE affianca STUDIO nell'ingresso Audio: prende automaticamente
 l'ultimo audio USB, lo trascrive e confronta il ragionamento a voce alta con un
 file di appunti scelto dall'utente. `electron/main/repetition.ts` conserva fonti,

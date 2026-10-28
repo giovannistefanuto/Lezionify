@@ -31,6 +31,7 @@ export interface StartArchivePipelineOptions {
 }
 
 interface ArchivePipelineOperations {
+  canProcessImports?: () => Promise<boolean>
   listLectures: () => Promise<Lecture[]>
   hasConfiguredKey: () => Promise<boolean>
   transcribe: (
@@ -83,6 +84,7 @@ function emptyStatus(): ArchivePipelineStatus {
 function cloneStatus(status: ArchivePipelineStatus): ArchivePipelineStatus {
   return {
     ...status,
+    queuedImportLectureIds: [...(status.queuedImportLectureIds ?? [])],
     tasks: status.tasks.map((task) => ({ ...task })),
     stageSummaries: {
       transcription: { ...status.stageSummaries.transcription },
@@ -169,6 +171,7 @@ function resumeFailureKind(
  * ogni operazione passa al GeminiRequestManager già condiviso dall'app.
  */
 export class ArchivePipeline {
+  private readonly pendingImports = new Set<string>()
   private status: ArchivePipelineStatus = emptyStatus()
   private reservation: PipelineRunReservation | null = null
   private onStatus?: (status: ArchivePipelineStatus) => void
@@ -187,6 +190,9 @@ export class ArchivePipeline {
     if (!loaded) return
 
     this.status = loaded
+    for (const id of loaded.queuedImportLectureIds ?? []) {
+      if (typeof id === 'string') this.pendingImports.add(id)
+    }
     if (loaded.status === 'planning' || loaded.status === 'running') {
       this.status = {
         ...loaded,
@@ -226,12 +232,17 @@ export class ArchivePipeline {
   }
 
   async waitForCompletion(): Promise<void> {
-    await this.reservation?.completion
+    while (this.reservation) await this.reservation.completion
   }
 
   async start(
     options: StartArchivePipelineOptions
   ): Promise<ArchivePipelineStartResult> {
+    if (options.trigger === 'import' && (this.reservation || this.status.status === 'paused')) {
+      for (const id of options.lectureIds ?? []) this.pendingImports.add(id)
+      await this.persistAndEmit()
+      return { started: false, status: this.getStatus() }
+    }
     if (this.reservation) return { started: false, status: this.getStatus() }
     if (this.status.status === 'paused' && this.status.runId) {
       return { started: false, status: this.getStatus() }
@@ -242,6 +253,9 @@ export class ArchivePipeline {
     let launched = false
     try {
       const tasks = await this.buildTasks(options)
+      if (options.trigger === 'manual' && !options.lectureIds) {
+        for (const task of tasks) this.pendingImports.delete(task.lectureId)
+      }
       const pendingCount = tasks.filter(
         (task) => task.status === 'pending'
       ).length
@@ -386,7 +400,36 @@ export class ArchivePipeline {
   }
 
   private release(reservation: PipelineRunReservation): void {
-    if (this.reservation === reservation) this.reservation = null
+    if (this.reservation === reservation) {
+      this.reservation = null
+      if (this.status.status === 'completed' && !reservation.stopRequested && this.pendingImports.size) {
+        // Reserve the handoff synchronously; imports cannot fall into the gap.
+        const next = this.reserve()
+        void (async () => {
+          let ids: string[] = []
+          try {
+            const allowed = await (this.operations.canProcessImports?.() ?? Promise.resolve(true))
+            if (next.stopRequested) { await this.finishStopped(); return }
+            if (!allowed) return
+            ids = [...this.pendingImports]
+            for (const id of ids) this.pendingImports.delete(id)
+            this.reservation = null
+            await this.start({ trigger: 'import', lectureIds: ids, includeTranslation: true })
+            await this.waitForCompletion()
+          } catch {
+            for (const id of ids) this.pendingImports.add(id)
+            this.status.status = 'paused'
+            this.status.message = 'Import conservati: impossibile preparare la coda successiva.'
+            try { await this.persistAndEmit() } catch { this.emit() }
+          }
+        })().finally(() => {
+          if (this.reservation === next) this.reservation = null
+          next.resolveCompletion()
+          reservation.resolveCompletion()
+        })
+        return
+      }
+    }
     reservation.resolveCompletion()
   }
 
@@ -716,6 +759,7 @@ export class ArchivePipeline {
   }
 
   private async persistAndEmit(): Promise<void> {
+    this.status.queuedImportLectureIds = [...this.pendingImports]
     this.refreshSummaries()
     this.status.updatedAt = new Date().toISOString()
     await this.store.saveArchivePipelineState(this.status)

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import type { StudySession, StudySessionMode } from '../../shared/archive'
 import { formatLocalCalendarDate } from '../../shared/calendarDate'
+import { inactivityProfile, saveInactivityProfile } from '../utils/studyInactivity'
 
 interface UseStudyTrackerProps {
   activeLectureId: string | null
@@ -23,6 +24,14 @@ export function useStudyTracker({
   const [previousStudy, setPreviousStudy] = useState<{ lectureId: string; sessionId: string; seconds: number } | null>(null)
   const [isPaused, setIsPaused] = useState(false)
   const [showFocusLock, setShowFocusLock] = useState(false)
+  const [inactivityPrompt, setInactivityPrompt] = useState(false)
+  const inactivity = useRef(inactivityProfile())
+  const withoutInputUntil = useRef(0)
+  useEffect(() => {
+    const update = () => { inactivity.current = inactivityProfile() }
+    window.addEventListener('study-inactivity-preference', update)
+    return () => window.removeEventListener('study-inactivity-preference', update)
+  }, [])
   const [isZenMode, setIsZenMode] = useState(false)
   const [pauseTimerActive, setPauseTimerActive] = useState(false)
   const [pauseMinutes, setPauseMinutes] = useState(0)
@@ -56,6 +65,7 @@ export function useStudyTracker({
   const sessionSecondsRef = useRef<number>(0)
   const lastTickRef = useRef<number>(Date.now())
   const lastInteractionRef = useRef<number>(Date.now())
+  const observedInteraction = useRef(Date.now())
   const isClosingRef = useRef(false)
   const pendingExitRef = useRef<(() => void) | null>(null)
   const pendingSessions = useRef(new Map<string, StudySession>())
@@ -72,6 +82,7 @@ export function useStudyTracker({
 
   // Funzione atomica di flush sessione verso il backend
   const flushCurrentSession = useCallback(async () => {
+    if (inactivity.current.observing) saveInactivityProfile(inactivity.current)
     if (sessionSecondsRef.current > 0) {
       const now = new Date()
       const session: StudySession = {
@@ -105,6 +116,7 @@ export function useStudyTracker({
   useEffect(() => {
     lastTickRef.current = Date.now()
     lastInteractionRef.current = Date.now()
+    observedInteraction.current = Date.now()
     if (suspended) void flushCurrentSession()
   }, [suspended, flushCurrentSession])
 
@@ -117,12 +129,15 @@ export function useStudyTracker({
       setActiveSeconds(0)
       lastTickRef.current = Date.now()
       lastInteractionRef.current = Date.now()
+      observedInteraction.current = Date.now()
+      withoutInputUntil.current = 0
       setIsPaused(false)
       pauseTimerActiveRef.current = false
       setPauseTimerActive(false)
       setPauseMinutes(0)
       showFocusLockRef.current = false
       setShowFocusLock(false)
+      setInactivityPrompt(false)
     } else {
       // Quando si disattiva (es. si esce da Focus Mode), salva la sessione accumulata
       void flushCurrentSession()
@@ -161,10 +176,16 @@ export function useStudyTracker({
   useEffect(() => {
     const handleInteraction = () => {
       // Non aggiornare o rimuovere la pausa se siamo in Focus Lock o in pausa programmata
-      if (suspendedRef.current || showFocusLockRef.current || pauseTimerActiveRef.current) {
+      if (suspendedRef.current || showFocusLockRef.current || pauseTimerActiveRef.current || !isEnabledRef.current || document.hidden) {
+        observedInteraction.current = Date.now()
         return
       }
       lastInteractionRef.current = Date.now()
+      if (inactivity.current.observing && isEnabledRef.current && !isPaused && !document.hidden) {
+        const gap = (Date.now() - observedInteraction.current) / 1000
+        if (gap >= 5 && gap <= 3600) inactivity.current.gaps = [...inactivity.current.gaps, gap].slice(-500)
+      }
+      observedInteraction.current = Date.now()
       if (isPaused) setIsPaused(false)
     }
 
@@ -185,9 +206,11 @@ export function useStudyTracker({
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.hidden) {
+        observedInteraction.current = Date.now()
         setIsPaused(true)
         void flushCurrentSession()
       } else {
+        observedInteraction.current = Date.now()
         lastTickRef.current = Date.now()
         lastInteractionRef.current = Date.now()
         if (!pauseTimerActiveRef.current && !showFocusLockRef.current) {
@@ -238,18 +261,26 @@ export function useStudyTracker({
       // Se siamo nel Focus Lock (attesa 15s / decisione) o in pausa programmata, il timer di studio rimane FERMO
       if (suspendedRef.current || showFocusLockRef.current || pauseTimerActiveRef.current) {
         lastInteractionRef.current = now
+        observedInteraction.current = now
         return
       }
 
       // Se il delta è anomalo (> 3s), il PC è andato in sospensione: congela e non contare tempo falso
       if (delta > 3000 || delta < 0) {
+        observedInteraction.current = now
         setIsPaused(true)
         return
       }
 
       // Se non c'è interazione da oltre 15 minuti, pausa automatica
-      if (now - lastInteractionRef.current > 15 * 60 * 1000) {
+      if (now > withoutInputUntil.current && now - lastInteractionRef.current > (inactivity.current.thresholdMinutes ?? 15) * 60 * 1000) {
         setIsPaused(true)
+        if (inactivity.current.thresholdMinutes !== null) {
+          setInactivityPrompt(true)
+          showFocusLockRef.current = true
+          setShowFocusLock(true)
+          void flushCurrentSession()
+        }
         return
       }
 
@@ -257,6 +288,11 @@ export function useStudyTracker({
       if (document.hidden || isPaused || isClosingRef.current) return
 
       sessionSecondsRef.current += 1
+      if (inactivity.current.observing) {
+        const profile = inactivity.current
+        profile.sessions[sessionIdRef.current] = (profile.sessions[sessionIdRef.current] ?? 0) + 1
+        if (sessionSecondsRef.current % 30 === 0) saveInactivityProfile(profile)
+      }
       setActiveSeconds(sessionSecondsRef.current)
 
       // Auto-flush periodico ogni 30 secondi
@@ -283,6 +319,7 @@ export function useStudyTracker({
   }, [flushCurrentSession])
 
   const handleContinueFocus = useCallback(() => {
+    setInactivityPrompt(false)
     showFocusLockRef.current = false
     setShowFocusLock(false)
     pendingExitRef.current = null
@@ -295,6 +332,7 @@ export function useStudyTracker({
   }, [])
 
   const handleConfirmExitFocus = useCallback(() => {
+    setInactivityPrompt(false)
     showFocusLockRef.current = false
     setShowFocusLock(false)
     pauseTimerActiveRef.current = false
@@ -309,6 +347,7 @@ export function useStudyTracker({
 
   // Avvia la pausa timer volontaria (5, 15, 30 min)
   const startPauseTimer = useCallback((minutes: number) => {
+    setInactivityPrompt(false)
     showFocusLockRef.current = false
     setShowFocusLock(false)
     pauseTimerActiveRef.current = true
@@ -319,6 +358,7 @@ export function useStudyTracker({
 
   // Termina la pausa timer e torna a studiare
   const resumeFromPause = useCallback(() => {
+    setInactivityPrompt(false)
     showFocusLockRef.current = false
     setShowFocusLock(false)
     pauseTimerActiveRef.current = false
@@ -331,6 +371,7 @@ export function useStudyTracker({
 
   // Termina la pausa timer ed esce dal Focus Mode
   const exitFromPause = useCallback(() => {
+    setInactivityPrompt(false)
     showFocusLockRef.current = false
     setShowFocusLock(false)
     pauseTimerActiveRef.current = false
@@ -348,6 +389,11 @@ export function useStudyTracker({
   }, [])
 
   return {
+    inactivityPrompt,
+    studyWithoutInput: () => {
+      withoutInputUntil.current = Date.now() + 30 * 60_000
+      handleContinueFocus()
+    },
     activeSeconds,
     lectureTotalSeconds: previousStudy?.lectureId === activeLectureId && previousStudy.sessionId === sessionIdRef.current
       ? previousStudy.seconds + activeSeconds : null,

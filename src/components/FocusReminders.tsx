@@ -38,17 +38,21 @@ function reminderTitle(reminder: Reminder): string {
   )
 }
 
-function describeReminder(reminder: Reminder, now = Date.now()): string {
+export function describeReminder(reminder: Reminder, now = Date.now()): string {
   if (reminder.status === 'active') {
     if (reminder.kind === 'timer') {
       return `Timer: ${formatReminderDuration(
         getReminderRemainingSeconds(reminder, now)
       )}`
     }
+    const seconds = getReminderRemainingSeconds(reminder, now)
+    const minutes = Math.ceil(seconds / 60)
+    const remaining = seconds === 0 ? 'scaduta' : seconds < 60 ? 'meno di un minuto rimanente' : `${minutes} ${minutes === 1 ? 'minuto rimanente' : 'minuti rimanenti'}`
+    const tomorrow = new Date(reminder.dueAt ?? now).toDateString() !== new Date(now).toDateString()
     return `Sveglia: ${new Date(reminder.dueAt ?? now).toLocaleTimeString(
       'it-IT',
       { hour: '2-digit', minute: '2-digit' }
-    )}`
+    )}${tomorrow ? ' domani' : ''} (${remaining})`
   }
   if (reminder.status === 'paused') return 'Timer in pausa'
   if (reminder.status === 'completed') return 'Concluso'

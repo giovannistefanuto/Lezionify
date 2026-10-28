@@ -42,6 +42,7 @@ export function ArchivePipelinePanel({
         <div>
           <h2>Elaborazione archivio</h2>
           <p>{status.message}</p>
+          {Boolean(status.queuedImportLectureIds?.length) && <p>{status.queuedImportLectureIds!.length} import conservati per la coda successiva. Stop e pause impediscono il riavvio automatico.</p>}
         </div>
         <span className="archive-pipeline-total">
           {completedCount(status)}/{total}

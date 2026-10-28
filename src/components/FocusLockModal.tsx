@@ -9,6 +9,8 @@ function formatStudyTime(seconds: number): string {
 }
 
 interface FocusLockModalProps {
+  inactivity?: boolean
+  onStudyWithoutInput?: () => void
   show: boolean
   courseCode: string | null
   sessionSeconds: number
@@ -19,6 +21,8 @@ interface FocusLockModalProps {
 }
 
 export function FocusLockModal({
+  inactivity = false,
+  onStudyWithoutInput,
   show,
   courseCode,
   sessionSeconds,
@@ -88,7 +92,7 @@ export function FocusLockModal({
           <div className="focus-lock-timer-paused-pill">⏸️ Timer di studio fermo</div>
         </div>
         
-        <h2 id="focus-lock-title" className="focus-lock-title">Sessione di Studio in Corso</h2>
+        <h2 id="focus-lock-title" className="focus-lock-title">{inactivity ? 'Stai ancora studiando?' : 'Sessione di Studio in Corso'}</h2>
         
         <p className="focus-lock-status">
           Stai studiando questa lezione
@@ -107,6 +111,7 @@ export function FocusLockModal({
         </p>
 
         <div className="focus-lock-actions">
+          {inactivity && onStudyWithoutInput && <button type="button" onClick={onStudyWithoutInput}>Studio senza interagire per 30 minuti</button>}
           <button
             ref={continueBtnRef}
             className="focus-lock-continue-btn"

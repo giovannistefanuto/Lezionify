@@ -4898,6 +4898,9 @@ body:has(.focus-mode-overlay) {
 
 .focus-toolbar-right {
   display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  min-width: 0;
   align-items: center;
   gap: 8px;
 }
@@ -5004,6 +5007,18 @@ body:has(.focus-mode-overlay) {
    TEXT HIGHLIGHTER SYSTEM (CSS Custom Highlight API)
    ========================================================================== */
 
+::highlight(lezionify-underline) {
+  text-decoration-line: underline;
+  text-decoration-color: currentColor;
+  text-decoration-thickness: 2px;
+}
+.section-revision-backdrop { z-index: 11000; padding: 16px; }
+.section-revision-dialog { width: min(850px, 100%); max-height: 85vh; overflow: auto; padding: 24px; background: var(--bg-content); color: var(--text-main); }
+.section-revision-dialog > label { display: grid; gap: 8px; margin-block: 16px; }
+.section-revision-dialog textarea { min-height: 90px; resize: vertical; }
+.section-revision-dialog select, .section-revision-dialog textarea { width: 100%; box-sizing: border-box; padding: 10px; border: 1px solid var(--border-color); background: var(--bg-panel); color: inherit; border-radius: 6px; font: inherit; }
+.section-revision-dialog > button { margin: 4px; padding: 9px 12px; }
+.section-revision-dialog .markdown-body { border-left: 2px solid var(--border-color); padding-left: 16px; overflow-wrap: anywhere; }
 ::highlight(lezionify-highlight-yellow) {
   background-color: #fef08a;
   color: #172c23;

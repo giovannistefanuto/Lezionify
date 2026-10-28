@@ -22,12 +22,13 @@ export function DictionaryOverlay({ onClose, selection }: { onClose: () => void;
   const [manualDirection, setManualDirection] = useState<DictionaryDirection | null>(null)
   const [detection, setDetection] = useState<'detected' | 'ambiguous' | 'unknown' | null>(null)
   const [query, setQuery] = useState(selection?.text ?? '')
+  const [mode, setMode] = useState<'translation' | 'italian'>('translation')
   const [selectionReady, setSelectionReady] = useState(!selection)
   const isPhrase = /\s/.test(query.trim()) || query.trim().length > 120
   const shownDirection = isPhrase ? phraseDirection : direction
   const [result, setResult] = useState<DictionaryResult | null>(null)
   const dictionaryMiss = Boolean(result && result.query === normalizeDictionaryWord(query) && !result.entries.length)
-  const translateWithModel = isPhrase || dictionaryMiss
+  const translateWithModel = mode === 'translation' && (isPhrase || dictionaryMiss)
   const modelDirection = isPhrase ? phraseDirection : direction
   const [error, setError] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -101,6 +102,7 @@ export function DictionaryOverlay({ onClose, selection }: { onClose: () => void;
     if (!query.trim() || !selectionReady || composing || settings.isOpen) return
     const timer = window.setTimeout(() => {
       void Promise.resolve().then(async () => {
+        if (mode === 'italian') return { value: await window.archive.lookupDictionary(query, 'it-it'), selected: lastDirection.current, status: null }
         if (manualDirection) return { value: await window.archive.lookupDictionary(query, manualDirection), selected: manualDirection, status: null }
         const [english, italian] = await Promise.all([
           window.archive.lookupDictionary(query, 'en-it'), window.archive.lookupDictionary(query, 'it-en')
@@ -116,25 +118,29 @@ export function DictionaryOverlay({ onClose, selection }: { onClose: () => void;
       }).catch(() => { if (!cancelled) { setError(true); setLoading(false) } })
     }, 120)
     return () => { cancelled = true; window.clearTimeout(timer) }
-  }, [query, manualDirection, retry, isPhrase, composing, settings.isOpen, selectionReady])
+  }, [query, manualDirection, retry, isPhrase, composing, settings.isOpen, selectionReady, mode])
   return createPortal(<div className="dictionary-overlay" data-dictionary-overlay style={settings.isOpen ? { display: 'none' } : undefined}>
     <section className="dictionary-panel" ref={panel} role="dialog" aria-label="Vocabolario offline">
       <header><strong>Vocabolario <span>offline</span></strong><button type="button" aria-label="Chiudi vocabolario" onClick={onClose}>×</button></header>
+      <div role="group" aria-label="Funzione vocabolario">
+        <button type="button" aria-pressed={mode === 'translation'} onClick={() => { setMode('translation'); input.current?.focus() }}>Traduttore</button>
+        <button type="button" aria-pressed={mode === 'italian'} onClick={() => { setMode('italian'); input.current?.focus() }}>Dizionario italiano</button>
+      </div>
       <div className="dictionary-columns">
         <textarea className="dictionary-original" ref={input} aria-label="Parola o frase" placeholder="Scrivi una parola o una frase…" maxLength={2000} value={query} onChange={event => { setQuery(event.target.value); setCopyStatus('') }} onCompositionStart={() => setComposing(true)} onCompositionEnd={() => setComposing(false)} autoComplete="off" spellCheck={false} />
-        <button type="button" className="dictionary-direction" aria-label="Inverti le lingue" title="Inverti le lingue" onClick={() => {
+        <button type="button" disabled={mode === 'italian'} className="dictionary-direction" aria-label="Inverti le lingue" title="Inverti le lingue" onClick={() => {
           const selected = shownDirection === 'en-it' ? 'it-en' : 'en-it'
           setPhraseDirection(selected)
           lastDirection.current = selected; setDirection(selected); setManualDirection(selected); input.current?.focus()
-        }}>{shownDirection === 'en-it' ? 'EN → IT' : 'IT → EN'} ⇄</button>
+        }}>{mode === 'italian' ? 'IT → IT' : shownDirection === 'en-it' ? 'EN → IT' : 'IT → EN'} ⇄</button>
       <div className="dictionary-results" aria-live="polite" aria-busy={loading}>
-        {isPhrase ? <>
+        {mode === 'italian' && isPhrase ? <p>Inserisci una sola parola italiana. Le frasi non vengono tradotte in modalità dizionario.</p> : isPhrase ? <>
           {!modelsReady && <p>{status?.installing ? 'Installazione dei modelli in corso…' : status ? 'Per tradurre le frasi servono i modelli offline.' : 'Verifica dei modelli offline…'} <button type="button" onClick={() => settings.open('translation')}>Apri Impostazioni traduttore</button></p>}
           {loading && <p role="status">Traduzione…</p>}
           {phraseResult && <div className="phrase-result" aria-label="Traduzione offline">{phraseResult}</div>}
           {(phraseError || statusError) && <p role="alert">{phraseError || statusError} <button type="button" onClick={() => setRetry(value => value + 1)}>Riprova</button></p>}
         </> : <>
-        <p className="dictionary-hint">{manualDirection ? <>Direzione manuale · <button type="button" onClick={() => { setManualDirection(null); input.current?.focus() }}>Riconosci automaticamente</button></> : 'Riconoscimento automatico IT/EN'}
+        <p className="dictionary-hint">{mode === 'italian' ? 'Definizioni italiane · ricerca locale' : manualDirection ? <>Direzione manuale · <button type="button" onClick={() => { setManualDirection(null); input.current?.focus() }}>Riconosci automaticamente</button></> : 'Riconoscimento automatico IT/EN'}
           {detection === 'detected' && ` · Voce ${direction === 'en-it' ? 'inglese' : 'italiana'}`}
           {detection === 'ambiguous' && ' · Voce presente in entrambe le lingue: puoi invertire la direzione.'}
           {detection === 'unknown' && ' · Lingua non riconosciuta: direzione mantenuta, puoi invertirla.'}
@@ -144,7 +150,7 @@ export function DictionaryOverlay({ onClose, selection }: { onClose: () => void;
         {error && <p role="alert">Vocabolario locale non disponibile. <button type="button" onClick={() => setRetry(value => value + 1)}>Riprova</button></p>}
         {result?.inflected && <p className="dictionary-hint">“{query.trim()}”: forma flessa di <strong>{result.lemma}</strong>.</p>}
         {result?.entries.map((entry, index) => <article key={index} className="dictionary-entry">
-          <h3>{entry.word}: {entry.senses.map(sense => sense.translations.join(', ')).join('; ')}</h3>
+          <h3>{entry.word}{mode === 'translation' ? `: ${entry.senses.map(sense => sense.translations.join(', ')).join('; ')}` : ''}</h3>
           <p className="dictionary-grammar">{dictionaryPartOfSpeech(entry.partOfSpeech)} {entry.pronunciation}</p>
           {entry.senses.map((sense, senseIndex) => sense.definitions.length > 0 && <p key={senseIndex}>{sense.definitions.join(' ')}</p>)}
         </article>)}
@@ -152,7 +158,7 @@ export function DictionaryOverlay({ onClose, selection }: { onClose: () => void;
           <p>Nessuna voce trovata.</p>
           {result.suggestions.length > 0 && <div className="dictionary-suggestions" aria-label="Voci suggerite">{result.suggestions.map(word => <button type="button" key={word} onClick={() => { setQuery(word); input.current?.focus() }}>{word}</button>)}</div>}
         </>}
-        {!isPhrase && dictionaryMiss && <div className="dictionary-model-fallback">
+        {mode === 'translation' && !isPhrase && dictionaryMiss && <div className="dictionary-model-fallback">
           <p className="dictionary-hint">Provo con il traduttore offline.</p>
           {!modelsReady && <p>{status?.installing ? 'Installazione dei modelli in corso…' : 'Servono i modelli offline.'} <button type="button" onClick={() => settings.open('translation')}>Apri Impostazioni traduttore</button></p>}
           {loading && <p role="status">Traduzione…</p>}
@@ -163,9 +169,10 @@ export function DictionaryOverlay({ onClose, selection }: { onClose: () => void;
       </div>
       </div>
       <div className="dictionary-footer"><button type="button" disabled={!(translateWithModel ? phraseResult : result?.entries.length)} onClick={() => {
-        const text = translateWithModel ? phraseResult : result?.entries.map(entry => entry.senses.map(sense => sense.translations.join(', ')).join('; ')).join('\n') ?? ''
+        const text = translateWithModel ? phraseResult : result?.entries.map(entry => entry.senses.map(sense => (mode === 'italian' ? sense.definitions : sense.translations).join(', ')).join('; ')).join('\n') ?? ''
         void navigator.clipboard.writeText(text).then(() => setCopyStatus('Copiato'), () => setCopyStatus('Copia non riuscita'))
-      }}>Copia traduzione</button><span role="status">{copyStatus}</span></div>
+      }}>{mode === 'italian' ? 'Copia definizione' : 'Copia traduzione'}</button><span role="status">{copyStatus}</span></div>
+      {mode === 'italian' && <p className="dictionary-hint">Wiktionary / Kaikki, koreader-dicts v1.2.0 · CC BY-SA 4.0. Conversione HTML in testo. Copertura parziale, possibili refusi. Licenza e attribuzioni incluse nei dati locali.</p>}
       <details className="dictionary-source"><summary>Fonti e limiti · offline</summary><p>Frasi: Mozilla/Bergamot sul PC, può sbagliare termini tecnici. Formule, codice tra backtick e URL restano invariati.</p><p>FreeDict / WikDict · CC BY-SA 3.0. Dizionari di Karl Bartel, dai contributi Wiktionary tramite DBnary · versione 2025.11.23. Le definizioni restano nella lingua della fonte e possono mancare. Dati adattati da TEI a JSON, disponibili sotto CC BY-SA 3.0. Nessuna ricerca viene inviata online.</p><p>freedict.org · wikdict.com · wiktionary.org · creativecommons.org/licenses/by-sa/3.0</p></details>
     </section>
   </div>, host)

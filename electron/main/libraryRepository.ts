@@ -94,6 +94,7 @@ export class LibraryRepository {
         typeof item.id === 'string' &&
         item.id.length > 0 &&
         (item.isLaboratory === undefined || typeof item.isLaboratory === 'boolean') &&
+        (item.markdownEnNeedsUpdate === undefined || typeof item.markdownEnNeedsUpdate === 'boolean') &&
         (item.laboratorySource === undefined ||
           (item.laboratorySource === 'schedule' && item.isLaboratory === true)) &&
         (typeof item.courseCode === 'string' || item.courseCode === null) &&

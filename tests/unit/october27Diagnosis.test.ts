@@ -18,12 +18,12 @@ const diagram = `stateDiagram-v2
     style A fill:#e1f5fe,stroke:#0288d1,stroke-width:2px
     style B fill:#fff3e0,stroke:#f57c00,stroke-width:2px`
 
-// Expected failures document open backlog items, not implemented corrections.
-it.fails('riproduce il rifiuto del diagramma AB fornito (voce 116 aperta)', () => {
+// Original diagnostic fixtures are now positive regressions.
+it('accetta gli stili statici del diagramma AB', () => {
   expect(() => validateMermaidSource(diagram)).not.toThrow()
 })
 
-it.fails('riproduce la prosa interpretata come matematica tra prezzi in dollari (voce 107 aperta)', () => {
+it('mantiene la prosa normale tra prezzi con dollari sbilanciati', () => {
   const source = String.raw`Il costo è (c = 0.50\$$ nell'esempio). Al di sotto di c, l'impresa opererebbe in perdita (\Pi < 0$).`
   const html = renderToStaticMarkup(React.createElement(ReactMarkdown, {
     remarkPlugins: [remarkMath], rehypePlugins: [rehypeKatex]
@@ -33,7 +33,7 @@ it.fails('riproduce la prosa interpretata come matematica tra prezzi in dollari 
 
 it('isola il rifiuto negli stili dei diagrammi di stato, non nei metadati', () => {
   expect(validateMermaidSource(diagram.replace(/^ {4}style .*$/gm, ''))).toContain('accTitle:')
-  expect(() => validateMermaidSource('stateDiagram-v2\nA --> B\nstyle A fill:#fff')).toThrow('direttiva non consentita')
+  expect(validateMermaidSource('stateDiagram-v2\nA --> B\nstyle A fill:#fff')).toContain('style A')
   expect(validateMermaidSource('stateDiagram-v2\nA --> B')).toContain('A --> B')
   expect(validateMermaidSource('flowchart TD\nA --> B\nstyle A fill:#fff')).toContain('style A')
 })

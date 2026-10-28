@@ -164,8 +164,8 @@ export async function runTodayScenarios(root: Root, api: any) {
       '.qna-context-toggle input'
     )
     check(
-      !checks[0].checked && !checks[1].checked,
-      'Additional context must default off'
+      checks[0].checked && !checks[1].checked,
+      'Full lesson defaults on and other Q&A stays opt-in'
     )
     await act(async () => checks[1].click())
     await input(document.querySelector('textarea')!, 'Seconda domanda')
@@ -173,7 +173,7 @@ export async function runTodayScenarios(root: Root, api: any) {
       document.querySelector<HTMLButtonElement>('.qna-send-btn')!.click()
     )
     check(
-      sent[2] === false && sent[3] === true && sent[4] === 'long',
+      sent[2] === true && sent[3] === true && sent[4] === 'long',
       'Other Q&A opt-in changed full lesson consent'
     )
     check(document.querySelector<HTMLTextAreaElement>('.qna-input-row textarea')?.value === 'Seconda domanda', 'Failed Q&A request lost the editable draft')
@@ -184,7 +184,7 @@ export async function runTodayScenarios(root: Root, api: any) {
     await act(async () => root.render(null))
     await renderChat()
     await wait()
-    check(document.querySelector('.qna-length-toggle [aria-pressed="true"]')?.textContent === 'Lunga', 'Q&A length preference did not survive remount')
+    check(document.querySelector('.qna-length-toggle [aria-pressed="true"]')?.textContent === 'Breve', 'Reopened Q&A must restore requested brief default')
     check(
       localStorage.getItem(keys[1]) === savedWidth &&
         document.querySelector('[aria-label="Ripristina testo Q&A"]')
@@ -197,10 +197,11 @@ export async function runTodayScenarios(root: Root, api: any) {
     await act(async () => root.render(<div style={{ width: 1100, height: 640, display: 'flex' }}><FocusWorkspace lectureId="today-focus" qna={qna} onCloseQna={() => {}} textZoom={1} onTextZoom={() => {}}><p>Dispensa con zoom indipendente</p></FocusWorkspace></div>))
     await wait()
     const focusPane = document.querySelector<HTMLElement>('.focus-qna-column')!
+    await until(() => Math.abs(focusPane.clientWidth - Math.max(300, document.querySelector('.focus-workspace')!.getBoundingClientRect().width * 0.29)) < 2, 'Focus Q&A initial layout did not settle')
     const focusWidth = focusPane.clientWidth
     await act(async () => document.querySelector('[aria-label="Larghezza della discussione"]')!.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true })))
     await wait()
-    check(focusPane.clientWidth > focusWidth && localStorage.getItem(keys[2]) !== null, 'Focus Q&A width did not change or persist')
+    check(focusPane.clientWidth > focusWidth && localStorage.getItem(keys[2]) !== null, `Focus Q&A width did not change or persist (${focusWidth} -> ${focusPane.clientWidth}; ratio ${localStorage.getItem(keys[2])})`)
     await click('Ingrandisci testo Q&A')
     check(document.querySelector('[aria-label="Ripristina zoom spiegazione"]')?.textContent === '100%', 'Q&A zoom changed the lesson zoom')
     await act(async () => root.render(null))

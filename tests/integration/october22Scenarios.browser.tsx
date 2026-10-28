@@ -57,7 +57,7 @@ export async function runOctober22Scenarios(root: Root, api: any) {
     await click('Torna alle discussioni')
     check(document.activeElement?.getAttribute('data-thread-id') === thread.id, 'Discussion focus not restored')
     await key('Space')
-    check(document.querySelector('[role="group"] button[aria-pressed="true"]')?.textContent === 'Media', 'Medium preference not retained')
+    check(document.querySelector('[role="group"] button[aria-pressed="true"]')?.textContent === 'Breve', 'Reopened Q&A must restore requested brief default')
     await shot('qna')
     await render(null)
 

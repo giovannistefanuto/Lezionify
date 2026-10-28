@@ -18,6 +18,7 @@ export interface GenerateContentParams {
 }
 
 export interface GenerateContentStreamParams extends GenerateContentParams {
+  onGrounding?: (sources: { title: string; uri: string }[]) => void
   onChunk: (chunk: string) => void
   firstChunkTimeoutMs?: number
   chunkInactivityTimeoutMs?: number
@@ -152,7 +153,7 @@ export class GeminiTransport {
     let finished = false
     let abortError: GeminiError | undefined
     let timer: ReturnType<typeof setTimeout> | undefined
-    type StreamChunk = { text?: string; usageMetadata?: TransportExecutionResult<string>['usageMetadata']; promptFeedback?: { blockReason?: string }; candidates?: { finishReason?: string }[] }
+    type StreamChunk = { text?: string; usageMetadata?: TransportExecutionResult<string>['usageMetadata']; promptFeedback?: { blockReason?: string }; candidates?: { finishReason?: string; groundingMetadata?: { groundingChunks?: { web?: { title?: string; uri?: string } }[] } }[] }
     let usageMetadata: TransportExecutionResult<string>['usageMetadata']
     let iterator: AsyncIterator<StreamChunk> | undefined
     let rejectAborted!: (error: GeminiError) => void
@@ -220,6 +221,8 @@ export class GeminiTransport {
         const chunk = await Promise.race([iterator.next(), aborted])
         if (finished || chunk.done) break
         if (chunk.value.usageMetadata) usageMetadata = chunk.value.usageMetadata
+        const sources = chunk.value.candidates?.flatMap(candidate => candidate.groundingMetadata?.groundingChunks?.flatMap(item => item.web?.uri && /^https?:\/\//i.test(item.web.uri) ? [{ title: item.web.title ?? 'Fonte web', uri: item.web.uri }] : []) ?? []) ?? []
+        if (sources.length) params.onGrounding?.(sources)
         const blockReason = chunk.value.promptFeedback?.blockReason
         if ((blockReason && blockReason !== 'BLOCK_REASON_UNSPECIFIED') || chunk.value.candidates?.some(candidate => ['SAFETY', 'RECITATION', 'BLOCKLIST', 'PROHIBITED_CONTENT', 'SPII', 'IMAGE_SAFETY'].includes(candidate.finishReason ?? ''))) {
           throw new GeminiError({ category: 'invalid_request', recoveryDisposition: 'terminal', isRetryable: false, isDailyQuota: false, sanitizedMessage: 'La risposta Q&A è stata bloccata dal provider. Riformula la domanda.' })

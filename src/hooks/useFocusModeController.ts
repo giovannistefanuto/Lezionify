@@ -91,7 +91,7 @@ export function useFocusModeController({
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return
-      if (document.querySelector('[data-dictionary-overlay], .settings-modal-overlay, .music-backdrop')) return
+      if (document.querySelector('[data-dictionary-overlay], .settings-modal-overlay, .music-backdrop, .section-revision-dialog')) return
       event.preventDefault()
       event.stopPropagation()
       if (pauseTimerActive) {

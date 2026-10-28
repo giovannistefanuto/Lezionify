@@ -325,6 +325,9 @@ function registerIpcHandlers(): void {
   ipcMain.handle('archive:list', () => archive.listLectures())
   ipcMain.handle('archive:lecture-word-counts', (_event, lectureId: string) => archive.getLectureWordCounts(lectureId))
   ipcMain.handle('archive:dictionary-lookup', (_event, query: unknown, direction: unknown) => dictionary.lookup(query, direction))
+  ipcMain.handle('archive:section-preview', (_event, id: string, expected: unknown, start: unknown, instructions: unknown) => archive.sectionRevisions.preview(id, expected, start, instructions))
+  ipcMain.handle('archive:section-apply', (_event, id: string, token: unknown) => archive.sectionRevisions.apply(id, token))
+  ipcMain.handle('archive:section-restore', (_event, id: string) => archive.sectionRevisions.restore(id))
   ipcMain.handle('archive:phrase-status', () => offlineTranslation.status())
   ipcMain.handle('archive:battery-status', () => readBatteryStatus(powerMonitor.isOnBatteryPower()))
   ipcMain.handle('archive:ambient-status', () => ambientSounds.status())
@@ -442,8 +445,8 @@ function registerIpcHandlers(): void {
   )
   ipcMain.handle(
     'archive:generate-qna',
-    (_event, id: string, thread: unknown, useFullContext: unknown, includeOtherQna: unknown = false, responseLength: unknown = 'brief') =>
-      archive.generateQnaResponse(id, thread, useFullContext, includeOtherQna, responseLength)
+    (_event, id: string, thread: unknown, useFullContext: unknown, includeOtherQna: unknown = false, responseLength: unknown = 'brief', searchOnline: unknown = false) =>
+      archive.generateQnaResponse(id, thread, useFullContext, includeOtherQna, responseLength, searchOnline)
   )
   ipcMain.handle('archive:save-qna-image', (_event, lectureId: string, threadId: string, input: unknown) => archive.saveQnaImage(lectureId, threadId, input))
   ipcMain.handle('archive:list-qna-images', () => archive.qnaImages.list())

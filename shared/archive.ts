@@ -1,6 +1,7 @@
 import type { CourseRagApi } from './courseRag'
+import type { SectionRevisionApi } from './sectionRevision'
 import type { RepetitionApi } from './repetition'
-import type { DictionaryDirection, DictionaryResult } from './dictionary'
+import type { DictionaryDirection, DictionaryLookupDirection, DictionaryResult } from './dictionary'
 import type { PdfExportDocument, PdfExportRequest, PdfExportResult } from './pdfExport'
 
 export type LectureStatus = 'audio-only' | 'transcript-available'
@@ -18,6 +19,7 @@ export type GeminiModel =
   | 'gemini-2.5-flash-lite'
 
 export interface Lecture {
+  markdownEnNeedsUpdate?: boolean
   id: string
   isLaboratory?: boolean
   laboratorySource?: 'schedule'
@@ -340,6 +342,7 @@ export interface ArchivePipelineStageSummary {
 }
 
 export interface ArchivePipelineStatus {
+  queuedImportLectureIds?: string[]
   version: 1
   runId: string | null
   trigger: 'manual' | 'import' | null
@@ -516,6 +519,7 @@ export interface Reminder {
 }
 
 export interface LectureHighlight {
+  style?: 'highlight' | 'underline'
   id: string
   startOffset: number
   endOffset: number
@@ -595,7 +599,7 @@ export interface FocusPdfDocument {
   url: string
 }
 
-export interface ArchiveApi extends CourseRagApi, RepetitionApi {
+export interface ArchiveApi extends CourseRagApi, RepetitionApi, SectionRevisionApi {
   languageShortcutDiagnosticsEnabled?: boolean
   exportNotesPdf: (request: PdfExportRequest) => Promise<PdfExportResult>
   getPdfExportDocument: (token: string) => Promise<PdfExportDocument>
@@ -605,7 +609,7 @@ export interface ArchiveApi extends CourseRagApi, RepetitionApi {
   releaseFocusPdf: (id: string) => Promise<void>
   listLectures: () => Promise<Lecture[]>
   getLectureWordCounts: (lectureId: string) => Promise<Record<string, number | null>>
-  lookupDictionary: (query: string, direction: DictionaryDirection) => Promise<DictionaryResult>
+  lookupDictionary: (query: string, direction: DictionaryLookupDirection) => Promise<DictionaryResult>
   offlineTranslationStatus: () => Promise<import('./offlineTranslation').OfflineTranslationStatus>
   ambientSoundStatus: () => Promise<import('./ambientSounds').AmbientSoundStatus>
   installAmbientSounds: (soundIds?: string[]) => Promise<import('./ambientSounds').AmbientSoundStatus>
@@ -686,7 +690,8 @@ export interface ArchiveApi extends CourseRagApi, RepetitionApi {
     thread: QnaThread,
     useFullContext: boolean,
     includeOtherQna?: boolean,
-    responseLength?: 'brief' | 'medium' | 'long'
+    responseLength?: 'brief' | 'medium' | 'long',
+    searchOnline?: boolean
   ) => Promise<{ success: boolean; text?: string; error?: string }>
   saveStudySession: (session: StudySession) => Promise<void>
   getLectureStudySeconds: (lectureId: string, excludedSessionId: string) => Promise<number>

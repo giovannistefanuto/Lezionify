@@ -123,7 +123,8 @@ export function useQna(lectureId: string | null) {
     text: string,
     useFullContext: boolean,
     includeOtherQna = false,
-    responseLength: 'brief' | 'medium' | 'long' = 'brief'
+    responseLength: 'brief' | 'medium' | 'long' = 'brief',
+    searchOnline = false
   ) => {
     if (!lectureId || running.current || adding.current || !text.trim()) return false
     const currentThread = threads.find((t) => t.id === threadId)
@@ -165,7 +166,8 @@ export function useQna(lectureId: string | null) {
         requestThread,
         useFullContext,
         includeOtherQna,
-        responseLength
+        responseLength,
+        searchOnline
       )
       if (!res.success || !res.text?.trim())
         throw new Error(res.error || 'Risposta vuota dal modello.')

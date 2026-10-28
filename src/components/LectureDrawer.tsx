@@ -13,6 +13,7 @@ import { MarkdownViewer } from './MarkdownViewer'
 import { AudioPlayer } from './AudioPlayer'
 import { LectureRecordingTimes } from './LectureRecordingTimes'
 import { FocusLockModal } from './FocusLockModal'
+import { SectionRegenerator } from './SectionRegenerator'
 import { PauseTimerOverlay } from './PauseTimerOverlay'
 import { FocusReminders } from './FocusReminders'
 import { TranscriptPanel } from './TranscriptPanel'
@@ -314,6 +315,8 @@ export function LectureDrawer({
     lectureTotalSeconds,
     isPaused,
     showFocusLock,
+    inactivityPrompt,
+    studyWithoutInput,
     pauseTimerActive,
     pauseMinutes,
     startPauseTimer,
@@ -420,6 +423,10 @@ export function LectureDrawer({
 
   const {
     isHighlightMode,
+    annotationStyle,
+    highlightError,
+    setAnnotationStyle,
+    setIsHighlightMode,
     toggleHighlightMode,
     highlights,
     addHighlight,
@@ -470,6 +477,7 @@ export function LectureDrawer({
             {isTranslating ? '⏳' : 'EN'}
           </span>
         </button>
+        {selectedLecture?.markdownEnNeedsUpdate && <button type="button" className="secondary-button small" disabled={isTranslating} onClick={onTranslateLectureNotes}>Aggiorna ENG con Gemini</button>}
         {translationError && (
           <div className="ai-error-box translation-error" role="alert">
             <strong>Errore traduzione:</strong>
@@ -667,14 +675,17 @@ export function LectureDrawer({
               </span>
             </div>
             <div className="focus-toolbar-right">
-              {studyEstimate.preference && <span className="study-estimate" title="La stima richiede almeno 10 minuti e il 60% del tratto consolidato; compare sotto 30 minuti residui.">{studyEstimate.label ?? (isPaused || showFocusLock || pauseTimerActive ? 'Stima sospesa' : 'Stima: raccolta dati')}</span>}
+              {studyEstimate.preference && <span className="study-estimate" style={{ maxWidth: 330, whiteSpace: 'normal', fontSize: 11 }} title="La stima per paragrafo usa esposizione, parole e ritmo personale; numeri e formule solo se migliorano la validazione. È provvisoria con pochi campioni e non misura la comprensione. Il metodo precedente resta disponibile durante la raccolta.">{studyEstimate.label ?? (isPaused || showFocusLock || pauseTimerActive ? 'Stima sospesa' : 'Stima: raccolta dati')}</span>}
               {studyEstimate.preference && <button type="button" onClick={studyEstimate.recalculate}
                 title="Azzera i campioni e riprendi la stima da questa posizione">Ricalcola da qui</button>}
               <FocusReminders />
+              {highlightError && <small role="alert">{highlightError}</small>}
+              <SectionRegenerator key={selectedLecture.id} lectureId={selectedLecture.id} markdown={markdownText ?? ''} english={effectiveLanguage === 'en'} disabled={isGenerating || isTranscribing || isTranslating} />
+              {selectedLecture.markdownEnNeedsUpdate && <small>ENG da aggiornare</small>}
               {renderLanguageToggle()}
               <button
                 className={`focus-highlighter-btn ${isHighlightMode ? 'active' : ''}`}
-                onClick={toggleHighlightMode}
+                onClick={() => { setAnnotationStyle('highlight'); if (annotationStyle === 'underline') setIsHighlightMode(true); else toggleHighlightMode() }}
                 title={
                   isHighlightMode
                     ? 'Disattiva evidenziatore'
@@ -696,6 +707,9 @@ export function LectureDrawer({
                   <path d="m22 12-4.6 4.6a2 2 0 0 1-2.8 0l-5.2-5.2a2 2 0 0 1 0-2.8L14 4" />
                 </svg>
               </button>
+              <button type="button" className={`focus-highlighter-btn ${isHighlightMode && annotationStyle === 'underline' ? 'active' : ''}`}
+                aria-label="Sottolineatura" aria-pressed={isHighlightMode && annotationStyle === 'underline'}
+                onClick={() => { setAnnotationStyle('underline'); if (annotationStyle !== 'underline') setIsHighlightMode(true); else toggleHighlightMode() }}>U̲</button>
               <button
                 className="focus-btn primary-focus-btn"
                 onClick={exitFocusMode}
@@ -813,12 +827,14 @@ export function LectureDrawer({
           </FocusWorkspace>
 
           <FocusLockModal
+            inactivity={inactivityPrompt}
+            onStudyWithoutInput={studyWithoutInput}
             show={showFocusLock}
             courseCode={selectedLecture.courseCode}
             sessionSeconds={activeSeconds}
             lectureTotalSeconds={lectureTotalSeconds}
             onContinue={handleContinueFocus}
-            onQuit={handleConfirmExitFocus}
+            onQuit={inactivityPrompt ? () => void handleQuitFromPause() : handleConfirmExitFocus}
             onPause={startPauseTimer}
           />
 
@@ -1005,6 +1021,9 @@ export function LectureDrawer({
                     {markdownText && (
                       <>
                         {renderLanguageToggle()}
+                        {highlightError && <small role="alert">{highlightError}</small>}
+                        <SectionRegenerator key={selectedLecture.id} lectureId={selectedLecture.id} markdown={markdownText} english={effectiveLanguage === 'en'} disabled={isGenerating || isTranscribing || isTranslating} />
+                        {selectedLecture.markdownEnNeedsUpdate && <small>ENG da aggiornare</small>}
                         <button
                           className={`highlighter-toolbar-btn ${isHighlightMode ? 'active' : ''}`}
                           onClick={toggleHighlightMode}

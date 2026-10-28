@@ -19,6 +19,8 @@ Le ricerche concluse non chiudono le caselle delle funzioni ancora da integrare.
 
 ### Ordine operativo aggiornato al 23 ottobre 2026
 
+**Stato al 28 ottobre, D-0437–D-0444:** 62 attività, 44 concluse e 18 aperte. I dodici interventi sono implementati e collaudati; verifica del provider e calibrazione sul nuovo uso personale restano limiti espliciti nel [report](studio-dodici-interventi-2026-10-28.md). Ordine invariato; prima voce aperta 33.
+
 Su richiesta dell'utente, tutte le attività aperte sono riordinate per facilità
 crescente, includendo lista, riassunto Gemini e interventi del
 [report UX/UI del 21 ottobre](../quality/audit-ux-ui-2026-10-21.md).
@@ -53,16 +55,16 @@ avviata da questo aggiornamento documentale (D-0390).
 | 17. [x] | Scelta per corso delle lezioni da pubblicare su GitHub | 68 | D-0392: implementata e collaudata; dettagli e limiti nel report del 22 ottobre. |
 | 18. [ ] | Ctrl / Ctrl+L e cerchio bianco attorno al mouse | 33 | Media incerta: test nativi positivi e cerchio spiegato; serve l'episodio personale storico. |
 | 19. [x] | Diagnosi della stima di studio che non funziona | 70 | D-0433: corretti i buchi di campionamento della viewport; regressioni Electron e comunicazione delle soglie verificate. |
-| 20. [ ] | Formule Q&A: caso epsilon-greedy / epsilon-soft | 73 | Media incerta: isolare testo ricevuto, normalizzazione, KaTeX/CSS e streaming. |
+| 20. [x] | Formule Q&A: caso epsilon-greedy / epsilon-soft | 73 | D-0437: normalizzazione condivisa, epsilon/cases, streaming e copia collaudati; testo grezzo conservato. |
 | 21. [x] | Diagnosi errore course-rag:ask «Risposta non completata» | 69 | D-0392: output strutturato, fallback e retry collaudati; due prove RAG complete reali riuscite con fonti sintetiche. D-0395: recupero da timeout/503 e confronto RL reale verificato, con 12 invii e 10 minuti condivisi: [diagnosi](../quality/rag-recupero-2026-10-22.md). |
 | 22. [ ] | Collaudi residui del traduttore offline | 7 | Media: prove tecniche, formule/codice e glossario; funzione base già integrata. |
 | 23. [ ] | Validazione qualitativa residua dei modelli Q&A | 9 | Media: contratto già collaudato, qualità reale e provider da verificare. |
 | 24. [ ] | Verifica personale residua delle versioni ENG mancanti | 20 | Media incerta: riusare diagnosi/correzioni, serve un caso dopo l'aggiornamento. |
-| 25. [ ] | Ctrl+T: modalità Dizionario italiano oltre al traduttore | 71 | Media/alta: corpus monolingue, copertura e licenza da verificare prima dell'integrazione. |
+| 25. [x] | Ctrl+T: modalità Dizionario italiano oltre al traduttore | 71 | D-0439: corpus italiano offline con flessioni e licenza, switch e input conservato verificati. |
 | 26. [ ] | Pilota personale della sezione musica | 5 | Media con dipendenza esterna: account, PC e cuffie; rinvio precedente conservato. |
 | 27. [ ] | Percorso rapido Mermaid → iPad → nota Notability corrente | 63 | Medio/alta: intera catena e prova reale tra dispositivi. |
-| 28. [ ] | Misurare l'inattività personale e chiedere se si studia ancora | 56 | Alta: calibrazione locale e conteggio affidabile; riusare Focus Lock corretto. |
-| 29. [ ] | Rigenerare un singolo paragrafo dalla trascrizione | 59 | Alta: corrispondenza con fonte, sostituzione mirata e versioni conservate. |
+| 28. [x] | Misurare l'inattività personale e chiedere se si studia ancora | 56 | D-0443: osservazione volontaria, proposta da confermare e dialogo con timer fermo collaudati; nessuna sottrazione retroattiva. |
+| 29. [x] | Rigenerare un singolo paragrafo dalla trascrizione | 59 | D-0444: sezione ITA con fonte completa dichiarata, anteprima, conferma, CAS, ripristino ed ENG conservata da aggiornare. |
 | 30. [ ] | Completare transizioni canzone → canzone / canzone → suono | 38 | Alta e vincolata ai player: dissolvenze offline già implementate, limiti D-0370. |
 | 31. [ ] | Valutare limite YouTube di 30 minuti al giorno negli orari di studio | 75 | Alta: strumento esterno e perimetro d'uso da concordare, affidabilità su PC da provare. |
 | 32. [ ] | Timer pausa sul telefono | 32 | Alta: trasporto locale e avvisi affidabili a schermo bloccato. |
@@ -84,18 +86,18 @@ avviata da questo aggiornamento documentale (D-0390).
 | 48. [x] | Dizionario: lacuna collusion e casi precedenti | 102 | D-0404/D-0405: supplemento verificato e regressioni sui dati reali. |
 | 49. [x] | Rimuovere testo della pausa scaduta | 103 | D-0404/D-0405: testo rimosso, statistiche conservate. |
 | 50. [x] | Spotify: correggere play/pausa e rigenerare installer | 104 | D-0404/D-0405: regressioni trasporto e suoni attivi; installer verificato. |
-| 51. [ ] | Pipeline: recuperare automaticamente gli import arrivati durante la coda | 105 | Media: conservare le richieste, ricontrollare il lavoro mancante a fine coda e rispettare stop, pause e consenso AI. |
+| 51. [x] | Pipeline: recuperare automaticamente gli import arrivati durante la coda | 105 | D-0438: import persistenti e passaggio serializzato; pianificazione concorrente, stop, pause ed errori collaudati. |
 | 52. [ ] | Comandi delle cuffiette EarFun per musica e suoni | 106 | Media: integrazione comandi multimediali e prova hardware. |
-| 53. [ ] | Dollari monetari e formule: prosa deformata | 107 | Media: distinguere sorgente generata, delimitatori e rendering. |
-| 54. [ ] | Sveglia: minuti rimanenti nel tooltip | 108 | Bassa: durata aggiornata e gestione della scadenza. |
-| 55. [ ] | Chiedi a Gemini: focus domanda e impostazioni iniziali | 109 | Media: focus, invio e contesto esplicito. |
+| 53. [x] | Dollari monetari e formule: prosa deformata | 107 | D-0437: riparazioni monetarie mirate, formule valide e codice conservati; regressioni positive. |
+| 54. [x] | Sveglia: minuti rimanenti nel tooltip | 108 | D-0440: tooltip aggiornato con residuo, singolare, domani e scadenza verificati. |
+| 55. [x] | Chiedi a Gemini: focus domanda e impostazioni iniziali | 109 | D-0440: focus domanda e default SÌ/NO/Breve; Invio, Shift+Invio e IME verificati. |
 | 56. [ ] | Ordine modelli per schemi e confronto Gemini 3.8 / 4 | 110 | Media: benchmark reale con quote, tempi e costi tracciati. |
-| 57. [ ] | Sottolineatura Focus e collaudo evidenziatore | 111 | Media: persistenza e selezione nel documento reale. |
-| 58. [ ] | Ricerca online facoltativa nelle domande Gemini | 112 | Media/alta: consenso, costi, fonti e compatibilità dei modelli. |
-| 59. [ ] | Stima per paragrafo: parole, numeri e ritmo di oggi | 113 | Alta: dati disponibili, calibrazione e validazione predittiva. |
+| 57. [x] | Sottolineatura Focus e collaudo evidenziatore | 111 | D-0441: sottolineatura persistente, selezione DOM, sovrapposizione, formule e isolamento IT/EN collaudati. |
+| 58. [x] | Ricerca online facoltativa nelle domande Gemini | 112 | D-0442: ricerca web per domanda e fonti separate implementate; contratto SDK simulato, disponibilità reale dipendente dal progetto. |
+| 59. [x] | Stima per paragrafo: parole, numeri e ritmo di oggi | 113 | D-0443: raccolta e modello per paragrafi implementati; baseline/holdout e DOM verificati, calibrazione personale da nuovi campioni. |
 | 60. [ ] | Rendere reperibile Allega slide | 114 | D-0433: ingresso esplicito e percorso completo collaudati; resta la verifica dell'episodio personale non riprodotto. |
 | 61. [ ] | Misurare e ridurre l'attesa di scansione del registratore | 115 | Media: separare rilevamento, checksum e durata. |
-| 62. [ ] | Diagramma di stato AB rifiutato per direttiva non consentita | 116 | Media: compatibilità Mermaid e controlli di sicurezza. |
+| 62. [x] | Diagramma di stato AB rifiutato per direttiva non consentita | 116 | D-0437: stili statici sicuri e rendering Mermaid reale verificati, whitelist preservata. |
 
 Le prime 17 posizioni e la 21 sono concluse in D-0392 su richiesta diretta dopo grilling (D-0391). [Uso, verifiche e limiti](interventi-2026-10-22.md).
 La prima attività ancora aperta è la **voce 33, diagnosi Ctrl+L personale**, posizione 18. Ogni invocazione
@@ -1384,10 +1386,13 @@ localmente, senza alterare audio, trascrizioni o dispense.
 
 ### 56. Inattività: misurare il ritmo personale e confermare lo studio
 
-- [ ] Misurare localmente gli intervalli tra interazioni mouse/tastiera durante lo studio attivo, a partire da un periodo di osservazione esplicito.
-- [ ] Usare i dati personali per proporre una soglia di inattività da concordare prima di applicarla.
-- [ ] Superata la soglia, mostrare «Stai ancora studiando?» riusando la schermata di uscita con attesa di 15 secondi e comandi di pausa pertinenti.
-- [ ] Escludere dal tempo studiato l'assenza rilevata, definendo come trattare l'intervallo precedente all'avviso e la mancata risposta.
+**Aggiornamento 28 ottobre — D-0443: osservazione volontaria, proposta da confermare e dialogo con timer fermo collaudati; nessuna sottrazione retroattiva.**
+Uso, verifiche e limiti: [dodici interventi](studio-dodici-interventi-2026-10-28.md). Le descrizioni e indagini precedenti sono conservate come storico.
+
+- [x] Misurare localmente gli intervalli tra interazioni mouse/tastiera durante lo studio attivo, a partire da un periodo di osservazione esplicito.
+- [x] Usare i dati personali per proporre una soglia di inattività da concordare prima di applicarla.
+- [x] Superata la soglia, mostrare «Stai ancora studiando?» riusando la schermata di uscita con attesa di 15 secondi e comandi di pausa pertinenti.
+- [x] Escludere dal tempo studiato l'assenza rilevata, definendo come trattare l'intervallo precedente all'avviso e la mancata risposta.
 
 Esempio dell'utente: interazioni almeno ogni 10 minuti durante lo studio reale,
 quindi possibile soglia di 15 minuti senza interazioni. Sono esempi da misurare,
@@ -1428,9 +1433,12 @@ o riduzioni automatiche eccessive del carattere.
 
 ### 59. Rigenerare un singolo paragrafo dalla trascrizione
 
-- [ ] Valutare e realizzare un'azione **Rigenera** sul titolo/sezione, accanto a **Chiedi a Gemini**.
-- [ ] Aprire un campo per istruzioni, per esempio «Rifallo ma più dettagliato».
-- [ ] Recuperare il tratto pertinente della trascrizione e rigenerare solo la parte richiesta.
+**Aggiornamento 28 ottobre — D-0444: sezione ITA con fonte completa dichiarata, anteprima, conferma, CAS, ripristino ed ENG conservata da aggiornare.**
+Uso, verifiche e limiti: [dodici interventi](studio-dodici-interventi-2026-10-28.md). Le descrizioni e indagini precedenti sono conservate come storico.
+
+- [x] Valutare e realizzare un'azione **Rigenera** sul titolo/sezione, accanto a **Chiedi a Gemini**.
+- [x] Aprire un campo per istruzioni, per esempio «Rifallo ma più dettagliato».
+- [x] Recuperare il tratto pertinente della trascrizione e rigenerare solo la parte richiesta.
 
 Verificare prima la corrispondenza effettiva tra sezioni della dispensa e fonte:
 non presumere che titolo o posizione identifichino già un intervallo univoco.
@@ -1662,13 +1670,16 @@ alla cieca né promettere precisione sulla comprensione della lezione.
 
 ### 71. Ctrl+T: switch Traduttore / Dizionario italiano
 
+**Aggiornamento 28 ottobre — D-0439: corpus italiano offline con flessioni e licenza, switch e input conservato verificati.**
+Uso, verifiche e limiti: [dodici interventi](studio-dodici-interventi-2026-10-28.md). Le descrizioni e indagini precedenti sono conservate come storico.
+
 Richiesta ribadita il 27 ottobre: «A che punto siamo sull'aggiungere un
 dizionario lì del traduttore?». Ancora aperta, posizione 25: il vocabolario
 bilingue esistente e il fallback Bergamot non equivalgono alle definizioni
 monolingui italiane. Nessuna nuova voce duplicata in coda.
 
-- [ ] Mantenere il traduttore automatico come modalità iniziale e aggiungere lo switch esplicito verso **Dizionario italiano**.
-- [ ] Inserendo una parola italiana nel riquadro sinistro, mostrare a destra una definizione italiana nella modalità dizionario.
+- [x] Mantenere il traduttore automatico come modalità iniziale e aggiungere lo switch esplicito verso **Dizionario italiano**.
+- [x] Inserendo una parola italiana nel riquadro sinistro, mostrare a destra una definizione italiana nella modalità dizionario.
 
 Riutilizzare i due riquadri della voce 58, Ctrl+T, focus e testo digitato passando
 fra modalità. Lo switch di funzione è distinto dall'inversione IT/EN già
@@ -1701,7 +1712,10 @@ fallback e rifiuto di valori IPC non ammessi; Breve resta il default.
 
 ### 73. Rendering matematico nel Q&A: epsilon-greedy ed epsilon-soft
 
-- [ ] Riprodurre e correggere il rendering della risposta segnalata, con simboli duplicati e un blocco LaTeX `cases` visibile come testo.
+**Aggiornamento 28 ottobre — D-0437: normalizzazione condivisa, epsilon/cases, streaming e copia collaudati; testo grezzo conservato.**
+Uso, verifiche e limiti: [dodici interventi](studio-dodici-interventi-2026-10-28.md). Le descrizioni e indagini precedenti sono conservate come storico.
+
+- [x] Riprodurre e correggere il rendering della risposta segnalata, con simboli duplicati e un blocco LaTeX `cases` visibile come testo.
 
 Caso fornito: la spiegazione comincia con «politica ϵ ϵ-greedy» e «politica
 ϵ ϵ-soft», ripete «1 − ϵ 1−ϵ» e contiene questo frammento apparentemente privo
@@ -2142,7 +2156,10 @@ implementabili nello stesso intervento, dopo il completamento del lavoro RAG
 
 ### 105. Elaborare automaticamente gli import arrivati durante una coda attiva
 
-- [ ] Conservare la richiesta di elaborazione dei nuovi audio importati mentre la pipeline è occupata; al termine normale della coda ricontrollare l'archivio e avviare automaticamente le trascrizioni, dispense italiane e traduzioni inglesi mancanti nel perimetro autorizzato.
+**Aggiornamento 28 ottobre — D-0438: import persistenti e passaggio serializzato; pianificazione concorrente, stop, pause ed errori collaudati.**
+Uso, verifiche e limiti: [dodici interventi](studio-dodici-interventi-2026-10-28.md). Le descrizioni e indagini precedenti sono conservate come storico.
+
+- [x] Conservare la richiesta di elaborazione dei nuovi audio importati mentre la pipeline è occupata; al termine normale della coda ricontrollare l'archivio e avviare automaticamente le trascrizioni, dispense italiane e traduzioni inglesi mancanti nel perimetro autorizzato.
 
 Problema verificato nel codice: `ArchivePipeline.start()` rifiuta un nuovo avvio
 quando esiste una lavorazione attiva; `queueAutomaticLectureProcessing()` non
@@ -2186,7 +2203,10 @@ EarFun personale. Non inviare comandi contemporanei a più player.
 
 ### 107. Prosa deformata vicino ai prezzi in dollari
 
-- [ ] Indagare e correggere il caso della guerra dei prezzi: testo senza spazi, lettere matematiche e dollari visibili impropriamente.
+**Aggiornamento 28 ottobre — D-0437: riparazioni monetarie mirate, formule valide e codice conservati; regressioni positive.**
+Uso, verifiche e limiti: [dodici interventi](studio-dodici-interventi-2026-10-28.md). Le descrizioni e indagini precedenti sono conservate come storico.
+
+- [x] Indagare e correggere il caso della guerra dei prezzi: testo senza spazi, lettere matematiche e dollari visibili impropriamente.
 
 Esempio segnalato: prezzi `1.00\$$`, `0.99,$`, `$0.98,$$`, costo
 `c = 0.50\$$` e chiusura `\Pi < 0$`; la prosa «accaparrandosi il 100% della
@@ -2197,15 +2217,21 @@ nessuna sostituzione globale dei dollari che danneggi la matematica valida.
 
 ### 108. Sveglia con tempo rimanente al passaggio del mouse
 
-- [ ] Mostrare ad esempio `Sveglia: 11:28 (35 minuti rimanenti)` nell'anteprima dell'orologio.
+**Aggiornamento 28 ottobre — D-0440: tooltip aggiornato con residuo, singolare, domani e scadenza verificati.**
+Uso, verifiche e limiti: [dodici interventi](studio-dodici-interventi-2026-10-28.md). Le descrizioni e indagini precedenti sono conservate come storico.
+
+- [x] Mostrare ad esempio `Sveglia: 11:28 (35 minuti rimanenti)` nell'anteprima dell'orologio.
 
 Aggiornare il residuo nel tempo, con singolare/plurale, meno di un minuto,
 passaggio a domani e stato scaduto; mantenere l'ora già presente.
 
 ### 109. Domanda Gemini subito digitabile e impostazioni iniziali
 
-- [ ] Dopo selezione testo → Chiedi a Gemini, portare automaticamente il cursore nel campo domanda e consentire l'invio diretto con Invio.
-- [ ] Impostare **SÌ** per tutta la lezione, **NO** per includere le altre discussioni Q&A e **Breve** come scelta automatica richiesta.
+**Aggiornamento 28 ottobre — D-0440: focus domanda e default SÌ/NO/Breve; Invio, Shift+Invio e IME verificati.**
+Uso, verifiche e limiti: [dodici interventi](studio-dodici-interventi-2026-10-28.md). Le descrizioni e indagini precedenti sono conservate come storico.
+
+- [x] Dopo selezione testo → Chiedi a Gemini, portare automaticamente il cursore nel campo domanda e consentire l'invio diretto con Invio.
+- [x] Impostare **SÌ** per tutta la lezione, **NO** per includere le altre discussioni Q&A e **Breve** come scelta automatica richiesta.
 
 Le opzioni devono restare visibili prima dell'invio; nessuna chiamata AI alla
 sola apertura. Collaudare nuova discussione, riapertura, selezione e Focus,
@@ -2223,7 +2249,10 @@ esistenti; non cambiare automaticamente modelli o preferenze durante l'indagine.
 
 ### 111. Modalità sottolineatura in Focus e verifica evidenziatore
 
-- [ ] Aggiungere una modalità sottolineatura analoga all'evidenziatore e verificare se l'evidenziatore attuale funziona correttamente nel documento reale.
+**Aggiornamento 28 ottobre — D-0441: sottolineatura persistente, selezione DOM, sovrapposizione, formule e isolamento IT/EN collaudati.**
+Uso, verifiche e limiti: [dodici interventi](studio-dodici-interventi-2026-10-28.md). Le descrizioni e indagini precedenti sono conservate come storico.
+
+- [x] Aggiungere una modalità sottolineatura analoga all'evidenziatore e verificare se l'evidenziatore attuale funziona correttamente nel documento reale.
 
 Collaudare creazione, sovrapposizione, rimozione, persistenza, riapertura,
 cambio IT/EN, selezione vicino a formule e Q&A. Conservare le evidenziazioni
@@ -2231,7 +2260,10 @@ esistenti; i soli test dell'algoritmo non certificano selezione e resa visiva.
 
 ### 112. Ricerca online facoltativa nel Q&A Gemini
 
-- [ ] Valutare fattibilità, costi e integrazione di una scelta esplicita Cerca online per la singola domanda.
+**Aggiornamento 28 ottobre — D-0442: ricerca web per domanda e fonti separate implementate; contratto SDK simulato, disponibilità reale dipendente dal progetto.**
+Uso, verifiche e limiti: [dodici interventi](studio-dodici-interventi-2026-10-28.md). Le descrizioni e indagini precedenti sono conservate come storico.
+
+- [x] Valutare fattibilità, costi e integrazione di una scelta esplicita Cerca online per la singola domanda.
 
 Mostrare fonti e distinguere contenuto della lezione da risultati web;
 verificare supporto dei modelli, fallback, quote, costo delle query e dati
@@ -2240,14 +2272,17 @@ ufficiali nel report diagnostico; funzione ancora da implementare.
 
 ### 113. Stima del tempo per paragrafo con parole, numeri e ritmo personale
 
+**Aggiornamento 28 ottobre — D-0443: raccolta e modello per paragrafi implementati; baseline/holdout e DOM verificati, calibrazione personale da nuovi campioni.**
+Uso, verifiche e limiti: [dodici interventi](studio-dodici-interventi-2026-10-28.md). Le descrizioni e indagini precedenti sono conservate come storico.
+
 Precisazione dell'utente: dopo più sessioni di studio il residuo non è mai
 comparso. Indagine successiva: riprodotto un difetto del campionamento della
 sola cima della colonna durante la lettura per schermate consecutive; non
 attribuire più il caso alle sole soglie. Vedi aggiornamento del report.
 
-- [ ] Verificare i dati locali già raccolti e stimare il tempo di un paragrafo in funzione di parole e quantità di numeri/formule.
-- [ ] Combinare il ritmo storico per tipo di paragrafo con il ritmo di oggi per stimare intera lezione e tempo residuo.
-- [ ] Spiegare perché il residuo non si vede e cosa fa Ricalcola da qui, coordinandosi con la diagnosi già aperta della voce 70.
+- [x] Verificare i dati locali già raccolti e stimare il tempo di un paragrafo in funzione di parole e quantità di numeri/formule.
+- [x] Combinare il ritmo storico per tipo di paragrafo con il ritmo di oggi per stimare intera lezione e tempo residuo.
+- [x] Spiegare perché il residuo non si vede e cosa fa Ricalcola da qui, coordinandosi con la diagnosi già aperta della voce 70.
 
 Non assumere che i tempi aggregati disponibili identifichino il tempo di ogni
 paragrafo. Prima inventariare granularità e qualità dei dati; confrontare una
@@ -2287,7 +2322,10 @@ prima di attribuire la lentezza a USB, scansione unità o parsing.
 
 ### 116. stateDiagram-v2 AB: direttiva non consentita
 
-- [ ] Gestire correttamente il diagramma di stato fornito, mantenendo controlli su direttive e SVG; verificare compatibilità del parser oltre al validatore locale.
+**Aggiornamento 28 ottobre — D-0437: stili statici sicuri e rendering Mermaid reale verificati, whitelist preservata.**
+Uso, verifiche e limiti: [dodici interventi](studio-dodici-interventi-2026-10-28.md). Le descrizioni e indagini precedenti sono conservate come storico.
+
+- [x] Gestire correttamente il diagramma di stato fornito, mantenendo controlli su direttive e SVG; verificare compatibilità del parser oltre al validatore locale.
 
 Riproduzione originale conservata in `tests/unit/october27Diagnosis.test.ts`:
 stati A e B, inizio 1/8 e 7/8, ricompense 0 e 1 con percentuali 100%, 75%,

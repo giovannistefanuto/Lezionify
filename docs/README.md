@@ -2,6 +2,10 @@
 
 La documentazione è divisa per scopo, così il README principale resta leggibile.
 
+[Dodici interventi sullo studio](product/studio-dodici-interventi-2026-10-28.md):
+formule e Mermaid, continuità pipeline, dizionario italiano, Q&A e ricerca web,
+annotazioni, stima personale, inattività e rigenerazione delle sezioni.
+
 [RIPETERE: studio a voce alta](product/ripetere-2026-10-28.md): scelta Audio,
 confronto con appunti personali Markdown/TXT, archivio locale e ripresa.
 

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { StudyInactivitySettings } from './StudyInactivitySettings'
 import {
   isStudyEstimateEnabled,
   STUDY_ESTIMATE_PREFERENCE
@@ -7,7 +8,7 @@ export function StudyEstimateSettings() {
   const [enabled, setEnabled] = useState(isStudyEstimateEnabled)
   const [error, setError] = useState(false)
   return (
-    <section className="settings-field">
+    <><section className="settings-field">
       <h4>Studio in Focus</h4>
       <label>
         <input
@@ -30,11 +31,13 @@ export function StudyEstimateSettings() {
         Mostra la stima dello studio restante
       </label>
       <p>
-        Compare sotto i 30 minuti, dopo almeno 10 minuti di studio e il 60% di
-        avanzamento consolidato. Le scorse rapide non fanno avanzare la stima.
+        Tempo per paragrafo, residuo e totale dal ritmo osservato localmente.
+        I primi campioni danno una stima provvisoria; numeri e formule ricevono
+        un peso diverso solo se migliorano il confronto su lezioni separate.
+        Non misura la comprensione. Le scorse rapide non sono campioni validi.
         Preferenza salvata subito.
       </p>
       {error && <p role="alert">Impossibile salvare la preferenza. Riprova.</p>}
-    </section>
+    </section><StudyInactivitySettings /></>
   )
 }

@@ -13,6 +13,10 @@ it('rifiuta direttive concatenate dopo lo stile', () => {
   ).toThrow()
 })
 
+it.each(['fill:url(javascript:alert(1))', 'stroke-width:100px', 'fill:#fff;click A "https://example.com"', 'font-size:20px'])('rifiuta stile non consentito anche negli stati: %s', style => {
+  expect(() => validateMermaidSource(`stateDiagram-v2\nA --> B\nstyle A ${style}`)).toThrow('direttiva non consentita')
+})
+
 it('accetta il terminatore standard anche nel caso minimo e conserva etichette e metadati', () => {
   const minimal = 'flowchart TD\nA-->B\nstyle A stroke-width:2px;'
   expect(validateMermaidSource(minimal)).toBe(minimal)

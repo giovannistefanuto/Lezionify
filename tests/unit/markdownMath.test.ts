@@ -14,6 +14,21 @@ x &= 1 \\
 const source = `# Lezione sintetica\n\nSostituendo iterativamente:\n\n${formula}\n\nIl testo continua.\n\n## Ultimo capitolo\n\nFine della lezione.`
 
 describe('display math compatibility', () => {
+  it('rende epsilon e cases con delimitatori Gemini senza inglobare il seguito', () => {
+    const source = String.raw`Politica \(\epsilon\)-greedy e \(\epsilon\)-soft.
+
+\[\pi(a\mid s)=\begin{cases}
+1-\epsilon+\frac{\epsilon}{|A(s)|} & \text{greedy} \\
+\frac{\epsilon}{|A(s)|} & \text{altrimenti}
+\end{cases}\]
+
+Il testo continua.`
+    const html = renderToStaticMarkup(React.createElement(ReactMarkdown, { remarkPlugins: [remarkMath], rehypePlugins: [rehypeKatex] }, normalizeDisplayMath(source)))
+    expect(html).toContain('katex-display')
+    expect(html).not.toContain('katex-error')
+    expect(html).toContain('<p>Il testo continua.</p>')
+    expect(normalizeDisplayMath('`\\(x\\)`')).toBe('`\\(x\\)`')
+  })
   it('repairs the flow fence that swallowed the rest of the lecture', () => {
     const fixed = normalizeDisplayMath(source)
     expect(fixed).toContain('$$\n\\begin{aligned}')
@@ -43,6 +58,11 @@ describe('display math compatibility', () => {
       formula.split('\n').map(line => `    ${line}`).join('\n'),
       String.raw`\$$x
 y\$$`, '$x$ and $$x = 1$$', 'Prosa $$x\ny$$ prosa',
+      '$0.98$ e $12.34$ sono scalari validi.',
+      '$x = 0.99$ e $c = 1.00$ restano formule valide.',
+      String.raw`$c = 0.50\$$ e $$c = 0.50\$$$ restano formule con valuta.`,
+      '`codice\n\\[x\\] e 0.99,$\nfine`',
+      '``codice ` interno\n\\(x\\)\nfine``',
       '$$\n\\begin{aligned}\nx &= 1\n\\end{aligned}\n$$'
     ]) expect(normalizeDisplayMath(literal)).toBe(literal)
   })

@@ -75,6 +75,76 @@ function operationsFor(lectures: Lecture[]) {
 }
 
 describe('ArchivePipeline', () => {
+  it('non perde import arrivati dopo lo snapshot della pianificazione manuale', async () => {
+    const store = await createStore()
+    const lectures = [lecture('01'), lecture('02')]
+    const ops = operationsFor(lectures)
+    const snapshot = deferred<Lecture[]>()
+    ops.listLectures.mockReturnValueOnce(snapshot.promise)
+    const pipeline = new ArchivePipeline(store, ops)
+    const starting = pipeline.start({ trigger: 'manual', includeTranslation: true })
+    await pipeline.start({ trigger: 'import', lectureIds: ['02'], includeTranslation: true })
+    snapshot.resolve([lectures[0]])
+    await starting
+    await pipeline.waitForCompletion()
+    expect(ops.transcribe.mock.calls.map(([id]) => id)).toEqual(['01', '02'])
+    expect(ops.translate.mock.calls.map(([id]) => id)).toEqual(['01', '02'])
+  })
+  it('conserva gli import se la preferenza non è leggibile durante il passaggio', async () => {
+    const store = await createStore()
+    const ops = operationsFor([lecture('01'), lecture('02')])
+    const gate = deferred<{ success: boolean }>()
+    ops.transcribe.mockImplementationOnce(async () => gate.promise)
+    const pipeline = new ArchivePipeline(store, { ...ops, canProcessImports: async () => { throw new Error('settings unavailable') } })
+    await pipeline.start({ trigger: 'manual', lectureIds: ['01'], includeTranslation: true })
+    await pipeline.start({ trigger: 'import', lectureIds: ['02'], includeTranslation: true })
+    gate.resolve({ success: true })
+    await pipeline.waitForCompletion()
+    expect(pipeline.getStatus()).toMatchObject({ status: 'paused', queuedImportLectureIds: ['02'] })
+    const restored = new ArchivePipeline(store, ops)
+    await restored.initialize()
+    expect(restored.getStatus()).toMatchObject({ status: 'paused', queuedImportLectureIds: ['02'] })
+    expect(ops.transcribe).toHaveBeenCalledTimes(1)
+  })
+  it('conserva import multipli durante una coda e completa solo le derivazioni mancanti', async () => {
+    const store = await createStore()
+    const lectures = [lecture('01'), lecture('02'), lecture('03', { transcriptFileName: '03.txt' })]
+    const ops = operationsFor(lectures)
+    const gate = deferred<{ success: boolean }>()
+    ops.transcribe.mockImplementationOnce(async id => {
+      const result = await gate.promise
+      lectures.find(item => item.id === id)!.transcriptFileName = `${id}.txt`
+      return result
+    })
+    const pipeline = new ArchivePipeline(store, ops)
+    await pipeline.start({ trigger: 'manual', lectureIds: ['01'], includeTranslation: true })
+    await pipeline.start({ trigger: 'import', lectureIds: ['02', '03'], includeTranslation: true })
+    await pipeline.start({ trigger: 'import', lectureIds: ['02'], includeTranslation: true })
+    expect(pipeline.getStatus().queuedImportLectureIds).toEqual(['02', '03'])
+    gate.resolve({ success: true })
+    await pipeline.waitForCompletion()
+    expect(pipeline.getStatus().status).toBe('completed')
+    expect(ops.transcribe.mock.calls.map(([id]) => id)).toEqual(['01', '02'])
+    expect(ops.translate.mock.calls.map(([id]) => id)).toEqual(['01', '02', '03'])
+    expect(pipeline.getStatus().queuedImportLectureIds).toEqual([])
+  })
+
+  it.each(['stop', 'disabled', 'quota'] as const)('non riavvia import conservati dopo %s', async reason => {
+    const store = await createStore()
+    const ops = operationsFor([lecture('01'), lecture('02')])
+    const gate = deferred<{ success: boolean }>()
+    ops.transcribe.mockImplementationOnce(() => gate.promise)
+    const pipeline = new ArchivePipeline(store, { ...ops, canProcessImports: async () => reason !== 'disabled' })
+    await pipeline.start({ trigger: 'manual', lectureIds: ['01'], includeTranslation: true })
+    await pipeline.start({ trigger: 'import', lectureIds: ['02'], includeTranslation: true })
+    await vi.waitFor(() => expect(ops.transcribe).toHaveBeenCalledTimes(1))
+    if (reason === 'stop') await pipeline.requestStop()
+    gate.resolve(reason === 'quota' ? { success: false, error: 'Quota giornaliera del modello esaurita' } as any : { success: true })
+    await pipeline.waitForCompletion()
+    expect(ops.transcribe).toHaveBeenCalledTimes(1)
+    expect(pipeline.getStatus().queuedImportLectureIds).toEqual(['02'])
+    expect((await store.loadArchivePipelineState())?.queuedImportLectureIds).toEqual(['02'])
+  })
   it('l import automatico senza ENG seguito da Elabora tutto completa solo le traduzioni mancanti', async () => {
     const store = await createStore()
     const lectures = [lecture('01'), lecture('02', { transcriptFileName: '02.txt', markdownFileName: '02.md', markdownEnFileName: '02_en.md' })]

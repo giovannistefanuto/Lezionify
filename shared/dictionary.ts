@@ -1,4 +1,5 @@
 export type DictionaryDirection = 'en-it' | 'it-en'
+export type DictionaryLookupDirection = DictionaryDirection | 'it-it'
 export interface DictionaryEntry {
   word: string
   partOfSpeech: string
@@ -12,7 +13,7 @@ export interface DictionaryResult {
   entries: DictionaryEntry[]
   suggestions: string[]
 }
-export interface DictionaryData { entries: DictionaryEntry[] }
+export interface DictionaryData { entries: DictionaryEntry[]; aliases?: Record<string, string[]> }
 
 /** Suggestions alone are not evidence of a language. Both hits remain ambiguous. */
 export function detectDictionaryDirection(english: DictionaryResult, italian: DictionaryResult): DictionaryDirection | null {
@@ -66,9 +67,11 @@ function italianVerbBases(word: string): string[] {
 
 /** Exact headwords always take priority over conservative, dictionary-checked stems. */
 export class DictionaryIndex {
+  private readonly aliases: Record<string, string[]>
   private readonly words = new Map<string, DictionaryEntry[]>()
   private readonly keys: string[]
   constructor(data: DictionaryData) {
+    this.aliases = data.aliases ?? {}
     for (const entry of data.entries) {
       const key = normalizeDictionaryWord(entry.word)
       const group = this.words.get(key) ?? []
@@ -76,12 +79,16 @@ export class DictionaryIndex {
     }
     this.keys = [...this.words.keys()].sort()
   }
-  lookup(input: string, direction: DictionaryDirection): DictionaryResult {
+  lookup(input: string, direction: DictionaryLookupDirection): DictionaryResult {
     const query = normalizeDictionaryWord(input)
     const result: DictionaryResult = { query, lemma: null, inflected: false, entries: [], suggestions: [] }
     if (!query) return result
     const exact = this.words.get(query)
     if (exact) return { ...result, lemma: exact[0].word, entries: exact }
+    if (direction === 'it-it') {
+      const entries = [...new Set(this.aliases[query] ?? [])].flatMap(word => this.words.get(normalizeDictionaryWord(word)) ?? [])
+      if (entries.length) return { ...result, lemma: entries.map(entry => entry.word).join(', '), inflected: true, entries }
+    }
     if (direction === 'en-it' && !query.includes(' ')) {
       for (const base of englishBases(query)) {
         const entries = this.words.get(base.word)?.filter(entry => base.pos.includes(entry.partOfSpeech))

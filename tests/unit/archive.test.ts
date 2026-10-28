@@ -352,6 +352,29 @@ describe('ArchiveService — Ciclo di vita, CRUD, Batch & Trascrizione Audio', (
     )
   })
 
+  it('la revisione mirata conserva ENG e fonti, segnala versione obsoleta e rifiuta sovrascritture concorrenti', async () => {
+    const incoming = join(testArchiveDir, 'incoming-revision')
+    await mkdir(incoming)
+    const audio = join(incoming, 'RC 2026-0507-16-19-41.mp3')
+    await writeFile(audio, 'audio sintetico invariato')
+    await writeFile(audio.replace('.mp3', '.txt'), 'Trascrizione grezza invariata')
+    const summary = await service.importFiles([audio])
+    const id = summary.imported[0].id
+    await service.saveMarkdown(id, '# Titolo\n\n## Prima\nOriginale')
+    await service.saveSettings({ apiKeys: ['synthetic-key'], autoProcessOnImport: false })
+    vi.spyOn(mockGeminiService, 'translateToEnglish').mockResolvedValue('# Title\n\n## First\nOriginal')
+    expect((await service.translateLectureNotes(id)).success).toBe(true)
+    const before = await service.readMarkdown(id)
+    await service.saveMarkdown(id, '# Titolo\n\n## Prima\nRevisionata', { expected: before!, preserveEnglish: true })
+    expect(await service.readMarkdownEn(id)).toBe('# Title\n\n## First\nOriginal')
+    expect((await service.listLectures()).find(item => item.id === id)?.markdownEnNeedsUpdate).toBe(true)
+    expect(await service.readTranscript(id)).toBe('Trascrizione grezza invariata')
+    expect(await readFile(join(testArchiveDir, 'audio', summary.imported[0].audioFileName), 'utf8')).toBe('audio sintetico invariato')
+    await expect(service.saveMarkdown(id, 'Sovrascrittura obsoleta', { expected: before!, preserveEnglish: true })).rejects.toThrow('dispensa è cambiata')
+    expect((await service.translateLectureNotes(id)).success).toBe(true)
+    expect((await service.listLectures()).find(item => item.id === id)?.markdownEnNeedsUpdate).toBe(false)
+  })
+
   it.each(['notes', 'transcription', 'translation'] as const)(
     'propaga il 403 strutturato nello stage %s preservando le fonti', async (stage) => {
       const incoming = join(testArchiveDir, 'incoming')

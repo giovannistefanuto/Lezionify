@@ -199,6 +199,7 @@ export function validateHighlights(
       highlight.endOffset <= highlight.startOffset ||
       typeof highlight.text !== 'string' ||
       highlight.text.length > 200_000 ||
+      (highlight.style !== undefined && highlight.style !== 'highlight' && highlight.style !== 'underline') ||
       (highlight.color !== undefined &&
         (typeof highlight.color !== 'string' || highlight.color.length > 40)) ||
       !isValidIsoDateTime(highlight.createdAt)

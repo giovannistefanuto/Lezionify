@@ -128,7 +128,7 @@ export function validateMermaidSource(source: string): string {
   if (FORBIDDEN_DIRECTIVE.test(normalized)) {
     throw new Error('Il diagramma contiene una direttiva non consentita.')
   }
-  const supportsStaticStyles = /^(?:graph|flowchart)\s+/i.test(firstDefinition)
+  const supportsStaticStyles = /^(?:(?:graph|flowchart)\s+|stateDiagram-v2\b)/i.test(firstDefinition)
   for (const line of normalized.split(/\r?\n/)) {
     if (
       (/^\s*style\b/i.test(line) &&

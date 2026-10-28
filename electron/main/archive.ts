@@ -1,4 +1,5 @@
 import { relatedQnaContext } from '../../shared/qnaContext'
+import { SectionRevisionService } from './sectionRevision'
 import { RepetitionService } from './repetition'
 import { effectiveStudySeconds, studyTimeRemovalTargets, removeStudySeconds } from '../../shared/studyCorrections'
 import { ragHash, splitCourseSource, type IndexedCourseSource } from './courseRagIndex'
@@ -135,6 +136,7 @@ export function isRetryableApiError(errorText: string): boolean {
 }
 
 export class ArchiveService {
+  readonly sectionRevisions: SectionRevisionService
   public readonly repetition: RepetitionService
   private readonly wordCountCache = new Map<string, { signature: string; words: number }>()
   private readonly rootDirectory: string
@@ -171,6 +173,25 @@ export class ArchiveService {
         ? path.join(app.getPath('userData'), 'library')
         : path.join(process.cwd(), '.library-data'))
     this.storage = new FileStorageService(this.rootDirectory)
+    this.sectionRevisions = new SectionRevisionService(path.join(this.rootDirectory, 'section_revisions'), {
+      read: id => this.readMarkdown(id),
+      transcript: id => this.readTranscript(id),
+      generate: async (id, title, transcript, before, instructions) => {
+        if (this.archivePipeline.isProcessing()) throw new Error('Attendi il termine della pipeline prima di rigenerare una sezione.')
+        const settings = await this.getSettings()
+        const lecture = (await this.repository.readLibrary()).lectures.find(item => item.id === id)
+        const keys = await this.getManagedKeys()
+        if (!keys.length) throw new Error('Configura una chiave Gemini prima di rigenerare.')
+        logger.info('section-revision', 'Rigenerazione esplicita di una sezione con trascrizione completa.', JSON.stringify({ lectureId: id, sourceBytes: Buffer.byteLength(transcript), sectionBytes: Buffer.byteLength(before) }))
+        return this.geminiService.generateSectionNotes({ keys: settings.autoRotateOnQuota ? keys : keys.slice(0, 1), model: settings.model,
+          sectionTitle: title, sectionTranscript: transcript, sectionIndex: 0, totalSections: 1, courseCode: lecture?.courseCode ?? null,
+          revision: { before, instructions } })
+      },
+      commit: async (id, expected, content) => {
+        if (this.archivePipeline.isProcessing()) throw new Error('Attendi il termine della pipeline prima di applicare la sezione.')
+        await this.saveMarkdown(id, content, { expected, preserveEnglish: true })
+      }
+    })
     this.qnaImages = new QnaImageStore(this.rootDirectory, bytes => nativeImage.createFromBuffer(bytes).getSize())
     this.videoImporter = new VideoImporter(this.rootDirectory)
     this.repository = new LibraryRepository(this.rootDirectory)
@@ -207,6 +228,7 @@ export class ArchiveService {
       })
     })
     this.archivePipeline = new ArchivePipeline(this.jobStore, {
+      canProcessImports: async () => (await this.settingsService.getSettings()).autoProcessOnImport !== false,
       listLectures: () => this.listLectures(),
       hasConfiguredKey: async () => (await this.getManagedKeys()).length > 0,
       transcribe: (lectureId, jobId) => this.transcribeAudio(lectureId, jobId),
@@ -314,12 +336,14 @@ export class ArchiveService {
   }
 
   async waitForAutoProcessing(): Promise<void> {
-    await this.autoPipelineLaunch
-    await this.archivePipeline.waitForCompletion()
+    do {
+      await this.autoPipelineLaunch
+      await this.archivePipeline.waitForCompletion()
+    } while (this.autoPipelineLaunch || this.archivePipeline.isProcessing())
   }
 
   queueAutomaticLectureProcessing(lectureIds: string[]): void {
-    this.autoPipelineLaunch = (async () => {
+    const launch: Promise<void> = (this.autoPipelineLaunch ?? Promise.resolve()).then(async () => {
       const settings = await this.settingsService.getSettings()
       if (settings.autoProcessOnImport === false) return
       const result = await this.archivePipeline.start({
@@ -337,7 +361,7 @@ export class ArchiveService {
           percent: 0
         })
       }
-    })()
+    })
       .catch((error) => {
         logger.error(
           'auto-pipeline',
@@ -347,8 +371,9 @@ export class ArchiveService {
         )
       })
       .finally(() => {
-        this.autoPipelineLaunch = null
+        if (this.autoPipelineLaunch === launch) this.autoPipelineLaunch = null
       })
+    this.autoPipelineLaunch = launch
   }
 
   async processAutoQueue(): Promise<void> {
@@ -661,7 +686,7 @@ export class ArchiveService {
     return this.storage.readMarkdown(lecture.markdownFileName)
   }
 
-  async saveMarkdown(id: string, content: unknown): Promise<void> {
+  async saveMarkdown(id: string, content: unknown, revision?: { expected: string; preserveEnglish: true }): Promise<void> {
     if (typeof content !== 'string' || content.length > 20_000_000) {
       throw new Error('Contenuto Markdown non valido.')
     }
@@ -672,6 +697,7 @@ export class ArchiveService {
       if (lectureIndex === -1) throw new Error('Lezione non trovata.')
 
       const lecture = library.lectures[lectureIndex]
+      if (revision && (!lecture.markdownFileName || await this.storage.readMarkdown(lecture.markdownFileName) !== revision.expected)) throw new Error('La dispensa è cambiata: modifica non applicata.')
       const savedContent = lecture.titleOverrides?.it ? replaceLectureTitle(sourceContent, lecture.titleOverrides.it) : sourceContent
       const markdownFileName = `${id}.md`
       await this.storage.writeMarkdown(markdownFileName, savedContent)
@@ -679,14 +705,15 @@ export class ArchiveService {
       const title = extractMarkdownTitle(savedContent)
 
       // Invalidare la versione ENG quando la ITA viene sovrascritta
-      if (lecture.markdownEnFileName) {
+      if (lecture.markdownEnFileName && !revision?.preserveEnglish) {
         await this.storage.deleteMarkdownEn(markdownFileName)
       }
 
       library.lectures[lectureIndex] = {
         ...lecture,
         markdownFileName,
-        markdownEnFileName: null,
+        markdownEnFileName: revision?.preserveEnglish ? lecture.markdownEnFileName : null,
+        markdownEnNeedsUpdate: Boolean(revision?.preserveEnglish && lecture.markdownEnFileName),
         title: title ?? lecture.title
       }
       await this.repository.writeLibrary(library)
@@ -1287,7 +1314,8 @@ export class ArchiveService {
         )
         lib.lectures[idx] = {
           ...lib.lectures[idx],
-          markdownEnFileName: `${id}_en.md`
+          markdownEnFileName: `${id}_en.md`,
+          markdownEnNeedsUpdate: false
         }
         await this.repository.writeLibrary(lib)
         this.searchIndex.indexDocument({
@@ -2180,10 +2208,12 @@ export class ArchiveService {
     thread: unknown,
     useFullContext: unknown,
     includeOtherQna: unknown = false,
-    responseLength: unknown = 'brief'
+    responseLength: unknown = 'brief',
+    searchOnline: unknown = false
   ): Promise<{ success: boolean; text?: string; error?: string }> {
     try {
       validateQnaThread(thread)
+      if (typeof searchOnline !== 'boolean') throw new Error('Opzione ricerca online non valida.')
       if (responseLength !== 'brief' && responseLength !== 'medium' && responseLength !== 'long') throw new Error('Lunghezza Q&A non valida.')
       if (typeof useFullContext !== 'boolean' || typeof includeOtherQna !== 'boolean') {
         throw new Error('Opzione del contesto Q&A non valida.')
@@ -2223,7 +2253,7 @@ export class ArchiveService {
 
       logger.info(
         'qna',
-        `Avvio richiesta QnA con modello ${QNA_PRIMARY_MODEL}; ${images.length} slide allegate.`
+        `Avvio richiesta QnA con modello ${QNA_PRIMARY_MODEL}; ${images.length} slide allegate; ricerca online ${searchOnline ? 'richiesta' : 'disattivata'}.`
       )
 
       if (Buffer.byteLength(JSON.stringify({ thread, fullLectureText, otherQnaContext, images }), 'utf8') > 18_000_000) throw new Error('Contesto troppo grande: riduci le slide o disattiva il contesto completo.')
@@ -2237,6 +2267,7 @@ export class ArchiveService {
         fullLectureText,
         otherQnaContext,
         responseLength,
+        searchOnline,
         images,
         onAttempt: (info) => {
           const previous = attemptState.current

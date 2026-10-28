@@ -50,6 +50,9 @@ const archiveApi: ArchiveApi = {
   listLectures: () => ipcRenderer.invoke('archive:list'),
   getLectureWordCounts: (lectureId) => ipcRenderer.invoke('archive:lecture-word-counts', lectureId),
   lookupDictionary: (query, direction) => ipcRenderer.invoke('archive:dictionary-lookup', query, direction),
+  previewSectionRevision: (id, expected, start, instructions) => ipcRenderer.invoke('archive:section-preview', id, expected, start, instructions),
+  applySectionRevision: (id, token) => ipcRenderer.invoke('archive:section-apply', id, token),
+  restoreSectionRevision: id => ipcRenderer.invoke('archive:section-restore', id),
   offlineTranslationStatus: () => ipcRenderer.invoke('archive:phrase-status'),
   ambientSoundStatus: () => ipcRenderer.invoke('archive:ambient-status'),
   installAmbientSounds: soundIds => ipcRenderer.invoke('archive:ambient-install', soundIds),
@@ -143,7 +146,8 @@ const archiveApi: ArchiveApi = {
     thread: QnaThread,
     useFullContext: boolean,
     includeOtherQna = false,
-    responseLength: 'brief' | 'medium' | 'long' = 'brief'
+    responseLength: 'brief' | 'medium' | 'long' = 'brief',
+    searchOnline = false
   ) =>
     ipcRenderer.invoke(
       'archive:generate-qna',
@@ -151,7 +155,8 @@ const archiveApi: ArchiveApi = {
       thread,
       useFullContext,
       includeOtherQna,
-      responseLength
+      responseLength,
+      searchOnline
     ),
   saveStudySession: (session: StudySession) =>
     ipcRenderer.invoke('archive:save-study-session', session),

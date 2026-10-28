@@ -38,6 +38,12 @@ async function main() {
   if (process.argv.includes('--repetition')) {
     for (const marker of ['Come vuoi usare il registratore?', 'RIPETERE', 'Cambia appunti', 'Riprendi sessione', 'Cosa hai capito bene', 'Difficoltà che hai superato', 'Cosa devi rivedere', 'repetition:start', 'repetition:resume']) assert(javascript.includes(marker), 'Missing repetition feature: ' + marker)
   }
+  if (process.argv.includes('--study-oct28')) {
+    for (const marker of ['Dizionario italiano', 'Cerca online per questa domanda', 'Rigenera sezione', 'Conferma sostituzione', 'Aggiorna ENG con Gemini', 'Osserva il mio ritmo', 'Sottolineatura', 'section-preview', 'queuedImportLectureIds', 'paragraph-samples.v1']) assert(javascript.includes(marker), 'Missing study improvement: ' + marker)
+    const corpus = JSON.parse(require('node:zlib').gunzipSync(asar.extractFile(archive, path.normalize('out/renderer/dictionaries/ita-ita.json.gz'))).toString('utf8'))
+    assert(corpus.entries.length === 68755 && corpus.license === 'CC BY-SA 4.0', 'Italian monolingual corpus missing or incomplete')
+    for (const name of ['italian-LICENSE', 'italian-ATTRIBUTION', 'italian-README.txt']) assert(asar.extractFile(archive, path.normalize('out/renderer/dictionaries/' + name)).length > 50, 'Italian corpus attribution missing: ' + name)
+  }
   assert(fs.statSync(path.join(archive + '.unpacked', 'node_modules', 'ffmpeg-static', 'ffmpeg.exe')).size > 1000000, 'FFmpeg missing')
   assert(entries.some(item => item.startsWith('out/main/translation-runtime/') && item.endsWith('.wasm')), 'Offline runtime missing')
   if (process.argv.includes('--rag')) {
