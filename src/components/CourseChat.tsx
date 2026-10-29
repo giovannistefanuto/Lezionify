@@ -41,6 +41,11 @@ export function CourseChat({
       ? initialCourse
       : (courses[0] ?? '')
   )
+  useEffect(() => {
+    if (open && course && window.archive.manageCourseIndex) {
+      void window.archive.manageCourseIndex(course, 'warm').catch(() => {})
+    }
+  }, [open, course])
   const [data, setData] = useState<CourseRagState | null>(null)
   const [threadId, setThreadId] = useState<string | null>(null)
   const [draft, setDraft] = useState('')

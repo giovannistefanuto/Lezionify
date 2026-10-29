@@ -1,3 +1,4 @@
+import { creditFocusRagStudy } from '../utils/focusRagPreparation'
 import { useState, useEffect, useRef, useCallback } from 'react'
 import type { StudySession, StudySessionMode } from '../../shared/archive'
 import { formatLocalCalendarDate } from '../../shared/calendarDate'
@@ -287,6 +288,7 @@ export function useStudyTracker({
       // Se la finestra è nascosta o siamo in pausa, non incrementare
       if (document.hidden || isPaused || isClosingRef.current) return
 
+      if (isFocusModeRef.current) creditFocusRagStudy(courseCodeRef.current)
       sessionSecondsRef.current += 1
       if (inactivity.current.observing) {
         const profile = inactivity.current

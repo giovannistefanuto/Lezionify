@@ -14,7 +14,7 @@ import {
   validateRepetitionAssessment
 } from '../../electron/main/ai/repetitionPrompt'
 
-vi.mock('../../electron/main/logger', () => ({ logger: { error: vi.fn() } }))
+vi.mock('../../electron/main/logger', () => ({ logger: { error: vi.fn(), info: vi.fn() } }))
 const report = REPETITION_HEADINGS.map(
   (heading) => `## ${heading}\n\nEvidenze della sessione.`
 ).join('\n\n')
@@ -105,6 +105,23 @@ describe('RIPETERE archivio e pipeline', () => {
     await rm(reference)
     expect(await service.startLatest()).toBe(id)
     expect(dependencies.evaluate).toHaveBeenCalledTimes(1)
+  })
+
+  it('verifica risposte testuali e conserva lo storico locale senza cambiare le fonti', async () => {
+    await service.setReference(reference)
+    const id = await service.startLatest()
+    await settle()
+    dependencies.reply = vi.fn(async () => 'Passaggio corretto. Perché la media deve essere pesata?')
+    const messages = await service.answer(id, 'Peso ogni transizione con la policy.')
+    expect(messages.map(item => item.role)).toEqual(['user', 'ai'])
+    expect((await service.read(id)).conversation).toEqual(messages)
+    const restarted = new RepetitionService(root, dependencies)
+    expect((await restarted.read(id)).conversation).toEqual(messages)
+    expect((await service.read(id)).reference).toContain('Riferimento originale')
+    await expect(service.answer(id, '')).rejects.toThrow('Scrivi')
+    dependencies.reply = vi.fn(async () => { throw new Error('quota') })
+    await expect(service.answer(id, 'Altro tentativo')).rejects.toThrow('quota')
+    expect((await service.read(id)).conversation).toEqual(messages)
   })
 
   it('non avvia API senza riferimento o senza audio e non espone percorsi negli errori', async () => {
@@ -276,4 +293,17 @@ it('valida tutte le sezioni e il prompt distingue autocorrezioni, lettura e font
   expect(REPETITION_INSTRUCTION).toContain('non chiamare lacuna')
   expect(REPETITION_INSTRUCTION).toContain('La lettura corretta non dimostra')
   expect(REPETITION_INSTRUCTION).toContain('spostalo nelle difficoltà superate')
+})
+
+
+it('accetta valutazioni approfondite e rifiuta una risposta interrotta anche con tutti i titoli', () => {
+  const detailed = report + '\n### Approfondimento\n' + 'spiegazione '.repeat(10000)
+  expect(validateRepetitionAssessment(detailed, 'STOP')).toBe(detailed)
+  expect(() => validateRepetitionAssessment(report, 'MAX_TOKENS')).toThrow('interrotta')
+  expect(() => validateRepetitionAssessment(report, 'SAFETY')).toThrow('interrotta')
+})
+
+it('accetta ulteriori sezioni per esercizi senza rifiutare una valutazione completa', () => {
+  const extended = report + '\n\n## Domande ed esercizi di verifica\nSpiega perché.'
+  expect(validateRepetitionAssessment(extended, 'STOP')).toBe(extended)
 })

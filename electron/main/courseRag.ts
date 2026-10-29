@@ -264,8 +264,12 @@ export class CourseRagService {
   }
   async manageIndex(course: string, action: string): Promise<CourseRagState> {
     validateCourse(course)
-    if (!['start', 'cancel', 'clear-vectors', 'storage', 'clean-revisions'].includes(action)) throw new Error('Operazione indice non valida.')
+    if (!['start', 'cancel', 'clear-vectors', 'storage', 'clean-revisions', 'warm'].includes(action)) throw new Error('Operazione indice non valida.')
     await mkdir(this.directory, { recursive: true })
+    if (action === 'warm') {
+      await this.semantic.warmup?.()
+      return this.state(course)
+    }
     if (action === 'start') {
       const previous = this.indexJobs.get(course)
       if (previous && previous.job.status !== 'running') await previous.promise

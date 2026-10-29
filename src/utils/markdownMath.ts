@@ -76,6 +76,10 @@ function normalizeMathDelimiters(source: string): string {
   const prose = (text: string) => text
     .replace(/\\\((.*?)\\\)/g, (_, body: string) => `$${body}$`)
     .replace(/\\\[|\\\]/g, () => '$$')
+    // Repair this malformed currency before recognizing valid math: otherwise
+    // its first closing dollar is mistaken for a complete scalar formula.
+    .replace(/(^|[\s(])\$(\d+[.,]\d{2},?)\$\$(?=\s|[).,]|$)/g,
+      (_, before: string, amount: string) => `${before}${amount}\\$`)
     // A numeric scalar or a closing delimiter inside a valid formula is math.
     .split(/((?<![\\$])\$\$[^\n]*?\$\$|(?<![\\$])\$(?!\$|\s)(?:\\.|[^$\\\n])*(?<!\s)\$(?!\$))/g)
     .map((part, index) => index % 2 ? part : part

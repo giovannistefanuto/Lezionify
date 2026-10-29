@@ -1,3 +1,4 @@
+import { useModalFocus } from '../hooks/useModalFocus'
 import React, { useEffect, useRef, useState } from 'react'
 import type { useQuickCapture } from '../hooks/useQuickCapture'
 import { captureGroups, copyCapture } from '../utils/quickCapture'
@@ -16,6 +17,7 @@ export function QuickCaptureOverlay({ capture }: { capture: Capture }) {
   const [deleting, setDeleting] = useState<string | null>(null)
   const actions = useRef<HTMLDetailsElement>(null)
   const panel = useRef<HTMLDivElement>(null)
+  useModalFocus(panel, true)
   useEffect(() => {
     const dismiss = (event: PointerEvent) => {
       if (actions.current && !actions.current.contains(event.target as Node))

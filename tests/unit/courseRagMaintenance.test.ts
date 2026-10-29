@@ -324,3 +324,16 @@ it('recovers from a full-disk vector write without exposing filesystem details o
   await waitFor(async () => (await service.state('TEST')).indexing?.status === 'complete')
   expect(await readFile(original, 'utf8')).toBe('Originale da conservare.')
 })
+
+
+it('preriscalda soltanto un modello già installato senza indicizzare testi', async () => {
+  const calls: string[][] = []
+  const semantic = new LocalCourseSemantic(await directory(), async texts => { calls.push(texts); return [] })
+  services.push(semantic)
+  await semantic.warmup()
+  expect(calls).toHaveLength(0)
+  await semantic.prepare()
+  calls.length = 0
+  await semantic.warmup()
+  expect(calls).toEqual([[]])
+})

@@ -16,6 +16,7 @@ export const COURSE_EMBEDDING_POLICY = 'v4-window384-mean'
 type SemanticState = { status: 'missing' | 'loading' | 'ready' | 'error'; issue?: string }
 export interface CourseSemanticSearch {
   state(): Promise<SemanticState>
+  warmup?(): Promise<void>
   prepare(onProgress?: (message: string) => void): Promise<void>
   rank(query: string, passages: CourseCitation[], signal: AbortSignal, onProgress?: (message: string) => void): Promise<string[]>
   index(passages: CourseCitation[], signal: AbortSignal, onProgress: (readyIds: string[]) => Promise<void>): Promise<void>
@@ -117,6 +118,14 @@ export class LocalCourseSemantic implements CourseSemanticSearch {
       worker.once('error', failure)
       worker.once('exit', exited)
       worker.postMessage({ id, operation, texts })
+    })
+  }
+  async warmup(): Promise<void> {
+    if ((await this.state()).status !== 'ready') return
+    await this.mutex.runExclusive(async () => {
+      await this.draining
+      // embed with no texts only loads existing local weights; prepare permits downloads.
+      if (!this.worker) await this.call('embed', [])
     })
   }
   async prepare(onProgress?: (message: string) => void): Promise<void> {

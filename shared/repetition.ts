@@ -1,3 +1,8 @@
+export interface RepetitionMessage {
+  role: 'user' | 'ai'
+  text: string
+}
+
 export interface RepetitionSession {
   id: string
   audioName: string
@@ -19,10 +24,12 @@ export interface RepetitionDocument {
   session: RepetitionSession
   transcript: string
   reference: string
+  conversation?: RepetitionMessage[]
   assessment: string
 }
 
 export interface RepetitionApi {
+  answerRepetition: (id: string, answer: string) => Promise<RepetitionMessage[]>
   repetitionState: () => Promise<RepetitionState>
   selectRepetitionReference: () => Promise<boolean>
   startRepetition: () => Promise<string>

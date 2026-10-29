@@ -234,6 +234,7 @@ async function repetitionIpc<T>(action: () => Promise<T>): Promise<T> {
 }
 
 function registerIpcHandlers(): void {
+  ipcMain.handle('repetition:answer', (_event, id: string, answer: string) => repetitionIpc(() => archive.repetition.answer(id, answer)))
   ipcMain.handle('repetition:state', () => repetitionIpc(() => archive.repetition.state()))
   ipcMain.handle('repetition:reference', () => repetitionIpc(async () => {
     const selection = await dialog.showOpenDialog({ title: 'Appunti di riferimento per RIPETERE',

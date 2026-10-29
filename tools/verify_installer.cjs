@@ -44,6 +44,9 @@ async function main() {
     assert(corpus.entries.length === 68755 && corpus.license === 'CC BY-SA 4.0', 'Italian monolingual corpus missing or incomplete')
     for (const name of ['italian-LICENSE', 'italian-ATTRIBUTION', 'italian-README.txt']) assert(asar.extractFile(archive, path.normalize('out/renderer/dictionaries/' + name)).length > 50, 'Italian corpus attribution missing: ' + name)
   }
+  if (process.argv.includes('--study-oct29')) {
+    for (const marker of ['Verifica con Gemini', 'repetition:answer', 'esercizi.json', 'Risposta agli esercizi', 'Verifica della comprensione']) assert(javascript.includes(marker), 'Missing October 29 feature: ' + marker)
+  }
   assert(fs.statSync(path.join(archive + '.unpacked', 'node_modules', 'ffmpeg-static', 'ffmpeg.exe')).size > 1000000, 'FFmpeg missing')
   assert(entries.some(item => item.startsWith('out/main/translation-runtime/') && item.endsWith('.wasm')), 'Offline runtime missing')
   if (process.argv.includes('--rag')) {

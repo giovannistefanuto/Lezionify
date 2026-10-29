@@ -14,6 +14,7 @@ import { basename, extname, join } from 'node:path'
 import { atomicWrite, readRecoverable } from './atomicFile'
 import type {
   RepetitionDocument,
+  RepetitionMessage,
   RepetitionSession,
   RepetitionState
 } from '../../shared/repetition'
@@ -28,6 +29,7 @@ interface RecordData extends RepetitionSession {
 }
 
 export interface RepetitionDependencies {
+  reply?: (reference: string, assessment: string, messages: RepetitionMessage[], signal: AbortSignal) => Promise<string>
   scan: () => Promise<UsbRecorderInfo>
   transcribe: (
     audio: string,
@@ -74,11 +76,41 @@ export class RepetitionService {
   } | null = null
   private opening: Promise<string> | null = null
   private current: RecordData | null = null
+  private replying = new Set<string>()
 
   constructor(
     private root: string,
     private dependencies: RepetitionDependencies
   ) {}
+
+  async conversation(id: string): Promise<RepetitionMessage[]> {
+    try {
+      const messages: unknown = JSON.parse(await readRecoverable(join(this.directory(id), 'esercizi.json')))
+      if (!Array.isArray(messages) || messages.some(item => !item || !['user', 'ai'].includes(item.role) || typeof item.text !== 'string') ) throw new Error('Conversazione non valida.')
+      return messages
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') return []
+      throw new Error('Conversazione esercizi non leggibile.', { cause: error })
+    }
+  }
+  async answer(id: string, text: string): Promise<RepetitionMessage[]> {
+    this.directory(id)
+    if (typeof text !== 'string' || !text.trim() || text.length > 20000) throw new Error('Scrivi una risposta entro 20.000 caratteri.')
+    if (this.replying.has(id)) throw new Error('Attendi la risposta del tutor.')
+    this.replying.add(id)
+    try {
+      const document = await this.read(id)
+      if (document.session.status !== 'completed' || !this.dependencies.reply) throw new Error('Completa prima la valutazione.')
+      const messages: RepetitionMessage[] = [...await this.conversation(id), { role: 'user', text: text.trim() }]
+      if (JSON.stringify(messages).length > 500000) throw new Error('Conversazione troppo lunga. Avvia una nuova sessione.')
+      logger.info('repetition', 'Verifica esplicita di una risposta agli esercizi.')
+      const reply = await this.dependencies.reply(document.reference, document.assessment, messages, AbortSignal.timeout(180000))
+      if (!reply.trim()) throw new Error('Il tutor non ha restituito una risposta.')
+      messages.push({ role: 'ai', text: reply })
+      await atomicWrite(join(this.directory(id), 'esercizi.json'), JSON.stringify(messages))
+      return messages
+    } finally { this.replying.delete(id) }
+  }
 
   private async config(): Promise<{ referencePath?: string }> {
     try {
@@ -232,6 +264,7 @@ export class RepetitionService {
       session: summary(record),
       transcript: await optional('trascrizione.txt'),
       reference: await readFile(join(directory, 'appunti.md'), 'utf8'),
+      conversation: await this.conversation(id),
       assessment: await optional('valutazione.md')
     }
   }

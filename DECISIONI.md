@@ -4919,3 +4919,80 @@ Non modificare manualmente la sezione `Registro`: aggiungi le nuove decisioni es
 - **Impatto:** 378 file build identici al pacchetto, corpus italiano con licenze e marcatori nuove funzioni verificati; manifesto, blockmap e tre backup controllati. Otto componenti NSIS estratti e confrontati senza eseguire il setup. Runtime RAG isolato con modello gia locale, inferenza senza rete e worker PDF superato. Nessuna installazione o API reale.
 - **Follow-up:** Verificare il commit finale sul remoto dopo push. Installare il nuovo setup con Lezionify chiuso. Backup in local-artifacts/installer-backups/20261028-studio-dodici; limiti personali e provider nel report dei dodici interventi.
 - **File coinvolti:** DECISIONI.md, STRUTTURA_PROGETTO.md, docs/product/studio-dodici-interventi-2026-10-28.md, tools/verify_installer.cjs, sorgenti e test D-0437-D-0445, dist/Lezionify-Setup-0.1.0.exe
+
+## D-0447 — Requisiti per valutazione orale approfondita, RAG anticipato e Memo
+
+- **Data:** 2026-10-29
+- **Stato:** accettata
+- **Area:** pianificazione-studio
+- **Decisione:** Aggiunte quattro voci aperte 117-120 alle posizioni 63-66 della coda, conservando ordine e prima voce aperta 33. La valutazione integra la richiesta e i due esempi: copertura completa, spiegazioni teoriche, ragionamento ed esercizi, mantenendo comprensione e autocorrezioni. Preferito aggiornamento RAG dopo circa dieci minuti in Focus; distinta la preparazione prima dell invio. Registrato Memo non scrivibile in RIPETERE.
+- **Motivazione:** Conservare i prossimi passi richiesti e i criteri didattici senza confondere la pianificazione con implementazione e collaudo.
+- **Impatto:** Sola documentazione: 66 attivita, 44 concluse e 22 aperte. Ispezione conferma tre H2 obbligatori e limite di validazione a 100000 caratteri, senza maxOutputTokens nella chiamata di valutazione; cache e worker RAG consentono preparazione anticipata da misurare. Conflitto focus Memo ancora ipotesi da riprodurre. Nessuna dipendenza, chiamata AI o installer.
+- **Follow-up:** Implementare e collaudare su richiesta le singole voci; precisare timer e ambito RAG e flusso delle risposte agli esercizi quando affrontati. LISTA_ORDINE conserva la voce 33 come prima aperta.
+- **File coinvolti:** docs/product/idee-future-2026-10-13.md, DECISIONI.md
+
+## D-0448 — Verificare il blocco tra RIPETERE e popup lezioni all avvio
+
+- **Data:** 2026-10-29
+- **Stato:** accettata
+- **Area:** pianificazione-ripetere
+- **Decisione:** Aggiunta la voce aperta 121 alla posizione 67 della coda: riprodurre collegamento registratore, apertura app, ingresso immediato in RIPETERE e comparsa concorrente del popup lezioni; identificare la causa e definire la gestione.
+- **Motivazione:** Conservare la nuova segnalazione e la sequenza concreta senza attribuire al conflitto modale una causa non ancora verificata.
+- **Impatto:** Sola documentazione; 67 attivita, 44 concluse e 23 aperte. Ordine precedente e prima voce aperta 33 invariati. Distinta la voce 120 relativa a Memo.
+- **Follow-up:** Riprodurre il blocco, distinguere interfaccia ed elaborazione, verificare eventi USB e dialoghi e scegliere la gestione sulla base delle evidenze; poi collaudare conservazione dei progressi e assenza di avvii AI duplicati.
+- **File coinvolti:** docs/product/idee-future-2026-10-13.md, DECISIONI.md
+
+## D-0449 — Primo incremento delle dodici attivita selezionate
+
+- **Data:** 2026-10-29
+- **Stato:** accettata
+- **Area:** studio-selezionato
+- **Decisione:** Stack modale condiviso con Memo, popup USB differito durante archivio RIPETERE, valutazione orale approfondita con controllo fine provider, preriscaldamento RAG solo locale e misure USB senza dati personali. Conservati ordine modelli e preferenze.
+- **Motivazione:** Riprodotto il conflitto di focus; separare correzioni verificate, implementazioni parziali e prove personali necessarie senza chiudere prematuramente il backlog.
+- **Impatto:** 785 test unit passati e test ordine aggiuntivo; typecheck lint build e regressioni Electron RIPETERE e Focus PDF riusciti. Suite Electron generale fallisce sul caso monetario, confermato nel run mirato. Nessuna API reale o installer.
+- **Follow-up:** Risposte su timer Focus, flusso esercizi e budget AI; diagnosi regressione monetaria, collaudo App USB e misure freddo caldo. Tutte le voci selezionate restano aperte.
+- **File coinvolti:** docs/product/interventi-selezionati-2026-10-29.md, src/hooks/useModalFocus.ts, src/components/QuickCaptureOverlay.tsx, src/App.tsx, electron/main/ai/repetitionPrompt.ts, electron/main/gemini.ts, electron/main/courseRag.ts, electron/main/courseRagSemantic.ts, shared/courseRag.ts, src/components/CourseChat.tsx, electron/main/usbDetector.ts, tests/unit, tests/integration/repetitionScenarios.browser.tsx, tools/check_translation_technical.cjs
+
+## D-0450 — Chat esercizi, RAG anticipato e collaudo delle attivita selezionate
+
+- **Data:** 2026-10-29
+- **Stato:** accettata
+- **Area:** studio-rag-ripetere
+- **Decisione:** Implementata chat testuale RIPETERE con storico atomico locale e invii espliciti; valutazione approfondita accetta sezioni aggiuntive e rifiuta risposte interrotte. Timer RAG per 600 tick cumulati per corso nella sessione app, warmup locale anticipato, stack modale e popup coordinati. Schemi provider omessi oltre 128 campi dinamici ENG, validazione locale completa conservata. Riparazione valuta prima del riconoscimento scalari.
+- **Motivazione:** Conflitto modale riprodotto; risposta lunga reale rifiutata per titolo esercizi aggiuntivo. Errore ENG 400 riprodotto su fonte sintetica complessa, eliminato togliendo solo lo schema. Applicate scelte utente sul timer e chat; separati successi effettivi da limiti hardware, personali e quote.
+- **Impatto:** 794 test unit, typecheck lint e suite Electron generale con riavvio superati; WASM reale anche nel pacchetto esistente. 18 invii AI fisici su massimo 20 autorizzati: Q&A, valutazioni lunghe, chat, diagnosi ENG; 3.8 timeout e 4 quota 429. Chiuse voci 9 e 117-121: 50 concluse e 17 aperte. Nessuna dipendenza, modifica ai dati personali, installer o pubblicazione.
+- **Follow-up:** Verificare nuova build e PDF finali. Sei selezionate restano aperte: qualita traduttore, ENG personale, transizioni esterne, confronto modelli, episodio Allega slide, campione USB ampio. Installer precedente: nuove funzioni disponibili nei sorgenti.
+- **File coinvolti:** docs/product/interventi-selezionati-2026-10-29.md, docs/product/idee-future-2026-10-13.md, STRUTTURA_PROGETTO.md, shared/repetition.ts, shared/courseRag.ts, electron/main/repetition.ts, electron/main/ai/repetitionPrompt.ts, electron/main/ai/translationPlan.ts, electron/main/gemini.ts, electron/main/archive.ts, electron/main/index.ts, electron/preload/index.ts, src/components/RepetitionWindow.tsx, src/components/RecorderEntry.tsx, src/utils/focusRagPreparation.ts, src/utils/markdownMath.ts, sorgenti test e tools D-0449-D-0450
+
+## D-0451 — Gate finale degli interventi selezionati
+
+- **Data:** 2026-10-29
+- **Stato:** accettata
+- **Area:** collaudo-selezione
+- **Decisione:** Confermati build finale e PDF reali dopo il passaggio a grammatica provider facoltativa per ENG grandi; invariati validatore completo e conservazione delle fonti. Resoconto finale con esiti e limiti di tutte le dodici attivita.
+- **Motivazione:** Chiudere il gate solo dopo verifica degli artefatti renderizzati e separare le sei voci concluse dalle sei ancora dipendenti da prove personali, qualita o player e quote esterni.
+- **Impatto:** 794 test unit in 61 file, typecheck, lint, Electron generale con riavvio, run mirati RIPETERE Memo Focus PDF e build/PDF reali superati. 18 invii reali su 20, nessun invio personale. Pacchetto Windows precedente verificato per runtime offline, nessun installer rigenerato o push.
+- **Follow-up:** Nuove funzioni nei sorgenti: distribuzione separata. Restano aperte voci 7,20,38,110,114,115 della selezione; dettagli nel resoconto. Contatore API residuo due invii, non avviare ulteriori collaudi automaticamente.
+- **File coinvolti:** DECISIONI.md, docs/product/interventi-selezionati-2026-10-29.md, docs/product/idee-future-2026-10-13.md, STRUTTURA_PROGETTO.md, sorgenti e test D-0449-D-0450
+
+## D-0452 — Rigenerazione installer con residue rinviate
+
+- **Data:** 2026-10-29
+- **Stato:** accettata
+- **Area:** distribuzione
+- **Decisione:** Su richiesta utente rigenerare il setup con D-0449-D-0451, accettando temporaneamente i limiti del traduttore e rinviando le residue. Conservati ordine e modelli configurati, nessuna nuova API reale o ritraduzione personale. Backup precedente e verifica delle nuove funzioni nel pacchetto.
+- **Motivazione:** Distribuire le modifiche gia collaudate senza attendere attivita esterne o personali che l utente rinvia espressamente.
+- **Impatto:** Lista invariata a 50 concluse e 17 aperte. Installer generale autorizza commit e push di tutte le modifiche pubblicabili secondo AGENTS; binari ignorati esclusi.
+- **Follow-up:** Completare packaging, verifiche runtime e payload NSIS, registrare hash finale, commit push e verifica sul remoto.
+- **File coinvolti:** DECISIONI.md, docs/product/interventi-selezionati-2026-10-29.md, tools/verify_installer.cjs, dist/Lezionify-Setup-0.1.0.exe
+
+## D-0453 — Installer generale del 29 ottobre verificato
+
+- **Data:** 2026-10-29
+- **Stato:** accettata
+- **Area:** distribuzione
+- **Decisione:** Rigenerato setup Windows 0.1.0 con interventi D-0449-D-0451. Dimensione 299973549 byte; SHA256 4a9f002384eb22862ffac3028a54aa318c2c823ff1f80a8b158d5c28df360afe. Modelli invariati e sei residue rinviate; nessuna installazione automatica o release binaria.
+- **Motivazione:** Distribuire le funzioni collaudate dopo il rinvio esplicito dei limiti residui, mantenendo fonti locali e preferenze correnti.
+- **Impatto:** 377 file build identici al pacchetto, nuove funzioni e corpus con licenze verificati, manifesto blockmap e tre backup controllati. Otto componenti NSIS estratti senza eseguire setup e confrontati. Runtime RAG isolato, inferenza senza rete, PDF, modello mancante/corrotto e preparazione pubblica esplicita superati. Fonte gia verificata con 794 test unit, typecheck lint Electron con riavvio e PDF reali.
+- **Follow-up:** Commit e push automatici di tutte le modifiche pubblicabili secondo AGENTS e verifica finale sul remoto. Installare il setup con Lezionify chiuso; nessuna ulteriore chiamata AI eseguita, contatore resta 18 su 20.
+- **File coinvolti:** DECISIONI.md, STRUTTURA_PROGETTO.md, docs/product/interventi-selezionati-2026-10-29.md, tools/verify_installer.cjs, sorgenti test e documentazione D-0447-D-0451, dist/Lezionify-Setup-0.1.0.exe

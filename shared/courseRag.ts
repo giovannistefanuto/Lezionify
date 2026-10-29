@@ -105,7 +105,7 @@ export interface CourseRagEvent {
 export interface CourseRagApi {
   getCourseRag: (course: string) => Promise<CourseRagState>
   prepareCourseSemantic: (course: string) => Promise<CourseRagState>
-  manageCourseIndex: (course: string, action: 'start' | 'cancel' | 'clear-vectors' | 'storage' | 'clean-revisions') => Promise<CourseRagState>
+  manageCourseIndex: (course: string, action: 'warm' | 'start' | 'cancel' | 'clear-vectors' | 'storage' | 'clean-revisions') => Promise<CourseRagState>
   setCourseLectureNumber: (course: string, lectureId: string, number: number) => Promise<CourseRagState>
   linkCourseFolder: (course: string) => Promise<CourseRagState>
   setCourseFolderEnabled: (

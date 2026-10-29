@@ -75,3 +75,12 @@ y\$$`, '$x$ and $$x = 1$$', 'Prosa $$x\ny$$ prosa',
     expect(normalizeDisplayMath('$$\\begin{aligned}\nx &= 1')).toBe('$$\\begin{aligned}\nx &= 1')
   })
 })
+
+
+it('ripara valuta malformata prima di riconoscere gli scalari matematici', () => {
+  const source = String.raw`Prezzi 1.00\$$, 0.99,$ e $0.98,$$. Il costo è (c = 0.50\$$ nell'esempio). L'impresa opererebbe in perdita (\Pi < 0$). Formula vera: $Q > 0$.`
+  const rendered = normalizeDisplayMath(source)
+  expect(rendered).toContain(String.raw`0.98,\$`)
+  expect(rendered).toContain("L'impresa opererebbe in perdita")
+  expect(rendered).toContain('$Q > 0$')
+})

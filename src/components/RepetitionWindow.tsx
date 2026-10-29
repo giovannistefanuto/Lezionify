@@ -22,6 +22,8 @@ export function RepetitionWindow({
   const [document, setDocument] = useState<RepetitionDocument | null>(null)
   const [error, setError] = useState('')
   const [working, setWorking] = useState(false)
+  const [answer, setAnswer] = useState('')
+  const [replying, setReplying] = useState(false)
   const [tab, setTab] = useState<'assessment' | 'transcript' | 'reference'>(
     'assessment'
   )
@@ -98,6 +100,19 @@ export function RepetitionWindow({
       alive = false
     }
   }, [id, selectedStatus])
+  useEffect(() => { setAnswer('') }, [id])
+  const reply = async () => {
+    if (!id || replying || !answer.trim()) return
+    setReplying(true)
+    setError('')
+    try {
+      const conversation = await window.archive.answerRepetition(id, answer)
+      setDocument(previous => previous ? { ...previous, conversation } : previous)
+      setAnswer('')
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'Verifica non riuscita; risposta conservata.')
+    } finally { setReplying(false) }
+  }
   const active = state?.sessions.find((item) => item.id === state.activeId)
   const session = state?.sessions.find((item) => item.id === id)
   const busy = working || !!state?.busy
@@ -174,14 +189,14 @@ export function RepetitionWindow({
           </div>
           <button
             className="secondary-button"
-            disabled={busy}
+            disabled={busy || replying}
             onClick={() => void changeReference()}
           >
             Cambia appunti
           </button>
           <button
             className="primary-button"
-            disabled={busy}
+            disabled={busy || replying}
             onClick={() => void launch()}
           >
             Elabora ultimo audio
@@ -226,6 +241,7 @@ export function RepetitionWindow({
                 className={`repetition-session ${id === item.id ? 'is-selected' : ''}`}
                 aria-current={id === item.id ? 'true' : undefined}
                 onClick={() => {
+                  if (replying) return
                   setSelected(item.id)
                   setTab('assessment')
                 }}
@@ -259,7 +275,7 @@ export function RepetitionWindow({
                 {['paused', 'failed'].includes(session.status) && (
                   <button
                     className="primary-button"
-                    disabled={busy}
+                    disabled={busy || replying}
                     onClick={() => void resume()}
                   >
                     Riprendi sessione
@@ -296,7 +312,21 @@ export function RepetitionWindow({
                 </div>
                 {tab === 'assessment' ? (
                   document?.assessment ? (
-                    <MarkdownViewer content={document.assessment} />
+                    <>
+                      <MarkdownViewer content={document.assessment} />
+                      {session.status === 'completed' && <section aria-label="Verifica della comprensione">
+                        <h3>Metti alla prova il ragionamento</h3>
+                        <p>Rispondi agli esercizi o spiega il passaggio che ti lascia dubbi. Inviando condividi con Gemini risposta, valutazione e appunti della sessione.</p>
+                        {document.conversation?.map((message, index) => <article key={index}>
+                          <strong>{message.role === 'user' ? 'La tua risposta' : 'Tutor'}</strong>
+                          <MarkdownViewer content={message.text} />
+                        </article>)}
+                        <form onSubmit={event => { event.preventDefault(); void reply() }}>
+                          <label>Risposta agli esercizi<textarea value={answer} maxLength={20000} disabled={replying} onChange={event => setAnswer(event.target.value)} /></label>
+                          <button className="primary-button" disabled={replying || !answer.trim()}>{replying ? 'Verifica in corso…' : 'Verifica con Gemini'}</button>
+                        </form>
+                      </section>}
+                    </>
                   ) : (
                     <p>{session.message}</p>
                   )

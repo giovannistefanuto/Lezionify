@@ -2,6 +2,25 @@
 
 ## Stato attuale
 
+D-0453 rigenera il setup Windows 0.1.0 con D-0449–D-0451: 377 file build
+confrontati, nuove funzioni, corpus/licenze e payload NSIS verificati. Runtime
+RAG isolato positivo, incluse inferenza senza rete, worker PDF e gestione
+modelli. Residue rinviate e modelli precedenti conservati su richiesta utente;
+nessuna API AI aggiuntiva. Installare il nuovo setup con Lezionify chiuso.
+
+
+D-0450 aggiunge la chat di verifica degli esercizi in RIPETERE, con storico
+locale `esercizi.json`, contratti/IPC e validazione separati. `useModalFocus`
+coordina lo stack attivo, Memo vi aderisce e `RecorderOverlays` differisce il
+popup USB durante RIPETERE. `focusRagPreparation.ts` conta i tick accreditati
+per corso; la Sala usa warmup dei soli pesi locali. Le traduzioni grandi
+mantengono il validatore completo senza imporre schemi dinamici complessi al
+provider, causa riprodotta del rifiuto 400 sintetico. Tempi USB senza percorsi
+nei log e nuovi tool di diagnosi/benchmark in `tools/`. Nessuna dipendenza.
+Resoconto, 18 invii reali sintetici e limiti personali/provider in
+`docs/product/interventi-selezionati-2026-10-29.md`.
+
+
 D-0437–D-0444 implementano i dodici interventi di studio richiesti il 28 ottobre.
 `sectionRevision` separa anteprima, conferma e ripristino con controllo delle
 fonti; `paragraphEstimate`, `paragraphObservation` e `studyInactivity` raccolgono

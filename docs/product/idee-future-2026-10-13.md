@@ -1,7 +1,7 @@
 # Idee e modifiche future — 13 ottobre 2026
 
 Raccolta delle richieste dell’utente per lo sviluppo futuro di Lezionify,
-iniziata il 13 ottobre e aggiornata con nuove idee fino al 27 ottobre 2026.
+iniziata il 13 ottobre e aggiornata con nuove idee fino al 29 ottobre 2026.
 La classificazione è preliminare: gli interventi immediati hanno un obiettivo
 già definito e non richiedono una ricerca preventiva; restano necessari i normali
 controlli del codice e i collaudi. Gli approfondimenti richiedono invece una
@@ -20,6 +20,18 @@ Le ricerche concluse non chiudono le caselle delle funzioni ancora da integrare.
 ### Ordine operativo aggiornato al 23 ottobre 2026
 
 **Stato al 28 ottobre, D-0437–D-0444:** 62 attività, 44 concluse e 18 aperte. I dodici interventi sono implementati e collaudati; verifica del provider e calibrazione sul nuovo uso personale restano limiti espliciti nel [report](studio-dodici-interventi-2026-10-28.md). Ordine invariato; prima voce aperta 33.
+
+**Aggiornamento al 29 ottobre, D-0447:** aggiunte quattro attività (117–120,
+posizioni 63–66): 66 totali, 44 concluse e 22 aperte. I due esempi di correzione
+orale confluiscono nella voce 117. Raccolta dei requisiti e ispezione del codice;
+nessuna nuova funzione implementata. Ordine precedente e prima voce aperta 33 invariati.
+
+**Segnalazione aggiuntiva del 29 ottobre, D-0448:** aggiunta la voce 121,
+posizione 67, sul blocco quando il popup delle lezioni compare durante
+RIPETERE all'avvio con registratore collegato. Totale: 67 attività,
+44 concluse e 23 aperte. Ordine precedente invariato; bug da riprodurre.
+
+**Implementazione del 29 ottobre, D-0450:** concluse le voci 9 e 117–121 della richiesta diretta; **67 attività, 50 concluse e 17 aperte**. Le altre sei selezionate restano aperte per i limiti riportati nel [resoconto](interventi-selezionati-2026-10-29.md). Prima voce aperta 33 invariata.
 
 Su richiesta dell'utente, tutte le attività aperte sono riordinate per facilità
 crescente, includendo lista, riassunto Gemini e interventi del
@@ -58,7 +70,7 @@ avviata da questo aggiornamento documentale (D-0390).
 | 20. [x] | Formule Q&A: caso epsilon-greedy / epsilon-soft | 73 | D-0437: normalizzazione condivisa, epsilon/cases, streaming e copia collaudati; testo grezzo conservato. |
 | 21. [x] | Diagnosi errore course-rag:ask «Risposta non completata» | 69 | D-0392: output strutturato, fallback e retry collaudati; due prove RAG complete reali riuscite con fonti sintetiche. D-0395: recupero da timeout/503 e confronto RL reale verificato, con 12 invii e 10 minuti condivisi: [diagnosi](../quality/rag-recupero-2026-10-22.md). |
 | 22. [ ] | Collaudi residui del traduttore offline | 7 | Media: prove tecniche, formule/codice e glossario; funzione base già integrata. |
-| 23. [ ] | Validazione qualitativa residua dei modelli Q&A | 9 | Media: contratto già collaudato, qualità reale e provider da verificare. |
+| 23. [x] | Validazione qualitativa residua dei modelli Q&A | 9 | D-0450: implementata/verificata; esiti e limiti nel report interventi-selezionati-2026-10-29.md. |
 | 24. [ ] | Verifica personale residua delle versioni ENG mancanti | 20 | Media incerta: riusare diagnosi/correzioni, serve un caso dopo l'aggiornamento. |
 | 25. [x] | Ctrl+T: modalità Dizionario italiano oltre al traduttore | 71 | D-0439: corpus italiano offline con flessioni e licenza, switch e input conservato verificati. |
 | 26. [ ] | Pilota personale della sezione musica | 5 | Media con dipendenza esterna: account, PC e cuffie; rinvio precedente conservato. |
@@ -98,6 +110,11 @@ avviata da questo aggiornamento documentale (D-0390).
 | 60. [ ] | Rendere reperibile Allega slide | 114 | D-0433: ingresso esplicito e percorso completo collaudati; resta la verifica dell'episodio personale non riprodotto. |
 | 61. [ ] | Misurare e ridurre l'attesa di scansione del registratore | 115 | Media: separare rilevamento, checksum e durata. |
 | 62. [x] | Diagramma di stato AB rifiutato per direttiva non consentita | 116 | D-0437: stili statici sicuri e rendering Mermaid reale verificati, whitelist preservata. |
+| 63. [x] | RIPETERE: valutazione completa, spiegazioni e verifica della comprensione | 117 | D-0450: implementata/verificata; esiti e limiti nel report interventi-selezionati-2026-10-29.md. |
+| 64. [x] | Aggiornamento RAG in background dopo circa 10 minuti di studio in Focus | 118 | D-0450: implementata/verificata; esiti e limiti nel report interventi-selezionati-2026-10-29.md. |
+| 65. [x] | Preparare il RAG prima dell'invio della domanda | 119 | D-0450: implementata/verificata; esiti e limiti nel report interventi-selezionati-2026-10-29.md. |
+| 66. [x] | Memo aperto con Ctrl+M ma non scrivibile dentro RIPETERE | 120 | D-0450: implementata/verificata; esiti e limiti nel report interventi-selezionati-2026-10-29.md. |
+| 67. [x] | Blocco di RIPETERE quando compare il popup delle lezioni all'avvio | 121 | D-0450: implementata/verificata; esiti e limiti nel report interventi-selezionati-2026-10-29.md. |
 
 Le prime 17 posizioni e la 21 sono concluse in D-0392 su richiesta diretta dopo grilling (D-0391). [Uso, verifiche e limiti](interventi-2026-10-22.md).
 La prima attività ancora aperta è la **voce 33, diagnosi Ctrl+L personale**, posizione 18. Ogni invocazione
@@ -418,6 +435,8 @@ gestione degli errori e tracciabilità senza registrare contenuti privati nei lo
 
 ### 9. Modelli più rapidi per le sole domande contestuali
 
+**Aggiornamento D-0450:** validazione residua Gemini conclusa nei casi sintetici descritti nel [resoconto](interventi-selezionati-2026-10-29.md); le valutazioni dei provider alternativi sotto restano storiche.
+
 Aggiornamento successivo del 15 ottobre: l’utente chiede Flash-Lite prima e altri
 modelli se non risponde. Implementata catena Q&A dedicata: 3.5 Flash-Lite, 3.1
 Flash-Lite, Flash e riserve, con primo testo entro 20 secondi per tentativo e
@@ -436,7 +455,7 @@ la propria configurazione.
 - [x] Salvare [valutazione, vincoli e fonti verificate](../research/qna-alternative-gratuite-valutazione-2026-10-13.md).
 - [x] Documentare il [piano di indagine a fasi](../research/qna-benchmark-piano-2026-10-13.md).
 - [x] Misurare tempo alla prima risposta e consumo reale nel pilota; revisione qualitativa esplorativa salvata.
-- [ ] Ampliare la validazione qualitativa e collaudare il provider scelto nell'app.
+- [x] D-0450: ampliata la validazione del provider Gemini scelto, con matematica, contesto inglese, incertezza, codice e immagine sintetica; [esiti e limiti](interventi-selezionati-2026-10-29.md).
 
 Confrontati Groq GPT-OSS-120B, Groq GPT-OSS-20B e Cloudflare Qwen3-30B-A3B:
 [ripresa completa con risultati e limiti](../research/qna-non-gemini-ripresa-completa-2026-10-13.md).
@@ -2333,6 +2352,124 @@ stati A e B, inizio 1/8 e 7/8, ricompense 0 e 1 con percentuali 100%, 75%,
 spessore. Messaggio: «Diagramma non disponibile. Il diagramma contiene una
 direttiva non consentita». Isolare validatore, sintassi del diagramma e
 renderer; non abilitare stili o direttive arbitrarie come aggiramento.
+
+## Aggiunte del 29 ottobre 2026 — valutazione orale, RAG e Memo
+
+Richieste registrate in D-0447. Le sei caselle del messaggio diventano quattro
+attività: richiesta di approfondimento e due esempi descrivono insieme la
+valutazione desiderata. Restano tutte aperte; questo aggiornamento conserva
+i prossimi passi e non avvia il comando `LISTA_ORDINE`.
+
+### 117. RIPETERE: valutazione approfondita e verifica della comprensione
+
+**Aggiornamento D-0450:** implementazione e collaudi conclusi; [esiti e limiti](interventi-selezionati-2026-10-29.md).
+
+- [x] Valutare tutto ciò che è stato affrontato, con profondità proporzionata ai dubbi, senza comprimere la risposta in una scheda rigida o in una lunghezza editoriale prefissata.
+
+Conservare ciò che è stato capito bene e le difficoltà realmente superate.
+Per ogni errore rimasto o dubbio: riprendere il ragionamento dello studente,
+individuare il punto del salto logico, spiegare perché non funziona e ricostruire
+il passaggio corretto con teoria, formule, esempi e controesempi pertinenti.
+Distinguere tentativi, lettura, autocorrezioni e conclusioni finali; non attribuire
+cause psicologiche o convinzioni non osservabili. Affrontare prima il blocco
+principale e poi le altre correzioni, senza perdere gli argomenti precedenti.
+Riferire gli appunti effettivi; distinguere le integrazioni teoriche del tutor,
+gli eventuali errori del riferimento e le incertezze ASR.
+
+Ispirazione dai due esempi forniti, senza fissare il prodotto al reinforcement
+learning: nel primo, ricostruzione MDP → MRP con media pesata, dimensioni di
+P/policy/reward ed esempio numerico della batteria; poi correzioni di Markov,
+reward, Bellman e return. Nel secondo, bilancio per argomenti e correzioni
+motivate dei salti su policy ottimale, model-free e aggiornamenti asincroni,
+riconoscendo esplicitamente le spiegazioni e autocorrezioni corrette.
+Concludere con piccoli esercizi o domande mirate ai dubbi emersi, chiedendo
+anche il perché; separare domande e soluzioni per consentire un tentativo
+autonomo. Non dichiarare acquisita la comprensione prima della risposta.
+La verifica desiderata va definita anche nel suo eventuale flusso interattivo:
+all’ispezione iniziale RIPETERE mostrava soltanto una valutazione. D-0450 aggiunge risposte agli esercizi in chat testuale, su scelta esplicita dell’utente.
+
+Ispezione iniziale: `electron/main/ai/repetitionPrompt.ts` e il validatore
+impongono esattamente tre H2 e rifiutano risultati oltre 100.000 caratteri;
+questo controllo rifiuta, non tronca. `GeminiService.evaluateRepetition` non
+imposta `maxOutputTokens`. La sintesi percepita non è quindi prova di un taglio
+locale di caratteri. Verificare anche fine risposta del provider e conservazione
+dei rilievi nell'elaborazione progressiva di `repetition.ts`. Collaudo richiesto:
+ripetizioni lunghe, molti dubbi, autocorrezioni tardive, appunti incompleti,
+esempi matematici e copertura di tutti i temi; test strutturali separati dalla
+valutazione della qualità didattica reale.
+
+### 118. Aggiornare l'indice RAG durante lo studio in Focus
+
+**Aggiornamento D-0450:** implementazione e collaudi conclusi; [esiti e limiti](interventi-selezionati-2026-10-29.md).
+
+- [x] Avviare in background l'aggiornamento dell'indice semantico dopo circa dieci minuti di studio effettivo in Focus, così che le operazioni iniziali restino fluide.
+
+La preferenza finale sostituisce l'idea iniziale di avviare subito a ogni apertura.
+Usare lo stato di studio esplicito: leggere senza digitare conta come studio;
+pausa e app non in studio non devono essere dedotte dalla sola assenza di tasti.
+Prima dell'implementazione precisare conteggio cumulato o continuo e ambito
+dei corsi. Riutilizzare cache, lavori incrementali e checkpoint esistenti,
+evitare avvii duplicati e dare precedenza alle domande interattive. Fonti e
+vettori restano locali; modello mancante senza download implicito e nessuna
+chiamata generativa automatica. Verificare soglia, pause, uscita e rientro in
+Focus, indice già aggiornato, fonti cambiate e riavvio durante un lavoro.
+
+### 119. Anticipare il caricamento RAG mentre si prepara la domanda
+
+**Aggiornamento D-0450:** implementazione e collaudi conclusi; [esiti e limiti](interventi-selezionati-2026-10-29.md).
+
+- [x] Valutare e integrare il caricamento anticipato locale prima dell'invio, misurando il risparmio sulla prima risposta.
+
+È tecnicamente fattibile separare preparazione dell'indice e del worker locale
+dalla ricerca dipendente dalla domanda definitiva. Il codice dispone già di
+cache persistente dei vettori, memoria limitata e worker avviato pigramente
+in `courseRagSemantic.ts`. Anticipare queste operazioni non equivale a conoscere
+in anticipo i passaggi pertinenti: il ranking dipende dal testo finale.
+Valutare l'apertura della Sala di consultazione o la selezione del corso come
+innesco; eventuali ricerche sulla bozza richiedono debounce, annullamento e
+invalidazione per testo/corso/fonti cambiati. Nessuna bozza inviata a provider,
+nessuna risposta AI e nessun download senza azione esplicita. Confrontare avvio
+a freddo/caldo, tempo di caricamento, ricerca e generazione separatamente;
+non promettere un guadagno prima delle misure.
+
+### 120. Memo non scrivibile sopra RIPETERE
+
+**Aggiornamento D-0450:** implementazione e collaudi conclusi; [esiti e limiti](interventi-selezionati-2026-10-29.md).
+
+- [x] Riprodurre e correggere l'apertura con Ctrl+M dentro RIPETERE: Memo deve accettare scrittura, consentire il salvataggio e restituire il focus correttamente alla chiusura.
+
+Segnalazione: Memo compare ma non permette di scrivere. Nel codice RIPETERE
+usa `useModalFocus`, che rende inerti i rami fratelli e riporta il focus nel
+proprio dialogo; Memo è un overlay separato in `App.tsx`. È un'ipotesi concreta
+di conflitto modale, non una causa certificata da riproduzione. Verificare
+`inert`, cattura di focus e tastiera, ordine degli overlay e caricamento delle
+catture prima di modificare. Collaudare input attività e appunti, persistenza,
+Tab/Shift+Tab/Escape, aperture ripetute e ripristino del focus, mantenendo
+l'isolamento accessibile della finestra attiva.
+
+### 121. Blocco tra RIPETERE e popup delle lezioni con registratore collegato
+
+**Aggiornamento D-0450:** implementazione e collaudi conclusi; [esiti e limiti](interventi-selezionati-2026-10-29.md).
+
+- [x] Verificare il blocco segnalato, identificarne la causa e definire come gestire il popup delle lezioni mentre RIPETERE è aperto.
+
+Sequenza riferita dall'utente: collegare il registratore, aprire Lezionify,
+entrare subito in RIPETERE; nel frattempo compare il popup delle lezioni e
+il flusso si blocca. Il popup preciso, l'estensione del blocco (sola interfaccia
+o anche elaborazione) e la causa restano da accertare tramite riproduzione.
+
+Verificare ordine degli eventi di rilevamento USB e apertura dei dialoghi,
+focus, isolamento `inert`, sovrapposizione degli overlay e possibili avvii
+concorrenti. La voce 120 offre un confronto sulla gestione modale, ma non
+dimostra che i due problemi abbiano la stessa causa. Valutare sulla base della
+diagnosi se differire il popup, accodarlo o coordinare diversamente i due
+ingressi, preservando la scelta esplicita tra studio e ripetizione e senza
+avviare ulteriori chiamate AI per effetto della sovrapposizione.
+
+Collaudare popup prima e dopo l'ingresso in RIPETERE, rilevamento USB lento,
+chiusura dei dialoghi e riapertura; verificare interazione, stato del lavoro
+e conservazione di audio, trascrizione e progressi. La casella resta aperta
+fino a diagnosi, gestione concordata quando necessaria e collaudo della correzione.
 
 ## Nota sulla classificazione
 

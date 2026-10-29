@@ -1,28 +1,41 @@
 import { useEffect, type RefObject } from 'react'
 
-/** Isolate siblings at every ancestor, including dialogs rendered inside Focus. */
+// One owner for inert/focus: independent traps otherwise steal focus from each other.
+const dialogs: HTMLElement[] = []
+const originalInert = new Map<HTMLElement, boolean>()
+function isolateTop() {
+  for (const [element, inert] of originalInert) element.inert = inert
+  originalInert.clear()
+  const top = dialogs.at(-1)
+  if (!top) return
+  let branch = top
+  while (branch.parentElement) {
+    for (const sibling of branch.parentElement.children) {
+      if (sibling === branch || !(sibling instanceof HTMLElement) || sibling === document.fullscreenElement || (document.fullscreenElement && sibling.contains(document.fullscreenElement)) || sibling.matches('script, style, [data-dictionary-overlay]') || sibling.querySelector('[data-dictionary-overlay]')) continue
+      originalInert.set(sibling, sibling.inert)
+      sibling.inert = true
+    }
+    branch = branch.parentElement
+    if (branch === document.body) break
+  }
+}
+
+/** Isolate the top dialog; suspended dialogs resume when its overlay closes. */
 export function useModalFocus(ref: RefObject<HTMLElement | null>, open: boolean) {
   useEffect(() => {
     const dialog = ref.current
     if (!open || !dialog) return
     const previous = document.activeElement as HTMLElement | null
-    const isolated: { element: HTMLElement; inert: boolean }[] = []
-    let branch: HTMLElement = dialog
-    while (branch.parentElement) {
-      for (const sibling of branch.parentElement.children) {
-        if (sibling === branch || !(sibling instanceof HTMLElement) || sibling === document.fullscreenElement || (document.fullscreenElement && sibling.contains(document.fullscreenElement)) || sibling.matches('script, style, [data-dictionary-overlay]') || sibling.querySelector('[data-dictionary-overlay]')) continue
-        isolated.push({ element: sibling, inert: sibling.inert })
-        sibling.inert = true
-      }
-      branch = branch.parentElement
-      if (branch === document.body) break
-    }
+    dialogs.push(dialog)
+    isolateTop()
+    const observer = new MutationObserver(isolateTop)
+    observer.observe(document.body, { childList: true, subtree: true })
+    const active = () => dialogs.at(-1) === dialog && !document.querySelector('[data-dictionary-overlay]')
     const controls = () => Array.from(dialog.querySelectorAll<HTMLElement>('button:not(:disabled), input:not(:disabled), textarea:not(:disabled), select:not(:disabled), summary, [tabindex="0"]')).filter(element => element.getClientRects().length && !element.closest('[hidden], [inert]'))
     const focusFirst = () => (controls()[0] ?? dialog).focus({ preventScroll: true })
-    if (!document.querySelector('[data-dictionary-overlay]')) focusFirst()
+    if (active()) focusFirst()
     const key = (event: KeyboardEvent) => {
-      if (document.querySelector('[data-dictionary-overlay]')) return
-      if (event.key !== 'Tab') return
+      if (!active() || event.key !== 'Tab') return
       const items = controls(), first = items[0], last = items.at(-1)
       if (!items.length) { event.preventDefault(); dialog.focus(); return }
       if (!dialog.contains(document.activeElement) || (event.shiftKey ? document.activeElement === first : document.activeElement === last)) {
@@ -31,14 +44,17 @@ export function useModalFocus(ref: RefObject<HTMLElement | null>, open: boolean)
       }
     }
     const focus = (event: FocusEvent) => {
-      if (!document.querySelector('[data-dictionary-overlay]') && !dialog.contains(event.target as Node)) focusFirst()
+      if (active() && !dialog.contains(event.target as Node)) focusFirst()
     }
     window.addEventListener('keydown', key, true)
     document.addEventListener('focusin', focus)
     return () => {
+      observer.disconnect()
       window.removeEventListener('keydown', key, true)
       document.removeEventListener('focusin', focus)
-      for (const item of isolated) item.element.inert = item.inert
+      const index = dialogs.indexOf(dialog)
+      if (index >= 0) dialogs.splice(index, 1)
+      isolateTop()
       if (previous?.isConnected && !previous.closest('[inert]')) previous.focus({ preventScroll: true })
     }
   }, [ref, open])

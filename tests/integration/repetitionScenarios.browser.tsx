@@ -1,6 +1,9 @@
+import { useQuickCapture } from '../../src/hooks/useQuickCapture'
+import { QuickCaptureOverlay } from '../../src/components/QuickCaptureOverlay'
 import React, { act } from 'react'
 import type { Root } from 'react-dom/client'
-import { RecorderEntry } from '../../src/components/RecorderEntry'
+import { useModalFocus } from '../../src/hooks/useModalFocus'
+import { RecorderEntry, RecorderOverlays } from '../../src/components/RecorderEntry'
 import { RepetitionWindow } from '../../src/components/RepetitionWindow'
 import {
   REPETITION_HEADINGS,
@@ -8,6 +11,17 @@ import {
 } from '../../shared/repetition'
 
 declare const require: any
+
+function RealMemoProbe() {
+  const capture = useQuickCapture()
+  return <><RepetitionWindow onClose={() => {}} />{capture.isOpen && <QuickCaptureOverlay capture={capture} />}</>
+}
+
+function MemoProbe() {
+  const ref = React.useRef<HTMLDivElement>(null)
+  useModalFocus(ref, true)
+  return <div ref={ref} role="dialog"><input aria-label="Memo probe" /></div>
+}
 
 export async function runRepetitionScenarios(root: Root, api: any) {
   const original = { ...api }
@@ -77,11 +91,16 @@ export async function runRepetitionScenarios(root: Root, api: any) {
     session,
     reference: '# Appunti di riferimento\nQuesti sono gli appunti usati.',
     transcript: 'Prima sbaglio. Mi correggo dopo aver controllato gli appunti.',
-    assessment
+    assessment, conversation: []
   })
   api.detectUsbRecorder = async () => {
     scans++
     return { detected: false, files: [] }
+  }
+  let answers = 0
+  api.answerRepetition = async (_id: string, text: string) => {
+    answers++
+    return [{ role: 'user', text }, { role: 'ai', text: 'Corretto: giustifica il passaggio.' }]
   }
   const renderEntry = async () => {
     await act(async () =>
@@ -97,6 +116,60 @@ export async function runRepetitionScenarios(root: Root, api: any) {
     await wait()
   }
   try {
+    await act(async () => root.render(<><RepetitionWindow onClose={() => {}} /><MemoProbe /></>))
+    await wait()
+    const memoInput = document.querySelector<HTMLInputElement>('[aria-label="Memo probe"]')!
+    memoInput.focus()
+    check(document.activeElement === memoInput && !memoInput.closest('[inert]'), 'Memo sopra RIPETERE deve accettare focus e scrittura')
+    await act(async () => root.render(null))
+    await wait()
+    let persistedNotes = ''
+    api.getScratchpad = async () => ({ todos: [], notes: persistedNotes, updatedAt: new Date().toISOString() })
+    api.saveScratchpad = async (value: any) => { persistedNotes = value.notes }
+    await act(async () => root.render(<RealMemoProbe />))
+    await wait()
+    await act(async () => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'm', ctrlKey: true, bubbles: true })))
+    await wait()
+    const notes = document.querySelector<HTMLTextAreaElement>('.postit-textarea')!
+    check(notes, 'Ctrl+M apre Memo reale sopra RIPETERE')
+    notes.focus()
+    check(document.activeElement === notes && !notes.closest('[inert]'), 'Campo appunti reale scrivibile')
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')!.set!.call(notes, 'Nota sintetica persistita')
+      notes.dispatchEvent(new Event('input', { bubbles: true }))
+    })
+    await act(async () => { await new Promise(resolve => setTimeout(resolve, 450)) })
+    check(persistedNotes === 'Nota sintetica persistita', 'Appunti salvati da Memo sopra RIPETERE')
+    for (const shift of [false, true]) {
+      await ipc.invoke('feature-test-key', 'Tab', shift)
+      check(document.querySelector('.quick-capture-deck')!.contains(document.activeElement), 'Tab deve restare nel Memo attivo')
+    }
+
+    await act(async () => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'm', ctrlKey: true, bubbles: true })))
+    await wait()
+    check(!document.querySelector('.quick-capture-deck'), 'Ctrl+M richiude Memo')
+    check(!document.querySelector('.repetition-window')!.closest('[inert]'), 'RIPETERE torna interattivo')
+    check(document.querySelector('.repetition-window')!.contains(document.activeElement), 'Il focus ritorna a RIPETERE')
+    await act(async () => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'm', ctrlKey: true, bubbles: true })))
+    await wait()
+    check(document.querySelector<HTMLTextAreaElement>('.postit-textarea')?.value === persistedNotes, 'Memo riaperto conserva gli appunti')
+    await act(async () => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })))
+    await wait()
+    check(!document.querySelector('.quick-capture-deck'), 'Escape chiude il Memo attivo')
+
+    await act(async () => root.render(null))
+    await wait()
+    const overlays = (showUsb: boolean, showRepetitions: boolean) => <RecorderOverlays showUsb={showUsb} showRepetitions={showRepetitions} onCloseUsb={() => {}} onCloseRepetitions={() => {}} onRefreshLibrary={async () => {}} onNotice={() => {}} courses={[]} />
+    await act(async () => root.render(overlays(false, true)))
+    await wait()
+    await act(async () => root.render(overlays(true, true)))
+    await wait()
+    check(document.querySelectorAll('[role="dialog"]').length === 1 && !document.querySelector('.recorder-choice'), 'Il popup USB tardivo deve essere differito durante RIPETERE')
+    await act(async () => root.render(overlays(true, false)))
+    await wait()
+    check(document.querySelector('.recorder-choice') && starts === 0, 'Il popup accodato ritorna senza avviare AI')
+    await act(async () => root.render(null))
+    await wait()
     await renderEntry()
     check(
       scans === 0 && starts === 0,
@@ -127,6 +200,14 @@ export async function runRepetitionScenarios(root: Root, api: any) {
         `media://repetition/${id}`,
       'Audio originale accessibile dalla sessione'
     )
+    const answerField = document.querySelector<HTMLTextAreaElement>('[aria-label="Verifica della comprensione"] textarea')!
+    check(answerField && answers === 0, 'Gli esercizi non devono inviare automaticamente')
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')!.set!.call(answerField, 'La policy pesa le transizioni.')
+      answerField.dispatchEvent(new Event('input', { bubbles: true }))
+    })
+    await click('Verifica con Gemini')
+    check(answers === 1 && document.body.textContent?.includes('Corretto: giustifica'), 'Risposta testuale e feedback tutor devono comparire')
     await ipc.invoke('capture-video-import', 'repeat-result-light')
     await click('Trascrizione')
     check(

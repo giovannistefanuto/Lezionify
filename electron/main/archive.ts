@@ -219,6 +219,7 @@ export class ArchiveService {
     this.searchIndex = new SearchIndexService()
     this.repetition = new RepetitionService(path.join(this.rootDirectory, 'RIPETERE'), {
       scan: () => this.detectUsbRecorder(),
+      reply: async (reference, assessment, messages, signal) => this.geminiService.replyRepetition({ keys: await this.getManagedKeys(), model: (await this.settingsService.getSettings()).model, reference, assessment, messages, signal }),
       transcribe: async (audioFilePath, lectureId, signal, onProgress) => this.geminiService.transcribeAudioFile({
         keys: await this.getManagedKeys(), audioFilePath, lectureId, language: 'auto', context: 'repetition', signal, onProgress
       }),

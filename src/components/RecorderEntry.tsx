@@ -64,3 +64,18 @@ export function RecorderEntry(props: {
     </div>
   )
 }
+
+
+export function RecorderOverlays({ showUsb, showRepetitions, onCloseUsb, onCloseRepetitions, ...props }: {
+  showUsb: boolean
+  showRepetitions: boolean
+  onCloseUsb: () => void
+  onCloseRepetitions: () => void
+  onRefreshLibrary: () => Promise<unknown>
+  onNotice: (message: string) => void
+  courses: CourseDefinition[]
+}) {
+  if (showRepetitions) return <RepetitionWindow onClose={onCloseRepetitions} />
+  if (showUsb) return <RecorderEntry {...props} onClose={onCloseUsb} />
+  return null
+}

@@ -1,3 +1,4 @@
+import { translationProviderSchema } from '../../electron/main/ai/translationPlan'
 import { describe, expect, it, vi } from 'vitest'
 import { prepareTranslation } from '../../electron/main/ai/translationIntegrity'
 import { prepareTranslationPlan, validateTranslationPlan, type TranslationPlan } from '../../electron/main/ai/translationPlan'
@@ -175,4 +176,27 @@ describe('Diagnostica sanitizzata del piano ENG', () => {
       expect(error).toMatchObject({ category: 'invalid_output', isRetryable: false })
     }
   })
+})
+
+it('evita schemi dinamici grandi nel provider senza ridurre il piano da validare', () => {
+  const large = { s0: Array.from({ length: 128 }, (_, i) => ({ key: 'p' + i, translate: 'Testo sintetico ' + i })) }
+  expect(translationProviderSchema(large)).toBeUndefined()
+  expect(translationProviderSchema({ s0: [{ key: 'p0', translate: 'Testo' }] })).toMatchObject({ required: ['s0'] })
+})
+
+
+it('il percorso reale con piano grande omette la grammatica ma valida ancora ogni frammento', async () => {
+  const source = '# Titolo\n\n' + Array.from({ length: 140 }, (_, i) => `Testo ${i} $x_${i}$ prosegue. `).join('')
+  const envelope = prepareTranslation(source)
+  const plan = prepareTranslationPlan(envelope)
+  const response = translate(plan)
+  const manager = new GeminiRequestManager()
+  const generateContent = vi.fn(async (_params: any) => ({ text: JSON.stringify(response), candidates: [{ finishReason: 'STOP' }] }))
+  vi.spyOn(manager.getTransport(), 'getClient').mockReturnValue({ models: { generateContent } } as never)
+  vi.spyOn(manager, 'execute').mockImplementation(async options => options.call('synthetic', 'gemini-3.6-flash', new AbortController().signal) as never)
+  const service = new GeminiService({ requestManager: manager })
+  expect(await service.translateToEnglish({ apiKey: 'synthetic', model: 'gemini-3.6-flash', markdownIta: source })).toBe(source.trim())
+  expect(generateContent.mock.calls[0][0].config.responseJsonSchema).toBeUndefined()
+  delete response.s0.p1
+  await expect(service.translateToEnglish({ apiKey: 'synthetic', model: 'gemini-3.6-flash', markdownIta: source })).rejects.toThrow('frammenti')
 })

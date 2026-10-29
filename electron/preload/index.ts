@@ -12,6 +12,7 @@ import type {
 } from '../../shared/archive'
 
 const archiveApi: ArchiveApi = {
+  answerRepetition: (id, answer) => ipcRenderer.invoke('repetition:answer', id, answer),
   repetitionState: () => ipcRenderer.invoke('repetition:state'),
   selectRepetitionReference: () => ipcRenderer.invoke('repetition:reference'),
   startRepetition: () => ipcRenderer.invoke('repetition:start'),

@@ -39,6 +39,14 @@ export function translationPlanSchema(plan: TranslationPlan) {
   return { type: 'object', properties, required: Object.keys(properties), additionalProperties: false }
 }
 
+/** Large dynamic schemas can be rejected by the provider before generation.
+ * The complete local validator remains mandatory even when no grammar is sent.
+ */
+export function translationProviderSchema(plan: TranslationPlan) {
+  const fields = Object.values(plan).reduce((count, parts) => count + 1 + parts.filter(part => 'key' in part).length, 0)
+  return fields <= 128 ? translationPlanSchema(plan) : undefined
+}
+
 function invalidPlan(detail: string): never {
   throw new GeminiError({ category: 'invalid_output', isRetryable: false, isDailyQuota: false,
     sanitizedMessage: `Traduzione non salvata: frammenti di testo mancanti, duplicati, vuoti o inattesi nella risposta del modello. Dettaglio: ${detail}. Riprova la traduzione; la dispensa italiana e l’eventuale inglese precedente sono conservate.` })
