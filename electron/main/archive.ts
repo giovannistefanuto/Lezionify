@@ -1262,6 +1262,7 @@ export class ArchiveService {
       }
     }
 
+    let attemptSaved = false
     try {
       this.progressCallback?.({
         jobId,
@@ -1280,6 +1281,15 @@ export class ArchiveService {
         keys: managedKeys,
         model: settings.model,
         markdownIta,
+        onAttempt: async (raw, preview) => {
+          await this.repository.runExclusive(async () => {
+            const current = (await this.repository.readLibrary()).lectures.find(item => item.id === id)
+            if (!current || current.markdownFileName !== lecture.markdownFileName || await this.storage.readMarkdown(current.markdownFileName!) !== markdownIta)
+              throw new PipelineSourceChangedError('La dispensa è cambiata durante la traduzione. Riprova.')
+            await this.storage.writeTranslationAttempt(current.markdownFileName!, raw, preview)
+            attemptSaved = true
+          })
+        },
         jobId: `translation:${jobId}:${id}`,
         onRetry: (attempt, delayMs, reason) => {
           this.progressCallback?.({
@@ -1361,7 +1371,7 @@ export class ArchiveService {
         message,
         percent: 0
       })
-      return failure
+      return attemptSaved ? { ...failure, error: `${message} Tentativo inglese non validato conservato nella cartella locale markdown, nei file ${id}_en_tentativo.` } : failure
     }
   }
 

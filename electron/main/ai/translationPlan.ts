@@ -4,6 +4,19 @@ import { protectedTranslationSpans, restoreOriginalMermaid, translationJsonPrope
 type TranslationPart = { keep: string } | { key: string; translate: string }
 export type TranslationPlan = Record<string, TranslationPart[]>
 
+/** Best-effort preview only: never use this in place of the integrity validator. */
+export function previewTranslationAttempt(plan: TranslationPlan, raw: string): string | null {
+  let response: unknown
+  try { response = JSON.parse(raw) } catch { return null }
+  if (!response || typeof response !== 'object' || Array.isArray(response)) return null
+  const sections = response as Record<string, unknown>
+  return Object.entries(plan).map(([section, parts]) => {
+    const values = sections[section]
+    const fragments = values && typeof values === 'object' && !Array.isArray(values) ? values as Record<string, unknown> : {}
+    return parts.map(part => 'keep' in part ? part.keep : typeof fragments[part.key] === 'string' ? fragments[part.key] as string : '[Frammento inglese mancante]').join('')
+  }).join('\n\n')
+}
+
 /** Only prose is returned by the model; original literals are restored locally. */
 export function prepareTranslationPlan(envelope: TranslationEnvelope): TranslationPlan {
   return Object.fromEntries(envelope.sections.map((section, i) => {

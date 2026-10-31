@@ -1705,6 +1705,29 @@ describe('Bilingual ITA/ENG Lectures & Batch Translation', () => {
     expect((await service.translateLectureNotes(lecture.id)).success).toBe(true)
   })
 
+  it('conserva e sostituisce il tentativo ENG senza pubblicarlo come traduzione valida', async () => {
+    const italian = '# Fonte\n\nTesto.'
+    const lecture = await createLectureWithMarkdown('L-attempt', italian)
+    const first = await service.translateLectureNotes(lecture.id)
+    const failed = new GeminiError({ category: 'invalid_output', isRetryable: false, isDailyQuota: false, sanitizedMessage: 'Traduzione non salvata.' })
+    vi.mocked(mockGeminiService.translateToEnglish).mockImplementationOnce(async params => {
+      await params.onAttempt?.('{"first":1}', '# First attempt')
+      throw failed
+    }).mockImplementationOnce(async params => {
+      await params.onAttempt?.('malformed second response', null)
+      throw failed
+    })
+    expect(await service.translateLectureNotes(lecture.id)).toMatchObject({ success: false, error: expect.stringContaining('Tentativo inglese non validato') })
+    const base = join(testArchiveDir, 'markdown', `${lecture.id}_en_tentativo`)
+    expect(await readFile(`${base}.md`, 'utf8')).toContain('# First attempt')
+    expect(await service.readMarkdownEn(lecture.id)).toBe(first.markdown)
+    await service.translateLectureNotes(lecture.id)
+    expect(await readFile(`${base}.txt`, 'utf8')).toBe('malformed second response')
+    expect(await readFile(`${base}.md`, 'utf8')).toContain('Risposta non ricostruibile')
+    expect(await service.readMarkdown(lecture.id)).toBe(italian)
+    expect(await service.readMarkdownEn(lecture.id)).toBe(first.markdown)
+  })
+
   it('translateSelectedNotes esegue la traduzione batch delle lezioni selezionate', async () => {
     const l1 = await createLectureWithMarkdown('B1', '# Dispensa B1')
     const l2 = await createLectureWithMarkdown('B2', '# Dispensa B2')

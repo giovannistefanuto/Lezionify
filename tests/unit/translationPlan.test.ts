@@ -200,3 +200,19 @@ it('il percorso reale con piano grande omette la grammatica ma valida ancora ogn
   delete response.s0.p1
   await expect(service.translateToEnglish({ apiKey: 'synthetic', model: 'gemini-3.6-flash', markdownIta: source })).rejects.toThrow('frammenti')
 })
+
+it('conserva la risposta e la ricostruzione prima del rifiuto strutturale', async () => {
+  const source = '# Titolo\n\nTesto.\n\n```python\nprint(1)\n```'
+  const plan = prepareTranslationPlan(prepareTranslation(source))
+  const response = translate(plan, text => text + '\n\n```js\nextra()\n```')
+  const raw = JSON.stringify(response)
+  const manager = new GeminiRequestManager()
+  vi.spyOn(manager.getTransport(), 'getClient').mockReturnValue({ models: { generateContent: async () => ({ text: raw, candidates: [{ finishReason: 'STOP' }] }) } } as never)
+  vi.spyOn(manager, 'execute').mockImplementation(async options => options.call('synthetic', 'gemini-3.6-flash', new AbortController().signal) as never)
+  const onAttempt = vi.fn(async (_raw: string, _preview: string | null) => {})
+  await expect(new GeminiService({ requestManager: manager }).translateToEnglish({ apiKey: 'synthetic', model: 'gemini-3.6-flash', markdownIta: source, onAttempt })).rejects.toThrow('blocchi di codice')
+  expect(onAttempt).toHaveBeenCalledOnce()
+  expect(onAttempt.mock.calls[0][0]).toBe(raw)
+  expect(onAttempt.mock.calls[0][1]).toContain('print(1)')
+  expect(onAttempt.mock.calls[0][1]).toContain('extra()')
+})

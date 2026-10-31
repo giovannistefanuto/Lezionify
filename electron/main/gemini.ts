@@ -23,7 +23,7 @@ import { CLEANUP_BUDGET_MS } from './ai/geminiPolicy'
 import { getQnaModelFallbackChain } from '../../shared/qnaModelPolicy'
 import { logger } from './logger'
 import { prepareTranslation } from './ai/translationIntegrity'
-import { prepareTranslationPlan, translationProviderSchema, validateTranslationPlan } from './ai/translationPlan'
+import { prepareTranslationPlan, previewTranslationAttempt, translationProviderSchema, validateTranslationPlan } from './ai/translationPlan'
 
 export function toKeyConfigs(apiKey?: string, keys?: KeyConfig[]): KeyConfig[] {
   if (keys && keys.length > 0) return keys
@@ -2220,9 +2220,10 @@ ${params.otherQnaContext ? `ALTRI Q&A PERTINENTI DELLA STESSA LEZIONE (estratti 
     markdownIta: string
     jobId?: string
     onRetry?: (attempt: number, delayMs: number, reason: string) => void
+    onAttempt?: (raw: string, preview: string | null) => Promise<void>
     signal?: AbortSignal
   }): Promise<string> {
-    const { apiKey, keys, model, markdownIta, jobId, onRetry, signal } = params
+    const { apiKey, keys, model, markdownIta, jobId, onRetry, onAttempt, signal } = params
     const keyConfigs = toKeyConfigs(apiKey, keys)
     const { preferred, fallbacks } = getModelFallbackChain(model)
 
@@ -2256,7 +2257,9 @@ ${params.otherQnaContext ? `ALTRI Q&A PERTINENTI DELLA STESSA LEZIONE (estratti 
         if (s.aborted) {
           throw new GeminiError({ category: 'cancelled', isRetryable: false, isDailyQuota: false, sanitizedMessage: 'Traduzione annullata.' })
         }
-        return validateTranslationPlan(envelope, plan, response.text ?? '', response.candidates?.[0]?.finishReason, sections => {
+        const raw = response.text ?? ''
+        if (raw.trim()) await onAttempt?.(raw, previewTranslationAttempt(plan, raw))
+        return validateTranslationPlan(envelope, plan, raw, response.candidates?.[0]?.finishReason, sections => {
           logger.info('translation-integrity', 'Copie display identiche escluse dalla prosa; formule originali conservate e integrità verificata.', JSON.stringify({ sections }))
         }, sections => {
           logger.info('translation-integrity', 'Diagrammi Mermaid originali conservati: traduzione della dispensa completata.', JSON.stringify({ sections }))

@@ -5007,3 +5007,25 @@ Non modificare manualmente la sezione `Registro`: aggiungi le nuove decisioni es
 - **Impatto:** 67 attività complessive: 50 concluse, 9 aperte operative e 8 archiviate. Prima attività LISTA_ORDINE: voce 7 traduttore offline, posizione 22. Nessuna funzione modificata o attività dichiarata completata.
 - **Follow-up:** Affrontare solo le attività operative; riattivare le archiviate su richiesta utente.
 - **File coinvolti:** docs/product/idee-future-2026-10-13.md, docs/README.md, DECISIONI.md
+
+## D-0455 — Conservazione locale del tentativo inglese
+
+- **Data:** 2026-10-31
+- **Stato:** accettata
+- **Area:** traduzione
+- **Decisione:** Salvare la risposta grezza e una ricostruzione Markdown esplicitamente non validata per ogni risposta di traduzione ENG, sostituendole alla risposta successiva e mantenendole separate dalla dispensa valida.
+- **Motivazione:** Permettere il recupero e la correzione manuale di traduzioni rifiutate senza alterare le fonti o accettare contenuti non validati.
+- **Impatto:** File locali associati alla lezione, esclusi da indice e pubblicazione e rimossi con essa; invariati controlli integrita e protezione della versione inglese precedente.
+- **Follow-up:** Verificare la funzionalita nel setup e usare un nuovo tentativo per la lezione precedente, la cui risposta non era stata conservata.
+- **File coinvolti:** electron/main/ai/translationPlan.ts, electron/main/gemini.ts, electron/main/archive.ts, electron/main/fileStorage.ts, tests/unit, docs/product/traduzione-dispense.md, STRUTTURA_PROGETTO.md
+
+## D-0456 — Installer con tentativi ENG locali
+
+- **Data:** 2026-10-31
+- **Stato:** accettata
+- **Area:** distribuzione
+- **Decisione:** Rigenerato il setup Windows con conservazione dei tentativi di traduzione inglese, lasciando installazione e ripetizione della traduzione all utente.
+- **Motivazione:** Rendere disponibile la funzione richiesta mantenendo copia verificata del setup precedente.
+- **Impatto:** Setup 299974574 byte SHA256 a813a6bc8023785cf5ec193770423c84a8fc0e7eb90973eb192d1471bf572dfe; 377 file build confrontati, manifesto blockmap backup e marcatori funzione verificati; 796 test unit, typecheck e lint superati.
+- **Follow-up:** Committare e pubblicare i sorgenti, verificare il remoto e installare il setup con Lezionify chiuso; risposta personale precedente non recuperabile.
+- **File coinvolti:** dist/Lezionify-Setup-0.1.0.exe, DECISIONI.md, docs/product/traduzione-dispense.md, electron/main, tests/unit

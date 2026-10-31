@@ -50,6 +50,18 @@ stesso corpus. Non esiste un fallback automatico a parti in questa versione.
 
 ## Controlli implementati
 
+Ogni risposta non vuota per la traduzione inglese viene conservata localmente
+prima della validazione, nella cartella `markdown` della libreria: il file
+`<id>_en_tentativo.md` contiene una ricostruzione marcata come non validata e
+`<id>_en_tentativo.txt` conserva la risposta originale. Se il JSON non è
+ricostruibile, il Markdown lo segnala e il testo grezzo rimane disponibile.
+La risposta successiva per la stessa lezione sostituisce entrambi i file;
+un errore senza risposta lascia il tentativo precedente. Non sono l'inglese
+ufficiale, non vengono indicizzati o pubblicati e possono essere incompleti.
+La versione inglese valida precedente e la fonte italiana restano indipendenti.
+I tentativi sono inclusi nella rimozione della lezione. I tentativi scartati
+prima di questa modifica non sono recuperabili.
+
 La fonte viene divisa localmente al preambolo e ai titoli ATX (`#` … `######`)
 fuori da codice e formule. Dal 19 ottobre `translationPlan.ts` distingue, in
 ogni sezione, frammenti di prosa da tradurre e contenuti da conservare: formule

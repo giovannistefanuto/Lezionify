@@ -2,6 +2,11 @@
 
 ## Stato attuale
 
+Le traduzioni inglesi conservano localmente l'ultima risposta e una
+ricostruzione di tentativo non validata, separata dalla dispensa inglese valida;
+la risposta successiva le sostituisce. Dettagli e limiti in
+`docs/product/traduzione-dispense.md`.
+
 D-0453 rigenera il setup Windows 0.1.0 con D-0449–D-0451: 377 file build
 confrontati, nuove funzioni, corpus/licenze e payload NSIS verificati. Runtime
 RAG isolato positivo, incluse inferenza senza rete, worker PDF e gestione
