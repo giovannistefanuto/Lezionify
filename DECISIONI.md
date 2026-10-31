@@ -4996,3 +4996,14 @@ Non modificare manualmente la sezione `Registro`: aggiungi le nuove decisioni es
 - **Impatto:** 377 file build identici al pacchetto, nuove funzioni e corpus con licenze verificati, manifesto blockmap e tre backup controllati. Otto componenti NSIS estratti senza eseguire setup e confrontati. Runtime RAG isolato, inferenza senza rete, PDF, modello mancante/corrotto e preparazione pubblica esplicita superati. Fonte gia verificata con 794 test unit, typecheck lint Electron con riavvio e PDF reali.
 - **Follow-up:** Commit e push automatici di tutte le modifiche pubblicabili secondo AGENTS e verifica finale sul remoto. Installare il setup con Lezionify chiuso; nessuna ulteriore chiamata AI eseguita, contatore resta 18 su 20.
 - **File coinvolti:** DECISIONI.md, STRUTTURA_PROGETTO.md, docs/product/interventi-selezionati-2026-10-29.md, tools/verify_installer.cjs, sorgenti test e documentazione D-0447-D-0451, dist/Lezionify-Setup-0.1.0.exe
+
+## D-0454 — Archiviazione temporanea di otto attività
+
+- **Data:** 2026-10-29
+- **Stato:** accettata
+- **Area:** pianificazione
+- **Decisione:** Archiviate per ora le voci 33,63,75,32,31,17,106,110, corrispondenti ai numeri 1,5,7,8,9,10,14,15 della lista in chat. Escluse dalla coda operativa fino a richiesta esplicita di riattivazione; descrizioni e stato tecnico conservati.
+- **Motivazione:** L utente indica che queste attività per ora non servono e ne richiede l archiviazione.
+- **Impatto:** 67 attività complessive: 50 concluse, 9 aperte operative e 8 archiviate. Prima attività LISTA_ORDINE: voce 7 traduttore offline, posizione 22. Nessuna funzione modificata o attività dichiarata completata.
+- **Follow-up:** Affrontare solo le attività operative; riattivare le archiviate su richiesta utente.
+- **File coinvolti:** docs/product/idee-future-2026-10-13.md, docs/README.md, DECISIONI.md

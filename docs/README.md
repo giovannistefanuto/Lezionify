@@ -59,7 +59,7 @@ confronto con appunti personali Markdown/TXT, archivio locale e ripresa.
 
 - [Lettura ed esportazione PDF](product/lettura-export-pdf.md): riquadri inglesi, export della lezione e del corso, ripresa locale di dispense e slide dopo il riavvio.
 
-- [Idee future e Coda LISTA_ORDINE](product/idee-future-2026-10-13.md): al 23 ottobre 44 attività, 25 concluse e 19 aperte; prima la diagnosi Ctrl+L personale. Le validazioni RAG 90–92 restano parziali. Lista, riassunto Gemini e tutti i 13 rilievi UX/UI conservati.
+- [Idee future e Coda LISTA_ORDINE](product/idee-future-2026-10-13.md): al 29 ottobre 67 attività, 50 concluse, 9 aperte operative e 8 archiviate per ora; prima il traduttore offline (voce 7). Le validazioni RAG 90–92 restano parziali. Lista, riassunto Gemini e tutti i 13 rilievi UX/UI conservati.
 - [Vocabolario offline](product/vocabolario-offline.md): Ctrl+T in Focus e fuori, inglese ↔ italiano, parole e locuzioni senza Gemini.
 - [Sette migliorie dell’archivio e della discussione](product/idee-da-valutare.md): colori dei corsi, laboratori, lunghezza delle dispense, notifica USB, lettura e ridimensionamento della discussione e log AI.
 - [Dispense, posizione PDF e tempo della lezione](product/study-reader-improvements.md): piano e verifiche dei tag, della conservazione della slide e dei tempi nel Focus Lock.

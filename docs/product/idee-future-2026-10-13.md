@@ -17,7 +17,7 @@ Le ricerche concluse non chiudono le caselle delle funzioni ancora da integrare.
 
 ## Coda LISTA_ORDINE
 
-### Ordine operativo aggiornato al 23 ottobre 2026
+### Ordine operativo aggiornato al 29 ottobre 2026
 
 **Stato al 28 ottobre, D-0437–D-0444:** 62 attività, 44 concluse e 18 aperte. I dodici interventi sono implementati e collaudati; verifica del provider e calibrazione sul nuovo uso personale restano limiti espliciti nel [report](studio-dodici-interventi-2026-10-28.md). Ordine invariato; prima voce aperta 33.
 
@@ -32,6 +32,8 @@ RIPETERE all'avvio con registratore collegato. Totale: 67 attività,
 44 concluse e 23 aperte. Ordine precedente invariato; bug da riprodurre.
 
 **Implementazione del 29 ottobre, D-0450:** concluse le voci 9 e 117–121 della richiesta diretta; **67 attività, 50 concluse e 17 aperte**. Le altre sei selezionate restano aperte per i limiti riportati nel [resoconto](interventi-selezionati-2026-10-29.md). Prima voce aperta 33 invariata.
+
+**Archiviazione temporanea del 29 ottobre:** su richiesta utente, le voci 33, 63, 75, 32, 31, 17, 106 e 110 sono spostate in «Archiviate per ora». Totale invariato: **67 attività, 50 concluse, 9 aperte operative e 8 archiviate**. Le posizioni precedenti sono conservate per riferimento; la prima attività operativa è ora la **voce 7, traduttore offline**, posizione 22. Le archiviate non vengono avviate da `LISTA_ORDINE` e richiedono una richiesta esplicita di riattivazione.
 
 Su richiesta dell'utente, tutte le attività aperte sono riordinate per facilità
 crescente, includendo lista, riassunto Gemini e interventi del
@@ -65,7 +67,6 @@ avviata da questo aggiornamento documentale (D-0390).
 | 15. [x] | Memo: leggere attività lunghe anche senza hover — U11 | 86 | D-0392: implementata e collaudata; dettagli e limiti nel report del 22 ottobre. |
 | 16. [x] | Chat di corso: corso, copertura e certezza visibili — U09 | 84 | D-0392: implementata e collaudata; dettagli e limiti nel report del 22 ottobre. |
 | 17. [x] | Scelta per corso delle lezioni da pubblicare su GitHub | 68 | D-0392: implementata e collaudata; dettagli e limiti nel report del 22 ottobre. |
-| 18. [ ] | Ctrl / Ctrl+L e cerchio bianco attorno al mouse | 33 | Media incerta: test nativi positivi e cerchio spiegato; serve l'episodio personale storico. |
 | 19. [x] | Diagnosi della stima di studio che non funziona | 70 | D-0433: corretti i buchi di campionamento della viewport; regressioni Electron e comunicazione delle soglie verificate. |
 | 20. [x] | Formule Q&A: caso epsilon-greedy / epsilon-soft | 73 | D-0437: normalizzazione condivisa, epsilon/cases, streaming e copia collaudati; testo grezzo conservato. |
 | 21. [x] | Diagnosi errore course-rag:ask «Risposta non completata» | 69 | D-0392: output strutturato, fallback e retry collaudati; due prove RAG complete reali riuscite con fonti sintetiche. D-0395: recupero da timeout/503 e confronto RL reale verificato, con 12 invii e 10 minuti condivisi: [diagnosi](../quality/rag-recupero-2026-10-22.md). |
@@ -74,14 +75,9 @@ avviata da questo aggiornamento documentale (D-0390).
 | 24. [ ] | Verifica personale residua delle versioni ENG mancanti | 20 | Media incerta: riusare diagnosi/correzioni, serve un caso dopo l'aggiornamento. |
 | 25. [x] | Ctrl+T: modalità Dizionario italiano oltre al traduttore | 71 | D-0439: corpus italiano offline con flessioni e licenza, switch e input conservato verificati. |
 | 26. [ ] | Pilota personale della sezione musica | 5 | Media con dipendenza esterna: account, PC e cuffie; rinvio precedente conservato. |
-| 27. [ ] | Percorso rapido Mermaid → iPad → nota Notability corrente | 63 | Medio/alta: intera catena e prova reale tra dispositivi. |
 | 28. [x] | Misurare l'inattività personale e chiedere se si studia ancora | 56 | D-0443: osservazione volontaria, proposta da confermare e dialogo con timer fermo collaudati; nessuna sottrazione retroattiva. |
 | 29. [x] | Rigenerare un singolo paragrafo dalla trascrizione | 59 | D-0444: sezione ITA con fonte completa dichiarata, anteprima, conferma, CAS, ripristino ed ENG conservata da aggiornare. |
 | 30. [ ] | Completare transizioni canzone → canzone / canzone → suono | 38 | Alta e vincolata ai player: dissolvenze offline già implementate, limiti D-0370. |
-| 31. [ ] | Valutare limite YouTube di 30 minuti al giorno negli orari di studio | 75 | Alta: strumento esterno e perimetro d'uso da concordare, affidabilità su PC da provare. |
-| 32. [ ] | Timer pausa sul telefono | 32 | Alta: trasporto locale e avvisi affidabili a schermo bloccato. |
-| 33. [ ] | Audio nel Q&A e registrazione dal telefono | 31 | Alta: acquisizione, trasferimento, allegati e invio AI esplicito. |
-| 34. [ ] | Timer pausa su Amazfit Balance originale | 17 | Molto alta/bloccata sul trasporto: prototipo presente, collegamento hardware non pronto. |
 | 35. [x] | RAG: benchmark rappresentativo con evidenze annotate e casi negativi | 89 | D-0400–D-0403: implementata e collaudata; [uso e limiti](rag-completamento-2026-10-23.md). |
 | 36. [ ] | RAG: valutare le risposte complete sulle fonti reali | 90 | Medio/alta: giudizi annotati, budget AI tracciato e prove ripetute. |
 | 37. [ ] | RAG: verificare il supporto delle singole affermazioni | 91 | Alta: citazioni pertinenti, contraddizioni e provenienza senza false garanzie. |
@@ -99,11 +95,9 @@ avviata da questo aggiornamento documentale (D-0390).
 | 49. [x] | Rimuovere testo della pausa scaduta | 103 | D-0404/D-0405: testo rimosso, statistiche conservate. |
 | 50. [x] | Spotify: correggere play/pausa e rigenerare installer | 104 | D-0404/D-0405: regressioni trasporto e suoni attivi; installer verificato. |
 | 51. [x] | Pipeline: recuperare automaticamente gli import arrivati durante la coda | 105 | D-0438: import persistenti e passaggio serializzato; pianificazione concorrente, stop, pause ed errori collaudati. |
-| 52. [ ] | Comandi delle cuffiette EarFun per musica e suoni | 106 | Media: integrazione comandi multimediali e prova hardware. |
 | 53. [x] | Dollari monetari e formule: prosa deformata | 107 | D-0437: riparazioni monetarie mirate, formule valide e codice conservati; regressioni positive. |
 | 54. [x] | Sveglia: minuti rimanenti nel tooltip | 108 | D-0440: tooltip aggiornato con residuo, singolare, domani e scadenza verificati. |
 | 55. [x] | Chiedi a Gemini: focus domanda e impostazioni iniziali | 109 | D-0440: focus domanda e default SÌ/NO/Breve; Invio, Shift+Invio e IME verificati. |
-| 56. [ ] | Ordine modelli per schemi e confronto Gemini 3.8 / 4 | 110 | Media: benchmark reale con quote, tempi e costi tracciati. |
 | 57. [x] | Sottolineatura Focus e collaudo evidenziatore | 111 | D-0441: sottolineatura persistente, selezione DOM, sovrapposizione, formule e isolamento IT/EN collaudati. |
 | 58. [x] | Ricerca online facoltativa nelle domande Gemini | 112 | D-0442: ricerca web per domanda e fonti separate implementate; contratto SDK simulato, disponibilità reale dipendente dal progetto. |
 | 59. [x] | Stima per paragrafo: parole, numeri e ritmo di oggi | 113 | D-0443: raccolta e modello per paragrafi implementati; baseline/holdout e DOM verificati, calibrazione personale da nuovi campioni. |
@@ -115,9 +109,8 @@ avviata da questo aggiornamento documentale (D-0390).
 | 65. [x] | Preparare il RAG prima dell'invio della domanda | 119 | D-0450: implementata/verificata; esiti e limiti nel report interventi-selezionati-2026-10-29.md. |
 | 66. [x] | Memo aperto con Ctrl+M ma non scrivibile dentro RIPETERE | 120 | D-0450: implementata/verificata; esiti e limiti nel report interventi-selezionati-2026-10-29.md. |
 | 67. [x] | Blocco di RIPETERE quando compare il popup delle lezioni all'avvio | 121 | D-0450: implementata/verificata; esiti e limiti nel report interventi-selezionati-2026-10-29.md. |
-
 Le prime 17 posizioni e la 21 sono concluse in D-0392 su richiesta diretta dopo grilling (D-0391). [Uso, verifiche e limiti](interventi-2026-10-22.md).
-La prima attività ancora aperta è la **voce 33, diagnosi Ctrl+L personale**, posizione 18. Ogni invocazione
+La prima attività operativa ancora aperta è la **voce 7, traduttore offline**, posizione 22. Ogni invocazione
 letterale di `LISTA_ORDINE` autorizza implementazione e collaudo della prima
 casella aperta, una sola attività. Leggere prima la descrizione completa e le
 decisioni successive. Aggiornare tabella e descrizione soltanto dopo le verifiche;
@@ -140,6 +133,21 @@ Le posizioni 1–34 e la prima voce aperta 33 restano invariate; l'aggiunta non
 aveva avviato implementazioni o riaperto le funzioni RAG già concluse.
 Il lavoro del 23 ottobre è autorizzato dalla richiesta diretta, non da LISTA_ORDINE.
 
+
+### Archiviate per ora — 29 ottobre 2026
+
+Queste otto attività corrispondono ai numeri 1, 5, 7, 8, 9, 10, 14 e 15 della lista riepilogativa fornita in chat. Sono sospese perché per ora non servono: non sono completate né annullate. Descrizioni, ricerche e limiti restano conservati nelle voci originali; le loro caselle storiche non le reinseriscono nella coda operativa. Riattivazione solo su richiesta dell'utente.
+
+| Posizione precedente | Attività | Voce | Stato tecnico conservato |
+| --- | --- | --- | --- |
+| 18 | Ctrl / Ctrl+L e cerchio bianco attorno al mouse | 33 | Media incerta: test nativi positivi e cerchio spiegato; serve l'episodio personale storico. |
+| 27 | Percorso rapido Mermaid → iPad → nota Notability corrente | 63 | Medio/alta: intera catena e prova reale tra dispositivi. |
+| 31 | Valutare limite YouTube di 30 minuti al giorno negli orari di studio | 75 | Alta: strumento esterno e perimetro d'uso da concordare, affidabilità su PC da provare. |
+| 32 | Timer pausa sul telefono | 32 | Alta: trasporto locale e avvisi affidabili a schermo bloccato. |
+| 33 | Audio nel Q&A e registrazione dal telefono | 31 | Alta: acquisizione, trasferimento, allegati e invio AI esplicito. |
+| 34 | Timer pausa su Amazfit Balance originale | 17 | Molto alta/bloccata sul trasporto: prototipo presente, collegamento hardware non pronto. |
+| 52 | Comandi delle cuffiette EarFun per musica e suoni | 106 | Media: integrazione comandi multimediali e prova hardware. |
+| 56 | Ordine modelli per schemi e confronto Gemini 3.8 / 4 | 110 | Media: benchmark reale con quote, tempi e costi tracciati. |
 
 ### Attività concluse nel secondo ordine del 21 ottobre — non operative
 
@@ -626,6 +634,8 @@ senza anticipare che i timer attuali escludano già quei minuti.
 
 ### 17. Timer pausa offline su Amazfit Balance originale
 
+**Stato attuale: archiviata per ora dal 29 ottobre 2026, su richiesta utente. Esclusa da LISTA_ORDINE fino a riattivazione esplicita.**
+
 Aggiornamento 15 ottobre: accettati i quattro compromessi in D-0304.
 [Nucleo prototipo e blocco del trasporto](../../prototypes/balance-pause/README.md)
 collaudato in D-0310; mini app installabile e collegamento hardware non pronti.
@@ -895,6 +905,8 @@ durante l'ascolto delle lezioni in `AudioPlayer` con ripresa automatica.
 
 ### 31. Domande audio nel Q&A e registrazione dal telefono
 
+**Stato attuale: archiviata per ora dal 29 ottobre 2026, su richiesta utente. Esclusa da LISTA_ORDINE fino a riattivazione esplicita.**
+
 - [ ] Valutare la possibilità di allegare un audio al Q&A.
 - [ ] Capire come registrare dal telefono e far arrivare automaticamente la registrazione al portatile, eventualmente con un'app dedicata.
 - [ ] Valutare Bluetooth e un collegamento con il progetto Amazfit Balance della voce 17.
@@ -909,6 +921,8 @@ Balance offra già un canale Bluetooth utilizzabile dal telefono.
 
 ### 32. Timer della pausa sul telefono in tasca
 
+**Stato attuale: archiviata per ora dal 29 ottobre 2026, su richiesta utente. Esclusa da LISTA_ORDINE fino a riattivazione esplicita.**
+
 - [ ] Valutare di trasferire dal Balance al telefono l'idea «mi distacco e vado in pausa», con un avviso sonoro alla scadenza mentre il telefono è in tasca.
 
 Alternativa da valutare alla voce 17, senza cancellare la richiesta per il watch.
@@ -920,6 +934,8 @@ che non è ancora un requisito definito. Conservare pausa 5/15/30 minuti e ripre
 esplicita dello studio; la scadenza non deve conteggiare automaticamente studio.
 
 ### 33. Ctrl+L seleziona la schermata ma non cambia lingua
+
+**Stato attuale: archiviata per ora dal 29 ottobre 2026, su richiesta utente. Esclusa da LISTA_ORDINE fino a riattivazione esplicita.**
 
 - [ ] Riprodurre e indagare la segnalazione «Ctrl+L va a selezionare la schermata ma non cambia la lingua».
 
@@ -1515,6 +1531,8 @@ una scelta che può essere interamente locale.
 
 ### 63. Mermaid dalla dispensa alla nota corrente di Notability su iPad
 
+**Stato attuale: archiviata per ora dal 29 ottobre 2026, su richiesta utente. Esclusa da LISTA_ORDINE fino a riattivazione esplicita.**
+
 - [ ] Esaminare l'intera catena di componenti, strumenti e possibili installazioni per trasferire l'immagine di uno schema Mermaid da Lezionify all'iPad.
 - [ ] Confrontare i percorsi per inserirla nella nota Notability su cui si sta già lavorando, riducendo passaggi e tempo totale.
 - [ ] Eseguire un pilota del percorso scelto, distinguendo esportazione, trasferimento e inserimento nella nota corrente.
@@ -1777,6 +1795,8 @@ scadenza e finestra piccola. Distinta dai trasporti telefono/watch (32/17) e
 dall'eventuale overlay grafico studiato nella ricerca sul gatto.
 
 ### 75. YouTube: valutare un limite di 30 minuti al giorno negli orari di studio
+
+**Stato attuale: archiviata per ora dal 29 ottobre 2026, su richiesta utente. Esclusa da LISTA_ORDINE fino a riattivazione esplicita.**
 
 - [ ] Valutare uno strumento esterno che limiti l'uso di YouTube a **30 minuti al giorno**, anche sul computer, nelle fasce di studio specificate.
 
@@ -2213,6 +2233,8 @@ Le caselle restano aperte anche quando la causa è riprodotta.
 
 ### 106. Comandi delle cuffiette EarFun
 
+**Stato attuale: archiviata per ora dal 29 ottobre 2026, su richiesta utente. Esclusa da LISTA_ORDINE fino a riattivazione esplicita.**
+
 - [ ] Gestire pausa/ripresa con un tocco e prossimo suono/brano con due tocchi, nei limiti dei comandi effettivamente configurati nelle cuffie.
 
 L'utente riferisce che i gesti funzionano già su PC e telefono: non assumere
@@ -2258,6 +2280,8 @@ Shift+Invio e composizione IME. Coordinare con la voce 114: il focus abilita
 anche lo stato di composizione necessario per selezionare le slide.
 
 ### 110. Ordine dei modelli per gli schemi e disponibilità del 3.8
+
+**Stato attuale: archiviata per ora dal 29 ottobre 2026, su richiesta utente. Esclusa da LISTA_ORDINE fino a riattivazione esplicita.**
 
 - [ ] Documentare e testare l'ordine reale dei modelli usati per generare dispense/schemi, il momento in cui si raggiunge il 3.8 e il confronto con Gemini 4.
 
