@@ -35,6 +35,8 @@ RIPETERE all'avvio con registratore collegato. Totale: 67 attività,
 
 **Archiviazione temporanea del 29 ottobre:** su richiesta utente, le voci 33, 63, 75, 32, 31, 17, 106 e 110 sono spostate in «Archiviate per ora». Totale invariato: **67 attività, 50 concluse, 9 aperte operative e 8 archiviate**. Le posizioni precedenti sono conservate per riferimento; la prima attività operativa è ora la **voce 7, traduttore offline**, posizione 22. Le archiviate non vengono avviate da `LISTA_ORDINE` e richiedono una richiesta esplicita di riattivazione.
 
+**Aggiunta del 1 novembre:** la diagnosi approfondita delle difficoltà di traduzione ITA→ENG diventa la voce 122, posizione 68, senza modificare l'ordine precedente: **68 attività, 50 concluse, 10 aperte operative e 8 archiviate**.
+
 Su richiesta dell'utente, tutte le attività aperte sono riordinate per facilità
 crescente, includendo lista, riassunto Gemini e interventi del
 [report UX/UI del 21 ottobre](../quality/audit-ux-ui-2026-10-21.md).
@@ -109,6 +111,7 @@ avviata da questo aggiornamento documentale (D-0390).
 | 65. [x] | Preparare il RAG prima dell'invio della domanda | 119 | D-0450: implementata/verificata; esiti e limiti nel report interventi-selezionati-2026-10-29.md. |
 | 66. [x] | Memo aperto con Ctrl+M ma non scrivibile dentro RIPETERE | 120 | D-0450: implementata/verificata; esiti e limiti nel report interventi-selezionati-2026-10-29.md. |
 | 67. [x] | Blocco di RIPETERE quando compare il popup delle lezioni all'avvio | 121 | D-0450: implementata/verificata; esiti e limiti nel report interventi-selezionati-2026-10-29.md. |
+| 68. [ ] | Indagare e collaudare le difficoltà della traduzione delle dispense ITA→ENG | 122 | Alta e incerta: diagnosi completa dei fallimenti, regressioni, qualità delle traduzioni e limiti del provider. |
 Le prime 17 posizioni e la 21 sono concluse in D-0392 su richiesta diretta dopo grilling (D-0391). [Uso, verifiche e limiti](interventi-2026-10-22.md).
 La prima attività operativa ancora aperta è la **voce 7, traduttore offline**, posizione 22. Ogni invocazione
 letterale di `LISTA_ORDINE` autorizza implementazione e collaudo della prima
@@ -2494,6 +2497,17 @@ Collaudare popup prima e dopo l'ingresso in RIPETERE, rilevamento USB lento,
 chiusura dei dialoghi e riapertura; verificare interazione, stato del lavoro
 e conservazione di audio, trascrizione e progressi. La casella resta aperta
 fino a diagnosi, gestione concordata quando necessaria e collaudo della correzione.
+
+## Aggiunta del 1 novembre 2026 — traduzione delle dispense
+
+### 122. Indagare e collaudare le difficoltà della traduzione ITA→ENG
+
+- [ ] Capire con evidenze perché la traduzione delle dispense italiane in inglese fallisce o risulta difficile, distinguendo le cause effettive senza attribuirle anticipatamente a un solo componente.
+- [ ] Riprodurre e verificare sistematicamente le categorie di errore individuate, correggere i difetti confermati e aggiungere collaudi di regressione pertinenti; documentare i limiti ancora aperti.
+
+Riutilizzare la voce 20, la diagnosi storica della voce 43, `traduzione-dispense.md`, le prove e i tentativi locali disponibili. Esaminare preparazione e dimensione della richiesta, modello e provider, quote e timeout, risposte troncate o malformate, ricostruzione, integrità strutturale, fedeltà e completezza della prosa, salvataggio e prosecuzione della coda. Distinguere errori reali da falsi rifiuti, senza indebolire i controlli o presentare tentativi parziali come traduzioni valide. D-0455 e D-0458 conservano rispettivamente le risposte disponibili e la prosecuzione della coda ENG; nessuno dei due dimostra che la causa originaria sia risolta.
+
+Usare casi sintetici riproducibili e, se disponibili e autorizzati, evidenze personali senza pubblicare contenuti o dati sensibili. Eventuali invii AI devono essere espliciti e tracciabili. Riportare copertura, esiti, costi o quote delle prove e limiti: non promettere di escludere ogni bug possibile. Questa voce approfondisce l'affidabilità generale; la voce 20 conserva la verifica personale residua delle versioni mancanti.
 
 ## Nota sulla classificazione
 

@@ -5029,3 +5029,58 @@ Non modificare manualmente la sezione `Registro`: aggiungi le nuove decisioni es
 - **Impatto:** Setup 299974574 byte SHA256 a813a6bc8023785cf5ec193770423c84a8fc0e7eb90973eb192d1471bf572dfe; 377 file build confrontati, manifesto blockmap backup e marcatori funzione verificati; 796 test unit, typecheck e lint superati.
 - **Follow-up:** Committare e pubblicare i sorgenti, verificare il remoto e installare il setup con Lezionify chiuso; risposta personale precedente non recuperabile.
 - **File coinvolti:** dist/Lezionify-Setup-0.1.0.exe, DECISIONI.md, docs/product/traduzione-dispense.md, electron/main, tests/unit
+
+## D-0457 — Skill per recupero manuale dispense inglesi
+
+- **Data:** 2026-11-01
+- **Stato:** accettata
+- **Area:** skill-traduzione
+- **Decisione:** Installata la skill personale ripara-dispense-inglesi per inventariare le lezioni e recuperare manualmente le dispense inglesi una per volta.
+- **Motivazione:** Rendere ripetibile il recupero distinguendo errori, traduzioni mai avviate e tentativi non validati, preservando le fonti.
+- **Impatto:** La skill prevede confronto integrale, controlli strutturali, backup e verifica di archivio e ricerca; nessuna modifica alle lezioni o chiamata API durante la creazione.
+- **Follow-up:** Invocare la skill quando si desidera eseguire il recupero sulla libreria personale.
+- **File coinvolti:** C:/Users/Utente/.codex/skills/ripara-dispense-inglesi/SKILL.md, DECISIONI.md
+
+## D-0458 — Proseguire la coda dopo errori ENG
+
+- **Data:** 2026-11-01
+- **Stato:** accettata
+- **Area:** traduzione-pipeline
+- **Decisione:** Durante la fase di traduzione inglese registrare ogni fallimento e proseguire con le lezioni successive anche per errori provider; annullamento e problemi di persistenza continuano a fermare la coda.
+- **Motivazione:** Consentire il recupero manuale dei tentativi disponibili dopo la lavorazione delle altre lezioni come richiesto, mantenendo separati i risultati non validati dalle dispense ufficiali.
+- **Impatto:** Resta salvata ogni risposta non vuota secondo il meccanismo esistente; senza risposta non si puo ottenere contenuto parziale. Possibili ulteriori tentativi e attese entro i limiti del gestore condiviso; le fasi audio e ITA sono invariate.
+- **Follow-up:** Verificare nella installazione aggiornata; usare la skill ripara-dispense-inglesi per le lezioni rimaste fallite.
+- **File coinvolti:** electron/main/ai/archivePipeline.ts, tests/unit/archivePipeline.test.ts, docs/product/traduzione-dispense.md, STRUTTURA_PROGETTO.md
+
+## D-0459 — Diagnosi approfondita traduzione dispense ENG
+
+- **Data:** 2026-11-01
+- **Stato:** accettata
+- **Area:** pianificazione
+- **Decisione:** Aggiunta in fondo alla coda la voce 122 per indagare le difficolta della traduzione ITA ENG, riprodurre e collaudare le categorie di errore e correggere i difetti confermati.
+- **Motivazione:** Conservare la nuova richiesta senza confondere la verifica personale della voce 20 con una diagnosi generale o dichiarare risolti i limiti precedenti.
+- **Impatto:** Coda di 68 attivita, con 50 concluse, 10 aperte operative e 8 archiviate; ordine precedente invariato e nessuna prova AI avviata.
+- **Follow-up:** Eseguire la voce secondo la coda o su richiesta diretta, riutilizzando indagini e tentativi disponibili.
+- **File coinvolti:** docs/product/idee-future-2026-10-13.md, DECISIONI.md
+
+## D-0460 — Recupero parziale delle dispense inglesi
+
+- **Data:** 2026-11-01
+- **Stato:** accettata
+- **Area:** recupero-eng
+- **Decisione:** Controllate 42 lezioni: recuperata manualmente una traduzione mancante dal tentativo locale, correggendo un frammento e una tabella, con backup e controlli della fonte, struttura e ricerca.
+- **Motivazione:** Rendere disponibile il testo recuperabile senza sovrascrivere fonti o considerare attendibile il tentativo non validato.
+- **Impatto:** Lezioni con ENG da 40 a 41; una dispensa resta senza ENG e senza tentativo. Verificata rilettura tramite repository e ricerca locale, interfaccia della app non ancora verificata. Nessun invio AI.
+- **Follow-up:** Completare manualmente la traduzione integrale rimanente e verificare apertura nella app della lezione recuperata.
+- **File coinvolti:** Archivio locale personale fuori dal repository, DECISIONI.md
+
+## D-0461 — Installer con prosecuzione delle traduzioni ENG
+
+- **Data:** 2026-11-01
+- **Stato:** accettata
+- **Area:** distribuzione
+- **Decisione:** Rigenerato installer generale con la prosecuzione della coda dopo i fallimenti ENG, conservando copia del precedente e mantenendo separati i tentativi non validati.
+- **Motivazione:** Distribuire il comportamento richiesto e collaudato, conservando fonti locali e possibilita di recupero manuale.
+- **Impatto:** Setup 299974465 byte SHA256 ec93e4e42ab71fceb0f94f17c3f62e523db60eb6897b2803510bfa5b4dc0edff; 377 file build, manifesto, backup e otto file NSIS verificati. 802 test unit, typecheck e lint riusciti. Nessuna installazione o chiamata AI.
+- **Follow-up:** Commit e push automatici secondo AGENTS, verifica del remoto; installare con app chiusa. Completare la traduzione residua e verifica in app.
+- **File coinvolti:** dist/Lezionify-Setup-0.1.0.exe, electron/main/ai/archivePipeline.ts, tests/unit/archivePipeline.test.ts, docs/product/traduzione-dispense.md, DECISIONI.md

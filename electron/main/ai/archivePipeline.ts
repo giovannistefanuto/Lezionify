@@ -584,7 +584,9 @@ export class ArchivePipeline {
       const message = result.error || 'Operazione non completata.'
       const failureKind = result.failureKind ?? classifyFailure(message)
       await this.completeTask(task, 'failed', message, failureKind)
-      if (isProviderPause(failureKind) || failureKind === 'cancelled') {
+      // Un errore ENG resta visibile sul singolo task; prova anche le altre
+      // lezioni. L'annullamento esplicito continua a fermare tutta la coda.
+      if ((stage !== 'translation' && isProviderPause(failureKind)) || failureKind === 'cancelled') {
         this.status = {
           ...this.status,
           status: 'paused',

@@ -6,6 +6,11 @@ Le traduzioni inglesi conservano localmente l'ultima risposta e una
 ricostruzione di tentativo non validata, separata dalla dispensa inglese valida;
 la risposta successiva le sostituisce. Dettagli e limiti in
 `docs/product/traduzione-dispense.md`.
+Gli errori della singola traduzione ENG non fermano le lezioni successive;
+annullamento e problemi di persistenza locale continuano a fermare la coda.
+Il setup Windows rigenerato D-0461 include la modifica: 802 test unit,
+typecheck, lint e controlli del pacchetto superati. Nell'archivio personale
+una dispensa ENG è stata recuperata da un tentativo; una resta da tradurre.
 
 D-0453 rigenera il setup Windows 0.1.0 con D-0449–D-0451: 377 file build
 confrontati, nuove funzioni, corpus/licenze e payload NSIS verificati. Runtime

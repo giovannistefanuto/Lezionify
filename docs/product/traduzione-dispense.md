@@ -62,6 +62,17 @@ La versione inglese valida precedente e la fonte italiana restano indipendenti.
 I tentativi sono inclusi nella rimozione della lezione. I tentativi scartati
 prima di questa modifica non sono recuperabili.
 
+La pipeline, dopo un errore della singola traduzione ENG, registra il task
+fallito e prova le lezioni successive, anche quando l'errore riguarda quota,
+rete, accesso o disponibilità del provider. Questo può comportare ulteriori
+tentativi e attese per ogni lezione: i limiti e il gestore condiviso del
+provider restano attivi. L'annullamento ferma la coda; errori di persistenza
+locale la sospendono. Per trascrizione audio e dispensa ITA rimane la pausa
+per errori del provider. Alla fine le lezioni fallite restano da controllare;
+non vengono dichiarate tradotte. Se il provider non restituisce alcuna
+risposta, non esiste contenuto parziale da salvare e un eventuale tentativo
+precedente rimane invariato.
+
 La fonte viene divisa localmente al preambolo e ai titoli ATX (`#` … `######`)
 fuori da codice e formule. Dal 19 ottobre `translationPlan.ts` distingue, in
 ogni sezione, frammenti di prosa da tradurre e contenuti da conservare: formule

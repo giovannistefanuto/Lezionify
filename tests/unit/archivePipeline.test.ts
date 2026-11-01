@@ -75,6 +75,33 @@ function operationsFor(lectures: Lecture[]) {
 }
 
 describe('ArchivePipeline', () => {
+  it.each(['provider_unavailable', 'network', 'quota_exhausted', 'rate_limited', 'authentication'] as const)('dopo errore ENG %s continua con la lezione successiva', async kind => {
+    const store = await createStore()
+    const lectures = ['01', '02'].map(id => lecture(id, { transcriptFileName: `${id}.txt`, markdownFileName: `${id}.md` }))
+    const ops = operationsFor(lectures)
+    const translate = ops.translate.getMockImplementation()!
+    ops.translate.mockImplementation(async id => id === '01'
+      ? { success: false, error: 'Errore del servizio', failureKind: kind } as any
+      : translate(id))
+    const pipeline = new ArchivePipeline(store, ops)
+    await pipeline.start({ trigger: 'manual', includeTranslation: true })
+    await pipeline.waitForCompletion()
+    expect(ops.translate.mock.calls.map(([id]) => id)).toEqual(['01', '02'])
+    expect(pipeline.getStatus().status).toBe('completed_with_errors')
+    expect(pipeline.getStatus().tasks.find(task => task.lectureId === '01' && task.stage === 'translation')?.status).toBe('failed')
+    expect(lectures[1].markdownEnFileName).toBe('02_en.md')
+  })
+  it('un annullamento ENG ferma la coda prima della lezione successiva', async () => {
+    const store = await createStore()
+    const lectures = ['01', '02'].map(id => lecture(id, { transcriptFileName: `${id}.txt`, markdownFileName: `${id}.md` }))
+    const ops = operationsFor(lectures)
+    ops.translate.mockResolvedValueOnce({ success: false, error: 'Annullato', failureKind: 'cancelled' } as any)
+    const pipeline = new ArchivePipeline(store, ops)
+    await pipeline.start({ trigger: 'manual', includeTranslation: true })
+    await pipeline.waitForCompletion()
+    expect(ops.translate.mock.calls.map(([id]) => id)).toEqual(['01'])
+    expect(pipeline.getStatus().status).toBe('paused')
+  })
   it('non perde import arrivati dopo lo snapshot della pianificazione manuale', async () => {
     const store = await createStore()
     const lectures = [lecture('01'), lecture('02')]
