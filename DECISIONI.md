@@ -5084,3 +5084,25 @@ Non modificare manualmente la sezione `Registro`: aggiungi le nuove decisioni es
 - **Impatto:** Setup 299974465 byte SHA256 ec93e4e42ab71fceb0f94f17c3f62e523db60eb6897b2803510bfa5b4dc0edff; 377 file build, manifesto, backup e otto file NSIS verificati. 802 test unit, typecheck e lint riusciti. Nessuna installazione o chiamata AI.
 - **Follow-up:** Commit e push automatici secondo AGENTS, verifica del remoto; installare con app chiusa. Completare la traduzione residua e verifica in app.
 - **File coinvolti:** dist/Lezionify-Setup-0.1.0.exe, electron/main/ai/archivePipeline.ts, tests/unit/archivePipeline.test.ts, docs/product/traduzione-dispense.md, DECISIONI.md
+
+## D-0462 — Aggiornamento della coda dopo correzioni ENG
+
+- **Data:** 2026-11-01
+- **Stato:** accettata
+- **Area:** skill-traduzione
+- **Decisione:** La skill ripara dispense inglesi azzera con backup la coda persistente dopo le modifiche, a processi fermi, verificando e proteggendo eventuali lavori indipendenti incompleti.
+- **Motivazione:** Ripianificare le elaborazioni sui dati aggiornati senza cancellare involontariamente checkpoint o attivita ancora utili.
+- **Impatto:** Verifica esplicita di metadati, indice, apertura in app e possibili pubblicazioni; non e stato eliminato alcun lavoro incompleto durante questa modifica della skill.
+- **Follow-up:** Confermare il trattamento del lavoro interrotto e verificare nell interfaccia la dispensa recuperata.
+- **File coinvolti:** C:/Users/Utente/.codex/skills/ripara-dispense-inglesi/SKILL.md, DECISIONI.md
+
+## D-0463 — Traduzione IR ripresa e recuperata
+
+- **Data:** 2026-11-01
+- **Stato:** accettata
+- **Area:** recupero-eng
+- **Decisione:** Su autorizzazione ripresa con Gemini la traduzione IR interrotta; dopo il rifiuto strutturale recuperato il tentativo e corrette manualmente sezioni disallineate, un titolo e formattazioni.
+- **Motivazione:** Rendere disponibile la dispensa inglese richiesta preservando fonti, risposta non validata e verifiche di integrita.
+- **Impatto:** Archivio locale con 42 lezioni e nessuna dispensa inglese mancante; risultato riletto e indicizzato, coda conclusa azzerata con backup. Un invio logico esplicito Gemini e risposta conservata; nessuna pubblicazione avviata. Verifica in interfaccia ancora pendente.
+- **Follow-up:** Verificare apertura e visualizzazione della dispensa IR nell app.
+- **File coinvolti:** Archivio locale personale fuori dal repository, DECISIONI.md
