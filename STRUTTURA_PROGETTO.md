@@ -2,6 +2,14 @@
 
 ## Stato attuale
 
+L'intervento del 4 novembre aggiunge crediti idempotenti RIPETERE e richiesta
+IPC per la lettura stimata, sospensione del tracker durante RIPETERE, campioni
+con grassetto/posizione/Nota e una correzione limitata delle conclusioni globali
+RAG. Stato parziale, prove e vincoli in
+`docs/quality/completamento-autonomo-2026-11-04.md`; piano in
+`docs/product/piano-completamento-autonomo-2026-11-04.md`.
+
+
 Le traduzioni inglesi conservano localmente l'ultima risposta e una
 ricostruzione di tentativo non validata, separata dalla dispensa inglese valida;
 la risposta successiva le sostituisce. Dettagli e limiti in

@@ -37,6 +37,10 @@ RIPETERE all'avvio con registratore collegato. Totale: 67 attività,
 
 **Aggiunta del 1 novembre:** la diagnosi approfondita delle difficoltà di traduzione ITA→ENG diventa la voce 122, posizione 68, senza modificare l'ordine precedente: **68 attività, 50 concluse, 10 aperte operative e 8 archiviate**.
 
+**Aggiunta del 4 novembre:** tre richieste diventano le voci 123–125, posizioni 69–71, in fondo all'ordine esistente: **71 attività, 50 concluse, 13 aperte operative e 8 archiviate**. Nessuna implementazione o valutazione è stata avviata.
+
+**Aggiornamento successivo del 4 novembre:** su indicazione dell'utente, le voci 114 e 115 sono ritirate dalla coda: il pulsante Allega slide è presente e la scansione lenta non è più un problema. Totale invariato: **71 attività, 50 concluse, 11 aperte operative, 8 archiviate e 2 ritirate**. La prima attività operativa resta la voce 7; non si attribuisce una nuova correzione alla scansione.
+
 Su richiesta dell'utente, tutte le attività aperte sono riordinate per facilità
 crescente, includendo lista, riassunto Gemini e interventi del
 [report UX/UI del 21 ottobre](../quality/audit-ux-ui-2026-10-21.md).
@@ -103,8 +107,8 @@ avviata da questo aggiornamento documentale (D-0390).
 | 57. [x] | Sottolineatura Focus e collaudo evidenziatore | 111 | D-0441: sottolineatura persistente, selezione DOM, sovrapposizione, formule e isolamento IT/EN collaudati. |
 | 58. [x] | Ricerca online facoltativa nelle domande Gemini | 112 | D-0442: ricerca web per domanda e fonti separate implementate; contratto SDK simulato, disponibilità reale dipendente dal progetto. |
 | 59. [x] | Stima per paragrafo: parole, numeri e ritmo di oggi | 113 | D-0443: raccolta e modello per paragrafi implementati; baseline/holdout e DOM verificati, calibrazione personale da nuovi campioni. |
-| 60. [ ] | Rendere reperibile Allega slide | 114 | D-0433: ingresso esplicito e percorso completo collaudati; resta la verifica dell'episodio personale non riprodotto. |
-| 61. [ ] | Misurare e ridurre l'attesa di scansione del registratore | 115 | Media: separare rilevamento, checksum e durata. |
+| 60. Ritirata | Rendere reperibile Allega slide | 114 | L'utente conferma che il pulsante è presente e ritira l'obiettivo. |
+| 61. Ritirata | Misurare e ridurre l'attesa di scansione del registratore | 115 | L'utente segnala che la lentezza non è più un problema e ritira l'obiettivo. |
 | 62. [x] | Diagramma di stato AB rifiutato per direttiva non consentita | 116 | D-0437: stili statici sicuri e rendering Mermaid reale verificati, whitelist preservata. |
 | 63. [x] | RIPETERE: valutazione completa, spiegazioni e verifica della comprensione | 117 | D-0450: implementata/verificata; esiti e limiti nel report interventi-selezionati-2026-10-29.md. |
 | 64. [x] | Aggiornamento RAG in background dopo circa 10 minuti di studio in Focus | 118 | D-0450: implementata/verificata; esiti e limiti nel report interventi-selezionati-2026-10-29.md. |
@@ -112,6 +116,9 @@ avviata da questo aggiornamento documentale (D-0390).
 | 66. [x] | Memo aperto con Ctrl+M ma non scrivibile dentro RIPETERE | 120 | D-0450: implementata/verificata; esiti e limiti nel report interventi-selezionati-2026-10-29.md. |
 | 67. [x] | Blocco di RIPETERE quando compare il popup delle lezioni all'avvio | 121 | D-0450: implementata/verificata; esiti e limiti nel report interventi-selezionati-2026-10-29.md. |
 | 68. [ ] | Indagare e collaudare le difficoltà della traduzione delle dispense ITA→ENG | 122 | Alta e incerta: diagnosi completa dei fallimenti, regressioni, qualità delle traduzioni e limiti del provider. |
+| 69. [ ] | RIPETERE: conteggiare registrazione e lettura della risposta come studio | 123 | Da approfondire: durata effettiva della registrazione, stima di 15 minuti per la lettura e prevenzione dei doppi conteggi. |
+| 70. [ ] | Stima di studio: grassetto, posizione e note | 124 | Da valutare sui dati: peso del grassetto, posizione percentuale e lettura rapida di Nota/Note, confrontati con la stima attuale. |
+| 71. [x] | Valutare formato e qualità delle risposte RAG personali | 125 | Lette 11 risposte; giudizio su lunghezza, tono, formato e completezza nel report del 4 novembre. Validazione indipendente delle fonti separata. |
 Le prime 17 posizioni e la 21 sono concluse in D-0392 su richiesta diretta dopo grilling (D-0391). [Uso, verifiche e limiti](interventi-2026-10-22.md).
 La prima attività operativa ancora aperta è la **voce 7, traduttore offline**, posizione 22. Ogni invocazione
 letterale di `LISTA_ORDINE` autorizza implementazione e collaudo della prima
@@ -2338,17 +2345,19 @@ insufficiente; nessuna promessa di una formula affidabile senza misure.
 
 ### 114. Allega slide non compare
 
+**Ritirata il 4 novembre su indicazione dell'utente:** il pulsante è presente; non occorre proseguire la verifica dell'episodio personale. Le prove precedenti restano come storico.
+
 Precisazione dell'utente: domanda aperta e già in scrittura, PDF nella colonna
 interna di Focus, ma nessun modo di allegare. Questo esclude la spiegazione
 iniziale del solo campo domanda non attivato. Test sintetico Electron positivo
 anche con domanda digitata; episodio personale ancora da riprodurre.
 
-- [ ] Riprodurre il percorso personale in cui manca il comando e rendere comprensibile e reperibile l'allegato delle pagine PDF alla domanda.
+- Obiettivo ritirato: riprodurre il percorso personale in cui mancava il comando e rendere reperibile l'allegato delle pagine PDF alla domanda.
 - [x] D-0433: aggiungere Allega slide nel Q&A Focus e verificare nel drawer completo selezione, preparazione PNG, salvataggio, anteprima, bozza conservata e nessun invio AI implicito.
 
-Il nuovo percorso è implementato e collaudato; resta da confermare nel caso
-personale originale, che non è stato riprodotto. La casella principale e la
-posizione 60 restano aperte per questo limite. Dopo la chiusura della sola
+Il nuovo percorso è implementato e collaudato; il caso personale originale
+non è stato riprodotto, ma la verifica residua è stata ritirata dall'utente.
+Dopo la chiusura della sola
 voce 70 la coda conta **62 posizioni, 32 concluse e 30 aperte**; nessun riordino.
 
 Controllare Focus, PDF aperto, discussione attiva, campo domanda focalizzato,
@@ -2358,7 +2367,9 @@ caso personale, senza considerare l'apertura del solo Q&A sufficiente.
 
 ### 115. Scansione del registratore lenta
 
-- [ ] Misurare separatamente ricerca unità, elenco file, checksum, lettura durata e preparazione import; ottimizzare il collo di bottiglia dimostrato.
+**Ritirata il 4 novembre su indicazione dell'utente:** la scansione lenta non è più un problema. Nessuna nuova diagnosi o ottimizzazione è dichiarata eseguita.
+
+- Obiettivo ritirato: misurare ricerca unità, elenco file, checksum, lettura durata e preparazione import, e ottimizzare il collo di bottiglia dimostrato.
 
 Registrare tempi e conteggi locali senza nomi o contenuti personali; confrontare
 prima scansione e ripetizione, molti file e percorso esplicito. Conservare la
@@ -2508,6 +2519,49 @@ fino a diagnosi, gestione concordata quando necessaria e collaudo della correzio
 Riutilizzare la voce 20, la diagnosi storica della voce 43, `traduzione-dispense.md`, le prove e i tentativi locali disponibili. Esaminare preparazione e dimensione della richiesta, modello e provider, quote e timeout, risposte troncate o malformate, ricostruzione, integrità strutturale, fedeltà e completezza della prosa, salvataggio e prosecuzione della coda. Distinguere errori reali da falsi rifiuti, senza indebolire i controlli o presentare tentativi parziali come traduzioni valide. D-0455 e D-0458 conservano rispettivamente le risposte disponibili e la prosecuzione della coda ENG; nessuno dei due dimostra che la causa originaria sia risolta.
 
 Usare casi sintetici riproducibili e, se disponibili e autorizzati, evidenze personali senza pubblicare contenuti o dati sensibili. Eventuali invii AI devono essere espliciti e tracciabili. Riportare copertura, esiti, costi o quote delle prove e limiti: non promettere di escludere ogni bug possibile. Questa voce approfondisce l'affidabilità generale; la voce 20 conserva la verifica personale residua delle versioni mancanti.
+
+## Aggiunte del 4 novembre 2026 — RIPETERE, stima e risposte RAG
+
+### 123. Conteggiare RIPETERE come tempo di studio
+
+- [ ] Segnare come tempo di studio la durata usata per registrare la ripetizione e il tempo di lettura della risposta, stimato dall'utente in 15 minuti.
+
+Verificare come sono oggi misurati e attribuiti i tempi, inclusi corso, data,
+pause, interruzioni, riprese e sessioni ripetute, evitando doppi conteggi.
+Definire nel flusso quando attribuire la stima di lettura, distinguendola dal
+tempo effettivamente misurato e chiarendo il trattamento dei 15 minuti prima
+di implementare eventuali scelte non già definite. Conservare lo storico e
+collaudare persistenza, riavvio e statistiche.
+
+### 124. Migliorare la stima del tempo con grassetto, posizione e note
+
+- [ ] Valutare se la quantità o la proporzione di parole in grassetto nel paragrafo aiuta a stimare il tempo di studio: l'utente ipotizza che un paragrafo con molto grassetto possa richiedere anche il doppio del tempo.
+- [ ] Valutare la posizione percentuale nella pagina: l'utente ipotizza una maggiore attenzione all'inizio e minore verso la fine, eventualmente approssimabile con una retta decrescente.
+- [ ] Considerare la lettura più rapida dei blocchi etichettati «ℹ️ Nota» e «Note» in inglese.
+
+Collegarsi alla stima esistente della voce 113. Trattare pesi, raddoppio e
+andamento lineare come ipotesi da verificare sui dati personali disponibili,
+non come coefficienti già accertati. Definire la posizione rispetto alla
+pagina o al documento dopo aver esaminato l'interfaccia e i dati; confrontare
+la stima attuale e le alternative su campioni separati, gestendo dati scarsi,
+formattazione e note in entrambe le lingue. Non dedurre l'attenzione come un
+fatto certo dalla sola posizione.
+
+### 125. Valutazione qualitativa delle risposte RAG
+
+- [x] Esaminare domande e risposte RAG disponibili e riferire un giudizio motivato sul formato delle risposte, sulla loro lunghezza, sul tono formale o informale e sulla completezza.
+
+**4 novembre:** lettura di 11 risposte e giudizio riferito in chat; [risultati e limiti](../quality/completamento-autonomo-2026-11-04.md).
+
+Considerare la domanda e le fonti disponibili per ogni risposta, distinguendo
+qualità della forma, pertinenza, copertura e supporto delle affermazioni;
+segnalare esempi e limiti del campione. Collegarsi alle valutazioni RAG delle
+voci 90–92 senza presumere che questa sola analisi le completi. Trattare le
+conversazioni personali come dati locali e non pubblicarne contenuti sensibili;
+eventuali invii AI devono essere espliciti e tracciabili. Riferire la valutazione
+all'utente prima di proporre o applicare modifiche al formato.
+
+**Stato dopo la valutazione RAG del 4 novembre:** 71 attività, 51 concluse, 10 aperte operative, 8 archiviate e 2 ritirate. Le modifiche parziali alle voci 123 e 124 non ne chiudono i criteri residui.
 
 ## Nota sulla classificazione
 

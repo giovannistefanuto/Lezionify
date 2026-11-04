@@ -97,6 +97,10 @@ export async function runRepetitionScenarios(root: Root, api: any) {
     scans++
     return { detected: false, files: [] }
   }
+  let credits = 0
+  api.creditRepetitionReading = async (key: string) => { check(key === id, 'Credito associato alla sessione sbagliata'); credits++ }
+  api.getCourses = async () => []
+  session.studyEligible = true
   let answers = 0
   api.answerRepetition = async (_id: string, text: string) => {
     answers++
@@ -270,6 +274,7 @@ export async function runRepetitionScenarios(root: Root, api: any) {
       'STUDIO mantiene il flusso USB esistente'
     )
     check(starts === 1, 'STUDIO non deve avviare RIPETERE')
+    check(credits > 0, 'Apertura della valutazione senza richiesta di accredito studio')
   } finally {
     await act(async () => root.render(null))
     Object.assign(api, original)

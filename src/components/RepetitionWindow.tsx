@@ -3,6 +3,7 @@ import type {
   RepetitionDocument,
   RepetitionState
 } from '../../shared/repetition'
+import type { CourseDefinition } from '../../shared/archive'
 import { MarkdownViewer } from './MarkdownViewer'
 import { useModalFocus } from '../hooks/useModalFocus'
 import '../repetition.css'
@@ -20,6 +21,9 @@ export function RepetitionWindow({
   const [state, setState] = useState<RepetitionState | null>(null)
   const [selected, setSelected] = useState<string | null>(null)
   const [document, setDocument] = useState<RepetitionDocument | null>(null)
+  const [courses, setCourses] = useState<CourseDefinition[]>([])
+  const [course, setCourse] = useState('')
+  const [studySaved, setStudySaved] = useState(false)
   const [error, setError] = useState('')
   const [working, setWorking] = useState(false)
   const [answer, setAnswer] = useState('')
@@ -28,6 +32,11 @@ export function RepetitionWindow({
     'assessment'
   )
   useModalFocus(dialog, true)
+  useEffect(() => {
+    let alive = true
+    void window.archive.getCourses().then(value => { if (alive) setCourses(value) }).catch(() => {})
+    return () => { alive = false }
+  }, [])
   const refresh = useCallback(async () => {
     const next = await window.archive.repetitionState()
     if (mounted.current) setState(next)
@@ -100,7 +109,15 @@ export function RepetitionWindow({
       alive = false
     }
   }, [id, selectedStatus])
-  useEffect(() => { setAnswer('') }, [id])
+  useEffect(() => { setAnswer(''); setStudySaved(false) }, [id])
+  const creditReading = useCallback(async () => {
+    if (!id || !document?.session.studyEligible || document.session.status !== 'completed' || tab !== 'assessment') return
+    try {
+      await window.archive.creditRepetitionReading(id, course || null)
+      setStudySaved(true)
+    } catch { setError('Tempo di studio non salvato. Riprova con Registra tempo di studio.') }
+  }, [id, document?.session.status, document?.session.studyEligible, tab, course])
+  useEffect(() => { void creditReading() }, [creditReading])
   const reply = async () => {
     if (!id || replying || !answer.trim()) return
     setReplying(true)
@@ -202,6 +219,14 @@ export function RepetitionWindow({
             Elabora ultimo audio
           </button>
         </div>
+        <label>Corso per il tempo di studio
+          <select value={course} disabled={studySaved} onChange={event => setCourse(event.target.value)}>
+            <option value="">Senza corso</option>
+            {courses.map(item => <option key={item.code} value={item.code}>{item.name || item.code}</option>)}
+          </select>
+        </label>
+        <p>La durata del nuovo audio conta come studio. Alla prima apertura della valutazione si aggiungono 15 minuti stimati di lettura, una sola volta. Puoi rettificare il tempo dalla Dashboard.</p>
+        {document?.session.studyEligible && document.session.status === 'completed' && !studySaved && <button className="secondary-button" onClick={() => void creditReading()}>Registra tempo di studio</button>}
         {error && (
           <p role="alert" className="repetition-error">
             {error}

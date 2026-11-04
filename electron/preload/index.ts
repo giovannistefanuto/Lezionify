@@ -12,6 +12,7 @@ import type {
 } from '../../shared/archive'
 
 const archiveApi: ArchiveApi = {
+  creditRepetitionReading: (id, courseCode) => ipcRenderer.invoke('repetition:credit-reading', id, courseCode),
   answerRepetition: (id, answer) => ipcRenderer.invoke('repetition:answer', id, answer),
   repetitionState: () => ipcRenderer.invoke('repetition:state'),
   selectRepetitionReference: () => ipcRenderer.invoke('repetition:reference'),

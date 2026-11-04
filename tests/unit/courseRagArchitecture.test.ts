@@ -12,6 +12,28 @@ const directories: string[] = []
 afterEach(async () => { for (const path of directories.splice(0)) await rm(path, { recursive: true, force: true }) })
 const make = (id: string, text: string, ordinal?: number, kind: 'transcript' | 'notes' = 'transcript') => splitCourseSource({ id, title: id, kind, provenance: kind === 'notes' ? 'ai-derived' : 'original', lectureId: ordinal ? `lesson-${ordinal}` : id, lectureOrdinal: ordinal, version: ragHash(text), status: 'ready' }, [{ text }])
 
+it('requests one bounded correction for a global absence inferred from retrieved excerpts', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'rag-absence-')); directories.push(directory)
+  let calls = 0
+  const sources = [make('source', 'Controllo reattivo dei robot.', 1)]
+  const service = new CourseRagService(directory, {
+    archiveSources: async () => ({ sources, missingTranscripts: 0 }),
+    complete: async prompt => {
+      const input = JSON.parse(prompt)
+      calls++
+      if (calls === 1) return JSON.stringify({ action: 'answer', text: 'Il corso non tratta la teoria dei giochi.', passageIds: [] })
+      expect(JSON.stringify(input)).toContain('correct_answer')
+      return JSON.stringify({ action: 'answer', text: 'Non ho trovato evidenze negli estratti consultati.', passageIds: [] })
+    }
+  })
+  try {
+    await service.saveThread('TEST', { id: 'chat', title: 'Chat', draft: '', messages: [], updatedAt: '' })
+    const result = await service.ask('TEST', 'chat', 'Il corso tratta la teoria dei giochi?', 'request')
+    expect(result.messages.at(-1)?.text).toContain('estratti consultati')
+    expect(calls).toBe(2)
+  } finally { service.dispose() }
+})
+
 it('keeps explicit single-lesson constraints and retrieves representative evidence for a topic-free comparison', () => {
   const retrieval = new CourseRetrieval([make('a', 'Programmazione dinamica e valore.', 1), make('b', 'Il martingala è un processo stocastico.', 2)])
   expect(retrieval.search('Nella lezione 1 cosa significa martingala?')).toEqual([])

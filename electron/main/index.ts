@@ -246,6 +246,7 @@ function registerIpcHandlers(): void {
   ipcMain.handle('repetition:start', () => repetitionIpc(() => archive.repetition.startLatest()))
   ipcMain.handle('repetition:resume', (_event, id: string) => repetitionIpc(() => archive.repetition.resume(id)))
   ipcMain.handle('repetition:stop', () => repetitionIpc(() => archive.repetition.stop()))
+  ipcMain.handle('repetition:credit-reading', (_event, id: string, course: string | null) => repetitionIpc(() => archive.creditRepetitionReading(id, course)))
   ipcMain.handle('repetition:read', (_event, id: string) => repetitionIpc(() => archive.repetition.read(id)))
   ipcMain.handle('course-rag:state', (_event, course: string) => courseRag.state(course))
   ipcMain.handle('course-rag:prepare-semantic', (_event, course: string) => courseRag.prepareSemantic(course))

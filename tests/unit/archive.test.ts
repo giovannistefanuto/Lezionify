@@ -337,6 +337,19 @@ describe('ArchiveService — Ciclo di vita, CRUD, Batch & Trascrizione Audio', (
     await rm(testArchiveDir, { recursive: true, force: true }).catch(() => {})
   })
 
+  it('accredita lettura RIPETERE una volta con richieste concorrenti e ignora sessioni storiche', async () => {
+    const info = vi.spyOn(service.repetition, 'studyInfo').mockResolvedValue({ eligible: true, completed: true })
+    const id = 'a'.repeat(64)
+    await Promise.all([service.creditRepetitionReading(id, null), service.creditRepetitionReading(id, null)])
+    await service.creditRepetitionReading(id, null)
+    const sessions = JSON.parse(await readFile(join(testArchiveDir, 'study_sessions.json'), 'utf8'))
+    expect(sessions.filter((item: { id: string }) => item.id === `repetition-reading:${id}`)).toHaveLength(1)
+    expect(sessions[0].durationSeconds).toBe(900)
+    info.mockResolvedValue({ eligible: false, completed: true })
+    await service.creditRepetitionReading('b'.repeat(64), null)
+    expect(JSON.parse(await readFile(join(testArchiveDir, 'study_sessions.json'), 'utf8'))).toHaveLength(1)
+  })
+
   it('inizializza la struttura cartelle (audio, transcripts, markdown) e library.json', async () => {
     const libraryPath = join(testArchiveDir, 'library.json')
     const libraryContent = JSON.parse(await readFile(libraryPath, 'utf8'))

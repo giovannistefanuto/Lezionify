@@ -592,7 +592,7 @@ export default function App() {
         <Suspense fallback={<LazyFallback />}>
           <ErrorBoundary fallbackTitle="Errore nel pannello della lezione">
             <LectureDrawer
-              memoOpen={quickCapture.isOpen}
+              memoOpen={quickCapture.isOpen || showRepetitions}
               selectedLecture={selectedLecture}
               isReturningToList={finalLecture.isReturning}
               allLectures={lectures}

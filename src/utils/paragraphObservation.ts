@@ -1,5 +1,5 @@
 import { contentFingerprint } from './readingPosition'
-import { paragraphFeatures, paragraphModel, type ParagraphSample } from './paragraphEstimate'
+import { paragraphFeatures, paragraphModel, type ParagraphFeatures, type ParagraphSample } from './paragraphEstimate'
 import { formatLocalCalendarDate } from '../../shared/calendarDate'
 
 const KEY = 'lezionify.paragraph-samples.v1'
@@ -7,12 +7,12 @@ interface Observation { seconds: number; coverage: number[]; recorded: boolean; 
 /** DOM observations measure exposure, not comprehension. No lesson text is persisted. */
 export function observeParagraphs(documentId: string, language: string) {
   const observations = new Map<string, Observation>()
-  const features = new WeakMap<HTMLElement, { fingerprint: string; words: number; numbers: number; formulas: number }>()
+  const features = new WeakMap<HTMLElement, ParagraphFeatures & { fingerprint: string }>()
   let model: ReturnType<typeof paragraphModel> = null, modelDay = '', modelDirty = true
   let samples: ParagraphSample[] = []
   try {
     const saved = JSON.parse(localStorage.getItem(KEY) ?? '[]')
-    if (Array.isArray(saved)) samples = saved.slice(-300).filter(item => item && typeof item.document === 'string' && typeof item.day === 'string').map(item => ({ document: item.document, day: item.day, words: item.words, numbers: item.numbers, formulas: item.formulas, seconds: item.seconds }))
+    if (Array.isArray(saved)) samples = saved.slice(-300).filter(item => item && typeof item.document === 'string' && typeof item.day === 'string').map(item => ({ document: item.document, day: item.day, words: item.words, numbers: item.numbers, formulas: item.formulas, seconds: item.seconds, boldWords: item.boldWords, position: item.position, note: item.note }))
   } catch { /* Optional. */ }
   const progressKey = `lezionify.paragraph-progress.v1:${documentId}:${language}`
   try {
@@ -38,15 +38,17 @@ export function observeParagraphs(documentId: string, language: string) {
           let cached = features.get(node)
           if (!cached) {
             const clone = node.cloneNode(true) as HTMLElement
-            clone.querySelectorAll('.katex-mathml, button').forEach(item => item.remove())
+            clone.querySelectorAll('.katex-mathml, button, code').forEach(item => item.remove())
             const text = clone.textContent ?? ''
             cached = { fingerprint: contentFingerprint(text), ...paragraphFeatures(text, node.querySelectorAll('.katex').length) }
+            cached.boldWords = Array.from(clone.querySelectorAll('strong, b')).filter(element => !element.parentElement?.closest('strong, b')).reduce((sum, element) => sum + paragraphFeatures(element.textContent ?? '').words, 0)
+            cached.note = /^(?:\u2139\uFE0F?\s*)?(?:nota|note)\b[\s:—-]/iu.test(text.trim())
             features.set(node, cached)
           }
           const bounds = node.getBoundingClientRect()
           const start = Math.max(0, Math.min(1, (top - bounds.top) / Math.max(1, bounds.height)))
           const end = Math.max(0, Math.min(1, (bottom - bounds.top) / Math.max(1, bounds.height)))
-          return { key: `${index}:${cached.fingerprint}`, bounds, start, end, features: { words: cached.words, numbers: cached.numbers, formulas: cached.formulas } }
+          return { key: `${index}:${cached.fingerprint}`, bounds, start, end, features: { words: cached.words, numbers: cached.numbers, formulas: cached.formulas, boldWords: cached.boldWords, note: cached.note, position: Math.max(0, Math.min(1, (bounds.top - (node.closest('.markdown-body')?.getBoundingClientRect().top ?? bounds.top)) / Math.max(1, node.closest<HTMLElement>('.markdown-body')?.scrollHeight ?? 1))) } }
         }).filter(item => item.bounds.height > 0 && item.features.words >= 8)
       const visible = blocks.filter(item => item.end > item.start)
       const totalWeight = visible.reduce((sum, item) => sum + item.features.words * (item.end - item.start), 0)

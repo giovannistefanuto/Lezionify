@@ -67,6 +67,17 @@ afterEach(async () => {
 })
 
 describe('RIPETERE archivio e pipeline', () => {
+  it('conserva la durata reale e ripete la richiesta di accredito con ID stabile dopo riavvio', async () => {
+    dependencies.recordStudy = vi.fn(async () => {})
+    await service.setReference(reference)
+    const id = await service.startLatest()
+    await settle()
+    expect(dependencies.recordStudy).toHaveBeenCalledWith(id, expect.any(String), 3)
+    expect(await service.studyInfo(id)).toEqual({ eligible: true, completed: true })
+    const reopened = new RepetitionService(root, dependencies)
+    expect(await reopened.studyInfo(id)).toEqual({ eligible: true, completed: true })
+  })
+
   it('usa anche audio brevi già importati, conserva fonti e riapre senza nuove API', async () => {
     await service.setReference(reference)
     const [id, duplicate] = await Promise.all([

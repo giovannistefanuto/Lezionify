@@ -10,6 +10,7 @@ export interface RepetitionSession {
   createdAt: string
   status: 'transcribing' | 'evaluating' | 'completed' | 'paused' | 'failed'
   message: string
+  studyEligible?: boolean
   percent: number
 }
 
@@ -29,6 +30,7 @@ export interface RepetitionDocument {
 }
 
 export interface RepetitionApi {
+  creditRepetitionReading: (id: string, courseCode: string | null) => Promise<void>
   answerRepetition: (id: string, answer: string) => Promise<RepetitionMessage[]>
   repetitionState: () => Promise<RepetitionState>
   selectRepetitionReference: () => Promise<boolean>

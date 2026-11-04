@@ -218,6 +218,7 @@ export class ArchiveService {
       })
     this.searchIndex = new SearchIndexService()
     this.repetition = new RepetitionService(path.join(this.rootDirectory, 'RIPETERE'), {
+      recordStudy: (id, createdAt, seconds) => this.recordRepetitionStudy(id, createdAt, seconds),
       scan: () => this.detectUsbRecorder(),
       reply: async (reference, assessment, messages, signal) => this.geminiService.replyRepetition({ keys: await this.getManagedKeys(), model: (await this.settingsService.getSettings()).model, reference, assessment, messages, signal }),
       transcribe: async (audioFilePath, lectureId, signal, onProgress) => this.geminiService.transcribeAudioFile({
@@ -2380,6 +2381,32 @@ export class ArchiveService {
       }
       return { success: false, error: message }
     }
+  }
+
+  private async recordRepetitionStudy(id: string, createdAt: string, seconds: number): Promise<void> {
+    if (!Number.isFinite(seconds) || seconds <= 0 || seconds > 30 * 24 * 3600) throw new Error('Durata della ripetizione non valida.')
+    await this.repository.runExclusive(async () => {
+      const sessions = await this.storage.readStudySessions()
+      if (sessions.some(session => session.id === `repetition-audio:${id}`)) return
+      sessions.push({ id: `repetition-audio:${id}`, lectureId: null, courseCode: null, startTime: createdAt, endTime: createdAt, durationSeconds: Math.round(seconds), mode: 'manual', date: formatLocalCalendarDate(new Date(createdAt)) })
+      await this.storage.writeStudySessions(sessions)
+    })
+  }
+
+  async creditRepetitionReading(id: string, courseCode: string | null): Promise<void> {
+    const info = await this.repetition.studyInfo(id)
+    if (!info.eligible || !info.completed) return
+    if (courseCode !== null && (typeof courseCode !== 'string' || !(await this.getCourses()).some(course => course.code === courseCode))) throw new Error('Corso non valido.')
+    await this.repository.runExclusive(async () => {
+      const sessions = await this.storage.readStudySessions()
+      const readingId = `repetition-reading:${id}`
+      if (sessions.some(session => session.id === readingId)) return
+      const now = new Date()
+      const recording = sessions.find(session => session.id === `repetition-audio:${id}`)
+      if (recording) recording.courseCode = courseCode
+      sessions.push({ id: readingId, lectureId: null, courseCode, startTime: now.toISOString(), endTime: now.toISOString(), durationSeconds: 900, mode: 'manual', date: formatLocalCalendarDate(now) })
+      await this.storage.writeStudySessions(sessions)
+    })
   }
 
   async saveStudySession(session: unknown): Promise<void> {

@@ -5106,3 +5106,124 @@ Non modificare manualmente la sezione `Registro`: aggiungi le nuove decisioni es
 - **Impatto:** Archivio locale con 42 lezioni e nessuna dispensa inglese mancante; risultato riletto e indicizzato, coda conclusa azzerata con backup. Un invio logico esplicito Gemini e risposta conservata; nessuna pubblicazione avviata. Verifica in interfaccia ancora pendente.
 - **Follow-up:** Verificare apertura e visualizzazione della dispensa IR nell app.
 - **File coinvolti:** Archivio locale personale fuori dal repository, DECISIONI.md
+
+## D-0464 — Revisione manuale di una dispensa inglese
+
+- **Data:** 2026-11-03
+- **Stato:** accettata
+- **Area:** recupero-eng
+- **Decisione:** Creata una bozza inglese revisionata mediante confronto integrale con la fonte italiana e ricostruzione manuale di cinque sezioni alterate; ripristinato e tradotto un diagramma.
+- **Motivazione:** Recuperare il tentativo senza considerare sufficiente il solo controllo strutturale e preservando integralmente fonti e tentativi originali.
+- **Impatto:** Verificate 37 sezioni, integrita strutturale, conteggi di liste e tabelle, impronte della fonte e ricerca inglese in indice isolato; archivio e coda non modificati.
+- **Follow-up:** Installare e verificare in interfaccia evitando la pubblicazione automatica; completare la seconda dispensa e gestire la coda secondo scelta utente con backup.
+- **File coinvolti:** Bozza personale esterna al repository, DECISIONI.md
+
+## D-0465 — Installazione della dispensa inglese revisionata
+
+- **Data:** 2026-11-03
+- **Stato:** accettata
+- **Area:** recupero-eng
+- **Decisione:** Installata la traduzione manualmente revisionata nella libreria locale e aggiornati i metadati della lezione; rimossa la coda dopo backup come autorizzato.
+- **Motivazione:** Rendere disponibile la dispensa corretta preservando la fonte italiana, il tentativo originale e un backup ripristinabile.
+- **Impatto:** Quarantaquattro dispense inglesi su 45 lezioni; lettura tramite repository e storage e ricerca inglese in indice isolato verificate, con impronte della fonte e del tentativo invariate.
+- **Follow-up:** Verificare apertura in interfaccia senza pubblicazione automatica; recuperare la seconda dispensa ancora mancante.
+- **File coinvolti:** Archivio locale personale fuori dal repository, DECISIONI.md
+
+## D-0466 — Revisione della seconda dispensa inglese
+
+- **Data:** 2026-11-03
+- **Stato:** accettata
+- **Area:** recupero-eng
+- **Decisione:** Preparata una traduzione inglese revisionata manualmente, ricostruendo tabella e prosa danneggiate e ripristinando tre diagrammi originali.
+- **Motivazione:** Recuperare contenuti corrotti mantenendo completezza e struttura della fonte senza alterare la lezione mentre la coda segnala un lavoro in corso.
+- **Impatto:** Trentuno sezioni e conteggi strutturali verificati, ricerca inglese in indice isolato riuscita, fonti e tentativi invariati; bozza non installata e nessuna chiamata AI esterna.
+- **Follow-up:** Accertare arresto della pipeline, poi backup e installazione e verifica in app senza pubblicazione automatica.
+- **File coinvolti:** Bozza personale esterna al repository, DECISIONI.md
+
+## D-0467 — Seconda dispensa inglese installata e verificata
+
+- **Data:** 2026-11-03
+- **Stato:** accettata
+- **Area:** recupero-eng
+- **Decisione:** Installata la seconda traduzione revisionata manualmente dopo la sospensione della pipeline e backup della coda; verificata la visualizzazione inglese nella app con pubblicazione temporaneamente disabilitata.
+- **Motivazione:** Rendere disponibile la dispensa corretta preservando dati originali ed evitando pubblicazioni non autorizzate.
+- **Impatto:** Archivio con 45 dispense inglesi leggibili su 45 lezioni; ricerca in indice isolato e integrita fonte e tentativo verificate. Ripristinata la preferenza originale di pubblicazione; tre diagrammi conservati nella lingua originale.
+- **Follow-up:** Nessuno per la seconda dispensa; verificare eventualmente in interfaccia la prima dispensa recuperata.
+- **File coinvolti:** Archivio locale personale fuori dal repository, DECISIONI.md
+
+## D-0468 — Nuove richieste su RIPETERE, stima e RAG
+
+- **Data:** 2026-11-04
+- **Stato:** accettata
+- **Area:** pianificazione
+- **Decisione:** Aggiungere in fondo alla coda tre attivita su tempo di studio RIPETERE, fattori della stima e valutazione delle risposte RAG personali.
+- **Motivazione:** Conservare le richieste dell utente e il precedente ordine operativo, distinguendo ipotesi da risultati verificati.
+- **Impatto:** Coda estesa alle posizioni 69-71; nessuna modifica al prodotto o chiamata AI.
+- **Follow-up:** Affrontare le voci nell ordine previsto, chiarire i dettagli e verificare i dati disponibili.
+- **File coinvolti:** docs/product/idee-future-2026-10-13.md, DECISIONI.md
+
+## D-0469 — Ritiro obiettivi slide e scansione
+
+- **Data:** 2026-11-04
+- **Stato:** accettata
+- **Area:** pianificazione
+- **Decisione:** Ritirare dalla coda le voci 114 e 115 su indicazione dell utente: il pulsante Allega slide e presente e la scansione lenta non e piu un problema.
+- **Motivazione:** La verifica residua e la diagnosi della lentezza non sono piu richieste.
+- **Impatto:** Restano 11 attivita operative aperte; storico e posizioni conservati senza dichiarare nuove correzioni.
+- **Follow-up:** Nessuno per le due voci salvo nuova richiesta.
+- **File coinvolti:** docs/product/idee-future-2026-10-13.md, DECISIONI.md
+
+## D-0470 — Piano autonomo per dieci attivita selezionate
+
+- **Data:** 2026-11-04
+- **Stato:** accettata
+- **Area:** pianificazione
+- **Decisione:** Registrare il piano implementativo per le voci 7,20,38,90,91,92,122,123,124,125, raggruppate per dipendenze senza cambiare LISTA_ORDINE.
+- **Motivazione:** Preparare l esecuzione autonoma richiesta con criteri verificabili e limiti esterni espliciti.
+- **Impatto:** Nuovo documento di piano; nessuna implementazione avviata. Attribuzione dei 15 minuti e feature della stima sono proposte operative da verificare.
+- **Follow-up:** Eseguire il piano su richiesta di avvio; verificare sincronizzazione, dati, capacita dei player e budget prima delle prove esterne.
+- **File coinvolti:** docs/product/piano-completamento-autonomo-2026-11-04.md, DECISIONI.md
+
+## D-0471 — Campioni con grassetto posizione e note
+
+- **Data:** 2026-11-04
+- **Stato:** accettata
+- **Area:** stima-studio
+- **Decisione:** Raccogliere parole in grassetto, posizione normalizzata nel documento e blocchi Nota/Note; adottare pesi limitati solo con miglioramento cross-documento del 5 percento e almeno 24 campioni su quattro documenti.
+- **Motivazione:** Valutare le ipotesi personali senza imporre pesi arbitrari ai campioni esistenti.
+- **Impatto:** Campioni locali retrocompatibili, nessun testo salvato, baseline conservata con dati insufficienti; codice escluso dalla prosa osservata.
+- **Follow-up:** Completare collaudo DOM, campioni personali e verifica indipendente prima di chiudere la voce 124.
+- **File coinvolti:** src/utils/paragraphEstimate.ts, src/utils/paragraphObservation.ts, tests/unit/paragraphStyle.test.ts, DECISIONI.md
+
+## D-0472 — Crediti RIPETERE e rettifica prudente RAG
+
+- **Data:** 2026-11-04
+- **Stato:** accettata
+- **Area:** studio-rag
+- **Decisione:** Accreditare una sola volta il nuovo audio RIPETERE e 15 minuti stimati alla prima apertura della valutazione, con corso esplicito e sospensione tracker; richiedere al massimo una correzione RAG delle conclusioni globali non giustificate dagli estratti.
+- **Motivazione:** Contare la ripetizione senza duplicazioni e limitare conclusioni assolute osservate nelle risposte personali.
+- **Impatto:** Metadati e IPC retrocompatibili; sessioni storiche escluse dagli accrediti automatici, rettifiche Dashboard conservate. Nessun nuovo provider o dipendenza.
+- **Follow-up:** Completare verifiche UI, pacchetto e calibrazione indipendente; transizioni Spotify limitate dalla policy.
+- **File coinvolti:** electron/main/archive.ts, electron/main/repetition.ts, electron/main/courseRag.ts, shared/repetition.ts, electron/preload/index.ts, electron/main/index.ts, src/components/RepetitionWindow.tsx, src/App.tsx, tests/unit, tests/integration
+
+## D-0473 — Valutazione RAG e completamento parziale del piano
+
+- **Data:** 2026-11-04
+- **Stato:** accettata
+- **Area:** collaudo
+- **Decisione:** Concludere la sola valutazione del formato RAG 125 su 11 risposte; conservare aperte le altre voci per criteri residui e documentare il filtro ranking scartato, nuova ENG mancante e limiti Spotify.
+- **Motivazione:** Distinguere implementazione, collaudi e benefici da verificare senza chiusure basate sui soli test.
+- **Impatto:** Report pubblico privo di contenuti personali, coda con 10 operative aperte; installer in rigenerazione con backup.
+- **Follow-up:** Verificare setup e runtime, pubblicare le modifiche secondo AGENTS; completare criteri residui del piano.
+- **File coinvolti:** docs/quality/completamento-autonomo-2026-11-04.md, docs/product/idee-future-2026-10-13.md, STRUTTURA_PROGETTO.md, DECISIONI.md
+
+## D-0474 — Setup studio e RAG del 4 novembre
+
+- **Data:** 2026-11-04
+- **Stato:** accettata
+- **Area:** distribuzione
+- **Decisione:** Rigenerare il setup Windows con crediti RIPETERE, fattori della stima e correzione prudente RAG, mantenendo esplicito lo stato parziale del piano.
+- **Motivazione:** Rendere installabili le modifiche collaudate conservando installer precedente e fonti personali.
+- **Impatto:** Setup 299976722 byte SHA256 75b1a31266698efd01ca3c8fe459f64ea7e74f7d51b24168f21e42c084e68580; 377 file build, manifesto e backup verificati; runtime RAG e traduttore pacchettizzati passati.
+- **Follow-up:** Commit e push automatici, verifica remoto; installazione a app chiusa. Restano i criteri residui documentati nel report.
+- **File coinvolti:** dist/Lezionify-Setup-0.1.0.exe, docs/quality/completamento-autonomo-2026-11-04.md, DECISIONI.md

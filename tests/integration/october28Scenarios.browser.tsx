@@ -125,7 +125,7 @@ Fine spiegazione.` }] }
 
     localStorage.removeItem('lezionify.paragraph-samples.v1')
     localStorage.removeItem('lezionify.paragraph-progress.v1:synthetic-observations:it')
-    await render(<div id="paragraph-root" style={{ height: 200, overflow: 'auto', width: 500 }}><div className="markdown-body">{Array.from({ length: 90 }, (_, index) => <p key={index} style={{ height: 200, margin: 0 }}>{`Blocco ${index}. ` + 'Studio locale di parole tecniche senza contenuti personali. '.repeat(12)}</p>)}</div></div>)
+    await render(<div id="paragraph-root" style={{ height: 200, overflow: 'auto', width: 500 }}><div className="markdown-body">{Array.from({ length: 90 }, (_, index) => <p key={index} style={{ height: 200, margin: 0 }}>{index === 0 ? <><strong>Nota: Studio locale</strong> {'Parole tecniche senza contenuti personali. '.repeat(20)}</> : `Blocco ${index}. ` + 'Studio locale di parole tecniche senza contenuti personali. '.repeat(12)}</p>)}</div></div>)
     const paragraphRoot = document.querySelector<HTMLElement>('#paragraph-root')!
     const observation = observeParagraphs('synthetic-observations', 'it')
     for (let index = 0; index < 30; index++) check(observation.tick(paragraphRoot, 1) === null, 'Insufficient paragraph samples produced a number')
@@ -138,6 +138,8 @@ Fine spiegazione.` }] }
     check(remaining > 30, 'Paragraph estimate incorrectly retains old 30-minute visibility cap')
     observation.save()
     const observed = JSON.parse(localStorage.getItem('lezionify.paragraph-samples.v1')!)
+    check(observed[0].boldWords === 3 && observed[0].note === true && observed[0].position === 0, 'Paragraph style features not measured or persisted')
+    check(observed[1].position > observed[0].position, 'Document position must increase independently of scrolling')
     check(observed.length === 2 && observed.every((sample: any) => sample.seconds === 30 && !('text' in sample)), 'Viewport exposure duplicated time, skipped blocks or persisted text')
     check(observeParagraphs('synthetic-observations', 'it').tick(paragraphRoot, 1)?.includes('Paragrafo:'), 'Paragraph model not restored after reopening')
     await render(null)

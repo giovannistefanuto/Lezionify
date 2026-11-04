@@ -845,6 +845,12 @@ export class CourseRagService {
               'Risposta con citazioni non verificabili. Riprova la domanda.'
             )
           let grounding: CourseGroundingReview = { status: 'unavailable', claims: [], contradictions: [] }
+          const localWarnings = [...courseChronologyWarnings(action.text, sent.values()), ...courseAbsenceWarnings(action.text)]
+          if (localWarnings.length && !correctionUsed && round < 3 && completionContext.remainingAttempts > 0) {
+            correctionUsed = true
+            toolResult = { action: 'correct_answer', previousAnswer: action.text, review: localWarnings, instruction: 'Limita le conclusioni agli estratti consultati. Non dedurre che un argomento sia assente dal corso né che una ripresa sia la prima introduzione. Correggi la risposta senza inventare nuove evidenze; puoi astenerti. Rispondi con il contratto answer.' }
+            continue
+          }
           if (this.dependencies.checkGrounding && action.text.length <= 24000 && completionContext.remainingAttempts > 0 && completionContext.deadline - Date.now() > 15000) {
             this.notify(course, 'Controllo AI delle principali affermazioni e delle citazioni. Il controllo è fallibile.', requestId)
             try {

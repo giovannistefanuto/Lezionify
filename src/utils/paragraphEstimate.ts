@@ -1,7 +1,12 @@
-export interface ParagraphFeatures { words: number; numbers: number; formulas: number }
+export interface ParagraphFeatures { words: number; numbers: number; formulas: number; boldWords?: number; position?: number; note?: boolean }
 export interface ParagraphSample extends ParagraphFeatures { document: string; day: string; seconds: number }
 const median = (items: number[]) => { const sorted = [...items].sort((a, b) => a - b); return sorted[Math.floor(sorted.length / 2)] }
-const weight = (item: ParagraphFeatures, factor: number) => Math.max(1, item.words + factor * (item.numbers + item.formulas * 8))
+interface StyleFactors { bold: number; position: number; note: number }
+const neutral: StyleFactors = { bold: 0, position: 0, note: 0 }
+const bounded = (value: number | undefined, maximum: number) => Number.isFinite(value) ? Math.max(0, Math.min(maximum, value!)) : 0
+const weight = (item: ParagraphFeatures, factor: number, style = neutral) => Math.max(1,
+  (item.words + factor * (item.numbers + item.formulas * 8) + style.bold * bounded(item.boldWords, item.words)) *
+  (1 - style.position * bounded(item.position, 1)) * (item.note === true ? 1 - style.note : 1))
 export function paragraphFeatures(text: string, formulas = 0): ParagraphFeatures {
   return { words: text.match(/[\p{L}\p{N}]+/gu)?.length ?? 0, numbers: text.match(/\d+(?:[.,]\d+)?/g)?.length ?? 0, formulas }
 }
@@ -9,13 +14,13 @@ export function paragraphModel(samples: ParagraphSample[], day: string) {
   const valid = samples.filter(item => Number.isFinite(item.seconds) && item.seconds >= 15 && item.seconds <= 7200 && Number.isFinite(item.words) && item.words >= 8 && Number.isFinite(item.numbers) && item.numbers >= 0 && Number.isFinite(item.formulas) && item.formulas >= 0)
   if (valid.length < 2 || valid.reduce((sum, item) => sum + item.seconds, 0) < 60) return null
   const documents = [...new Set(valid.map(item => item.document))]
-  const error = (factor: number) => {
+  const error = (factor: number, style = neutral) => {
     const errors: number[] = []
     for (const document of documents) {
       const train = valid.filter(item => item.document !== document)
       if (!train.length) continue
-      const rate = median(train.map(item => item.seconds / weight(item, factor)))
-      for (const item of valid.filter(item => item.document === document)) errors.push(Math.abs(rate * weight(item, factor) - item.seconds))
+      const rate = median(train.map(item => item.seconds / weight(item, factor, style)))
+      for (const item of valid.filter(item => item.document === document)) errors.push(Math.abs(rate * weight(item, factor, style) - item.seconds))
     }
     return errors.length ? errors.reduce((a, b) => a + b, 0) / errors.length : Infinity
   }
@@ -28,10 +33,22 @@ export function paragraphModel(samples: ParagraphSample[], day: string) {
       if (candidateError < validationError * 0.95) { factor = candidate; validationError = candidateError }
     }
   }
-  const rate = median(valid.map(item => item.seconds / weight(item, factor)))
+  let style = neutral
+  const enriched = valid.filter(item => Number.isFinite(item.boldWords) && Number.isFinite(item.position) && typeof item.note === 'boolean')
+  if (enriched.length >= 24 && new Set(enriched.map(item => item.document)).size >= 4) {
+    for (const candidate of [
+      { bold: 0.5, position: 0, note: 0 }, { bold: 1, position: 0, note: 0 },
+      { bold: 0, position: 0.25, note: 0 }, { bold: 0, position: 0, note: 0.5 },
+      { bold: 0.5, position: 0.25, note: 0.5 }
+    ]) {
+      const candidateError = error(factor, candidate)
+      if (candidateError < validationError * 0.95) { style = candidate; validationError = candidateError }
+    }
+  }
+  const rate = median(valid.map(item => item.seconds / weight(item, factor, style)))
   const today = valid.filter(item => item.day === day)
-  const adjustment = today.length >= 3 ? Math.max(0.5, Math.min(2, (median(today.map(item => item.seconds / weight(item, factor))) / rate - 1) * Math.min(0.7, today.length / 20) + 1)) : 1
-  return { factor, samples: valid.length, documents: documents.length, provisional: documents.length < 3 || valid.length < 12,
+  const adjustment = today.length >= 3 ? Math.max(0.5, Math.min(2, (median(today.map(item => item.seconds / weight(item, factor, style))) / rate - 1) * Math.min(0.7, today.length / 20) + 1)) : 1
+  return { factor, style, samples: valid.length, documents: documents.length, provisional: documents.length < 3 || valid.length < 12,
     validationError: Number.isFinite(validationError) ? validationError : null, baselineError: Number.isFinite(baselineError) ? baselineError : null,
-    predict: (features: ParagraphFeatures) => rate * weight(features, factor) * adjustment }
+    predict: (features: ParagraphFeatures) => rate * weight(features, factor, style) * adjustment }
 }

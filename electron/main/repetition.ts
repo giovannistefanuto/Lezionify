@@ -25,10 +25,13 @@ interface RecordData extends RepetitionSession {
   checksum: string
   referenceChecksum: string
   audioFile: string
+  durationSeconds?: number
+  studyEligible?: boolean
   offset: number
 }
 
 export interface RepetitionDependencies {
+  recordStudy?: (id: string, createdAt: string, seconds: number) => Promise<void>
   reply?: (reference: string, assessment: string, messages: RepetitionMessage[], signal: AbortSignal) => Promise<string>
   scan: () => Promise<UsbRecorderInfo>
   transcribe: (
@@ -54,7 +57,8 @@ const summary = ({
   createdAt,
   status,
   message,
-  percent
+  percent,
+  studyEligible
 }: RecordData): RepetitionSession => ({
   id,
   audioName,
@@ -62,7 +66,8 @@ const summary = ({
   createdAt,
   status,
   message,
-  percent
+  percent,
+  studyEligible
 })
 const textHash = (text: string) =>
   createHash('sha256').update(text).digest('hex')
@@ -269,6 +274,11 @@ export class RepetitionService {
     }
   }
 
+  async studyInfo(id: string) {
+    const record = await this.record(id)
+    return { eligible: record.studyEligible === true, completed: record.status === 'completed' }
+  }
+
   async audioPath(id: string): Promise<string> {
     return join(this.directory(id), (await this.record(id)).audioFile)
   }
@@ -336,6 +346,8 @@ export class RepetitionService {
           referenceChecksum: textHash(reference),
           audioFile,
           audioName: source.name,
+          durationSeconds: source.durationSeconds,
+          studyEligible: true,
           referenceName: basename(config.referencePath),
           createdAt: new Date().toISOString(),
           status: 'transcribing',
@@ -355,6 +367,8 @@ export class RepetitionService {
         throw error
       }
     }
+    if (record.studyEligible && this.dependencies.recordStudy && Number.isFinite(record.durationSeconds) && record.durationSeconds! > 0)
+      await this.dependencies.recordStudy(record.id, record.createdAt, record.durationSeconds!)
     return this.begin(record)
   }
 
