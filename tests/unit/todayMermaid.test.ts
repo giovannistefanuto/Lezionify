@@ -1,6 +1,14 @@
 import { expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { validateMermaidSource } from '../../src/components/MermaidDiagram'
+
+it('normalizza solo dichiarazioni complete di nodi flowchart senza alterare etichette o direttive', () => {
+  const source = 'flowchart TD\n  P ["Prediction (Policy Evaluation)"]\n  C ["Control [step]"]\n  P --> C'
+  expect(validateMermaidSource(source)).toBe('flowchart TD\n  P["Prediction (Policy Evaluation)"]\n  C["Control [step]"]\n  P --> C')
+  expect(source).toContain('P [')
+  expect(validateMermaidSource('sequenceDiagram\nA->>B: P ["label"]')).toContain('P ["label"]')
+  expect(() => validateMermaidSource(source + '\nclick P "https://example.org"')).toThrow()
+})
 const source = readFileSync('tests/fixtures/fictitious-play.mmd', 'utf8').trim()
 it('accetta il diagramma Fictitious Play con metadati e stili terminati da punto e virgola', () => {
   expect(validateMermaidSource(source)).toBe(source)

@@ -25,6 +25,7 @@ interface RecordData extends RepetitionSession {
   checksum: string
   referenceChecksum: string
   audioFile: string
+  audioRecordedAt?: string
   durationSeconds?: number
   studyEligible?: boolean
   offset: number
@@ -347,6 +348,7 @@ export class RepetitionService {
           audioFile,
           audioName: source.name,
           durationSeconds: source.durationSeconds,
+          audioRecordedAt: source.recordedAt && Number.isFinite(Date.parse(source.recordedAt)) ? source.recordedAt : undefined,
           studyEligible: true,
           referenceName: basename(config.referencePath),
           createdAt: new Date().toISOString(),
@@ -367,8 +369,6 @@ export class RepetitionService {
         throw error
       }
     }
-    if (record.studyEligible && this.dependencies.recordStudy && Number.isFinite(record.durationSeconds) && record.durationSeconds! > 0)
-      await this.dependencies.recordStudy(record.id, record.createdAt, record.durationSeconds!)
     return this.begin(record)
   }
 
@@ -386,6 +386,8 @@ export class RepetitionService {
       throw new Error(
         'La copia locale dell’audio è cambiata. Ripristinala prima di riprendere.'
       )
+    if (record.studyEligible && this.dependencies.recordStudy && Number.isFinite(record.durationSeconds) && record.durationSeconds! > 0)
+      await this.dependencies.recordStudy(record.id, record.audioRecordedAt ?? record.createdAt, record.durationSeconds!)
     const controller = new AbortController()
     this.current = record
     this.active = { id, controller, done: Promise.resolve() }

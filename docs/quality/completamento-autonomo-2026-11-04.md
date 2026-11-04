@@ -94,8 +94,8 @@ traduzione remota è stata avviata in questo intervento.
 
 Fonte verificata il 4 novembre: [Spotify Developer Policy](https://developer.spotify.com/policy).
 
-Il piano NON è concluso integralmente: voci 7,20,38,90,91,92,122,123,124 restano
-aperte finché soddisfatti tutti i rispettivi criteri. La valutazione richiesta
+Il piano NON è concluso integralmente: voci 7,20,38,90,91,92,122,124 restano
+aperte finché soddisfatti tutti i rispettivi criteri (stato del primo passaggio, aggiornato nella ripresa sotto). La valutazione richiesta
 dalla voce 125 è stata svolta con i limiti sopra. Non sono richieste nuove
 azioni all'utente durante il collaudo delle parti eseguibili.
 
@@ -110,3 +110,63 @@ prove reali WASM passate. Dopo le ultime modifiche: 118 unit mirati, lint e
 typecheck passati, scenari Electron RIPETERE e stima passati.
 Backup e verifica: local-artifacts/installer-backups/20261104-studio-rag.
 Non è stata installata l'app né pubblicato il binario in una release.
+
+## Ripresa successiva del 4 novembre — D-0475–D-0477
+
+- Riprodotto in Electron il mancato campionamento dei veri riquadri `[!NOTE]`:
+  corretti selettore e riconoscimento, esclusa l'intestazione dai conteggi.
+  Test prima rosso, poi verde; conservati paragrafi e campioni precedenti.
+- Riprodotto il credito audio perso dopo errore di salvataggio e comando Riprendi:
+  la verifica è ora nel percorso comune, prima di trascrivere. Test rosso/verde.
+- `shared/repetitionStudy.ts` ripartisce l'audio sui giorni locali, usando la
+  data del registratore quando disponibile e la creazione della sessione come
+  ripiego. Verificati mezzanotte, cambio anno e giornate del cambio d'ora.
+  Verificato che la riapertura non annulli le rettifiche della Dashboard.
+- Le ipotesi Nota/posizione sono verificate separatamente su documenti sintetici
+  indipendenti. Il beneficio personale resta da misurare su nuovi campioni.
+- Il timeout RAG è stato distinto dall'avvio o corruzione del modello: il primo
+  indice di 5.226 passaggi richiede circa 376 secondi, oltre i 120 secondi della
+  singola prova. Il collaudo locale ora supporta `--prepare-index`, progresso
+  aggregato e checkpoint delle domande. Dopo preparazione, 32 domande su quattro
+  corsi concluse; 27 recuperano originali. Riprova calda: preparazione cache
+  circa 2,7 secondi, domanda più lenta circa 1,2 secondi. Zero invii remoti.
+  Sono misure del recupero, non giudizi sulle risposte generate.
+- Nuova ENG: riletti fonte e tentativo per tutte le 37 sezioni. Il campo extra
+  della sezione 27 contiene solo punteggiatura locale già ricostruita; bozza
+  revisionata manualmente, mantenendo rigido il validatore del prodotto.
+  Due diagrammi recuperati dalla fonte; tentativo e fonte conservati.
+- Il renderer ha riprodotto un errore della fonte Mermaid (`P ["etichetta"]`):
+  normalizzazione del solo rendering per dichiarazioni complete di nodi
+  flowchart quotati, dopo i controlli di direttive. Nessuna modifica alla fonte.
+  Verificati ancora blocco di click e conservazione delle etichette.
+  Rendering della bozza con MarkdownViewer reale: 38 titoli, 6 diagrammi senza
+  errori, 210 formule, rete bloccata. Non equivale a installazione nell'archivio.
+
+### Blocco conservato per l'installazione ENG
+
+La prova di installazione con controllo processi fuori sandbox si è fermata
+prima di scrivere: Lezionify è aperto. La skill ripara-dispense-inglesi richiede
+app e processi chiusi per backup e scritture locali. Nessun file dell'archivio
+è stato modificato e nessuna coda è stata cancellata.
+
+Domanda/azione da riprendere: chiudere Lezionify; poi installare la bozza con
+il controllo ottimistico delle fonti e backup, verificare apertura e ricerca,
+ricontrollare che non vi siano nuovi lavori indipendenti prima di azzerare la
+coda terminale. Bozza e script protetto in
+`local-artifacts/plan-2026-11-04/eng-recovery/`; il percorso resta privato e ignorato.
+
+### Verifica finale della ripresa
+
+Check generale superato: 812 unit in 63 file, 24 Python, 41 Node,
+regressioni Electron con riavvio, typecheck, lint, build e PDF reali.
+Ulteriore controllo della rettifica del credito passato. Benchmark ibrido
+heldout 25 casi passato: recall@8 1,00, precision@8 0,65, MRR 0,95,
+false-positive rate 0,60. Rimane da valutare l'astensione della risposta finale.
+
+Setup aggiornato: 299.977.133 byte, SHA256
+`262efea77f2ada79d3f131481a171ad753bf136722e22bc0d404666e72cfba42`.
+Verificati 377 file build, nuovi marker funzionali, manifesto e tre backup.
+Il controllo iniziale del manifesto era prematuro durante il packaging;
+la verifica ripetuta dopo la fine del processo è passata. RAG nel pacchetto
+isolato e quattro traduzioni WASM dal pacchetto passati, senza invii di testi.
+Backup: local-artifacts/installer-backups/20261104-ripresa-note-calendario.

@@ -33,16 +33,16 @@ export function observeParagraphs(documentId: string, language: string) {
       const day = formatLocalCalendarDate(new Date())
       const top = root.getBoundingClientRect().top + root.clientTop
       const bottom = top + root.clientHeight
-      const blocks = Array.from(root.querySelectorAll<HTMLElement>('.markdown-body > p, .markdown-body > ul, .markdown-body > ol, .markdown-body > pre, .markdown-body > blockquote, .markdown-body > table'))
+      const blocks = Array.from(root.querySelectorAll<HTMLElement>('.markdown-body > p, .markdown-body > ul, .markdown-body > ol, .markdown-body > pre, .markdown-body > blockquote, .markdown-body > table, .markdown-body > .markdown-alert'))
         .map((node, index) => {
           let cached = features.get(node)
           if (!cached) {
             const clone = node.cloneNode(true) as HTMLElement
-            clone.querySelectorAll('.katex-mathml, button, code').forEach(item => item.remove())
+            clone.querySelectorAll('.katex-mathml, button, code, .markdown-alert-header').forEach(item => item.remove())
             const text = clone.textContent ?? ''
             cached = { fingerprint: contentFingerprint(text), ...paragraphFeatures(text, node.querySelectorAll('.katex').length) }
             cached.boldWords = Array.from(clone.querySelectorAll('strong, b')).filter(element => !element.parentElement?.closest('strong, b')).reduce((sum, element) => sum + paragraphFeatures(element.textContent ?? '').words, 0)
-            cached.note = /^(?:\u2139\uFE0F?\s*)?(?:nota|note)\b[\s:—-]/iu.test(text.trim())
+            cached.note = node.matches('.markdown-alert-note') || /^(?:\u2139\uFE0F?\s*)?(?:nota|note)\b[\s:—-]/iu.test(text.trim())
             features.set(node, cached)
           }
           const bounds = node.getBoundingClientRect()

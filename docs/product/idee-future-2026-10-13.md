@@ -116,7 +116,7 @@ avviata da questo aggiornamento documentale (D-0390).
 | 66. [x] | Memo aperto con Ctrl+M ma non scrivibile dentro RIPETERE | 120 | D-0450: implementata/verificata; esiti e limiti nel report interventi-selezionati-2026-10-29.md. |
 | 67. [x] | Blocco di RIPETERE quando compare il popup delle lezioni all'avvio | 121 | D-0450: implementata/verificata; esiti e limiti nel report interventi-selezionati-2026-10-29.md. |
 | 68. [ ] | Indagare e collaudare le difficoltà della traduzione delle dispense ITA→ENG | 122 | Alta e incerta: diagnosi completa dei fallimenti, regressioni, qualità delle traduzioni e limiti del provider. |
-| 69. [ ] | RIPETERE: conteggiare registrazione e lettura della risposta come studio | 123 | Da approfondire: durata effettiva della registrazione, stima di 15 minuti per la lettura e prevenzione dei doppi conteggi. |
+| 69. [x] | RIPETERE: conteggiare registrazione e lettura della risposta come studio | 123 | Implementati crediti idempotenti, 15 minuti stimati, corso esplicito, calendario locale, ripresa dopo errore e rettifiche; collaudi D-0472/D-0475/D-0477. |
 | 70. [ ] | Stima di studio: grassetto, posizione e note | 124 | Da valutare sui dati: peso del grassetto, posizione percentuale e lettura rapida di Nota/Note, confrontati con la stima attuale. |
 | 71. [x] | Valutare formato e qualità delle risposte RAG personali | 125 | Lette 11 risposte; giudizio su lunghezza, tono, formato e completezza nel report del 4 novembre. Validazione indipendente delle fonti separata. |
 Le prime 17 posizioni e la 21 sono concluse in D-0392 su richiesta diretta dopo grilling (D-0391). [Uso, verifiche e limiti](interventi-2026-10-22.md).
@@ -2524,7 +2524,9 @@ Usare casi sintetici riproducibili e, se disponibili e autorizzati, evidenze per
 
 ### 123. Conteggiare RIPETERE come tempo di studio
 
-- [ ] Segnare come tempo di studio la durata usata per registrare la ripetizione e il tempo di lettura della risposta, stimato dall'utente in 15 minuti.
+- [x] Segnare come tempo di studio la durata usata per registrare la ripetizione e il tempo di lettura della risposta, stimato dall'utente in 15 minuti.
+
+**Completamento del 4 novembre:** crediti persistenti senza duplicazioni, sospensione del tracker, rettifiche e date locali verificati. Sessioni storiche escluse dal nuovo accredito automatico. [Prove e limiti](../quality/completamento-autonomo-2026-11-04.md).
 
 Verificare come sono oggi misurati e attribuiti i tempi, inclusi corso, data,
 pause, interruzioni, riprese e sessioni ripetute, evitando doppi conteggi.
@@ -2562,6 +2564,8 @@ eventuali invii AI devono essere espliciti e tracciabili. Riferire la valutazion
 all'utente prima di proporre o applicare modifiche al formato.
 
 **Stato dopo la valutazione RAG del 4 novembre:** 71 attività, 51 concluse, 10 aperte operative, 8 archiviate e 2 ritirate. Le modifiche parziali alle voci 123 e 124 non ne chiudono i criteri residui.
+
+**Stato dopo il collaudo RIPETERE del 4 novembre:** 71 attività, 52 concluse, 9 aperte operative, 8 archiviate e 2 ritirate. La bozza ENG non è ancora installata; il miglioramento personale della stima resta da misurare.
 
 ## Nota sulla classificazione
 

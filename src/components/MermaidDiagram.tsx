@@ -139,7 +139,11 @@ export function validateMermaidSource(source: string): string {
       throw new Error('Il diagramma contiene una direttiva non consentita.')
     }
   }
-  return normalized
+  // Mermaid 11 rejects `P ["label"]`: repair only complete quoted node
+  // declarations on one line, after the directive checks. Stored source stays intact.
+  return /^(?:graph|flowchart)\s+/i.test(firstDefinition)
+    ? normalized.replace(/^(\s*)([a-z][\w-]*)[\t ]+(\["(?:\\.|[^"\\\r\n])*"\])/gim, '$1$2$3')
+    : normalized
 }
 
 export function isSafeMermaidSvg(svg: string): boolean {

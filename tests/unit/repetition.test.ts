@@ -67,6 +67,16 @@ afterEach(async () => {
 })
 
 describe('RIPETERE archivio e pipeline', () => {
+  it('ritenta il credito audio fallito prima di avviare la trascrizione in ripresa', async () => {
+    dependencies.recordStudy = vi.fn().mockRejectedValueOnce(new Error('Disco pieno')).mockResolvedValue(undefined)
+    await service.setReference(reference)
+    await expect(service.startLatest()).rejects.toThrow('Disco pieno')
+    expect(dependencies.transcribe).not.toHaveBeenCalled()
+    await service.resume(checksum)
+    await settle()
+    expect(dependencies.recordStudy).toHaveBeenCalledTimes(2)
+    expect(dependencies.transcribe).toHaveBeenCalledTimes(1)
+  })
   it('conserva la durata reale e ripete la richiesta di accredito con ID stabile dopo riavvio', async () => {
     dependencies.recordStudy = vi.fn(async () => {})
     await service.setReference(reference)

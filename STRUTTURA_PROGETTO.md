@@ -2,6 +2,10 @@
 
 ## Stato attuale
 
+`shared/repetitionStudy.ts` ripartisce i crediti audio per giorno locale;
+le riprese ritentano i crediti non salvati prima di trascrivere. La stima
+include anche i riquadri Nota renderizzati. Dettagli in D-0475–D-0477.
+
 L'intervento del 4 novembre aggiunge crediti idempotenti RIPETERE e richiesta
 IPC per la lettura stimata, sospensione del tracker durante RIPETERE, campioni
 con grassetto/posizione/Nota e una correzione limitata delle conclusioni globali

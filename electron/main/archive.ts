@@ -1,3 +1,4 @@
+import { repetitionRecordingCredits } from '../../shared/repetitionStudy'
 import { relatedQnaContext } from '../../shared/qnaContext'
 import { SectionRevisionService } from './sectionRevision'
 import { RepetitionService } from './repetition'
@@ -2384,11 +2385,11 @@ export class ArchiveService {
   }
 
   private async recordRepetitionStudy(id: string, createdAt: string, seconds: number): Promise<void> {
-    if (!Number.isFinite(seconds) || seconds <= 0 || seconds > 30 * 24 * 3600) throw new Error('Durata della ripetizione non valida.')
+    const credits = repetitionRecordingCredits(id, createdAt, seconds)
     await this.repository.runExclusive(async () => {
       const sessions = await this.storage.readStudySessions()
-      if (sessions.some(session => session.id === `repetition-audio:${id}`)) return
-      sessions.push({ id: `repetition-audio:${id}`, lectureId: null, courseCode: null, startTime: createdAt, endTime: createdAt, durationSeconds: Math.round(seconds), mode: 'manual', date: formatLocalCalendarDate(new Date(createdAt)) })
+      if (sessions.some(session => session.id === `repetition-audio:${id}` || session.id.startsWith(`repetition-audio:${id}:`))) return
+      sessions.push(...credits)
       await this.storage.writeStudySessions(sessions)
     })
   }
@@ -2402,8 +2403,8 @@ export class ArchiveService {
       const readingId = `repetition-reading:${id}`
       if (sessions.some(session => session.id === readingId)) return
       const now = new Date()
-      const recording = sessions.find(session => session.id === `repetition-audio:${id}`)
-      if (recording) recording.courseCode = courseCode
+      const recordings = sessions.filter(session => session.id === `repetition-audio:${id}` || session.id.startsWith(`repetition-audio:${id}:`))
+      for (const recording of recordings) recording.courseCode = courseCode
       sessions.push({ id: readingId, lectureId: null, courseCode, startTime: now.toISOString(), endTime: now.toISOString(), durationSeconds: 900, mode: 'manual', date: formatLocalCalendarDate(now) })
       await this.storage.writeStudySessions(sessions)
     })

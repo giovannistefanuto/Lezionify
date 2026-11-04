@@ -144,6 +144,20 @@ Fine spiegazione.` }] }
     check(observeParagraphs('synthetic-observations', 'it').tick(paragraphRoot, 1)?.includes('Paragrafo:'), 'Paragraph model not restored after reopening')
     await render(null)
 
+    localStorage.removeItem('lezionify.paragraph-samples.v1')
+    localStorage.removeItem('lezionify.paragraph-progress.v1:rendered-note:en')
+    await render(<div id="note-observation" style={{ height: 200, overflow: 'auto', width: 500 }}><MarkdownViewer content={'> [!NOTE]\n> **Important words** ' + 'Study these local synthetic details. '.repeat(8) + '\n\n' + 'Next paragraph. '.repeat(100)} /></div>)
+    const noteRoot = document.querySelector<HTMLElement>('#note-observation')!
+    const noteBlock = noteRoot.querySelector<HTMLElement>('.markdown-alert-note')!
+    Object.assign(noteBlock.style, { height: '200px', margin: '0', padding: '0', boxSizing: 'border-box' })
+    const noteObservation = observeParagraphs('rendered-note', 'en')
+    for (let index = 0; index < 30; index++) noteObservation.tick(noteRoot, 1)
+    noteRoot.scrollTop = 210
+    noteObservation.tick(noteRoot, 1); noteObservation.save()
+    const noteSamples = JSON.parse(localStorage.getItem('lezionify.paragraph-samples.v1') ?? '[]')
+    check(noteSamples.some((sample: any) => sample.note === true && sample.boldWords === 2), 'Rendered NOTE alert missing from paragraph observations')
+    await render(null)
+
     let translations = 0
     api.offlineTranslationStatus = async () => ({ installed: true, installing: false })
     api.translatePhrase = async () => { translations++; return { text: 'Traduzione' } }

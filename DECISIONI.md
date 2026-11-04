@@ -5227,3 +5227,58 @@ Non modificare manualmente la sezione `Registro`: aggiungi le nuove decisioni es
 - **Impatto:** Setup 299976722 byte SHA256 75b1a31266698efd01ca3c8fe459f64ea7e74f7d51b24168f21e42c084e68580; 377 file build, manifesto e backup verificati; runtime RAG e traduttore pacchettizzati passati.
 - **Follow-up:** Commit e push automatici, verifica remoto; installazione a app chiusa. Restano i criteri residui documentati nel report.
 - **File coinvolti:** dist/Lezionify-Setup-0.1.0.exe, docs/quality/completamento-autonomo-2026-11-04.md, DECISIONI.md
+
+## D-0475 — Riquadri Nota e ripresa del credito RIPETERE
+
+- **Data:** 2026-11-04
+- **Stato:** accettata
+- **Area:** studio-affidabilita
+- **Decisione:** Includere i riquadri Markdown Nota nei campioni della stima escludendo le intestazioni; ritentare il credito audio RIPETERE anche nel percorso comune di ripresa prima della trascrizione.
+- **Motivazione:** Due regressioni riproducono rispettivamente Note ignorate e credito perso dopo un errore di persistenza.
+- **Impatto:** Test Electron e unit prima falliti poi superati; nessuna nuova dipendenza o invio AI. Campioni precedenti conservati.
+- **Follow-up:** Aggiornare installer e collaudi; calibrazione personale sui nuovi campioni.
+- **File coinvolti:** src/utils/paragraphObservation.ts, electron/main/repetition.ts, tests/unit/repetition.test.ts, tests/unit/paragraphStyle.test.ts, tests/integration/october28Scenarios.browser.tsx
+
+## D-0476 — Bozza inglese revisionata per la nuova lezione
+
+- **Data:** 2026-11-04
+- **Stato:** accettata
+- **Area:** recupero-eng
+- **Decisione:** Preparare una bozza inglese da confronto manuale integrale delle 37 sezioni, eliminando un campo di punteggiatura ridondante del tentativo e correggendo markup e spazi; conservare i diagrammi originali quando necessario.
+- **Motivazione:** Il rifiuto locale deriva da un campo aggiuntivo non previsto; il tentativo e recuperabile senza nuovi invii al provider e senza indebolire il validatore.
+- **Impatto:** Bozza e verifica strutturale conservate solo in artefatti personali ignorati; due diagrammi originali ripristinati. Archivio e coda non modificati perche Lezionify e aperto.
+- **Follow-up:** Con app chiusa installare con backup, verificare visualizzazione e ricerca e azzerare solo la coda terminale senza lavori indipendenti.
+- **File coinvolti:** Artefatti personali locali ignorati, DECISIONI.md
+
+## D-0477 — Date RIPETERE e rendering Mermaid conservativo
+
+- **Data:** 2026-11-04
+- **Stato:** accettata
+- **Area:** studio-coll audo
+- **Decisione:** Ripartire il credito audio sui giorni locali usando la data del registratore quando disponibile; normalizzare nel solo rendering Mermaid lo spazio tra identificativo e etichetta quotata completa di un nodo flowchart, dopo i controlli di sicurezza.
+- **Motivazione:** Rispettare mezzanotte e cambi d ora; rendere leggibile un diagramma della fonte senza modificare fonte e bozza archiviata.
+- **Impatto:** Nuovo helper condiviso repetitionStudy; test calendario e sicurezza passati. Bozza ENG renderizzata con 38 titoli, 6 diagrammi senza errori e 210 formule; archivio invariato.
+- **Follow-up:** Installer aggiornato e installazione ENG soltanto con app chiusa.
+- **File coinvolti:** shared/repetitionStudy.ts, electron/main/archive.ts, electron/main/repetition.ts, src/components/MermaidDiagram.tsx, tests/unit/repetitionStudy.test.ts, tests/unit/todayMermaid.test.ts, DECISIONI.md
+
+## D-0478 — Completamento del tempo di studio RIPETERE
+
+- **Data:** 2026-11-04
+- **Stato:** accettata
+- **Area:** pianificazione
+- **Decisione:** Concludere la voce 123 dopo implementazione e verifiche su registrazione, lettura stimata, idempotenza, concorrenza, ripresa dopo errore, rettifiche e calendario locale.
+- **Motivazione:** I criteri funzionali sono ora implementati e coperti da test backend ed Electron; la calibrazione della stima e il recupero ENG restano distinti.
+- **Impatto:** Coda con 9 operative aperte; nessun accredito retroattivo delle vecchie sessioni.
+- **Follow-up:** Verificare installer aggiornato; installazione ENG con app chiusa.
+- **File coinvolti:** docs/product/idee-future-2026-10-13.md, docs/quality/completamento-autonomo-2026-11-04.md, DECISIONI.md
+
+## D-0479 — Setup con Note calendario e Mermaid verificati
+
+- **Data:** 2026-11-04
+- **Stato:** accettata
+- **Area:** distribuzione
+- **Decisione:** Rigenerare e verificare il setup generale dopo le correzioni D-0475 e D-0477; aggiungere controllo opzionale dei marker del 4 novembre nel verificatore del pacchetto.
+- **Motivazione:** Distribuire le correzioni collaudate e verificare che il pacchetto includa i percorsi di studio corretti.
+- **Impatto:** Setup 299977133 byte SHA256 262efea77f2ada79d3f131481a171ad753bf136722e22bc0d404666e72cfba42; 377 file e backup verificati, runtime RAG e traduttore passati; 812 unit e gate generali positivi.
+- **Follow-up:** Commit e push automatici; ENG personale pronto ma installazione bloccata da app aperta, come documentato.
+- **File coinvolti:** dist/Lezionify-Setup-0.1.0.exe, tools/verify_installer.cjs, docs/quality/completamento-autonomo-2026-11-04.md, DECISIONI.md

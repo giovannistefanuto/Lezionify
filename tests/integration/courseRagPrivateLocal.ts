@@ -51,8 +51,20 @@ const query = 'Confronta Q_pi e politica greedy nelle lezioni 5, 6 e 7'
 const lexical = retrieval.search(query)
 const semantic = new LocalCourseSemantic(join(process.cwd(), 'local-artifacts/rag-semantic-model'))
 let hybrid = lexical
-const studyRows: { course: string; category: string; question: string; courseWide: boolean; originals: number; lessons: number[]; passages: ReturnType<CourseRetrieval['search']> }[] = []
+const studyRows: { course: string; category: string; question: string; courseWide: boolean; elapsedMs: number; originals: number; lessons: number[]; passages: ReturnType<CourseRetrieval['search']> }[] = []
 try {
+  if (process.argv.includes('--prepare-index') && (await semantic.state()).status === 'ready') {
+    const started = performance.now()
+    const all = [...sourcesByCourse.values()].flatMap(sources => new CourseRetrieval(sources).all())
+    let reported = 0
+    await semantic.index(all, AbortSignal.timeout(15 * 60_000), async ids => {
+      if (ids.length - reported >= 128 || ids.length === all.length) {
+        reported = ids.length
+        console.log(JSON.stringify({ phase: 'prepare-local-index', ready: ids.length, total: all.length, elapsedMs: Math.round(performance.now() - started) }))
+        await writeFile(join(output, 'preparation-progress.json'), JSON.stringify({ ready: ids.length, total: all.length, elapsedMs: performance.now() - started }))
+      }
+    })
+  }
   if ((await semantic.state()).status === 'ready') {
     const ids = await semantic.rank('Q_pi politica greedy modello noto ignoto', retrieval.all().filter(item => [5, 6, 7].includes(item.source.lectureOrdinal ?? 0)), AbortSignal.timeout(120000))
     hybrid = retrieval.search(query, 12, undefined, ids)
@@ -79,12 +91,14 @@ try {
         ['cambio-ipotesi', `Come mai ${theme.topic} sembrava valido nella lezione di ieri ma non oggi? Quali ipotesi sono cambiate?`]
       ]
       for (const [category, question] of questions) {
+        const started = performance.now()
         const plan = planCourseQuery(question)
         const ids = await semantic.rank(plan.query, local.all(), AbortSignal.timeout(120000))
         const passages = local.search(plan.query, 12, plan.lessons, ids, plan)
-        studyRows.push({ course: theme.course, category, question, courseWide: plan.courseWide,
+        studyRows.push({ course: theme.course, category, question, courseWide: plan.courseWide, elapsedMs: performance.now() - started,
           originals: passages.filter(item => item.source.provenance === 'original').length,
           lessons: [...new Set(passages.flatMap(item => item.source.lectureOrdinal ? [item.source.lectureOrdinal] : []))], passages })
+        await writeFile(join(output, 'study-questions-checkpoint.json'), JSON.stringify({ completed: studyRows.length, rows: studyRows }, null, 2))
       }
     }
     await writeFile(join(output, 'study-questions-private.json'), JSON.stringify({ rows: studyRows,
@@ -96,6 +110,6 @@ context.replaceWith(hybrid)
 const coverage = context.coverage()
 if (selected.length && coverage.missingLessons.length) throw new Error('Confronto RL privato incompleto.')
 await writeFile(join(output, 'retrieval-private.json'), JSON.stringify({ query, lexical, hybrid, coverage }, null, 2))
-const summary = { result: 'PASS', courses: courses.length, lectures: library.lectures.length, sources: [...sourcesByCourse.values()].reduce((n, sources) => n + sources.length, 0), passages: indexedPassages, overviewChecks, rlCoverage: coverage.retrievedLessons, studyQuestions: studyRows.length, studyQuestionsWithOriginals: studyRows.filter(row => row.originals > 0).length, networkDocuments: 0, limitation: 'Read-only local retrieval checks, not a generated-answer evaluation.' }
+const summary = { result: 'PASS', courses: courses.length, lectures: library.lectures.length, sources: [...sourcesByCourse.values()].reduce((n, sources) => n + sources.length, 0), passages: indexedPassages, overviewChecks, rlCoverage: coverage.retrievedLessons, studyQuestions: studyRows.length, studyQuestionMaxMs: studyRows.length ? Math.max(...studyRows.map(row => row.elapsedMs)) : null, studyQuestionsWithOriginals: studyRows.filter(row => row.originals > 0).length, networkDocuments: 0, limitation: 'Read-only local retrieval checks, not a generated-answer evaluation.' }
 await writeFile(join(output, 'summary.json'), JSON.stringify(summary, null, 2))
 console.log(JSON.stringify(summary))
