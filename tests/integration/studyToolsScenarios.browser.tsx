@@ -253,8 +253,8 @@ export async function runStudyToolsScenarios(root: Root, api: any) {
     const beforeQna = [...snapshot().dwell]
     await tick(60)
     check(
-      output.label === null,
-      'Estimate should be hidden while consulting Q&A'
+      output.label?.includes('Paragrafo:'),
+      'Q&A must keep the paragraph estimate available in its detail'
     )
     await act(async () => root.render(<EstimateHarness paused language="en" />))
     check(

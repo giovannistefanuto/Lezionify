@@ -196,9 +196,10 @@ Fine spiegazione.` }] }
     await render(null)
 
     // Pin only the tracker heartbeat: seconds advance without a three-minute wait.
-    const now = Date.now, setIntervalNative = window.setInterval, clearIntervalNative = window.clearInterval
+    const now = Date.now, setIntervalNative = window.setInterval, clearIntervalNative = window.clearInterval, hasFocusNative = document.hasFocus
     let clock = now(), callback: (() => void) | null = null, tracker!: ReturnType<typeof useStudyTracker>
     Date.now = () => clock
+    document.hasFocus = () => true
     window.setInterval = ((fn: () => void, delay: number) => { if (delay === 1000) { callback = fn; return 999991 } return setIntervalNative(fn, delay) }) as any
     window.clearInterval = ((id: number) => { if (id !== 999991) clearIntervalNative(id) }) as any
     api.saveStudySession = async () => {}; api.getLectureStudySeconds = async () => 0
@@ -215,7 +216,7 @@ Fine spiegazione.` }] }
       for (let index = 0; index < 190; index++) await act(async () => { clock += 1000; callback?.() })
       check(!tracker.inactivityPrompt && tracker.activeSeconds > seconds, 'Reading without input did not resume counting')
       await render(null)
-    } finally { Date.now = now; window.setInterval = setIntervalNative; window.clearInterval = clearIntervalNative }
+    } finally { Date.now = now; window.setInterval = setIntervalNative; window.clearInterval = clearIntervalNative; document.hasFocus = hasFocusNative }
     await render(<FocusLockModal show inactivity courseCode="TEST" sessionSeconds={100} lectureTotalSeconds={200} onContinue={() => {}} onQuit={() => {}} onStudyWithoutInput={() => {}} />)
     check(document.querySelector('#focus-lock-title')?.textContent === 'Stai ancora studiando?', 'Inactivity modal has wrong question')
   } finally {

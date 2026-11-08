@@ -325,6 +325,12 @@ async function runDrawerAttachmentScenario(root: Root, api: any, source: any,
     await until(() => Boolean(document.querySelector('[title="Modalità studio immersiva"]')), 'Drawer not ready')
     await act(async () => document.querySelector<HTMLButtonElement>('[title="Modalità studio immersiva"]')!.click())
     await until(() => Boolean(document.querySelector('.focus-pdf-page-count')), 'Drawer PDF did not load')
+    const estimateTrigger = document.querySelector<HTMLButtonElement>('.study-estimate-trigger')!
+    check(estimateTrigger && !document.querySelector('.study-estimate-panel'), 'Focus must show only the discrete estimate icon initially')
+    await act(async () => estimateTrigger.focus())
+    check(document.querySelector('.study-estimate-panel'), 'Estimate detail not available by keyboard in real Focus')
+    await act(async () => estimateTrigger.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })))
+    check(document.querySelector('.focus-mode-overlay') && !document.querySelector('.study-estimate-panel') && !document.querySelector('.focus-lock-overlay'), 'Closing estimate with Escape exited Focus or activated Focus Lock')
     await act(async () => document.querySelector<HTMLButtonElement>('[aria-label="Apri domande Q&A"]')!.click())
     await until(() => Boolean(document.querySelector('.qna-input-row textarea')), 'Drawer Q&A did not load')
     const attachButton = document.querySelector<HTMLButtonElement>('[aria-label="Allega slide dal PDF"]')

@@ -1,7 +1,7 @@
 # Idee e modifiche future — 13 ottobre 2026
 
 Raccolta delle richieste dell’utente per lo sviluppo futuro di Lezionify,
-iniziata il 13 ottobre e aggiornata con nuove idee fino al 29 ottobre 2026.
+iniziata il 13 ottobre e aggiornata con nuove idee fino all'8 novembre 2026.
 La classificazione è preliminare: gli interventi immediati hanno un obiettivo
 già definito e non richiedono una ricerca preventiva; restano necessari i normali
 controlli del codice e i collaudi. Gli approfondimenti richiedono invece una
@@ -119,6 +119,26 @@ avviata da questo aggiornamento documentale (D-0390).
 | 69. [x] | RIPETERE: conteggiare registrazione e lettura della risposta come studio | 123 | Implementati crediti idempotenti, 15 minuti stimati, corso esplicito, calendario locale, ripresa dopo errore e rettifiche; collaudi D-0472/D-0475/D-0477. |
 | 70. [ ] | Stima di studio: grassetto, posizione e note | 124 | Da valutare sui dati: peso del grassetto, posizione percentuale e lettura rapida di Nota/Note, confrontati con la stima attuale. |
 | 71. [x] | Valutare formato e qualità delle risposte RAG personali | 125 | Lette 11 risposte; giudizio su lunghezza, tono, formato e completezza nel report del 4 novembre. Validazione indipendente delle fonti separata. |
+| 72. [x] | Rendere discreta la stima del tempo restante | 126 | D-0481: dettaglio nell'icona 🌱, hover/focus/clic/Escape, temi, finestra stretta e zoom 200% verificati. |
+| 73. [x] | Allineare i tempi di studio e del blocco alle attività effettive | 127 | D-0481: tick unico, esclusioni e attribuzione Q&A anche ai blocchi già superati; regressioni Electron passate. |
+| 74. [ ] | Revisione complessiva dell'interfaccia | 128 | Medio/alta e ampia: inventario dei flussi, verifica visiva e correzioni con regressioni. |
+| 75. [ ] | Controllo aggiornamenti GitHub all'avvio e pulsante Aggiorna | 129 | Alta: versionamento, distribuzione e aggiornamento recuperabile. |
+| 76. [ ] | Grafico giornaliero di studio, pause e cambi di schermata | 130 | Alta: cronologia locale e definizione prudente dei segnali di attenzione. |
+| 77. [ ] | Intervallo statistico del tempo restante calibrato sullo storico | 131 | D-0482: raccolta prospettica e intervalli implementati/collaudati; resta la calibrazione personale su almeno 20 lezioni confrontabili per fase, lingua e metodo. |
+
+**Aggiornamento dell'8 novembre, D-0480:** aggiunte sei attività, voci 126–131,
+posizioni 72–77, ordinate fra loro per difficoltà crescente senza cambiare
+l'ordine precedente. Dopo le chiusure D-0473/D-0478: **77 attività, 52 concluse,
+15 aperte operative, 8 archiviate e 2 ritirate**. Le domande sul funzionamento
+attuale sono risposte tramite ispezione del codice, senza nuove caselle.
+Le richieste sovrapposte sul conteggio confluiscono nella voce 127.
+
+**Implementazione dell'8 novembre, D-0481/D-0482:** concluse 126 e 127;
+131 implementata con stato insufficienza dati e verifiche sintetiche, ancora
+aperta per calibrazione personale e copertura reale. Totale: **77 attività,
+54 concluse, 13 aperte operative, 8 archiviate e 2 ritirate**.
+[Funzionamento, metodo statistico e verifiche](stima-tempi-2026-11-08.md).
+
 Le prime 17 posizioni e la 21 sono concluse in D-0392 su richiesta diretta dopo grilling (D-0391). [Uso, verifiche e limiti](interventi-2026-10-22.md).
 La prima attività operativa ancora aperta è la **voce 7, traduttore offline**, posizione 22. Ogni invocazione
 letterale di `LISTA_ORDINE` autorizza implementazione e collaudo della prima
@@ -2566,6 +2586,128 @@ all'utente prima di proporre o applicare modifiche al formato.
 **Stato dopo la valutazione RAG del 4 novembre:** 71 attività, 51 concluse, 10 aperte operative, 8 archiviate e 2 ritirate. Le modifiche parziali alle voci 123 e 124 non ne chiudono i criteri residui.
 
 **Stato dopo il collaudo RIPETERE del 4 novembre:** 71 attività, 52 concluse, 9 aperte operative, 8 archiviate e 2 ritirate. La bozza ENG non è ancora installata; il miglioramento personale della stima resta da misurare.
+
+## Aggiunte dell'8 novembre 2026 — tempi, interfaccia e aggiornamenti
+
+Ordine relativo delle sole nuove richieste, dalla più facile alla più difficile.
+La raccolta iniziale non implementava funzioni; avanzamento successivo sotto
+e nel [resoconto](stima-tempi-2026-11-08.md). Difficoltà iniziali preliminari.
+
+### 126. Rendere discreta la stima del tempo restante
+
+- [x] Spostare il testo «Studio restante» in un dettaglio raggiungibile da
+  un'icona o emoji, per non distrarre durante la lettura.
+- Il controllo deve essere distinguibile dal cronometro e dal timer pausa.
+  Valutare hover, focus da tastiera e clic, conservando un nome accessibile.
+- **Esito D-0481:** icona 🌱 con dettaglio a hover/focus/clic e chiusura con
+  Escape senza uscita da Focus; «Ricalcola da qui» nel dettaglio. Collaudo
+  Electron con temi, finestra stretta e zoom 200% passato.
+
+### 127. Conteggiare le attività effettive nel cronometro e nel tempo del blocco
+
+- [x] Escludere Memo, traduttore, pause e attività estranee dallo studio;
+  includere invece il Q&A nel tempo dedicato al blocco di riferimento.
+- Alla raccolta della richiesta Memo e pause sospendevano il tracker e la stima; il Q&A contava nel
+  cronometro generale ma, dopo interazione nella sua colonna, non alimenta
+  i campioni dei paragrafi. Il metodo precedente accumula invece i secondi
+  Q&A senza accreditare avanzamento nella dispensa.
+- Prima di D-0481 il cronometro controllava `document.hidden`, ma non `document.hasFocus()` né
+  l'apertura del dizionario/traduttore: il semplice cambio finestra e la
+  traduzione non sono esclusi esplicitamente. La stima ha questi controlli.
+- Definire l'associazione Q&A/blocco, evitare doppi conteggi e campioni
+  contaminati; verificare apertura, chiusura e ripresa di ogni attività,
+  cambio finestra, minimizzazione e inattività. Riutilizzare la voce 57
+  già conclusa per Memo, senza riaprirla come duplicato.
+- **Esito D-0481:** clock, paragrafi ed esiti usano lo stesso tick accreditato;
+  modali e perdita focus sono esclusi. Q&A attribuito all'ancora univoca o
+  ultimo blocco letto, senza copertura fittizia e senza duplicare campioni.
+  Regressioni su riapertura, pause, traduttore, altre finestre e sospensione
+  passate. Distrazione sulla stessa schermata resta non osservabile.
+
+### 128. Verificare e ottimizzare l'interfaccia nel suo insieme
+
+- [ ] Rivedere i flussi e le schermate principali: gerarchia, distrazioni,
+  densità, leggibilità, coerenza dei controlli, tastiera, zoom e finestre piccole.
+- Partire dal report UX/UI del 21 ottobre e dalle correzioni già concluse;
+  verificare lo stato attuale con evidenze visive e dare priorità ai problemi
+  concreti prima delle modifiche. La nuova richiesta è più ampia dei rilievi storici.
+
+### 129. Controllare gli aggiornamenti GitHub e aggiornare con un pulsante
+
+- [ ] All'apertura di Lezionify controllare se esiste una nuova versione
+  distribuita su GitHub, comunicarlo e offrire il pulsante per aggiornare.
+- Separare versione installata, release e semplici commit dei sorgenti;
+  definire versionamento, artefatti, integrità, chiusura/riavvio e recupero
+  dopo errori. Conservare archivio locale e impostazioni; rete assente e
+  mancato aggiornamento non devono impedire l'uso dell'app.
+- Non scegliere ora librerie, servizi o modalità di installazione.
+
+### 130. Grafico giornaliero dello studio e dei possibili cali di attenzione
+
+- [ ] Mostrare quando e quanto si è studiato, pause e cambi di schermata
+  nella giornata, usando una cronologia locale delle attività.
+- Definire prima cosa rappresentare come possibile calo di attenzione:
+  interruzioni e cambi frequenti sono segnali osservabili, non una misura
+  diretta della concentrazione o della comprensione. Q&A e lettura senza
+  input possono essere studio effettivo.
+- Verificare granularità dello storico esistente, giorni locali, dati
+  mancanti, conservazione e raccolta minima senza contenuti delle altre app;
+  distinguere dati osservati ed eventuali indicatori derivati.
+
+### 131. Quantificare statisticamente l'incertezza del tempo restante
+
+- [ ] Affiancare alla stima un intervallo in minuti, per esempio
+  «195 ± 20 min» o «3 ± 2 min», con livello percentuale dichiarato e
+  verificato sullo storico; non ricavare l'affidabilità dalla sola distanza
+  dalla fine della dispensa.
+- Registrare localmente previsioni intermedie ed esiti effettivi comparabili,
+  escludendo le attività della voce 127. Confrontare gli errori a inizio,
+  metà e fine lezione e verificare se cambiano davvero con la posizione.
+- Definire fine effettiva, riletture e sessioni interrotte, separazione dei
+  dati di calibrazione/verifica, quantità minima e copertura degli intervalli.
+  Con dati insufficienti dichiararlo, senza inventare percentuali.
+- Il modello attuale mostra un errore medio per blocco o «incertezza alta»:
+  non è ancora un intervallo calibrato sul tempo residuo della lezione.
+  Coordinare con la voce 124, che riguarda i fattori della previsione puntuale.
+- **Stato D-0482:** implementati raccolta prospettica locale, completamento
+  confermato, ripresa e invalidazione; quantile nominale 90%, almeno 20 lezioni
+  distinte per fase/lingua/metodo e copertura successiva mostrata con numerosità.
+  Test matematici e percorsi Electron passati. Il vecchio storico non permette
+  di ricostruire le previsioni originarie: **restano da raccogliere gli esiti
+  personali e verificarne la copertura**. Nessuna percentuale inventata.
+
+### Verifiche alla raccolta della richiesta — senza attività da fare
+
+Ispezione iniziale dell'8 novembre, precedente a D-0481/D-0482: `useStudyEstimate.ts`, `useStudyTracker.ts`,
+`paragraphObservation.ts`, `paragraphEstimate.ts`, `studyEstimate.ts` e
+collegamenti in `LectureDrawer.tsx`/`App.tsx`. Non è un collaudo della versione
+installata né una lettura dei campioni personali.
+
+- Il metodo per paragrafi conserva gli ultimi 300 campioni locali condivisi
+  fra documenti/lingue e usa quelli validi. Parte con almeno due campioni e
+  60 secondi complessivi; è provvisorio sotto 12 campioni o tre documenti.
+  Un campione richiede almeno 15 secondi, almeno otto parole, esposizione di
+  almeno 18/20 del blocco e passaggio oltre il blocco. Il modello scarta
+  durate superiori a 7200 secondi.
+- Stima il tempo da parole e ritmo mediano personale; numeri/formule sono
+  pesati solo se migliorano l'errore tra documenti di almeno il 5%, con
+  almeno 12 campioni su tre documenti. Grassetto, posizione normalizzata
+  e Nota/Note sono raccolti; i loro pesi richiedono almeno 24 campioni
+  arricchiti su quattro documenti e analogo miglioramento. Non è quindi
+  garantito che la posizione abbia già un peso diverso da zero.
+- Da almeno tre campioni di oggi applica un adattamento limitato al ritmo
+  odierno. Il residuo somma i tempi previsti dei blocchi non ancora superati,
+  sottraendo l'esposizione osservata. Non misura la comprensione.
+- Il metodo precedente resta come ripiego: 20 porzioni di documento,
+  almeno 45 secondi di esposizione ciascuna, almeno dieci minuti accumulati
+  e 60% contiguo coperto dalla base; mostra il residuo solo sotto 30 minuti,
+  arrotondato a fasce di cinque minuti. Queste fasce non sono intervalli
+  statistici. Il numero effettivo di campioni personali non è stato letto.
+- Memo, pause e Focus Lock sono esclusi; l'inattività del cronometro usa
+  15 minuti di default o la soglia personale confermata, senza sottrazione
+  retroattiva. I limiti su traduttore, cambio finestra e Q&A sono descritti
+  nella voce 127. L'app non può distinguere automaticamente lettura e
+  distrazione restando sulla stessa schermata senza input.
 
 ## Nota sulla classificazione
 

@@ -1,4 +1,7 @@
 import { useStudyEstimate } from '../hooks/useStudyEstimate'
+import { StudyEstimateDetails } from './StudyEstimateDetails'
+import { completeStudyForecast } from '../utils/studyForecast'
+import { contentFingerprint } from '../utils/readingPosition'
 import { toLocalDateTimeInput } from '../../shared/calendarDate'
 import React, { useState, useEffect } from 'react'
 import { lectureTitle } from '../../shared/lectureTitles'
@@ -137,7 +140,7 @@ export function LectureDrawer({
   setShowDeleteConfirm,
   existingCourses,
   settingsModel,
-  onStudyStatusChange,
+  onStudyStatusChange: saveStudyStatus,
   onGenerateLectureNotes,
   onPrintNotes,
   onCopyMarkdown,
@@ -158,6 +161,16 @@ export function LectureDrawer({
   translationError = null,
   onTranslateLectureNotes
 }: LectureDrawerProps) {
+  const persistEstimate = React.useRef<() => void>(() => {})
+  const onStudyStatusChange = React.useCallback(async (status: StudyStatus) => {
+    const shouldComplete = status === 'completata' && selectedLecture?.studyStatus !== 'completata'
+    if (shouldComplete) persistEstimate.current()
+    const saved = await saveStudyStatus(status)
+    if (saved !== false && shouldComplete && selectedLecture && markdownText) {
+      completeStudyForecast(selectedLecture.id, `${contentFingerprint(markdownText)}:${markdownEnText ? contentFingerprint(markdownEnText) : ''}`)
+    }
+    return saved
+  }, [saveStudyStatus, selectedLecture, markdownText, markdownEnText])
   const [wordCountResult, setWordCountResult] = useState<{
     lectureId: string; courseCode: string | null; counts: Record<string, number | null>
   } | null>(null)
@@ -314,6 +327,7 @@ export function LectureDrawer({
     activeSeconds,
     lectureTotalSeconds,
     isPaused,
+    trackingPaused,
     showFocusLock,
     inactivityPrompt,
     studyWithoutInput,
@@ -331,7 +345,7 @@ export function LectureDrawer({
     isFocusMode: isFullScreen,
     activeTab,
     isEnabled: isFullScreen && !isReturningToList,
-    suspended: memoOpen
+    suspended: memoOpen || isLoadingContent
   })
 
   const {
@@ -406,8 +420,12 @@ export function LectureDrawer({
   }, [effectiveLanguage, isFullScreen, selectedLectureId])
 
   const studyEstimate = useStudyEstimate({ lectureId: selectedLectureId ?? null, markdown: markdownText, english: markdownEnText,
-    enabled: isFullScreen && !isLoadingContent && !isGenerating && !isTranslating && !isReturningToList,
-    paused: isPaused || showFocusLock || pauseTimerActive, language: effectiveLanguage, rootRef: contentRef })
+    enabled: isFullScreen && !isLoadingContent && !isReturningToList,
+    paused: trackingPaused || showFocusLock || pauseTimerActive, language: effectiveLanguage, rootRef: contentRef,
+    collecting: selectedLecture?.studyStatus !== 'completata',
+    managedActivity: true,
+    qnaAnchor: isQnaSidebarOpen ? threads.find(thread => thread.id === activeThreadId)?.anchorString : '' })
+  persistEstimate.current = studyEstimate.persist
 
   const readingKey = selectedLecture ? `notes:${selectedLecture.id}:${effectiveLanguage}` : null
   const languageReadingPoint = React.useRef<LanguageReadingPoint | null>(null)
@@ -667,7 +685,7 @@ export function LectureDrawer({
                       ? 'Timer fermo (in attesa di decisione / sblocco uscita)'
                       : pauseTimerActive
                         ? 'Timer in pausa (pausa programmata)'
-                        : 'Timer in pausa (inattività)'
+                        : 'Timer sospeso: inattività, altra finestra o strumento aperto'
                     : 'Tempo di studio in modalità immersiva'
                 }
               >
@@ -675,9 +693,9 @@ export function LectureDrawer({
               </span>
             </div>
             <div className="focus-toolbar-right">
-              {studyEstimate.preference && <span className="study-estimate" style={{ maxWidth: 330, whiteSpace: 'normal', fontSize: 11 }} title="La stima per paragrafo usa esposizione, parole e ritmo personale; numeri e formule solo se migliorano la validazione. È provvisoria con pochi campioni e non misura la comprensione. Il metodo precedente resta disponibile durante la raccolta.">{studyEstimate.label ?? (isPaused || showFocusLock || pauseTimerActive ? 'Stima sospesa' : 'Stima: raccolta dati')}</span>}
-              {studyEstimate.preference && <button type="button" onClick={studyEstimate.recalculate}
-                title="Azzera i campioni e riprendi la stima da questa posizione">Ricalcola da qui</button>}
+              {studyEstimate.preference && <StudyEstimateDetails key={selectedLecture.id}
+                label={studyEstimate.label} uncertainty={studyEstimate.uncertainty}
+                paused={isPaused || showFocusLock || pauseTimerActive} onRecalculate={studyEstimate.recalculate} />}
               <FocusReminders />
               {highlightError && <small role="alert">{highlightError}</small>}
               <SectionRegenerator key={selectedLecture.id} lectureId={selectedLecture.id} markdown={markdownText ?? ''} english={effectiveLanguage === 'en'} disabled={isGenerating || isTranscribing || isTranslating} />

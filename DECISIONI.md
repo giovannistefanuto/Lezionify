@@ -5282,3 +5282,47 @@ Non modificare manualmente la sezione `Registro`: aggiungi le nuove decisioni es
 - **Impatto:** Setup 299977133 byte SHA256 262efea77f2ada79d3f131481a171ad753bf136722e22bc0d404666e72cfba42; 377 file e backup verificati, runtime RAG e traduttore passati; 812 unit e gate generali positivi.
 - **Follow-up:** Commit e push automatici; ENG personale pronto ma installazione bloccata da app aperta, come documentato.
 - **File coinvolti:** dist/Lezionify-Setup-0.1.0.exe, tools/verify_installer.cjs, docs/quality/completamento-autonomo-2026-11-04.md, DECISIONI.md
+
+## D-0480 — Idee su tempi interfaccia aggiornamenti e attenzione
+
+- **Data:** 2026-11-08
+- **Stato:** accettata
+- **Area:** pianificazione
+- **Decisione:** Aggiungere sei attivita 126-131 in fondo alla coda, ordinate fra loro per difficolta, e rispondere alle domande sul calcolo attuale senza trasformarle in attivita. Riunire nella voce 127 le richieste sul conteggio delle attivita.
+- **Motivazione:** Conservare tutte le proposte dell utente distinguendo modifiche desiderate, verifiche del codice e limiti dei dati personali non letti.
+- **Impatto:** Solo documentazione: 77 attivita, 52 concluse, 15 aperte operative, 8 archiviate e 2 ritirate; ordine precedente invariato. Nessuna funzione implementata o chiamata AI.
+- **Follow-up:** Affrontare le nuove voci secondo la coda o richiesta esplicita; calibrazione statistica e indicatori di attenzione richiedono definizioni e dati verificabili.
+- **File coinvolti:** docs/product/idee-future-2026-10-13.md, DECISIONI.md
+
+## D-0481 — Stima discreta e tick di studio condiviso
+
+- **Data:** 2026-11-08
+- **Stato:** accettata
+- **Area:** studio-tempi
+- **Decisione:** Spostare la stima nel dettaglio accessibile dell icona piantina; condividere i tick accreditati fra cronometro, paragrafi ed esiti. Escludere strumenti, modali e perdita focus; attribuire il Q&A al blocco ancorato o ultimo letto, senza avanzamento di lettura fittizio.
+- **Motivazione:** Ridurre la distrazione ed evitare che misurazioni diverse o attivita estranee contaminino il ritmo personale.
+- **Impatto:** Regressione Electron inizialmente fallita su finestra non attiva e poi superata. Campioni aggiornabili senza duplicati; fonti e dati precedenti conservati, nessuna nuova dipendenza.
+- **Follow-up:** Completare gate generale e verifiche del pacchetto; dettagli e limiti nel resoconto dell 8 novembre.
+- **File coinvolti:** src/hooks/useStudyTracker.ts, src/hooks/useStudyEstimate.ts, src/utils/studyActivity.ts, src/utils/paragraphObservation.ts, src/components/StudyEstimateDetails.tsx, src/components/LectureDrawer.tsx, src/styles.css, tests/integration, docs/product/stima-tempi-2026-11-08.md
+
+## D-0482 — Margine empirico prospettico del tempo restante
+
+- **Data:** 2026-11-08
+- **Stato:** accettata
+- **Area:** stima-statistica
+- **Decisione:** Raccogliere previsioni ed esiti locali fino al completamento esplicito del drawer; stimare il margine con quantile nominale 90 percento degli errori relativi di almeno 20 lezioni distinte per fase lingua e metodo, mostrando separatamente la copertura successiva osservata.
+- **Motivazione:** Quantificare l errore reale senza trasformare la sola posizione o il vecchio errore per blocco in una falsa confidenza della lezione.
+- **Impatto:** Schema locale limitato e privo di testo, esclusione della lezione corrente, idempotenza e invalidazione dei run incompleti. Funzione collaudata su dati sintetici; calibrazione personale futura, voce 131 ancora aperta. Nessuna probabilita individuale garantita.
+- **Follow-up:** Raccogliere nuovi esiti reali e verificare copertura e ampiezza degli intervalli; storico precedente non ricostruibile come previsioni prospettiche.
+- **File coinvolti:** src/utils/studyForecast.ts, src/hooks/useStudyEstimate.ts, src/components/LectureDrawer.tsx, src/components/StudyEstimateSettings.tsx, tests/unit/studyForecast.test.ts, tests/integration/studyTimingScenarios.browser.tsx, docs/product/stima-tempi-2026-11-08.md, DECISIONI.md
+
+## D-0483 — Setup con stima discreta tempi condivisi e margine empirico
+
+- **Data:** 2026-11-08
+- **Stato:** accettata
+- **Area:** distribuzione
+- **Decisione:** Concludere le voci 126 e 127 dopo i collaudi, conservare aperta la 131 per calibrazione personale e rigenerare il setup generale con backup e verifica dei marker dell 8 novembre.
+- **Motivazione:** Consegnare modifiche utilizzabili e verificate distinguendo la funzione statistica implementata dalla sua copertura personale ancora da misurare.
+- **Impatto:** Setup 299981359 byte SHA256 60473a58665bdc260eb90d5aceaacfebd00f38174241885f6f2a7c1206807f8f; verificati 377 file build, manifesto, tre backup e otto file NSIS. 819 unit, typecheck, lint, 24 Python, 41 Node, Electron con riavvio, PDF e runtime RAG/traduttore locali passati. Nessuna installazione o nuova chiamata AI.
+- **Follow-up:** Commit e push automatici con verifica del remoto secondo AGENTS; installazione a app chiusa. Raccogliere esiti futuri e verificare la copertura della voce 131.
+- **File coinvolti:** dist/Lezionify-Setup-0.1.0.exe, tools/verify_installer.cjs, docs/product/stima-tempi-2026-11-08.md, docs/product/idee-future-2026-10-13.md, STRUTTURA_PROGETTO.md, DECISIONI.md

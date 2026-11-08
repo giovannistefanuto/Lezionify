@@ -9047,6 +9047,15 @@ mark {
 .capture-fields select { max-width: 120px; }
 .capture-fields .todo-item-input { min-width: 0; }
 .study-estimate { font-size: 12px; opacity: .8; }
+.study-estimate-details { position: relative; flex: 0 0 auto; }
+.study-estimate-trigger { display: grid; place-items: center; width: 34px; height: 34px; border: 1px solid var(--border-subtle); border-radius: 9px; background: var(--bg-surface); color: var(--text-main); cursor: pointer; font-size: 18px; }
+.study-estimate-trigger:hover, .study-estimate-trigger:focus-visible { outline: 2px solid #58a77e; outline-offset: 2px; }
+.study-estimate-panel { position: fixed; z-index: 10030; box-sizing: border-box; width: min(360px, calc(100vw - 24px)); max-height: calc(100dvh - 100px); overflow: auto; padding: 18px; border: 1px solid var(--border-subtle); border-radius: 12px; background: var(--bg-surface); color: var(--text-main); box-shadow: 0 12px 36px #0002; text-align: left; font-size: 13px; line-height: 1.5; overflow-wrap: anywhere; }
+.study-estimate-panel h3 { margin: 0 0 12px; font-size: 15px; }
+.study-estimate-panel p { margin: 0 0 12px; }
+.study-estimate-panel .study-estimate-uncertainty { padding-top: 12px; border-top: 1px solid var(--border-subtle); }
+.study-estimate-panel .study-estimate-help, .study-estimate-panel small { color: var(--text-muted); }
+.study-estimate-panel small { display: block; margin-top: 10px; }
 
 .course-chat-overlay { position: fixed; inset: 0; z-index: 1800; background: #10251c80; padding: 3vh 3vw; }
 .course-chat { height: 94vh; display: flex; flex-direction: column; background: #f9fbfa; color: #203b2d; border: 1px solid #c3d3c9; border-radius: 16px; padding: 18px; gap: 10px; box-shadow: 0 20px 70px #0006; }

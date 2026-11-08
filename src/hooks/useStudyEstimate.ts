@@ -1,6 +1,8 @@
-import { useEffect, useState, useRef, type RefObject } from 'react'
+import { useEffect, useMemo, useState, useRef, type RefObject } from 'react'
 import { contentFingerprint } from '../utils/readingPosition'
 import { observeParagraphs } from '../utils/paragraphObservation'
+import { STUDY_TICK_EVENT, studySurfaceBlocked } from '../utils/studyActivity'
+import { forecastSession, forecastBandLabel, discardStudyForecast } from '../utils/studyForecast'
 import {
   estimateStudyMinutes,
   isStudyEstimateEnabled,
@@ -66,7 +68,10 @@ export function useStudyEstimate({
   enabled,
   paused,
   language,
-  rootRef
+  rootRef,
+  qnaAnchor = '',
+  collecting = true,
+  managedActivity = false
 }: {
   lectureId: string | null
   markdown: string | null
@@ -75,12 +80,27 @@ export function useStudyEstimate({
   paused: boolean
   language: string
   rootRef: RefObject<HTMLDivElement | null>
+  qnaAnchor?: string
+  collecting?: boolean
+  managedActivity?: boolean
 }) {
   const [preference, setPreference] = useState(isStudyEstimateEnabled)
   const [label, setLabel] = useState<string | null>(null)
+  const [uncertainty, setUncertainty] = useState<string | null>(null)
   const recalculateRef = useRef<() => void>(() => {})
-  const fingerprint = markdown ? contentFingerprint(markdown) : ''
-  const englishFingerprint = english ? contentFingerprint(english) : ''
+  const persistRef = useRef<() => void>(() => {})
+  const pausedRef = useRef(paused)
+  pausedRef.current = paused
+  const anchorRef = useRef(qnaAnchor)
+  anchorRef.current = qnaAnchor
+  const fingerprint = useMemo(() => markdown ? contentFingerprint(markdown) : '', [markdown])
+  const englishFingerprint = useMemo(() => english ? contentFingerprint(english) : '', [english])
+  useEffect(() => {
+    if (!preference && lectureId) discardStudyForecast(lectureId)
+  }, [preference, lectureId])
+  useEffect(() => {
+    if (paused) persistRef.current()
+  }, [paused])
   useEffect(() => {
     const update = () => setPreference(isStudyEstimateEnabled())
     window.addEventListener('study-estimate-preference', update)
@@ -92,9 +112,11 @@ export function useStudyEstimate({
   }, [])
   useEffect(() => {
     setLabel(null)
+    setUncertainty(null)
     if (!lectureId || !fingerprint || !enabled || !preference) return
     const key = PREFIX + lectureId
     const paragraphs = observeParagraphs(`${lectureId}:${fingerprint}:${englishFingerprint}`, language)
+    const forecast = forecastSession(lectureId, `${fingerprint}:${englishFingerprint}`)
     let state: StudyEstimateState
     let savedEnglish = ''
     try {
@@ -114,10 +136,12 @@ export function useStudyEstimate({
       lastInteraction = Date.now(),
       lastDisplay = 0,
       lastSave = 0
-    let documentSurface = true
+    let surface: 'reading' | 'qna' | 'pdf' = document.activeElement?.closest('.focus-qna-column') ? 'qna'
+      : document.activeElement?.closest('.focus-pdf-column') ? 'pdf' : 'reading'
     const history: number[] = []
     const persist = () => {
       paragraphs.save()
+      if (collecting) forecast.save()
       try {
         localStorage.setItem(
           key,
@@ -130,58 +154,65 @@ export function useStudyEstimate({
         /* The estimator remains optional when storage is unavailable. */
       }
     }
+    persistRef.current = persist
     recalculateRef.current = () => {
       const bin = rootRef.current ? studyBin(rootRef.current) : null
       if (bin === null) return
       state = newStudyEstimate(fingerprint, bin)
       paragraphs.reset()
+      forecast.reset()
       history.length = 0
       lastDisplay = 0
       setLabel(null)
+      setUncertainty(null)
       persist()
     }
     const interaction = (event: Event) => {
       lastInteraction = Date.now()
       const target = event.target
       if (!(target instanceof Element)) return
-      if (rootRef.current?.contains(target)) documentSurface = true
-      else if (target.closest('.focus-qna-column, .focus-pdf-column'))
-        documentSurface = false
+      if (rootRef.current?.contains(target)) surface = 'reading'
+      else if (target.closest('.focus-qna-column')) surface = 'qna'
+      else if (target.closest('.focus-pdf-column')) surface = 'pdf'
     }
     const visibility = () => {
       lastTick = Date.now()
       setLabel(null)
       persist()
     }
-    const tick = () => {
+    const tick = (creditedSeconds?: number) => {
       const now = Date.now(),
-        delta = (now - lastTick) / 1000
+        delta = creditedSeconds ?? (now - lastTick) / 1000
       lastTick = now
       const blocked =
-        paused ||
-        document.hidden ||
-        !document.hasFocus() ||
-        now - lastInteraction > 15 * 60_000 ||
-        Boolean(
-          document.querySelector(
-            '.modal-overlay, .quick-capture-backdrop, [data-dictionary-overlay]'
-          )
-        )
+        pausedRef.current ||
+        studySurfaceBlocked() ||
+        (!managedActivity && now - lastInteraction > 15 * 60_000) ||
+        delta <= 0 || delta > 3
       if (blocked) {
         setLabel(null)
         return
       }
       const root = rootRef.current
       if (!root || !root.getBoundingClientRect().height) return
-      state = sampleVisibleStudy(state, delta, documentSurface ? studyVisibleRange(root) : null)
-      const paragraphLabel = documentSurface ? paragraphs.tick(root, delta) : null
+      if (surface === 'qna' && !document.querySelector('.focus-qna-column')) surface = 'reading'
+      if (surface === 'pdf' && !document.querySelector('.focus-pdf-column')?.getBoundingClientRect().height) surface = 'reading'
+      const visibleRange = studyVisibleRange(root)
+      state = sampleVisibleStudy(state, delta, surface === 'reading' ? visibleRange : null)
+      if (collecting) forecast.tick(delta, surface === 'reading' && visibleRange ? visibleRange.end / STUDY_BINS : null)
+      const paragraphLabel = surface !== 'pdf' ? paragraphs.tick(root, delta, surface, surface === 'qna' ? anchorRef.current : '') : null
+      const prediction = paragraphs.prediction()
+      if (prediction && paragraphLabel) {
+        const band = forecast.predict(prediction.remaining, prediction.position, language, 'paragraph-v2')
+        setUncertainty(forecastBandLabel(prediction.remaining, band))
+      }
       if (paragraphLabel) { setLabel(paragraphLabel); lastDisplay = now }
       if (now - lastSave >= 10_000) {
         persist()
         lastSave = now
       }
       const minutes = estimateStudyMinutes(state)
-      if (!documentSurface || minutes === null) {
+      if (surface !== 'reading' || minutes === null) {
         if (paragraphLabel) return
         setLabel(null)
         return
@@ -193,6 +224,8 @@ export function useStudyEstimate({
           Math.floor(history.length / 2)
         ]
         setLabel(studyEstimateLabel(median))
+        const position = visibleRange ? visibleRange.start / STUDY_BINS : 0
+        setUncertainty(forecastBandLabel(median * 60, forecast.predict(median * 60, position, language, 'viewport-v2')))
         lastDisplay = now
       }
     }
@@ -200,11 +233,18 @@ export function useStudyEstimate({
       document.addEventListener(name, interaction, true)
     document.addEventListener('visibilitychange', visibility)
     window.addEventListener('blur', visibility)
-    const timer = setInterval(tick, 1000)
+    const credited = (event: Event) => {
+      const detail = (event as CustomEvent).detail
+      if (detail?.lectureId === lectureId && detail.seconds === 1) tick(1)
+    }
+    if (managedActivity) document.addEventListener(STUDY_TICK_EVENT, credited)
+    const timer = managedActivity ? null : setInterval(tick, 1000)
     return () => {
-      clearInterval(timer)
+      if (timer !== null) clearInterval(timer)
+      document.removeEventListener(STUDY_TICK_EVENT, credited)
       persist()
       recalculateRef.current = () => {}
+      persistRef.current = () => {}
       for (const name of ['pointerdown', 'wheel', 'keydown', 'focusin'])
         document.removeEventListener(name, interaction, true)
       document.removeEventListener('visibilitychange', visibility)
@@ -216,13 +256,16 @@ export function useStudyEstimate({
     englishFingerprint,
     enabled,
     preference,
-    paused,
     language,
-    rootRef
+    rootRef,
+    collecting,
+    managedActivity
   ])
   return {
     label: enabled && !paused && preference ? label : null,
+    uncertainty,
     preference,
-    recalculate: () => recalculateRef.current()
+    recalculate: () => recalculateRef.current(),
+    persist: () => persistRef.current()
   }
 }

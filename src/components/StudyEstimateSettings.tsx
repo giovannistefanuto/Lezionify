@@ -28,13 +28,16 @@ export function StudyEstimateSettings() {
             }
           }}
         />{' '}
-        Mostra la stima dello studio restante
+        Stima dello studio restante nell'icona 🌱
       </label>
       <p>
         Tempo per paragrafo, residuo e totale dal ritmo osservato localmente.
         I primi campioni danno una stima provvisoria; numeri e formule ricevono
         un peso diverso solo se migliorano il confronto su lezioni separate.
         Non misura la comprensione. Le scorse rapide non sono campioni validi.
+        Il Q&amp;A contribuisce al tempo del blocco di riferimento; Memo,
+        traduttore, pause e altre finestre sono esclusi. Il margine statistico
+        richiede almeno 20 lezioni completate confrontabili nella stessa fase.
         Preferenza salvata subito.
       </p>
       {error && <p role="alert">Impossibile salvare la preferenza. Riprova.</p>}

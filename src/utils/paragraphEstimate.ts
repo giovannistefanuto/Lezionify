@@ -1,5 +1,5 @@
 export interface ParagraphFeatures { words: number; numbers: number; formulas: number; boldWords?: number; position?: number; note?: boolean }
-export interface ParagraphSample extends ParagraphFeatures { document: string; day: string; seconds: number }
+export interface ParagraphSample extends ParagraphFeatures { document: string; day: string; seconds: number; key?: string }
 const median = (items: number[]) => { const sorted = [...items].sort((a, b) => a - b); return sorted[Math.floor(sorted.length / 2)] }
 interface StyleFactors { bold: number; position: number; note: number }
 const neutral: StyleFactors = { bold: 0, position: 0, note: 0 }

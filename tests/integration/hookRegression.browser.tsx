@@ -6,6 +6,7 @@ import { runTodayScenarios } from './todayScenarios.browser'
 import { runMemoLogsExportScenarios } from './memoLogsExportScenarios.browser'
 import { runCourseChatScenarios } from './courseChatScenarios.browser'
 import { runStudyToolsScenarios } from './studyToolsScenarios.browser'
+import { runStudyTimingScenarios } from './studyTimingScenarios.browser'
 import React, { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import { useQna } from '../../src/hooks/useQna'
@@ -143,6 +144,7 @@ async function runExpiredPauseScenario() {
   const hiddenDescriptor = Object.getOwnPropertyDescriptor(document, 'hidden')
   const originalSave = api.saveStudySession
   const originalTotal = api.getLectureStudySeconds
+  const originalHasFocus = document.hasFocus
   const callbacks = new Map<number, () => void>()
   const persisted = new Map<string, any>()
   let now = originalNow()
@@ -150,6 +152,8 @@ async function runExpiredPauseScenario() {
   let hidden = false
   let exited = false
   let memoOpen = false
+  let focused = true
+  document.hasFocus = () => focused
   Date.now = () => now
   Object.defineProperty(performance, 'now', { configurable: true, value: () => now })
   window.setInterval = ((callback: () => void) => {
@@ -207,6 +211,19 @@ async function runExpiredPauseScenario() {
     memoOpen = false
     await act(async () => root.render(<React.StrictMode><PauseHarness /></React.StrictMode>))
     check(output.activeSeconds === 60 && !output.isPaused, 'Closing Memo reset or failed to resume the session')
+    focused = false
+    await act(async () => window.dispatchEvent(new Event('blur')))
+    for (let second = 0; second < 5; second++) await tick()
+    check(output.activeSeconds === 60 && output.isPaused, 'Visible but unfocused window counted study time')
+    focused = true
+    await act(async () => window.dispatchEvent(new Event('focus')))
+    const dictionary = document.createElement('div')
+    dictionary.setAttribute('data-dictionary-overlay', '')
+    document.body.append(dictionary)
+    for (let second = 0; second < 5; second++) await tick()
+    check(output.activeSeconds === 60 && output.isPaused, 'Translator counted study time')
+    dictionary.remove()
+    await act(async () => window.dispatchEvent(new MouseEvent('mousemove')))
     await act(async () => output.startPauseTimer(5))
     memoOpen = true
     await act(async () => root.render(<React.StrictMode><PauseHarness /></React.StrictMode>))
@@ -269,6 +286,7 @@ async function runExpiredPauseScenario() {
     else Reflect.deleteProperty(document, 'hidden')
     api.saveStudySession = originalSave
     api.getLectureStudySeconds = originalTotal
+    document.hasFocus = originalHasFocus
   }
 }
 
@@ -393,6 +411,7 @@ async function run() {
   }
   if (new URLSearchParams(location.search).has('study-tools-only')) {
     await runStudyToolsScenarios(root, api)
+    await runStudyTimingScenarios(root, api)
     require('electron').ipcRenderer.send('done', 'PASS: grouped captures and study remaining time')
     return
   }
@@ -1024,6 +1043,8 @@ async function run() {
 
   // Trigger real hook intervals without waiting wall-clock seconds.
   const originalInterval = window.setInterval
+  const originalTrackerFocus = document.hasFocus
+  document.hasFocus = () => true
   const originalClear = window.clearInterval
   const intervals = new Map<number, () => void>()
   let intervalId = 0
@@ -1945,6 +1966,7 @@ flowchart TD
   drawerStyle.remove()
   window.setInterval = originalInterval
   window.clearInterval = originalClear
+  document.hasFocus = originalTrackerFocus
   require('electron').ipcRenderer.send('test-checkpoint', 'runVideoImportScenarios')
   await runVideoImportScenarios(root, api)
   require('electron').ipcRenderer.send('test-checkpoint', 'runMathRenderingScenario')
@@ -1968,6 +1990,7 @@ flowchart TD
   await runCourseChatScenarios(root, api)
   require('electron').ipcRenderer.send('test-checkpoint', 'runStudyToolsScenarios')
   await runStudyToolsScenarios(root, api)
+  await runStudyTimingScenarios(root, api)
   require('electron').ipcRenderer.send('test-checkpoint', 'runMusicTranslationScenarios')
   await runMusicTranslationScenarios(root, api)
   await runInterfacePolishScenarios(root, api)

@@ -43,6 +43,11 @@ async function main() {
       'Durata o data della ripetizione non valida.', '.markdown-body > .markdown-alert', 'Registra tempo di studio'])
       assert(javascript.includes(marker), 'Missing November study improvement: ' + marker)
   }
+  if (process.argv.includes('--study-nov8')) {
+    for (const marker of ['Stima del tempo di studio', 'study-estimate-trigger', 'lezionify-study-tick',
+      'lezionify.study-forecast.history.v1', 'Margine statistico non disponibile', 'Livello nominale 90%'])
+      assert(javascript.includes(marker), 'Missing November 8 study improvement: ' + marker)
+  }
   if (process.argv.includes('--study-oct28')) {
     for (const marker of ['Dizionario italiano', 'Cerca online per questa domanda', 'Rigenera sezione', 'Conferma sostituzione', 'Aggiorna ENG con Gemini', 'Osserva il mio ritmo', 'Sottolineatura', 'section-preview', 'queuedImportLectureIds', 'paragraph-samples.v1']) assert(javascript.includes(marker), 'Missing study improvement: ' + marker)
     const corpus = JSON.parse(require('node:zlib').gunzipSync(asar.extractFile(archive, path.normalize('out/renderer/dictionaries/ita-ita.json.gz'))).toString('utf8'))

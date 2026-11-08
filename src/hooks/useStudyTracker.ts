@@ -3,6 +3,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import type { StudySession, StudySessionMode } from '../../shared/archive'
 import { formatLocalCalendarDate } from '../../shared/calendarDate'
 import { inactivityProfile, saveInactivityProfile } from '../utils/studyInactivity'
+import { creditStudyTick, studySurfaceBlocked } from '../utils/studyActivity'
 
 interface UseStudyTrackerProps {
   activeLectureId: string | null
@@ -24,6 +25,7 @@ export function useStudyTracker({
   const [activeSeconds, setActiveSeconds] = useState(0)
   const [previousStudy, setPreviousStudy] = useState<{ lectureId: string; sessionId: string; seconds: number } | null>(null)
   const [isPaused, setIsPaused] = useState(false)
+  const [surfacePaused, setSurfacePaused] = useState(false)
   const [showFocusLock, setShowFocusLock] = useState(false)
   const [inactivityPrompt, setInactivityPrompt] = useState(false)
   const inactivity = useRef(inactivityProfile())
@@ -177,7 +179,7 @@ export function useStudyTracker({
   useEffect(() => {
     const handleInteraction = () => {
       // Non aggiornare o rimuovere la pausa se siamo in Focus Lock o in pausa programmata
-      if (suspendedRef.current || showFocusLockRef.current || pauseTimerActiveRef.current || !isEnabledRef.current || document.hidden) {
+      if (suspendedRef.current || showFocusLockRef.current || pauseTimerActiveRef.current || !isEnabledRef.current || studySurfaceBlocked()) {
         observedInteraction.current = Date.now()
         return
       }
@@ -206,7 +208,7 @@ export function useStudyTracker({
   // Rilevamento visibilità finestra (pausa istantanea su minimizzazione/blur)
   useEffect(() => {
     const handleVisibilityChange = () => {
-      if (document.hidden) {
+      if (document.hidden || !document.hasFocus()) {
         observedInteraction.current = Date.now()
         setIsPaused(true)
         void flushCurrentSession()
@@ -221,8 +223,13 @@ export function useStudyTracker({
     }
 
     document.addEventListener('visibilitychange', handleVisibilityChange)
-    return () =>
+    window.addEventListener('blur', handleVisibilityChange)
+    window.addEventListener('focus', handleVisibilityChange)
+    return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange)
+      window.removeEventListener('blur', handleVisibilityChange)
+      window.removeEventListener('focus', handleVisibilityChange)
+    }
   }, [flushCurrentSession])
 
   // Flush alla chiusura della finestra
@@ -258,6 +265,13 @@ export function useStudyTracker({
       const now = Date.now()
       const delta = now - lastTickRef.current
       lastTickRef.current = now
+      const blocked = studySurfaceBlocked()
+      setSurfacePaused(blocked)
+      if (blocked) {
+        lastInteractionRef.current = now
+        observedInteraction.current = now
+        return
+      }
 
       // Se siamo nel Focus Lock (attesa 15s / decisione) o in pausa programmata, il timer di studio rimane FERMO
       if (suspendedRef.current || showFocusLockRef.current || pauseTimerActiveRef.current) {
@@ -290,6 +304,7 @@ export function useStudyTracker({
 
       if (isFocusModeRef.current) creditFocusRagStudy(courseCodeRef.current)
       sessionSecondsRef.current += 1
+      creditStudyTick(activeLectureId)
       if (inactivity.current.observing) {
         const profile = inactivity.current
         profile.sessions[sessionIdRef.current] = (profile.sessions[sessionIdRef.current] ?? 0) + 1
@@ -399,7 +414,8 @@ export function useStudyTracker({
     activeSeconds,
     lectureTotalSeconds: previousStudy?.lectureId === activeLectureId && previousStudy.sessionId === sessionIdRef.current
       ? previousStudy.seconds + activeSeconds : null,
-    isPaused: isPaused || suspended,
+    isPaused: isPaused || suspended || surfacePaused,
+    trackingPaused: isPaused || suspended,
     showFocusLock,
     isZenMode,
     toggleZenMode,

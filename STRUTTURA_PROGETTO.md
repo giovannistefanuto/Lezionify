@@ -2,6 +2,16 @@
 
 ## Stato attuale
 
+L'intervento dell'8 novembre sposta la stima Focus in `StudyEstimateDetails`.
+`studyActivity` unifica esclusioni e tick di studio; `paragraphObservation`
+attribuisce il Q&A ai blocchi e mantiene la posizione indipendente dallo zoom.
+`studyForecast` conserva localmente previsioni/esiti prospettici, con intervalli
+empirici per fase, lingua e metodo e verifica della copertura successiva.
+Voci 126/127 concluse; 131 implementata, calibrazione personale ancora aperta.
+Metodo, dati, verifiche e limiti in `docs/product/stima-tempi-2026-11-08.md`.
+Setup generale aggiornato e verificato D-0483: 377 file build e payload NSIS
+confrontati, 819 unit e regressioni Electron con riavvio passate.
+
 `shared/repetitionStudy.ts` ripartisce i crediti audio per giorno locale;
 le riprese ritentano i crediti non salvati prima di trascrivere. La stima
 include anche i riquadri Nota renderizzati. Dettagli in D-0475–D-0477.
