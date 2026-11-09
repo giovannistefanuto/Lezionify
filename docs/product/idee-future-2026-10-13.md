@@ -123,7 +123,7 @@ avviata da questo aggiornamento documentale (D-0390).
 | 73. [x] | Allineare i tempi di studio e del blocco alle attività effettive | 127 | D-0481: tick unico, esclusioni e attribuzione Q&A anche ai blocchi già superati; regressioni Electron passate. |
 | 74. [ ] | Revisione complessiva dell'interfaccia | 128 | Medio/alta e ampia: inventario dei flussi, verifica visiva e correzioni con regressioni. |
 | 75. [ ] | Controllo aggiornamenti GitHub all'avvio e pulsante Aggiorna | 129 | Alta: versionamento, distribuzione e aggiornamento recuperabile. |
-| 76. [ ] | Grafico giornaliero di studio, pause e cambi di schermata | 130 | Alta: cronologia locale e definizione prudente dei segnali di attenzione. |
+| 76. [x] | Grafico giornaliero di studio, pause e cambi di schermata | 130 | Cronologia implementata e collaudata; test Focus corretto per selezionare la schermata corrente. |
 | 77. [ ] | Intervallo statistico del tempo restante calibrato sullo storico | 131 | D-0482: raccolta prospettica e intervalli implementati/collaudati; resta la calibrazione personale su almeno 20 lezioni confrontabili per fase, lingua e metodo. |
 
 **Aggiornamento dell'8 novembre, D-0480:** aggiunte sei attività, voci 126–131,
@@ -2644,7 +2644,7 @@ e nel [resoconto](stima-tempi-2026-11-08.md). Difficoltà iniziali preliminari.
 
 ### 130. Grafico giornaliero dello studio e dei possibili cali di attenzione
 
-- [ ] Mostrare quando e quanto si è studiato, pause e cambi di schermata
+- [x] Mostrare quando e quanto si è studiato, pause e cambi di schermata
   nella giornata, usando una cronologia locale delle attività.
 - Definire prima cosa rappresentare come possibile calo di attenzione:
   interruzioni e cambi frequenti sono segnali osservabili, non una misura
@@ -2907,3 +2907,10 @@ da 40 sezioni superato al primo invio del run con il pool, con 244 contenuti
 protetti identici. La precedente prova aveva ricevuto HTTP 503. Dettagli e
 limiti nel report di indagine; nessun risultato scritto in libreria. Le caselle
 sono ora allineate all'implementazione e ai collaudi; nessuna altra voce avviata.
+
+
+**9 novembre, D-0487:** voce 130 implementata e collaudata. Voce 131 con
+journal duraturo, completamento recuperabile e dodici gruppi prospettici;
+resta aperta per la copertura personale su esiti futuri. Totale: 77 attivita,
+55 concluse, 12 aperte operative, 8 archiviate e 2 ritirate.
+[Uso e verifiche](cronologia-stima-2026-11-09.md).

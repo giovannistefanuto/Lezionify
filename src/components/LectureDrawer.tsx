@@ -1,5 +1,6 @@
 import { useStudyEstimate } from '../hooks/useStudyEstimate'
 import { StudyEstimateDetails } from './StudyEstimateDetails'
+import { getStudyHistoryClient } from '../utils/studyHistoryClient'
 import { completeStudyForecast } from '../utils/studyForecast'
 import { contentFingerprint } from '../utils/readingPosition'
 import { toLocalDateTimeInput } from '../../shared/calendarDate'
@@ -164,9 +165,9 @@ export function LectureDrawer({
   const persistEstimate = React.useRef<() => void>(() => {})
   const onStudyStatusChange = React.useCallback(async (status: StudyStatus) => {
     const shouldComplete = status === 'completata' && selectedLecture?.studyStatus !== 'completata'
-    if (shouldComplete) persistEstimate.current()
+    if (shouldComplete && !window.archive.saveStudyObservations) persistEstimate.current()
     const saved = await saveStudyStatus(status)
-    if (saved !== false && shouldComplete && selectedLecture && markdownText) {
+    if (!window.archive.saveStudyObservations && saved !== false && shouldComplete && selectedLecture && markdownText) {
       completeStudyForecast(selectedLecture.id, `${contentFingerprint(markdownText)}:${markdownEnText ? contentFingerprint(markdownEnText) : ''}`)
     }
     return saved
@@ -693,9 +694,14 @@ export function LectureDrawer({
               </span>
             </div>
             <div className="focus-toolbar-right">
+              {studyEstimate.historyError && <button type="button" className="secondary-button small"
+                title={studyEstimate.historyError}
+                onClick={() => { void getStudyHistoryClient(selectedLecture.id)?.flush().catch(() => {}) }}>
+                <span role="alert">Tempo non salvato · Riprova</span>
+              </button>}
               {studyEstimate.preference && <StudyEstimateDetails key={selectedLecture.id}
                 label={studyEstimate.label} uncertainty={studyEstimate.uncertainty}
-                paused={isPaused || showFocusLock || pauseTimerActive} onRecalculate={studyEstimate.recalculate} />}
+                paused={isPaused || showFocusLock || pauseTimerActive} error={studyEstimate.historyError} onRecalculate={studyEstimate.recalculate} />}
               <FocusReminders />
               {highlightError && <small role="alert">{highlightError}</small>}
               <SectionRegenerator key={selectedLecture.id} lectureId={selectedLecture.id} markdown={markdownText ?? ''} english={effectiveLanguage === 'en'} disabled={isGenerating || isTranscribing || isTranslating} />

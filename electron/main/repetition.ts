@@ -32,7 +32,7 @@ interface RecordData extends RepetitionSession {
 }
 
 export interface RepetitionDependencies {
-  recordStudy?: (id: string, createdAt: string, seconds: number) => Promise<void>
+  recordStudy?: (id: string, createdAt: string, seconds: number, recorded?: boolean) => Promise<void>
   reply?: (reference: string, assessment: string, messages: RepetitionMessage[], signal: AbortSignal) => Promise<string>
   scan: () => Promise<UsbRecorderInfo>
   transcribe: (
@@ -387,7 +387,7 @@ export class RepetitionService {
         'La copia locale dell’audio è cambiata. Ripristinala prima di riprendere.'
       )
     if (record.studyEligible && this.dependencies.recordStudy && Number.isFinite(record.durationSeconds) && record.durationSeconds! > 0)
-      await this.dependencies.recordStudy(record.id, record.audioRecordedAt ?? record.createdAt, record.durationSeconds!)
+      await this.dependencies.recordStudy(record.id, record.audioRecordedAt ?? record.createdAt, record.durationSeconds!, Boolean(record.audioRecordedAt))
     const controller = new AbortController()
     this.current = record
     this.active = { id, controller, done: Promise.resolve() }

@@ -43,6 +43,10 @@ async function main() {
       'Durata o data della ripetizione non valida.', '.markdown-body > .markdown-alert', 'Registra tempo di studio'])
       assert(javascript.includes(marker), 'Missing November study improvement: ' + marker)
   }
+  if (process.argv.includes('--study-nov9')) {
+    for (const marker of ['La mia giornata', 'study:observe', 'history-v2', 'Tempo non salvato.', 'Copertura successiva osservata'])
+      assert(javascript.includes(marker), 'Missing November 9 study improvement: ' + marker)
+  }
   if (process.argv.includes('--study-nov8')) {
     for (const marker of ['Stima del tempo di studio', 'study-estimate-trigger', 'lezionify-study-tick',
       'lezionify.study-forecast.history.v1', 'Margine statistico non disponibile', 'Livello nominale 90%'])

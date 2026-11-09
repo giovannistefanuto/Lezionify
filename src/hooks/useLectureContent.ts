@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { getStudyHistoryClient } from '../utils/studyHistoryClient'
 import type {
   Lecture,
   LectureStudySet,
@@ -274,11 +275,15 @@ export function useLectureContent({
     async (newStatus: StudyStatus): Promise<boolean> => {
       if (!selectedLecture) return false
       const previousStatus = selectedLecture.studyStatus
+      const client = newStatus === 'completata' ? getStudyHistoryClient(selectedLecture.id) : undefined
+      if (client) client.completing = true
       // Optimistic update
       onUpdateLectureInState(selectedLecture.id, { studyStatus: newStatus })
       try {
+        const studyCheckpoint = await client?.checkpoint()
         await window.archive.updateLecture(selectedLecture.id, {
-          studyStatus: newStatus
+          studyStatus: newStatus,
+          ...(studyCheckpoint ? { studyCheckpoint } : {})
         })
         await onRefreshLibrary()
         return true
@@ -290,6 +295,8 @@ export function useLectureContent({
         })
         onNotice('Impossibile aggiornare lo stato di studio.')
         return false
+      } finally {
+        if (client) client.completing = false
       }
     },
     [selectedLecture, onRefreshLibrary, onUpdateLectureInState, onNotice]

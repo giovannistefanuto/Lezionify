@@ -25,6 +25,7 @@ const mathRenderingOnly = process.argv.includes('--math-rendering-only')
 const languageShortcutOnly = process.argv.includes('--language-shortcut-only')
 if (screenshotDirectory) mkdirSync(screenshotDirectory, { recursive: true })
 try {
+  buildSync({ entryPoints: ['./electron/main/studyHistory.ts'], bundle: true, platform: 'node', format: 'cjs', outfile: join(directory, 'study-history.cjs') })
   cpSync('public/music', join(directory, 'music'), { recursive: true })
   cpSync('node_modules/katex/dist/fonts', join(directory, 'fonts'), { recursive: true })
   writeFileSync(join(directory, 'katex.css'), readFileSync('node_modules/katex/dist/katex.min.css'))
@@ -52,6 +53,25 @@ try {
     ipcMain.on('done', async (event, result) => { event.sender.session.flushStorageData(); await new Promise(resolve => setTimeout(resolve, 100)); console.log(result); app.exit(result.startsWith('PASS') ? 0 : 1) });
     ipcMain.on('test-checkpoint', (_, name) => { if (typeof name === 'string' && /^run[A-Za-z]+$/.test(name)) console.log('SCENARIO: ' + name) });
     app.whenReady().then(() => {
+      const studyRoot = ${JSON.stringify(join(directory, 'study-fixture'))};
+      const studyFs = require('node:fs'), studyPath = require('node:path');
+      studyFs.mkdirSync(studyRoot, { recursive: true });
+      let studySessions = [], studyOperations = new Map();
+      const StudyHistory = require(${JSON.stringify(join(directory, 'study-history.cjs'))}).StudyHistory;
+      const makeStudyHistory = () => new StudyHistory(studyRoot, { readSessions: async () => structuredClone(studySessions), writeSessions: async value => { studySessions = value; studyFs.writeFileSync(studyPath.join(studyRoot,'sessions.json'), JSON.stringify(value)) }, completionOperation: async lesson => studyOperations.get(lesson) });
+      let studyHistory = makeStudyHistory();
+      ipcMain.handle('study-test-observe', (_, batch) => studyHistory.ingest(batch));
+      ipcMain.handle('study-test-predict', (_, request) => studyHistory.recordPrediction(request));
+      ipcMain.handle('study-test-reset', (_, lectureId, sessionId) => studyHistory.reset(lectureId, sessionId));
+      ipcMain.handle('study-test-day', (_, date, filter) => studyHistory.getDay(date,studySessions,{},[],filter));
+      ipcMain.handle('study-test-complete', async (_, lesson, checkpoint) => {
+        const operation = await studyHistory.prepareCompletion(lesson, checkpoint);
+        if (operation) { studyOperations.set(lesson, operation); await studyHistory.finishCompletion(lesson,operation) }
+        return { id: lesson, studyStatus: 'completata' };
+      });
+      ipcMain.handle('study-test-restart', async () => { studyHistory = makeStudyHistory(); await studyHistory.recover(); return true });
+      ipcMain.handle('study-test-seed', (_, values) => { studySessions.push(...values); return true });
+      ipcMain.handle('study-test-legacy', (_, data) => studyHistory.importLegacy(data));
       // Public artwork is replaced by deterministic synthetic SVG; no CDN or account requests.
       protocol.handle('https', request => {
         const host = new URL(request.url).hostname;

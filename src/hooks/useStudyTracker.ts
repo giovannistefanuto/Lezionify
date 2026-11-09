@@ -3,7 +3,9 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import type { StudySession, StudySessionMode } from '../../shared/archive'
 import { formatLocalCalendarDate } from '../../shared/calendarDate'
 import { inactivityProfile, saveInactivityProfile } from '../utils/studyInactivity'
-import { creditStudyTick, studySurfaceBlocked } from '../utils/studyActivity'
+import { creditStudyTick, studySurfaceBlocked, studySurfaceExclusions } from '../utils/studyActivity'
+import { startStudyHistoryClient, type StudyHistoryClient } from '../utils/studyHistoryClient'
+import type { StudyExclusion } from '../../shared/studyHistory'
 
 interface UseStudyTrackerProps {
   activeLectureId: string | null
@@ -73,6 +75,16 @@ export function useStudyTracker({
   const pendingExitRef = useRef<(() => void) | null>(null)
   const pendingSessions = useRef(new Map<string, StudySession>())
   const flushQueue = useRef<Promise<void>>(Promise.resolve())
+  const historyClient = useRef<StudyHistoryClient | undefined>(undefined)
+  const reasonsRef = useRef<() => StudyExclusion[]>(() => [])
+  reasonsRef.current = () => {
+    const reasons = studySurfaceExclusions()
+    if (suspendedRef.current && !reasons.includes('memo')) reasons.push('memo')
+    if (pauseTimerActiveRef.current) reasons.push('pause')
+    if (showFocusLockRef.current) reasons.push('focus-lock')
+    if (isPaused && !reasons.length) reasons.push('inactivity')
+    return [...new Set([...reasons, ...(historyClient.current?.systemExclusions ?? [])])]
+  }
 
   // Determina la modalità di studio attuale
   const getStudyMode = useCallback((): StudySessionMode => {
@@ -86,6 +98,11 @@ export function useStudyTracker({
   // Funzione atomica di flush sessione verso il backend
   const flushCurrentSession = useCallback(async () => {
     if (inactivity.current.observing) saveInactivityProfile(inactivity.current)
+    if (historyClient.current) {
+      historyClient.current.observe(sessionSecondsRef.current, reasonsRef.current(), true)
+      try { await historyClient.current.flush() } catch { /* Retained queue and visible error; retry on next checkpoint. */ }
+      return
+    }
     if (sessionSecondsRef.current > 0) {
       const now = new Date()
       const session: StudySession = {
@@ -127,6 +144,7 @@ export function useStudyTracker({
   useEffect(() => {
     if (isEnabled && activeLectureId) {
       sessionIdRef.current = crypto.randomUUID()
+      historyClient.current = startStudyHistoryClient(sessionIdRef.current, activeLectureId, courseCodeRef.current)
       startTimeRef.current = new Date().toISOString()
       sessionSecondsRef.current = 0
       setActiveSeconds(0)
@@ -143,6 +161,7 @@ export function useStudyTracker({
       setInactivityPrompt(false)
     } else {
       // Quando si disattiva (es. si esce da Focus Mode), salva la sessione accumulata
+      historyClient.current?.stop()
       void flushCurrentSession()
       sessionSecondsRef.current = 0
       setActiveSeconds(0)
@@ -154,9 +173,40 @@ export function useStudyTracker({
     }
 
     return () => {
+      historyClient.current?.stop()
       void flushCurrentSession()
     }
   }, [isEnabled, activeLectureId, flushCurrentSession])
+
+  useEffect(() => {
+    historyClient.current?.observe(sessionSecondsRef.current, reasonsRef.current(), true)
+    void historyClient.current?.flush().catch(() => {})
+  }, [suspended, isPaused, showFocusLock, pauseTimerActive])
+
+  // Record surface boundaries when they happen, even between two heartbeats.
+  useEffect(() => {
+    if (!isEnabled || !activeLectureId || !historyClient.current) return
+    let previous = JSON.stringify(reasonsRef.current())
+    const record = () => {
+      const reasons = reasonsRef.current(), signature = JSON.stringify(reasons)
+      if (signature === previous) return
+      previous = signature
+      historyClient.current?.observe(sessionSecondsRef.current, reasons, true)
+      void historyClient.current?.flush().catch(() => {})
+    }
+    const observer = new MutationObserver(record)
+    observer.observe(document.body, { childList: true, subtree: true, attributes: true,
+      attributeFilter: ['class', 'data-dictionary-overlay', 'aria-modal'] })
+    window.addEventListener('focus', record)
+    window.addEventListener('blur', record)
+    document.addEventListener('visibilitychange', record)
+    return () => {
+      observer.disconnect()
+      window.removeEventListener('focus', record)
+      window.removeEventListener('blur', record)
+      document.removeEventListener('visibilitychange', record)
+    }
+  }, [isEnabled, activeLectureId])
 
   // Exclude the current session: its periodic snapshots are already persisted,
   // while activeSeconds includes the whole session, including unsaved seconds.
@@ -266,8 +316,10 @@ export function useStudyTracker({
       const delta = now - lastTickRef.current
       lastTickRef.current = now
       const blocked = studySurfaceBlocked()
+      const reasons = reasonsRef.current()
+      if (reasons.length) historyClient.current?.observe(sessionSecondsRef.current, reasons)
       setSurfacePaused(blocked)
-      if (blocked) {
+      if (blocked || historyClient.current?.systemExclusions.length || historyClient.current?.completing) {
         lastInteractionRef.current = now
         observedInteraction.current = now
         return
@@ -282,6 +334,7 @@ export function useStudyTracker({
 
       // Se il delta è anomalo (> 3s), il PC è andato in sospensione: congela e non contare tempo falso
       if (delta > 3000 || delta < 0) {
+        historyClient.current?.observe(sessionSecondsRef.current, ['unknown'], true)
         observedInteraction.current = now
         setIsPaused(true)
         return
@@ -289,6 +342,7 @@ export function useStudyTracker({
 
       // Se non c'è interazione da oltre 15 minuti, pausa automatica
       if (now > withoutInputUntil.current && now - lastInteractionRef.current > (inactivity.current.thresholdMinutes ?? 15) * 60 * 1000) {
+        historyClient.current?.observe(sessionSecondsRef.current, ['inactivity'], true)
         setIsPaused(true)
         if (inactivity.current.thresholdMinutes !== null) {
           setInactivityPrompt(true)
@@ -304,6 +358,7 @@ export function useStudyTracker({
 
       if (isFocusModeRef.current) creditFocusRagStudy(courseCodeRef.current)
       sessionSecondsRef.current += 1
+      historyClient.current?.observe(sessionSecondsRef.current, [])
       creditStudyTick(activeLectureId)
       if (inactivity.current.observing) {
         const profile = inactivity.current

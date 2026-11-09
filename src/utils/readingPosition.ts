@@ -1,16 +1,7 @@
 export interface ReadingPosition { page: number; y: number; x: number }
 const PREFIX = 'lezionify.reading.v1:'
 
-// Only opaque identities and coordinates are stored, never document text or paths.
-export function contentFingerprint(content: string): string {
-  let a = 2166136261
-  let b = 5381
-  for (let i = 0; i < content.length; i++) {
-    a = Math.imul(a ^ content.charCodeAt(i), 16777619)
-    b = Math.imul(b, 33) ^ content.charCodeAt(i)
-  }
-  return `${content.length}-${a >>> 0}-${b >>> 0}`
-}
+export { contentFingerprint } from '../../shared/contentFingerprint'
 
 export function readPosition(key: string, fingerprint: string): ReadingPosition | null {
   try {

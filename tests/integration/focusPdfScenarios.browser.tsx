@@ -325,7 +325,7 @@ async function runDrawerAttachmentScenario(root: Root, api: any, source: any,
     await until(() => Boolean(document.querySelector('[title="Modalità studio immersiva"]')), 'Drawer not ready')
     await act(async () => document.querySelector<HTMLButtonElement>('[title="Modalità studio immersiva"]')!.click())
     await until(() => Boolean(document.querySelector('.focus-pdf-page-count')), 'Drawer PDF did not load')
-    const estimateTrigger = document.querySelector<HTMLButtonElement>('.study-estimate-trigger')!
+    const estimateTrigger = [...document.querySelectorAll<HTMLButtonElement>('.study-estimate-trigger')].at(-1)!
     check(estimateTrigger && !document.querySelector('.study-estimate-panel'), 'Focus must show only the discrete estimate icon initially')
     await act(async () => estimateTrigger.focus())
     check(document.querySelector('.study-estimate-panel'), 'Estimate detail not available by keyboard in real Focus')

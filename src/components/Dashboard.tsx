@@ -1,4 +1,5 @@
 import { captureGroups } from '../utils/quickCapture'
+import { StudyDayTimeline } from './StudyDayTimeline'
 import { StudyTimeRemovalDialog } from './StudyTimeRemovalDialog'
 import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import type {
@@ -125,6 +126,8 @@ export function Dashboard({
   )
   const [manualMinutes, setManualMinutes] = useState('60')
   const [manualDate, setManualDate] = useState(formatLocalCalendarDate())
+  const [manualStart, setManualStart] = useState('')
+  const [timelineRevision, setTimelineRevision] = useState(0)
   const [isSavingManualTime, setIsSavingManualTime] = useState(false)
   const [manualTimeError, setManualTimeError] = useState<string | null>(null)
   const manualCourseTouchedRef = React.useRef(false)
@@ -143,7 +146,7 @@ export function Dashboard({
     if (window.archive?.getStudyAnalytics) {
       try {
         const data = await window.archive.getStudyAnalytics()
-        if (revision === analyticsRevision.current) setAnalytics(data)
+        if (revision === analyticsRevision.current) { setAnalytics(data); setTimelineRevision(n=>n+1) }
       } catch (err) {
         console.error(
           'Errore nel caricamento delle statistiche di studio:',
@@ -296,7 +299,7 @@ export function Dashboard({
     setIsSavingManualTime(true)
     setManualTimeError(null)
     try {
-      await window.archive.addManualStudyTime(manualCourse, mins, manualDate)
+      await window.archive.addManualStudyTime(manualCourse, mins, manualDate, manualStart || undefined)
       await loadAnalytics()
       setShowManualModal(false)
     } catch (err) {
@@ -308,6 +311,7 @@ export function Dashboard({
   }
 
   const openManualTimeModal = () => {
+    setManualStart('')
     manualCourseTouchedRef.current = false
     setManualCourse((current) =>
       courseStats.some((course) => course.courseCode === current)
@@ -460,8 +464,7 @@ export function Dashboard({
             <div className="study-analytics-title">
               <h2>⏱️ Analisi del Tempo di Studio</h2>
               <span className="study-analytics-subtitle">
-                Tracciato in modalità Focus e consultazione attiva (zero falsi
-                positivi)
+                Tempo accreditato dai segnali di studio disponibili, con crediti manuali e stimati distinti.
               </span>
             </div>
             <button
@@ -518,6 +521,8 @@ export function Dashboard({
               </div>
             </div>
           </div>
+
+          <StudyDayTimeline courses={courseStats.map(c=>c.courseCode)} refreshToken={timelineRevision} />
 
           {/* Grafico a Barre 7 Giorni & Breakdown Materie */}
           <div className="study-charts-grid">
@@ -1034,6 +1039,11 @@ export function Dashboard({
                   onChange={(e) => setManualDate(e.target.value)}
                   required
                 />
+              </label>
+
+              <label className="input-label">Orario di inizio (facoltativo):
+                <input type="time" className="text-input" value={manualStart} onChange={e=>setManualStart(e.target.value)} />
+                <small>Se lo lasci vuoto, registriamo solo il giorno. L’orario compilato resta dichiarato da te.</small>
               </label>
 
               {manualTimeError && <p role="alert">{manualTimeError}</p>}

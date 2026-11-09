@@ -694,3 +694,19 @@ modelli opzionali e osservazione dei download locali in corso, sostituendo la
 precedente scheda `PhraseTranslator`. `musicPreferences` conserva soltanto
 sorgente e tipo/pagina della libreria Spotify; il servizio player resta unico.
 Il compositore Q&A controlla la disponibilità della selezione nel PDF.
+
+
+## Cronologia e forecast dello studio (9 novembre 2026)
+
+`shared/studyHistory.ts` definisce contratti, provenienza, calendario e indicatori;
+`shared/studyForecast.ts` contiene la statistica pura. `shared/contentFingerprint.ts`
+condivide l'impronta della fonte fra main e renderer.
+`electron/main/studyHistory.ts` possiede journal locale, ACK idempotenti,
+proiezioni compatibili, eventi nativi e completamenti recuperabili. I dati sono
+nella cartella `study/` della libreria, mai nei file versionati.
+`src/utils/studyHistoryClient.ts` serializza i batch e collega tracker e stimatore;
+`StudyDayTimeline.tsx`/`studyDay.css` mostrano la giornata nella Dashboard.
+Test dedicati in `studyHistory.test.ts`, `studyHistoryArchive.test.ts` e
+`studyHistoryScenarios.browser.tsx`; misura sintetica in
+`tools/benchmark_study_history.cjs`. Uso, contratti, recupero e limiti:
+[cronologia e stima](docs/product/cronologia-stima-2026-11-09.md).

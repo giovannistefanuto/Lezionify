@@ -1,3 +1,4 @@
+import type { StudyHistoryApi } from './studyHistory'
 import type { CourseRagApi } from './courseRag'
 import type { SectionRevisionApi } from './sectionRevision'
 import type { RepetitionApi } from './repetition'
@@ -19,6 +20,7 @@ export type GeminiModel =
   | 'gemini-2.5-flash-lite'
 
 export interface Lecture {
+  studyCompletionOperationId?: string
   markdownEnNeedsUpdate?: boolean
   id: string
   isLaboratory?: boolean
@@ -89,6 +91,7 @@ export interface VideoImportDestination {
 }
 
 export interface UpdateLecturePayload {
+  studyCheckpoint?: import('./studyHistory').StudyCheckpoint
   isLaboratory?: boolean
   title?: string | null
   courseCode?: string | null
@@ -436,6 +439,10 @@ export type StudySessionMode =
   'focus' | 'reading' | 'quiz' | 'flashcard' | 'qna' | 'manual'
 
 export interface StudySession {
+  provenance?: import('./studyHistory').StudyProvenance
+  timingQuality?: 'observed' | 'declared' | 'estimated' | 'unlocated'
+  observationSessionId?: string
+  unlocatedSeconds?: number
   corrections?: Array<{ seconds: number; createdAt: string }>
   id: string
   lectureId: string | null
@@ -599,7 +606,7 @@ export interface FocusPdfDocument {
   url: string
 }
 
-export interface ArchiveApi extends CourseRagApi, RepetitionApi, SectionRevisionApi {
+export interface ArchiveApi extends StudyHistoryApi, CourseRagApi, RepetitionApi, SectionRevisionApi {
   languageShortcutDiagnosticsEnabled?: boolean
   exportNotesPdf: (request: PdfExportRequest) => Promise<PdfExportResult>
   getPdfExportDocument: (token: string) => Promise<PdfExportDocument>
@@ -701,7 +708,8 @@ export interface ArchiveApi extends CourseRagApi, RepetitionApi, SectionRevision
   addManualStudyTime: (
     courseCode: string,
     minutes: number,
-    date?: string
+    date?: string,
+    time?: string
   ) => Promise<void>
   getCourses: () => Promise<CourseDefinition[]>
   getArchivedCourseCodes: () => Promise<string[]>

@@ -123,3 +123,35 @@ test('discarding an untracked segment invalidates stale writers and preserves co
   expect(readForecastHistory()).toHaveLength(20)
   expect(forecastSession('new', 'source').save()).toBe(true)
 })
+
+test('collects both forecasting methods within the same phase and language', () => {
+  const session = forecastSession('methods', 'source')
+  session.predict(600, .5, 'it', 'viewport-v2')
+  session.predict(500, .5, 'it', 'paragraph-v2')
+  session.tick(1, .99); session.save(); completeStudyForecast('methods', 'source')
+  expect(readForecastHistory().map(item => item.method)).toEqual(['viewport-v2', 'paragraph-v2'])
+})
+
+test('never completes using a stale counter after the final run write fails', () => {
+  const session = forecastSession('failed-final-write', 'source')
+  session.tick(1, .99); session.predict(60, .7, 'it', 'paragraph-v2'); session.save()
+  for (let i = 0; i < 30; i++) session.tick(1, .99)
+  vi.stubGlobal('localStorage', {
+    getItem: (key: string) => storage.get(key) ?? null,
+    setItem: (key: string, value: string) => {
+      if (key === FORECAST_RUN_PREFIX + 'failed-final-write') throw new Error('write failed')
+      storage.set(key, value)
+    }, removeItem: (key: string) => storage.delete(key)
+  })
+  expect(session.save()).toBe(false)
+  expect(completeStudyForecast('failed-final-write', 'source')).toBe(false)
+  expect(readForecastHistory()).toHaveLength(0)
+})
+
+test('Wilson coverage expresses finite-sample uncertainty without a personal certainty score', async () => {
+  const { coverageWilson } = await import('../../shared/studyForecast')
+  expect(coverageWilson(0,0)).toBeNull()
+  expect(coverageWilson(.5,1)).toBeNull()
+  expect(coverageWilson(9,10)![0]).toBeCloseTo(.596,2)
+  expect(coverageWilson(9,10)![1]).toBeCloseTo(.982,2)
+})

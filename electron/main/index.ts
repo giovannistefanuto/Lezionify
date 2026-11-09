@@ -100,6 +100,21 @@ function createWindow(): void {
     })
   }
 
+  const systemEvents = [
+    ['suspend', 'suspended', true], ['resume', 'suspended', false],
+    ['lock-screen', 'locked', true], ['unlock-screen', 'locked', false]
+  ] as const
+  const systemEmitter = powerMonitor as NodeJS.EventEmitter
+  const systemListeners = systemEvents.map(([event, reason, active]) => {
+    const listener = () => {
+      void archive.noteStudySystem(reason,active).catch(()=>logger.warn('study-history','Evento di sistema non salvato.'))
+      if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('study:system-state', { reason, active })
+    }
+    systemEmitter.on(event, listener)
+    return { event, listener }
+  })
+  mainWindow.on('closed', () => { for (const { event, listener } of systemListeners) systemEmitter.removeListener(event, listener) })
+
   archive.setProgressCallback((progress) => {
     if (mainWindow && !mainWindow.isDestroyed()) {
       mainWindow.webContents.send('archive:generation-progress', progress)
@@ -462,14 +477,19 @@ function registerIpcHandlers(): void {
     archive.getStudyAnalytics()
   )
   ipcMain.handle('archive:get-study-time-removal-targets', () => archive.getStudyTimeRemovalTargets())
+  ipcMain.handle('study:observe', (_, batch) => archive.saveStudyObservations(batch))
+  ipcMain.handle('study:predict', (_, request) => archive.recordStudyPrediction(request))
+  ipcMain.handle('study:reset', (_, lectureId, sessionId) => archive.resetStudyForecast(lectureId, sessionId))
+  ipcMain.handle('study:day', (_, date, filter) => archive.getStudyDay(date, filter))
+  ipcMain.handle('study:legacy', (_, data) => archive.studyHistory.importLegacy(data))
   ipcMain.handle('archive:remove-study-time', (_event, targetId: unknown, minutes: unknown) => archive.removeStudyTime(targetId, minutes))
   ipcMain.handle('archive:get-lecture-study-seconds', (_event, lectureId: unknown, excludedSessionId: unknown) =>
     archive.getLectureStudySeconds(lectureId, excludedSessionId)
   )
   ipcMain.handle(
     'archive:add-manual-study-time',
-    (_event, courseCode: unknown, minutes: unknown, date?: unknown) =>
-      archive.addManualStudyTime(courseCode, minutes, date)
+    (_event, courseCode: unknown, minutes: unknown, date?: unknown, time?: unknown) =>
+      archive.addManualStudyTime(courseCode, minutes, date, time)
   )
   ipcMain.handle('archive:get-courses', () => archive.getCourses())
   ipcMain.handle(

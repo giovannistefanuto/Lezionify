@@ -162,17 +162,28 @@ const archiveApi: ArchiveApi = {
     ),
   saveStudySession: (session: StudySession) =>
     ipcRenderer.invoke('archive:save-study-session', session),
+  saveStudyObservations: batch => ipcRenderer.invoke('study:observe', batch),
+  recordStudyPrediction: request => ipcRenderer.invoke('study:predict', request),
+  resetStudyForecast: (lectureId, sessionId) => ipcRenderer.invoke('study:reset', lectureId, sessionId),
+  getStudyDay: (date, filter) => ipcRenderer.invoke('study:day', date, filter),
+  importLegacyStudyForecast: data => ipcRenderer.invoke('study:legacy', data),
+  onStudySystemState: callback => {
+    const listener = (_: unknown, state: { reason: 'suspended' | 'locked'; active: boolean }) => callback(state)
+    ipcRenderer.on('study:system-state', listener)
+    return () => ipcRenderer.removeListener('study:system-state', listener)
+  },
   getStudyAnalytics: () => ipcRenderer.invoke('archive:get-study-analytics'),
   getStudyTimeRemovalTargets: () => ipcRenderer.invoke('archive:get-study-time-removal-targets'),
   removeStudyTime: (targetId, minutes) => ipcRenderer.invoke('archive:remove-study-time', targetId, minutes),
   getLectureStudySeconds: (lectureId: string, excludedSessionId: string) =>
     ipcRenderer.invoke('archive:get-lecture-study-seconds', lectureId, excludedSessionId),
-  addManualStudyTime: (courseCode: string, minutes: number, date?: string) =>
+  addManualStudyTime: (courseCode: string, minutes: number, date?: string, time?: string) =>
     ipcRenderer.invoke(
       'archive:add-manual-study-time',
       courseCode,
       minutes,
-      date
+      date,
+      time
     ),
   getCourses: () => ipcRenderer.invoke('archive:get-courses'),
   saveCourse: (course, oldCode) =>

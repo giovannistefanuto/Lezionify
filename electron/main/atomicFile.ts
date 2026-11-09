@@ -51,7 +51,7 @@ export function atomicWrite(
 }
 
 /** Missing data is distinct from malformed data. Never silently replace corrupt JSON with defaults. */
-export async function readRecoverable(file: string): Promise<string> {
+export async function readRecoverable(file: string, onRecovery?: () => void): Promise<string> {
   try {
     const raw = await readFile(file, 'utf8')
     if (file.endsWith('.json')) JSON.parse(raw)
@@ -62,6 +62,7 @@ export async function readRecoverable(file: string): Promise<string> {
       const backup = await readFile(`${file}.bak`, 'utf8')
       JSON.parse(backup)
       await atomicWrite(file, backup)
+      onRecovery?.()
       return backup
     } catch {
       throw new Error(

@@ -1,3 +1,6 @@
+import { StudyHistory } from './studyHistory'
+import { contentFingerprint } from '../../shared/contentFingerprint'
+import { splitStudyInterval, type StudyBatch, type StudyPredictionRequest, type StudyDayFilter } from '../../shared/studyHistory'
 import { repetitionRecordingCredits } from '../../shared/repetitionStudy'
 import { relatedQnaContext } from '../../shared/qnaContext'
 import { SectionRevisionService } from './sectionRevision'
@@ -143,6 +146,7 @@ export class ArchiveService {
   private readonly rootDirectory: string
   readonly qnaImages: QnaImageStore
   private readonly storage: FileStorageService
+  readonly studyHistory: StudyHistory
   private readonly videoImporter: VideoImporter
   private readonly repository: LibraryRepository
   private readonly settingsService: SettingsService
@@ -196,6 +200,10 @@ export class ArchiveService {
     this.qnaImages = new QnaImageStore(this.rootDirectory, bytes => nativeImage.createFromBuffer(bytes).getSize())
     this.videoImporter = new VideoImporter(this.rootDirectory)
     this.repository = new LibraryRepository(this.rootDirectory)
+    this.studyHistory = new StudyHistory(this.rootDirectory, {
+      readSessions: () => this.storage.readStudySessions(), writeSessions: sessions => this.storage.writeStudySessions(sessions),
+      completionOperation: async id => (await this.repository.readLibrary()).lectures.find(l => l.id === id)?.studyCompletionOperationId
+    })
     this.settingsService = new SettingsService(this.rootDirectory)
     this.publishService = new PublishService(this.rootDirectory, {
       listLectures: () => this.listLectures(),
@@ -219,7 +227,7 @@ export class ArchiveService {
       })
     this.searchIndex = new SearchIndexService()
     this.repetition = new RepetitionService(path.join(this.rootDirectory, 'RIPETERE'), {
-      recordStudy: (id, createdAt, seconds) => this.recordRepetitionStudy(id, createdAt, seconds),
+      recordStudy: (id, createdAt, seconds, recorded) => this.recordRepetitionStudy(id, createdAt, seconds, recorded),
       scan: () => this.detectUsbRecorder(),
       reply: async (reference, assessment, messages, signal) => this.geminiService.replyRepetition({ keys: await this.getManagedKeys(), model: (await this.settingsService.getSettings()).model, reference, assessment, messages, signal }),
       transcribe: async (audioFilePath, lectureId, signal, onProgress) => this.geminiService.transcribeAudioFile({
@@ -395,6 +403,7 @@ export class ArchiveService {
     )
     await this.storage.initialize()
     await this.repository.initialize()
+    await this.studyHistory.recover()
     const initialLibrary = await this.repository.readLibrary()
     await this.settingsService.initializeCoursePublicationConsent(initialLibrary.lectures.flatMap(lecture => lecture.courseCode ? [lecture.courseCode] : []))
     await this.applyScheduledLaboratories()
@@ -791,13 +800,24 @@ export class ArchiveService {
   ): Promise<Lecture> {
     validateLectureUpdate(updates)
     return this.repository.runExclusive(async () => {
+      await this.studyHistory.recover()
       const library = await this.repository.readLibrary()
       const lectureIndex = library.lectures.findIndex((item) => item.id === id)
       if (lectureIndex === -1) throw new Error('Lezione non trovata.')
 
       const lecture = library.lectures[lectureIndex]
+      let completion: string | undefined
+      if (updates.studyStatus && updates.studyStatus !== 'completata' && lecture.studyStatus === 'completata') await this.studyHistory.reset(id)
+      if (updates.studyStatus === 'completata' && lecture.studyStatus !== 'completata') {
+        // Validate the source against the actual archive, not a renderer claim.
+        const italian = lecture.markdownFileName ? await this.storage.readMarkdown(lecture.markdownFileName) : null
+        const english = lecture.markdownFileName && lecture.markdownEnFileName ? await this.storage.readMarkdownEn(lecture.markdownFileName) : null
+        completion = await this.studyHistory.prepareCompletion(id, updates.studyCheckpoint,
+          italian ? `${contentFingerprint(italian)}:${english ? contentFingerprint(english) : ''}` : null)
+      }
       const updatedLecture: Lecture = {
         ...lecture,
+        ...(completion ? { studyCompletionOperationId: completion } : {}),
         title: updates.title !== undefined ? updates.title : lecture.title,
         ...(updates.isLaboratory !== undefined ? { isLaboratory: updates.isLaboratory } : {}),
         courseCode:
@@ -816,7 +836,11 @@ export class ArchiveService {
       if (updates.isLaboratory !== undefined) delete updatedLecture.laboratorySource
       await this.classifyLaboratory(updatedLecture)
       library.lectures[lectureIndex] = updatedLecture
-      await this.repository.writeLibrary(library)
+      try { await this.repository.writeLibrary(library) }
+      catch (error) { await this.studyHistory.recover(); throw error }
+      // Metadata is committed; recovery can finish this projection after any interruption.
+      try { await this.studyHistory.finishCompletion(id, completion) }
+      catch { logger.warn('study-history', 'Completamento dello storico da recuperare al prossimo accesso.') }
 
       const transcriptText = updatedLecture.transcriptFileName
         ? ((await this.storage.readTranscript(
@@ -2384,8 +2408,8 @@ export class ArchiveService {
     }
   }
 
-  private async recordRepetitionStudy(id: string, createdAt: string, seconds: number): Promise<void> {
-    const credits = repetitionRecordingCredits(id, createdAt, seconds)
+  private async recordRepetitionStudy(id: string, createdAt: string, seconds: number, recorded = false): Promise<void> {
+    const credits = repetitionRecordingCredits(id, createdAt, seconds).map(s => ({ ...s, provenance: 'repetition-audio' as const, timingQuality: recorded ? 'observed' as const : 'estimated' as const }))
     await this.repository.runExclusive(async () => {
       const sessions = await this.storage.readStudySessions()
       if (sessions.some(session => session.id === `repetition-audio:${id}` || session.id.startsWith(`repetition-audio:${id}:`))) return
@@ -2405,8 +2429,38 @@ export class ArchiveService {
       const now = new Date()
       const recordings = sessions.filter(session => session.id === `repetition-audio:${id}` || session.id.startsWith(`repetition-audio:${id}:`))
       for (const recording of recordings) recording.courseCode = courseCode
-      sessions.push({ id: readingId, lectureId: null, courseCode, startTime: now.toISOString(), endTime: now.toISOString(), durationSeconds: 900, mode: 'manual', date: formatLocalCalendarDate(now) })
+      sessions.push({ id: readingId, lectureId: null, courseCode, startTime: now.toISOString(), endTime: now.toISOString(), durationSeconds: 900, mode: 'manual', provenance: 'repetition-reading-estimated', timingQuality: 'unlocated', date: formatLocalCalendarDate(now) })
       await this.storage.writeStudySessions(sessions)
+    })
+  }
+
+  async saveStudyObservations(batch: StudyBatch) {
+    return this.repository.runExclusive(async () => {
+      await this.studyHistory.recover()
+      return this.studyHistory.ingest(batch)
+    })
+  }
+
+  noteStudySystem(reason: 'suspended' | 'locked', active: boolean) {
+    return this.repository.runExclusive(() => this.studyHistory.noteSystem(reason,active))
+  }
+
+  async recordStudyPrediction(request: StudyPredictionRequest) {
+    return this.repository.runExclusive(async () => {
+      await this.studyHistory.recover()
+      return this.studyHistory.recordPrediction(request)
+    })
+  }
+
+  async resetStudyForecast(lectureId: string, sessionId?: string) {
+    return this.repository.runExclusive(() => this.studyHistory.reset(lectureId, sessionId))
+  }
+
+  async getStudyDay(date: string, filter?: StudyDayFilter) {
+    return this.repository.runExclusive(async () => {
+      await this.studyHistory.recover()
+      const [sessions, library, settings] = await Promise.all([this.storage.readStudySessions(), this.repository.readLibrary(), this.settingsService.getSettings()])
+      return this.studyHistory.getDay(date, sessions, Object.fromEntries(library.lectures.map(l => [l.id, l.courseCode])), settings.archivedCourseCodes ?? [], filter)
     })
   }
 
@@ -2430,7 +2484,8 @@ export class ArchiveService {
   async addManualStudyTime(
     courseCode: unknown,
     minutes: unknown,
-    date?: unknown
+    date?: unknown,
+    time?: unknown
   ): Promise<void> {
     if (
       typeof courseCode !== 'string' ||
@@ -2448,6 +2503,20 @@ export class ArchiveService {
     const sessionDate = date || formatLocalCalendarDate(now)
     if (!parseLocalCalendarDate(sessionDate))
       throw new Error('Data della sessione non valida.')
+    if (time !== undefined && (typeof time !== 'string' || !/^([01]\d|2[0-3]):[0-5]\d$/.test(time))) throw new Error('Orario dello studio non valido.')
+    if (typeof time === 'string') {
+      const start = new Date(`${sessionDate}T${time}:00`)
+      if (!Number.isFinite(start.getTime()) || `${String(start.getHours()).padStart(2,'0')}:${String(start.getMinutes()).padStart(2,'0')}` !== time) throw new Error('Orario locale non disponibile.')
+      const id = randomUUID(), zone = Intl.DateTimeFormat().resolvedOptions().timeZone
+      const pieces = splitStudyInterval(start.getTime(), start.getTime() + durationSeconds * 1000, durationSeconds, zone)
+      return this.repository.runExclusive(async () => {
+        const sessions = await this.storage.readStudySessions()
+        sessions.push(...pieces.map(p => ({ id: `${id}:${p.date}`, lectureId: null, courseCode: courseCode.trim() || null,
+          startTime: new Date(p.start).toISOString(), endTime: new Date(p.end).toISOString(), date: p.date,
+          durationSeconds: p.seconds, mode: 'manual' as const, provenance: 'manual' as const, timingQuality: 'declared' as const })))
+        await this.storage.writeStudySessions(sessions)
+      })
+    }
     const session: StudySession = {
       id: randomUUID(),
       lectureId: null,
@@ -2455,7 +2524,7 @@ export class ArchiveService {
       startTime: now.toISOString(),
       endTime: now.toISOString(),
       durationSeconds,
-      mode: 'manual',
+      mode: 'manual', provenance: 'manual', timingQuality: 'unlocated',
       date: sessionDate
     }
     await this.saveStudySession(session)
@@ -2478,6 +2547,8 @@ export class ArchiveService {
       const target = studyTimeRemovalTargets(sessions, library.lectures, today).find(item => item.id === targetId)
       if (!target) throw new Error('La destinazione non è più disponibile. Riapri Togli tempo.')
       const updated = removeStudySeconds(sessions, target.id, minutes * 60, today, new Date().toISOString())
+      const affected = sessions.filter((session, index) => JSON.stringify(session.corrections) !== JSON.stringify(updated[index].corrections)).flatMap(s => s.observationSessionId ? [s.observationSessionId] : [])
+      if (affected.length) await this.studyHistory.invalidateSessions(affected)
       await this.storage.writeStudySessions(updated)
     })
   }
@@ -2490,7 +2561,7 @@ export class ArchiveService {
     return this.repository.runExclusive(async () => {
       const sessions = await this.storage.readStudySessions()
       return sessions.reduce((total, session) => total + (
-        session.lectureId === lectureId && session.id !== excludedSessionId ? effectiveStudySeconds(session) : 0
+        session.lectureId === lectureId && session.id !== excludedSessionId && session.observationSessionId !== excludedSessionId ? effectiveStudySeconds(session) : 0
       ), 0)
     })
   }

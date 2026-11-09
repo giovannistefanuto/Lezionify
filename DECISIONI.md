@@ -5326,3 +5326,102 @@ Non modificare manualmente la sezione `Registro`: aggiungi le nuove decisioni es
 - **Impatto:** Setup 299981359 byte SHA256 60473a58665bdc260eb90d5aceaacfebd00f38174241885f6f2a7c1206807f8f; verificati 377 file build, manifesto, tre backup e otto file NSIS. 819 unit, typecheck, lint, 24 Python, 41 Node, Electron con riavvio, PDF e runtime RAG/traduttore locali passati. Nessuna installazione o nuova chiamata AI.
 - **Follow-up:** Commit e push automatici con verifica del remoto secondo AGENTS; installazione a app chiusa. Raccogliere esiti futuri e verificare la copertura della voce 131.
 - **File coinvolti:** dist/Lezionify-Setup-0.1.0.exe, tools/verify_installer.cjs, docs/product/stima-tempi-2026-11-08.md, docs/product/idee-future-2026-10-13.md, STRUTTURA_PROGETTO.md, DECISIONI.md
+
+## D-0484 — Recupero inglese e revisione tecnica della lezione richiesta
+
+- **Data:** 2026-11-09
+- **Stato:** accettata
+- **Area:** recupero-dispense
+- **Decisione:** Completare il monitoraggio della pipeline e recuperare manualmente la traduzione inglese rifiutata, correggendo in entrambe le lingue formule, indici temporali, condizioni teoriche e sintassi Mermaid verificate. Conservare backup locali e fonti primarie.
+- **Motivazione:** Il tentativo inglese conteneva frammenti mancanti e prosa disallineata; il controllo tecnico e il rendering invisibile hanno individuato errori correggibili senza ulteriori chiamate AI. Intervento autorizzato dall utente e svolto senza interazioni con lo schermo.
+- **Impatto:** Salvataggio IT iniziale tramite API app; completamento atomico con app verificata chiusa usando i contratti correnti di archivio. Verificate 32 sezioni, 272 formule e 5 diagrammi per lingua, ricerca e integrita delle fonti. Coda solo terminale conservata in backup e azzerata tramite AiJobStore; nessun checkpoint eliminato, pubblicazione o modifica alle altre lezioni.
+- **Follow-up:** Al prossimo avvio l app ricostruisce l indice dai file aggiornati. Due versioni inglesi di altre lezioni restano mancanti e fuori dal perimetro; report dettagliato solo nell archivio personale.
+- **File coinvolti:** DECISIONI.md, archivio locale personale non versionato
+
+## D-0485 — Piano cronologia giornaliera e validazione della stima
+
+- **Data:** 2026-11-09
+- **Stato:** accettata
+- **Area:** pianificazione
+- **Decisione:** Documentare il piano proposto per le voci 130 e 131, senza implementare: cronologia e indicatori senza punteggio unico, con Focus RIPETERE e manuale distinti per provenienza, secondo le risposte dell utente. Priorita alla raccolta comune e ai difetti riprodotti prima di grafico e calibrazione.
+- **Motivazione:** Definire un percorso verificabile che riusi il lavoro dell 8 novembre senza inventare intervalli storici o confidenza personale e rispetti la richiesta di sole verifiche e piano.
+- **Impatto:** Solo documentazione; 18 test esistenti passati e due casi sintetici riprodotti su cambio metodo e salvataggio finale fallito. Nessun codice, dato personale, stato della coda o installer modificato; scelte architetturali e budget descritti come proposte da implementare e misurare.
+- **Follow-up:** Attendere la richiesta di implementazione; iniziare da P0/P1 nel piano, mantenendo aperte 130 e 131 fino ai rispettivi criteri di completamento.
+- **File coinvolti:** docs/product/piano-cronologia-stima-2026-11-09.md, DECISIONI.md
+
+## D-0486 — Completamento delle ultime due dispense inglesi mancanti
+
+- **Data:** 2026-11-09
+- **Stato:** accettata
+- **Area:** recupero-eng
+- **Decisione:** Recuperare manualmente i due tentativi inglesi rimasti, ripristinando intestazioni, prosa e diagrammi coerenti con le fonti italiane. Salvare tramite i contratti correnti di archivio solo dopo backup e verifica che app e coda siano ferme.
+- **Motivazione:** Inventario completo con 50 fonti italiane e 48 inglesi disponibili. I tentativi contenevano un residuo italiano, markup e diagrammi disallineati e un intestazione omessa. Recupero possibile senza ulteriori chiamate AI e senza modificare le fonti.
+- **Impatto:** Due recuperi verificati: 37 sezioni, 210 formule e 6 diagrammi; 24 sezioni, 11 formule e 4 diagrammi. Confronto integrale, controlli strutturali, lettore reale invisibile, ricerca e rilettura positivi. Inventario finale 50 dispense italiane e 50 inglesi leggibili, nessuna obsoleta o mancante. Audio, trascrizioni, ITA e tentativi invariati; backup personali ripristinabili. Coda assente, nessun lavoro pendente eliminato e nessuna pubblicazione avviata.
+- **Follow-up:** Al prossimo avvio Lezionify ricostruisce l indice dai file aggiornati. Nessun recupero inglese residuo nell inventario corrente; dettagli e hash solo nei report personali locali.
+- **File coinvolti:** DECISIONI.md, archivio locale personale non versionato
+
+## D-0487 — Cronologia locale e forecast duraturo
+
+- **Data:** 2026-11-09
+- **Stato:** accettata
+- **Area:** studio-cronologia
+- **Decisione:** Implementare le voci 130 e 131 con journal v2 nel main, ACK cumulativi idempotenti, completamento tramite intento duraturo e metadati, cronologia senza punteggio unico con provenienze distinte. Gruppi fase lingua metodo e versione; almeno 20 lezioni diverse, livello nominale 90 per cento, copertura futura con denominatore e intervallo Wilson indicativo.
+- **Motivazione:** Evitare duplicati, esiti da salvataggi falliti e intervalli storici inventati; mostrare segnali osservabili senza attribuire attenzione o certezza personale.
+- **Impatto:** Nessuna nuova dipendenza o chiamata AI. Proiezioni compatibili nei totali esistenti; legacy v1 conservato separatamente. Dettaglio conservato senza cancellazioni automatiche: 180 giorni sintetici, 1142 file e 8.7 MB, giornata intensa 2160 intervalli, mediana 190 ms e massimo caldo 271 ms sotto budget 300 ms. La compattazione resta disattivata dopo le misure.
+- **Follow-up:** Completare gate generale e nuovo installer; mantenere aperta la verifica personale della copertura della voce 131 fino a esiti futuri sufficienti.
+- **File coinvolti:** shared/studyHistory.ts, shared/studyForecast.ts, electron/main/studyHistory.ts, electron/main/archive.ts, src/utils/studyHistoryClient.ts, src/hooks/useStudyTracker.ts, src/hooks/useStudyEstimate.ts, src/components/StudyDayTimeline.tsx, docs/product/cronologia-stima-2026-11-09.md
+
+## D-0488 — Confini immediati degli strumenti e recupero visibile
+
+- **Data:** 2026-11-09
+- **Stato:** accettata
+- **Area:** studio-cronologia
+- **Decisione:** Registrare le transizioni DOM e di focus fra heartbeat senza scritture per tick; conservare un avviso locale duraturo quando un file dello storico viene recuperato da backup.
+- **Motivazione:** Il contatore restava corretto ma il disegno poteva estendere una fascia oltre la chiusura di uno strumento. Un recupero da copia precedente deve distinguersi da una cronologia integra.
+- **Impatto:** Osservatore confronta le esclusioni prima di accodare; test Electron richiede cinque secondi esatti di traduttore anche tornando alla lettura prima di Q&A. Replay da contatore recuperato conserva i totali senza duplicazione e mostra un avviso anche dopo riavvio. Rigenerazione finale del setup dopo questa correzione.
+- **Follow-up:** Completare i gate sul pacchetto finale e verificare commit e push remoti.
+- **File coinvolti:** src/hooks/useStudyTracker.ts, electron/main/atomicFile.ts, electron/main/studyHistory.ts, shared/studyHistory.ts, src/components/StudyDayTimeline.tsx, tests/unit/studyHistory.test.ts, tests/integration/studyHistoryScenarios.browser.tsx
+
+## D-0489 — Errore di salvataggio indipendente dalla stima
+
+- **Data:** 2026-11-09
+- **Stato:** accettata
+- **Area:** studio-ui
+- **Decisione:** Mostrare nella barra Focus un avviso con Riprova quando il journal non viene confermato, anche con la stima opzionale disattivata.
+- **Motivazione:** La cronologia e il relativo errore devono restare osservabili indipendentemente dalla preferenza sul popover del tempo restante.
+- **Impatto:** Il pulsante ritenta la coda esistente; la conferma duratura rimuove l errore. Nessuna nuova raccolta o dipendenza.
+- **Follow-up:** Includere l avviso nel setup finale verificato.
+- **File coinvolti:** src/components/LectureDrawer.tsx, docs/product/cronologia-stima-2026-11-09.md
+
+## D-0490 — Gate finale Focus ancora aperto
+
+- **Data:** 2026-11-09
+- **Stato:** accettata
+- **Area:** verifica-studio
+- **Decisione:** Conservare codice e installer verificato per integrita ma lasciare aperto il gate generale: le ultime regressioni Electron segnalano che il dettaglio della stima non si apre nel test con focus da tastiera.
+- **Motivazione:** L evento focus arriva al pulsante ma la causa non e stata isolata; precedenti esiti positivi non annullano il difetto riproducibile successivo.
+- **Impatto:** Voce 130 resta aperta e commit e push automatici restano da completare. Nessuna correzione non verificata trattenuta. Setup e runtime locali controllati; calibrazione personale della voce 131 resta futura.
+- **Follow-up:** Diagnosticare il test e il comportamento Focus reale, correggere quanto necessario, ripetere i gate e rigenerare il setup se cambia codice, quindi commit e push.
+- **File coinvolti:** docs/product/cronologia-stima-2026-11-09.md, docs/product/idee-future-2026-10-13.md, tests/integration/focusPdfScenarios.browser.tsx, src/components/StudyEstimateDetails.tsx
+
+## D-0491 — Risolto il collaudo Focus
+
+- **Data:** 2026-11-09
+- **Stato:** accettata
+- **Area:** verifica-studio
+- **Decisione:** Correggere il test Electron della stima affinche selezioni il pulsante della schermata Focus appena aperta quando sono presenti due schermate sintetiche.
+- **Motivazione:** Il test selezionava il pulsante precedente: il focus arrivava a un componente non pertinente. Il test isolato e la suite completa con riavvio passano sulla schermata corrente.
+- **Impatto:** Nessuna modifica al comportamento dell app; voce 130 completata. Resta aperta la calibrazione personale della voce 131.
+- **Follow-up:** Verificare il nuovo setup e completare commit e push autorizzati.
+- **File coinvolti:** tests/integration/focusPdfScenarios.browser.tsx, docs/product/cronologia-stima-2026-11-09.md, docs/product/idee-future-2026-10-13.md
+
+## D-0492 — Installer cronologia e stima verificato
+
+- **Data:** 2026-11-09
+- **Stato:** accettata
+- **Area:** distribuzione
+- **Decisione:** Rigenerare il setup generale dopo la correzione del collaudo Focus e completare la pubblicazione delle modifiche.
+- **Motivazione:** Consegnare il lavoro con suite Electron, verifica del pacchetto e runtime locali superati.
+- **Impatto:** Setup 299990417 byte SHA256 34a4508bd8919381f7987be024aa4c10eaf6420637efb3eb5c553441d8a2caef; verificati 378 file build, manifesto, tre backup e otto file NSIS. Ricerca locale e traduttore offline verificati.
+- **Follow-up:** Verificare commit sul remoto; copertura personale della stima ancora da misurare su lezioni future.
+- **File coinvolti:** dist/Lezionify-Setup-0.1.0.exe, docs/product/cronologia-stima-2026-11-09.md, DECISIONI.md

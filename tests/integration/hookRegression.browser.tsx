@@ -7,6 +7,7 @@ import { runMemoLogsExportScenarios } from './memoLogsExportScenarios.browser'
 import { runCourseChatScenarios } from './courseChatScenarios.browser'
 import { runStudyToolsScenarios } from './studyToolsScenarios.browser'
 import { runStudyTimingScenarios } from './studyTimingScenarios.browser'
+import { runStudyHistoryScenarios } from './studyHistoryScenarios.browser'
 import React, { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import { useQna } from '../../src/hooks/useQna'
@@ -412,6 +413,7 @@ async function run() {
   if (new URLSearchParams(location.search).has('study-tools-only')) {
     await runStudyToolsScenarios(root, api)
     await runStudyTimingScenarios(root, api)
+    await runStudyHistoryScenarios(root, api)
     require('electron').ipcRenderer.send('done', 'PASS: grouped captures and study remaining time')
     return
   }
@@ -1991,6 +1993,7 @@ flowchart TD
   require('electron').ipcRenderer.send('test-checkpoint', 'runStudyToolsScenarios')
   await runStudyToolsScenarios(root, api)
   await runStudyTimingScenarios(root, api)
+  await runStudyHistoryScenarios(root, api)
   require('electron').ipcRenderer.send('test-checkpoint', 'runMusicTranslationScenarios')
   await runMusicTranslationScenarios(root, api)
   await runInterfacePolishScenarios(root, api)

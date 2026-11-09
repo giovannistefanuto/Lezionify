@@ -3,6 +3,8 @@ import { contentFingerprint } from '../utils/readingPosition'
 import { observeParagraphs } from '../utils/paragraphObservation'
 import { STUDY_TICK_EVENT, studySurfaceBlocked } from '../utils/studyActivity'
 import { forecastSession, forecastBandLabel, discardStudyForecast } from '../utils/studyForecast'
+import { getStudyHistoryClient, preserveLegacyStudyForecast, STUDY_HISTORY_STATUS } from '../utils/studyHistoryClient'
+import type { ForecastMethod } from '../../shared/studyForecast'
 import {
   estimateStudyMinutes,
   isStudyEstimateEnabled,
@@ -87,6 +89,7 @@ export function useStudyEstimate({
   const [preference, setPreference] = useState(isStudyEstimateEnabled)
   const [label, setLabel] = useState<string | null>(null)
   const [uncertainty, setUncertainty] = useState<string | null>(null)
+  const [historyError, setHistoryError] = useState<string | null>(null)
   const recalculateRef = useRef<() => void>(() => {})
   const persistRef = useRef<() => void>(() => {})
   const pausedRef = useRef(paused)
@@ -96,8 +99,17 @@ export function useStudyEstimate({
   const fingerprint = useMemo(() => markdown ? contentFingerprint(markdown) : '', [markdown])
   const englishFingerprint = useMemo(() => english ? contentFingerprint(english) : '', [english])
   useEffect(() => {
-    if (!preference && lectureId) discardStudyForecast(lectureId)
+    if (!preference && lectureId) {
+      discardStudyForecast(lectureId)
+      void getStudyHistoryClient(lectureId)?.reset().catch(() => setHistoryError('Raccolta non salvata. Riprova.'))
+    }
   }, [preference, lectureId])
+  useEffect(() => {
+    preserveLegacyStudyForecast()
+    const update = (event: Event) => { const detail = (event as CustomEvent).detail; if (detail?.lectureId === lectureId) setHistoryError(detail.error) }
+    window.addEventListener(STUDY_HISTORY_STATUS, update)
+    return () => window.removeEventListener(STUDY_HISTORY_STATUS, update)
+  }, [lectureId])
   useEffect(() => {
     if (paused) persistRef.current()
   }, [paused])
@@ -113,6 +125,8 @@ export function useStudyEstimate({
   useEffect(() => {
     setLabel(null)
     setUncertainty(null)
+    const client = getStudyHistoryClient(lectureId)
+    client?.setSource(`${fingerprint}:${englishFingerprint}`, collecting && enabled && preference)
     if (!lectureId || !fingerprint || !enabled || !preference) return
     const key = PREFIX + lectureId
     const paragraphs = observeParagraphs(`${lectureId}:${fingerprint}:${englishFingerprint}`, language)
@@ -132,6 +146,16 @@ export function useStudyEstimate({
     } catch {
       state = newStudyEstimate(fingerprint)
     }
+    let disposed = false, lastPrediction = 0, predictionGroup = '', pendingPrediction = false
+    const uncertaintyFor = (predicted: number, position: number, method: ForecastMethod) => {
+      if (!client) { setUncertainty(forecastBandLabel(predicted, forecast.predict(predicted, position, language, method))); return }
+      if (!collecting || pendingPrediction || (Date.now() - lastPrediction < 10_000 && predictionGroup === `${method}:${Math.floor(position * 3)}`)) return
+      pendingPrediction = true; lastPrediction = Date.now(); predictionGroup = `${method}:${Math.floor(position * 3)}`
+      void client.predict({ predicted, position, method, language: language === 'en' ? 'en' : 'it' }).then(result => {
+        if (result && !disposed) { setUncertainty(forecastBandLabel(predicted, result.band)); setHistoryError(null) }
+      }).catch(() => { if (!disposed) setHistoryError('Previsione non salvata. La calibrazione è sospesa; riprova.') })
+        .finally(() => { pendingPrediction = false })
+    }
     let lastTick = Date.now(),
       lastInteraction = Date.now(),
       lastDisplay = 0,
@@ -141,7 +165,8 @@ export function useStudyEstimate({
     const history: number[] = []
     const persist = () => {
       paragraphs.save()
-      if (collecting) forecast.save()
+      if (collecting && !client) forecast.save()
+      if (client) void client.flush().catch(() => {})
       try {
         localStorage.setItem(
           key,
@@ -161,6 +186,7 @@ export function useStudyEstimate({
       state = newStudyEstimate(fingerprint, bin)
       paragraphs.reset()
       forecast.reset()
+      void client?.reset().catch(() => setHistoryError('Ricalcolo non salvato. Riprova.'))
       history.length = 0
       lastDisplay = 0
       setLabel(null)
@@ -174,6 +200,7 @@ export function useStudyEstimate({
       if (rootRef.current?.contains(target)) surface = 'reading'
       else if (target.closest('.focus-qna-column')) surface = 'qna'
       else if (target.closest('.focus-pdf-column')) surface = 'pdf'
+      client?.setContext(surface === 'pdf' ? 'slides' : surface)
     }
     const visibility = () => {
       lastTick = Date.now()
@@ -199,12 +226,12 @@ export function useStudyEstimate({
       if (surface === 'pdf' && !document.querySelector('.focus-pdf-column')?.getBoundingClientRect().height) surface = 'reading'
       const visibleRange = studyVisibleRange(root)
       state = sampleVisibleStudy(state, delta, surface === 'reading' ? visibleRange : null)
-      if (collecting) forecast.tick(delta, surface === 'reading' && visibleRange ? visibleRange.end / STUDY_BINS : null)
+      if (collecting && !client) forecast.tick(delta, surface === 'reading' && visibleRange ? visibleRange.end / STUDY_BINS : null)
+      client?.setContext(surface === 'pdf' ? 'slides' : surface, surface === 'reading' && visibleRange ? visibleRange.end / STUDY_BINS : undefined)
       const paragraphLabel = surface !== 'pdf' ? paragraphs.tick(root, delta, surface, surface === 'qna' ? anchorRef.current : '') : null
       const prediction = paragraphs.prediction()
       if (prediction && paragraphLabel) {
-        const band = forecast.predict(prediction.remaining, prediction.position, language, 'paragraph-v2')
-        setUncertainty(forecastBandLabel(prediction.remaining, band))
+        uncertaintyFor(prediction.remaining, prediction.position, 'paragraph-v2')
       }
       if (paragraphLabel) { setLabel(paragraphLabel); lastDisplay = now }
       if (now - lastSave >= 10_000) {
@@ -225,7 +252,7 @@ export function useStudyEstimate({
         ]
         setLabel(studyEstimateLabel(median))
         const position = visibleRange ? visibleRange.start / STUDY_BINS : 0
-        setUncertainty(forecastBandLabel(median * 60, forecast.predict(median * 60, position, language, 'viewport-v2')))
+        uncertaintyFor(median * 60, position, 'viewport-v2')
         lastDisplay = now
       }
     }
@@ -240,6 +267,7 @@ export function useStudyEstimate({
     if (managedActivity) document.addEventListener(STUDY_TICK_EVENT, credited)
     const timer = managedActivity ? null : setInterval(tick, 1000)
     return () => {
+      disposed = true
       if (timer !== null) clearInterval(timer)
       document.removeEventListener(STUDY_TICK_EVENT, credited)
       persist()
@@ -264,6 +292,7 @@ export function useStudyEstimate({
   return {
     label: enabled && !paused && preference ? label : null,
     uncertainty,
+    historyError,
     preference,
     recalculate: () => recalculateRef.current(),
     persist: () => persistRef.current()

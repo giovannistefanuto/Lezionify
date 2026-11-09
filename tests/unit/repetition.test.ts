@@ -82,7 +82,7 @@ describe('RIPETERE archivio e pipeline', () => {
     await service.setReference(reference)
     const id = await service.startLatest()
     await settle()
-    expect(dependencies.recordStudy).toHaveBeenCalledWith(id, expect.any(String), 3)
+    expect(dependencies.recordStudy).toHaveBeenCalledWith(id, expect.any(String), 3, false)
     expect(await service.studyInfo(id)).toEqual({ eligible: true, completed: true })
     const reopened = new RepetitionService(root, dependencies)
     expect(await reopened.studyInfo(id)).toEqual({ eligible: true, completed: true })

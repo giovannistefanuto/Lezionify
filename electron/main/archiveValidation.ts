@@ -270,9 +270,14 @@ export function validateLectureUpdate(
   value: unknown
 ): asserts value is UpdateLecturePayload {
   if (!isRecord(value)) throw new Error('Aggiornamento lezione non valido.')
-  const allowed = new Set(['title', 'courseCode', 'recordedAt', 'studyStatus', 'isLaboratory'])
+  const allowed = new Set(['title', 'courseCode', 'recordedAt', 'studyStatus', 'isLaboratory', 'studyCheckpoint'])
   if (Object.keys(value).some((key) => !allowed.has(key))) {
     throw new Error('Aggiornamento lezione non valido.')
+  }
+  if (value.studyCheckpoint !== undefined) {
+    const c = value.studyCheckpoint
+    if (!isRecord(c) || typeof c.sessionId !== 'string' || !c.sessionId || c.sessionId.length > 200 ||
+      !Number.isSafeInteger(c.sequence) || (c.sequence as number) < 0 || (c.failed !== undefined && typeof c.failed !== 'boolean')) throw new Error('Conferma dello studio non valida.')
   }
   if (
     (value.isLaboratory !== undefined && typeof value.isLaboratory !== 'boolean') ||
