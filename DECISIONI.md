@@ -5447,3 +5447,14 @@ Non modificare manualmente la sezione `Registro`: aggiungi le nuove decisioni es
 - **Impatto:** Setup 299990784 byte SHA256 e04acd093f4d2227e2c4d1cfa5f989ef9f5f0452b456511e99222436562541bf; verificati 378 file build, nuova chiave, manifesto, tre backup e otto file NSIS. Passati 837 unit, typecheck, lint, 24 Python, 41 Node, Electron con riavvio, PDF reali, RAG locale e traduttore WASM.
 - **Follow-up:** Verificare il commit finale sul remoto. Installare il setup con app chiusa; nessuna installazione o release automatica.
 - **File coinvolti:** dist/Lezionify-Setup-0.1.0.exe, docs/quality/piantina-focus-2026-11-10.md, DECISIONI.md
+
+## D-0495 — Azzeramento della coda su richiesta
+
+- **Data:** 2026-11-10
+- **Stato:** accettata
+- **Area:** coda-archivio
+- **Decisione:** Azzerare lo stato della pipeline personale in pausa dopo backup locale verificato, conservando i checkpoint delle singole lezioni.
+- **Motivazione:** Consentire la ricostruzione del piano sull intero archivio alla prossima elaborazione richiesta dall utente.
+- **Impatto:** Rimossa una coda con tre attivita e nessuna importazione accodata; fonti, derivazioni e checkpoint conservati. Nessuna chiamata AI avviata.
+- **Follow-up:** Avviare Elabora archivio nell app per ricostruire il piano e iniziare le fasi mancanti.
+- **File coinvolti:** DECISIONI.md, archivio locale personale non versionato
