@@ -699,7 +699,7 @@ export function LectureDrawer({
                 onClick={() => { void getStudyHistoryClient(selectedLecture.id)?.flush().catch(() => {}) }}>
                 <span role="alert">Tempo non salvato · Riprova</span>
               </button>}
-              {studyEstimate.preference && <StudyEstimateDetails key={selectedLecture.id}
+              {studyEstimate.preference && <StudyEstimateDetails key={`study-estimate:${selectedLecture.id}`}
                 label={studyEstimate.label} uncertainty={studyEstimate.uncertainty}
                 paused={isPaused || showFocusLock || pauseTimerActive} error={studyEstimate.historyError} onRecalculate={studyEstimate.recalculate} />}
               <FocusReminders />

@@ -291,6 +291,26 @@ async function runDrawerAttachmentScenario(root: Root, api: any, source: any,
   const lecture = { id: 'attachment-drawer', courseCode: 'TEST', studyStatus: 'in-corso', sourceAudioFileName: 'synthetic.mp3' }
   const keys = ['loadQnaThreads', 'getReminders', 'getHighlights', 'getLectureWordCounts', 'saveQnaImage', 'readQnaImage', 'saveQnaThreads', 'generateQnaResponse']
   const previous = Object.fromEntries(keys.map(key => [key, api[key]]))
+  const originalNow = Date.now, originalInterval = window.setInterval, originalClear = window.clearInterval, originalFocus = document.hasFocus
+  let now = Date.now(), timerId = -1
+  const heartbeatTimers = new Map<number, () => void>()
+  Date.now = () => now
+  document.hasFocus = () => true
+  window.setInterval = ((callback: TimerHandler, delay?: number, ...args: unknown[]) => {
+    if (delay !== 1000 || typeof callback !== 'function') return originalInterval(callback, delay, ...args)
+    const id = timerId--
+    heartbeatTimers.set(id, () => callback(...args))
+    return id
+  }) as typeof window.setInterval
+  window.clearInterval = id => { if (!heartbeatTimers.delete(id)) originalClear(id) }
+  const assertSingleEstimate = () => check(document.querySelectorAll('.study-estimate-trigger').length === 1,
+    `Focus duplicated the estimate icon: ${document.querySelectorAll('.study-estimate-trigger').length} plants`)
+  const tick = async (count: number) => {
+    for (let i = 0; i < count; i++) {
+      await act(async () => { now += 1000; for (const callback of [...heartbeatTimers.values()]) callback() })
+      assertSingleEstimate()
+    }
+  }
   const thread = { id: 'attachment-thread', quote: 'Passaggio sintetico', anchorString: '', contextHeading: null, createdAt: '', updatedAt: '', messages: [] }
   const noop = () => {}
   api.loadQnaThreads = async () => [thread]
@@ -325,14 +345,20 @@ async function runDrawerAttachmentScenario(root: Root, api: any, source: any,
     await until(() => Boolean(document.querySelector('[title="Modalità studio immersiva"]')), 'Drawer not ready')
     await act(async () => document.querySelector<HTMLButtonElement>('[title="Modalità studio immersiva"]')!.click())
     await until(() => Boolean(document.querySelector('.focus-pdf-page-count')), 'Drawer PDF did not load')
-    const estimateTrigger = [...document.querySelectorAll<HTMLButtonElement>('.study-estimate-trigger')].at(-1)!
+    assertSingleEstimate()
+    await tick(65)
+    check(document.querySelector('.focus-timer-subtle')?.textContent?.includes('1:05'), 'Regression must exercise the real study heartbeat')
+    const estimateTrigger = document.querySelector<HTMLButtonElement>('.study-estimate-trigger')!
     check(estimateTrigger && !document.querySelector('.study-estimate-panel'), 'Focus must show only the discrete estimate icon initially')
     await act(async () => estimateTrigger.focus())
     check(document.querySelector('.study-estimate-panel'), 'Estimate detail not available by keyboard in real Focus')
+    await tick(3)
+    check(document.querySelector('.study-estimate-trigger') === estimateTrigger && document.querySelector('.study-estimate-panel'), 'Heartbeat remounted the estimate or closed its detail')
     await act(async () => estimateTrigger.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })))
     check(document.querySelector('.focus-mode-overlay') && !document.querySelector('.study-estimate-panel') && !document.querySelector('.focus-lock-overlay'), 'Closing estimate with Escape exited Focus or activated Focus Lock')
     await act(async () => document.querySelector<HTMLButtonElement>('[aria-label="Apri domande Q&A"]')!.click())
     await until(() => Boolean(document.querySelector('.qna-input-row textarea')), 'Drawer Q&A did not load')
+    await tick(3)
     const attachButton = document.querySelector<HTMLButtonElement>('[aria-label="Allega slide dal PDF"]')
     check(attachButton, 'Q&A has no explicit attachment entry point')
     await act(async () => attachButton!.click())
@@ -357,6 +383,8 @@ async function runDrawerAttachmentScenario(root: Root, api: any, source: any,
     await require('electron').ipcRenderer.invoke('capture-video-import', 'focus-pdf-qna')
   } finally {
     await act(async () => root.render(null))
+    Date.now = originalNow; window.setInterval = originalInterval; window.clearInterval = originalClear; document.hasFocus = originalFocus
     Object.assign(api, previous)
+    check(!document.querySelector('.study-estimate-trigger'), 'Unmount left orphan estimate icons')
   }
 }

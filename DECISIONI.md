@@ -5425,3 +5425,25 @@ Non modificare manualmente la sezione `Registro`: aggiungi le nuove decisioni es
 - **Impatto:** Setup 299990417 byte SHA256 34a4508bd8919381f7987be024aa4c10eaf6420637efb3eb5c553441d8a2caef; verificati 378 file build, manifesto, tre backup e otto file NSIS. Ricerca locale e traduttore offline verificati.
 - **Follow-up:** Verificare commit sul remoto; copertura personale della stima ancora da misurare su lezioni future.
 - **File coinvolti:** dist/Lezionify-Setup-0.1.0.exe, docs/product/cronologia-stima-2026-11-09.md, DECISIONI.md
+
+## D-0493 — Chiave univoca per la piantina Focus
+
+- **Data:** 2026-11-10
+- **Stato:** accettata
+- **Area:** studio-ui
+- **Decisione:** Assegnare a StudyEstimateDetails una chiave distinta da SectionRegenerator e verificare una sola icona nel vero LectureDrawer a ogni heartbeat.
+- **Motivazione:** I due fratelli condividevano la chiave della lezione: la riconciliazione React accumulava copie della piantina. Il precedente selettore dell ultimo pulsante non controllava questa duplicazione.
+- **Impatto:** Riproduzione Electron fallita con due piantine prima della correzione e passata dopo: 71 tick, cronometro reale, dettaglio persistente, Q&A e smontaggio senza residui. Nessuna dipendenza o modifica ai dati personali.
+- **Follow-up:** Completare gate generale, rigenerare e verificare il setup richiesto, quindi commit e push automatici.
+- **File coinvolti:** src/components/LectureDrawer.tsx, tests/integration/focusPdfScenarios.browser.tsx, docs/quality/piantina-focus-2026-11-10.md, DECISIONI.md
+
+## D-0494 — Setup con piantina Focus unica verificato
+
+- **Data:** 2026-11-10
+- **Stato:** accettata
+- **Area:** distribuzione
+- **Decisione:** Rigenerare il setup generale Windows con D-0493 dopo il gate completo, verificare contenuto e runtime, quindi pubblicare sorgenti test e documentazione secondo AGENTS.
+- **Motivazione:** Consegnare la correzione della duplicazione riprodotta nel vero drawer e assicurare che sia inclusa nel setup.
+- **Impatto:** Setup 299990784 byte SHA256 e04acd093f4d2227e2c4d1cfa5f989ef9f5f0452b456511e99222436562541bf; verificati 378 file build, nuova chiave, manifesto, tre backup e otto file NSIS. Passati 837 unit, typecheck, lint, 24 Python, 41 Node, Electron con riavvio, PDF reali, RAG locale e traduttore WASM.
+- **Follow-up:** Verificare il commit finale sul remoto. Installare il setup con app chiusa; nessuna installazione o release automatica.
+- **File coinvolti:** dist/Lezionify-Setup-0.1.0.exe, docs/quality/piantina-focus-2026-11-10.md, DECISIONI.md
