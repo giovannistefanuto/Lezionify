@@ -5480,3 +5480,58 @@ Non modificare manualmente la sezione `Registro`: aggiungi le nuove decisioni es
 - **Impatto:** Inventario finale 53 inglesi leggibili su 53 lezioni, nessuna mancante o obsoleta. Verificate 42 e 55 sezioni, 42 e 57 titoli, 120 e 281 elementi matematici, 10 e 7 diagrammi senza errori. Cinque diagrammi conservano il contenuto originale secondo il fallback corrente. Fonti e tentativi invariati, ricerca e rilettura positive, coda gia assente. Due push senza errori, remoto finale verificato.
 - **Follow-up:** Indice ricostruito automaticamente al prossimo avvio; audit delle traduzioni preesistenti limitato a presenza, leggibilita e metadati.
 - **File coinvolti:** DECISIONI.md, archivio personale locale non versionato
+
+## D-0498 — Cinque richieste future per archivio, interfaccia e suoni
+
+- **Data:** 2026-11-11
+- **Stato:** accettata
+- **Area:** pianificazione-prodotto
+- **Decisione:** Registrare le voci 132-136 e inserirle in fondo alla coda nell ordine ricevuto, senza cambiare le priorita precedenti.
+- **Motivazione:** Conservare le richieste dell utente come attivita distinte da definire e realizzare successivamente.
+- **Impatto:** La coda comprende PDF di esami nel RAG, revisione pulsanti, sezione Altre cose, visibilita Musica e nuovi suoni; nessuna funzione e stata implementata.
+- **Follow-up:** Approfondire e collaudare ciascuna voce quando verra avviata, coordinando le sovrapposizioni con la revisione UI.
+- **File coinvolti:** docs/product/idee-future-2026-10-13.md, DECISIONI.md
+
+## D-0499 — Esiti personali e rinvio della ripresa
+
+- **Data:** 2026-11-11
+- **Stato:** accettata
+- **Area:** collaudi-personali
+- **Decisione:** Registrare le prove riferite dall utente; chiudere la verifica di presenza ENG e il pilota Spotify limitato alla prova rapida accettata. Conservare aperti i limiti tecnici del traduttore e le altre attivita.
+- **Motivazione:** Le dispense sono tutte presenti e Spotify sembra funzionare nella prova personale; l utente approva i suoni attuali e rinvia ulteriori lavori.
+- **Impatto:** 82 attivita: 57 concluse, 15 aperte operative, 8 archiviate, 2 ritirate. Salvati esempi del traduttore e limiti delle evidenze. Nessuna modifica applicativa o nuova chiamata AI.
+- **Follow-up:** Riprendere su richiesta; verificare terminologia RL e input originali del traduttore. Nuovi suoni e transizioni residue restano aperti.
+- **File coinvolti:** docs/product/idee-future-2026-10-13.md, DECISIONI.md
+
+## D-0500 — Sezioni intere con segnaposto e riparazione limitata
+
+- **Data:** 2026-11-11
+- **Stato:** accettata
+- **Area:** pipeline-eng
+- **Decisione:** Sostituire la traduzione di frammenti di prosa con sezioni intere e segnaposto verificati per formule e codice. Usare gruppi seriali con contesto completo, schema stringa per sezione e una sola passata correttiva sulle sezioni invalide, mantenendo il controllo globale prima del salvataggio.
+- **Motivazione:** Riprodotti 10 rifiuti su 13 tentativi conservati. Il confronto con la versione corretta ha scartato anche un formato a liste strutturalmente valido ma semanticamente disallineato. Le sezioni continue eliminano la ricomposizione di prosa indipendente fra formule.
+- **Impatto:** Avanzamento per gruppi, risposte grezze aggregate e riparazioni separate, cancellazione coordinata, nessuna dipendenza. Ricostruzione su 53 dispense e 8043 occorrenze protette; 855 unit e build passati. Prova reale mirata positiva; provider con 503 e timeout, nessun nuovo successo globale dichiarato e nessun installer rigenerato.
+- **Follow-up:** Voce 122 aperta: completare il confronto del percorso finale su documenti interi con provider disponibile. Valutare consumo del contesto ripetuto e ripresa dei gruppi fra job. Fonti e versioni inglesi valide conservate.
+- **File coinvolti:** electron/main/ai/translationDocument.ts, electron/main/gemini.ts, electron/main/archive.ts, electron/main/fileStorage.ts, tests/unit/translationDocument.test.ts, tests/unit/translationPlan.test.ts, tests/unit/translationIntegrity.test.ts, tests/unit/geminiPhaseB.test.ts, tests/unit/archive.test.ts, tools/diagnose_eng_replay.cjs, docs/quality/pipeline-eng-2026-11-11.md, docs/product/traduzione-dispense.md, docs/product/idee-future-2026-10-13.md, STRUTTURA_PROGETTO.md
+
+## D-0501 — Scatola esami e controlli di studio entro timebox
+
+- **Data:** 2026-11-11
+- **Stato:** accettata
+- **Area:** studio-materiali-ui-audio
+- **Decisione:** Implementare le posizioni 78, 79, 81 e 82: PDF esami copiati e deduplicati per corso nel RAG, controlli e contrasto coerenti, accessi Musica evidenti e quattro profili audio aggiuntivi con livellamento locale e licenze attribuite.
+- **Motivazione:** Riusare servizi PDF, ricerca e player esistenti, conservando fonti e chiamate AI esplicite. L utente autorizza lavoro autonomo fino alle 17:45 e vieta installer se scadenza o controlli incompleti.
+- **Impatto:** Copie PDF locali e metadati collection exams; download audio verificati, nessuna dipendenza. 859 unit, 24 Python, 41 Node e collaudi mirati passati; suite Electron finale ancora da confermare. Il runner consente timeout esplicito fino a 300 secondi con default invariato.
+- **Follow-up:** Confermare suite completa e controllo visuale finale prima di chiudere le quattro voci. Installer soltanto se tutto stabile prima delle 17:45; altrimenti fermarsi con report, conservando il setup precedente.
+- **File coinvolti:** shared/courseRag.ts, electron/main/courseRag.ts, electron/main/courseRagIndex.ts, electron/main/courseRagQuery.ts, electron/main/index.ts, electron/preload/index.ts, src/components/CourseChat.tsx, src/components/MusicButton.tsx, src/components/Sidebar.tsx, src/components/Dashboard.tsx, src/styles.css, shared/ambientSounds.ts, src/utils/ambientLeveling.ts, src/components/AmbientSoundContext.tsx, src/components/AmbientSoundPanel.tsx, tests, tools/run_hook_regressions.cjs, STRUTTURA_PROGETTO.md, docs/product/esami-pulsanti-suoni-2026-11-11.md
+
+## D-0502 — Installer esami controlli suoni ed ENG verificato
+
+- **Data:** 2026-11-11
+- **Stato:** accettata
+- **Area:** distribuzione
+- **Decisione:** Rigenerare il setup generale dopo la proroga esplicita alle 17:55, verificare il contenuto effettivo e pubblicare tutte le modifiche pubblicabili secondo AGENTS.
+- **Motivazione:** Le quattro attività richieste sono implementate e collaudate. Il candidato che riusava un archivio cache incompleto è stato rifiutato; la rigenerazione completa corrisponde alla build verificata.
+- **Impatto:** Setup 299995415 byte, SHA256 62f84dc4f91ed16d382272544c5d075e5d9af70c6d840a51739b80ee9d6ccb52. Verificati 378 file build, otto componenti NSIS, manifesto e tre backup. Passati 859 unit, 24 Python, 41 Node, Electron completo con riavvio, PDF reali, runtime RAG e traduttore WASM. Nessuna installazione o release automatica.
+- **Follow-up:** Verificare commit remoto prima di concludere. Installare il setup con app chiusa. Collaudo online ENG completo ancora aperto per i limiti del provider documentati in D-0500.
+- **File coinvolti:** dist/Lezionify-Setup-0.1.0.exe, docs/product/esami-pulsanti-suoni-2026-11-11.md, STRUTTURA_PROGETTO.md, docs/product/idee-future-2026-10-13.md, docs/quality/pipeline-eng-2026-11-11.md, DECISIONI.md

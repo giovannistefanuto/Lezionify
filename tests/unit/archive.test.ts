@@ -1730,6 +1730,7 @@ describe('Bilingual ITA/ENG Lectures & Batch Translation', () => {
     const failed = new GeminiError({ category: 'invalid_output', isRetryable: false, isDailyQuota: false, sanitizedMessage: 'Traduzione non salvata.' })
     vi.mocked(mockGeminiService.translateToEnglish).mockImplementationOnce(async params => {
       await params.onAttempt?.('{"first":1}', '# First attempt')
+      await params.onAttempt?.('{"repair":1}', '# Partial repair', true)
       throw failed
     }).mockImplementationOnce(async params => {
       await params.onAttempt?.('malformed second response', null)
@@ -1738,10 +1739,16 @@ describe('Bilingual ITA/ENG Lectures & Batch Translation', () => {
     expect(await service.translateLectureNotes(lecture.id)).toMatchObject({ success: false, error: expect.stringContaining('Tentativo inglese non validato') })
     const base = join(testArchiveDir, 'markdown', `${lecture.id}_en_tentativo`)
     expect(await readFile(`${base}.md`, 'utf8')).toContain('# First attempt')
+    expect(await readFile(`${base}.txt`, 'utf8')).toBe('{"first":1}')
+    const repairBase = join(testArchiveDir, 'markdown', `${lecture.id}_en_riparazione_tentativo`)
+    expect(await readFile(`${repairBase}.txt`, 'utf8')).toBe('{"repair":1}')
+    expect(await readFile(`${repairBase}.md`, 'utf8')).toContain('# Partial repair')
     expect(await service.readMarkdownEn(lecture.id)).toBe(first.markdown)
     await service.translateLectureNotes(lecture.id)
     expect(await readFile(`${base}.txt`, 'utf8')).toBe('malformed second response')
     expect(await readFile(`${base}.md`, 'utf8')).toContain('Risposta non ricostruibile')
+    await expect(readFile(`${repairBase}.txt`, 'utf8')).rejects.toMatchObject({ code: 'ENOENT' })
+    await expect(readFile(`${repairBase}.md`, 'utf8')).rejects.toMatchObject({ code: 'ENOENT' })
     expect(await service.readMarkdown(lecture.id)).toBe(italian)
     expect(await service.readMarkdownEn(lecture.id)).toBe(first.markdown)
   })

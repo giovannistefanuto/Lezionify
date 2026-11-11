@@ -1,4 +1,4 @@
-export type AmbientSoundCategory = 'noise' | 'nature'
+export type AmbientSoundCategory = 'noise' | 'nature' | 'ambience'
 export type AmbientSoundFormat = 'mp3' | 'ogg'
 
 export interface AmbientSoundDefinition {
@@ -14,6 +14,7 @@ export interface AmbientSoundDefinition {
   license: string
   licenseUrl: string
   attribution: string
+  leveled?: boolean
 }
 
 export interface AmbientSoundItemStatus extends AmbientSoundDefinition {
@@ -256,5 +257,37 @@ export const AMBIENT_SOUNDS: readonly AmbientSoundDefinition[] = [
     license: 'CC0 1.0',
     licenseUrl: 'https://creativecommons.org/publicdomain/zero/1.0/',
     attribution: 'inchadney (CC0 1.0); selezione e loop AmbientSounds'
+  },
+  {
+    id: 'waves-full', title: 'Onde avvolgenti', category: 'nature', format: 'ogg', leveled: true,
+    bytes: 2765739, sha256: '20e1aec7c7542f71645275871650881ea33bc92bd9816b243ea920bb1daa51a0',
+    url: 'https://raw.githubusercontent.com/rafaelmardojai/blanket/775f2a767230a9681850d1b1e085be58656f1382/data/resources/sounds/waves.ogg',
+    author: 'Luftrum; adattamento Porrumentzio (Blanket)', sourceUrl: 'https://freesound.org/people/Luftrum/sounds/48412/',
+    license: 'CC BY 4.0', licenseUrl: 'https://creativecommons.org/licenses/by/4.0/',
+    attribution: 'Luftrum (Freesound #48412, CC BY 4.0); Blanket. Variante Lezionify con livellamento locale del volume.'
+  },
+  {
+    id: 'boat', title: 'Motore della barca', category: 'ambience', format: 'ogg', leveled: true,
+    bytes: 635043, sha256: 'e6f3565750e2d3dd0dcb5bd3f826c10e302df4d1d044dd177af0707abe027dea',
+    url: 'https://raw.githubusercontent.com/rafaelmardojai/blanket/775f2a767230a9681850d1b1e085be58656f1382/data/resources/sounds/boat.ogg',
+    author: 'Falcet; adattamento Porrumentzio (Blanket)', sourceUrl: 'https://freesound.org/people/Falcet/sounds/439365/',
+    license: 'CC0 1.0', licenseUrl: 'https://creativecommons.org/publicdomain/zero/1.0/',
+    attribution: 'Falcet (Freesound #439365, CC0); Blanket. Livellamento locale Lezionify.'
+  },
+  {
+    id: 'train', title: 'Viaggio in treno', category: 'ambience', format: 'ogg', leveled: true,
+    bytes: 126212, sha256: 'b749ecf8f04842075c061e2f5572c85b2827d9ecc0670476f3339a9288bb4d71',
+    url: 'https://raw.githubusercontent.com/rafaelmardojai/blanket/775f2a767230a9681850d1b1e085be58656f1382/data/resources/sounds/train.ogg',
+    author: 'SDLx', sourceUrl: 'https://freesound.org/people/SDLx/sounds/259988/',
+    license: 'CC BY 3.0', licenseUrl: 'https://creativecommons.org/licenses/by/3.0/',
+    attribution: 'SDLx (Freesound #259988, CC BY 3.0); Blanket. Livellamento locale Lezionify.'
+  },
+  {
+    id: 'coffee-shop', title: 'Brusio del caffè', category: 'ambience', format: 'ogg', leveled: true,
+    bytes: 265612, sha256: '397b5d95f06df69ba2989147cf9c37a417b2dc5950c1a16fbe6be6fa372d25ef',
+    url: 'https://raw.githubusercontent.com/rafaelmardojai/blanket/775f2a767230a9681850d1b1e085be58656f1382/data/resources/sounds/coffee-shop.ogg',
+    author: 'stephan', sourceUrl: 'https://soundbible.com/1664-Restaurant-Ambiance.html',
+    license: 'Public Domain', licenseUrl: 'https://soundbible.com/1664-Restaurant-Ambiance.html',
+    attribution: 'stephan (Public Domain); Blanket. Livellamento locale Lezionify.'
   }
 ]

@@ -42,6 +42,7 @@ export function planCourseQuery(question: string, previousQuestions: string[] = 
 
 /** Answer obligations for realistic study questions; these are policies, not course facts. */
 export const courseStudyPolicy = [
+  'Le fonti con titolo Esame sono prove aggiunte dall’utente: puoi usarle per stabilire che un argomento compare in quella prova, citando documento e pagina. La mancata corrispondenza non dimostra che il docente non abbia mai chiesto un argomento; considera copertura e pagine non leggibili.',
   'Esame e studio: distingui indicazioni esplicite del docente da consigli tuoi. Una dimostrazione svolta non implica che sia obbligatoria, e un esercizio visto non implica che sia incluso nell esame. Cita gli originali pertinenti e la data; se manca una disposizione esplicita, dichiara che non puoi confermare obblighi o esclusioni.',
   'Esempi e copertura: per casi pratici sparsi o domande su dove il docente abbia parlato di un tema, cerca lezioni diverse e presenta per ciascuna caso, ruolo e citazione. La selezione recuperata non è un elenco esaustivo; non trovato nelle fonti consultate non significa mai trattato.',
   'Spiegazione mirata: riprendi il concetto chiesto e affronta separatamente i punti non capiti, indicando ipotesi e passaggi; non sostituirlo con un tema affine.',

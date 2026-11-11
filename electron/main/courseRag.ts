@@ -1,4 +1,4 @@
-import { mkdir, readFile, readdir, realpath, stat, unlink } from 'node:fs/promises'
+import { mkdir, readFile, readdir, realpath, stat, unlink, writeFile, rename } from 'node:fs/promises'
 import { basename, extname, join, relative, isAbsolute, sep } from 'node:path'
 import { randomUUID } from 'node:crypto'
 import { atomicWrite, readRecoverable } from './atomicFile'
@@ -36,6 +36,7 @@ interface StoredCourse {
   enabled: boolean
   folder?: string
   files: string[]
+  examFiles?: Record<string, { title: string }>
   sources: IndexedCourseSource[]
   threads: CourseThread[]
   lastSync?: string
@@ -126,6 +127,7 @@ export class CourseRagService {
       )
         throw new Error()
       if (value.files.some(file => typeof file !== 'string')) throw new Error()
+      if (value.examFiles && (typeof value.examFiles !== 'object' || Array.isArray(value.examFiles) || Object.entries(value.examFiles).some(([file, meta]) => !value.files.includes(file) || !meta || typeof meta.title !== 'string' || !meta.title || meta.title.length > 1000))) throw new Error()
       const validSources = (sources: IndexedCourseSource[]) => sources.every(source => source && typeof source.id === 'string' && typeof source.version === 'string' && typeof source.title === 'string' && ['transcript', 'notes', 'course', 'pdf', 'document'].includes(source.kind) && ['ready', 'partial', 'error', 'missing', 'indexing'].includes(source.status) && Array.isArray(source.passages) && source.passages.every(passage => passage && typeof passage.id === 'string' && passage.sourceId === source.id && typeof passage.text === 'string' && Number.isInteger(passage.offset) && passage.offset >= 0))
       const validCitation = (citation: CourseCitation) => citation && citation.source && citation.passage && validSources([{ ...citation.source, passages: [citation.passage] }])
       const numbers = (items: unknown) => Array.isArray(items) && items.every(item => Number.isInteger(item) && item > 0 && item <= 1000)
@@ -381,6 +383,51 @@ export class CourseRagService {
     this.startSync(course)
     return this.state(course)
   }
+  async addExams(course: string, files: string[]) {
+    validateCourse(course)
+    const selected: { path: string; title: string }[] = []
+    const directory = join(this.directory, 'exams', ragHash(course))
+    for (const file of files) {
+      if (typeof file !== 'string' || extname(file).toLowerCase() !== '.pdf') throw new Error('Scegli soltanto PDF degli esami.')
+      const original = await realpath(file)
+      const info = await stat(original)
+      if (!info.isFile() || info.size > 128_000_000 || info.size < 5) throw new Error('PDF non valido o troppo grande (massimo 128 MB).')
+      const bytes = await readFile(original, { signal: AbortSignal.timeout(60_000) })
+      if (!bytes.subarray(0, 1024).includes(Buffer.from('%PDF-'))) throw new Error('Il file selezionato non è un PDF.')
+      const hash = ragHash(bytes), target = join(directory, hash + '.pdf')
+      await mkdir(directory, { recursive: true })
+      try {
+        if (ragHash(await readFile(target)) !== hash) throw new Error('La copia locale del PDF non supera il controllo di integrità.')
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error
+        const temporary = target + '.' + randomUUID() + '.tmp'
+        try { await writeFile(temporary, bytes, { flag: 'wx' }); await rename(temporary, target) }
+        finally { await unlink(temporary).catch(() => {}) }
+      }
+      selected.push({ path: target, title: basename(original) })
+    }
+    await this.update(course, value => {
+      const all = [...new Set([...value.files, ...selected.map(item => item.path)])]
+      if (all.length > 2000) throw new Error('Limite di 2000 documenti del corso raggiunto.')
+      value.files = all; value.examFiles ??= {}
+      for (const item of selected) value.examFiles[item.path] ??= { title: item.title }
+    })
+    this.startSync(course)
+    return this.state(course)
+  }
+  async removeExam(course: string, sourceId: string) {
+    validateCourse(course); validId(sourceId)
+    await this.waitForSync(course)
+    await this.update(course, value => {
+      const source = value.sources.find(item => item.id === sourceId && item.collection === 'exams')
+      if (!source?.path || !value.examFiles?.[source.path]) throw new Error('Esame non disponibile nella scatola del corso.')
+      value.files = value.files.filter(file => file !== source.path)
+      delete value.examFiles[source.path]
+      value.sources = value.sources.filter(item => item.id !== sourceId)
+    })
+    this.startSync(course)
+    return this.state(course)
+  }
   startSync(course: string, force = false) {
     validateCourse(course)
     if (this.syncing.has(course)) return
@@ -459,7 +506,8 @@ export class CourseRagService {
       const previous = old.get(id)
       const base = {
         id,
-        title: basename(path),
+        title: initial.examFiles?.[path] ? `Esame · ${initial.examFiles[path].title}` : basename(path),
+        collection: initial.examFiles?.[path] ? 'exams' as const : undefined,
         kind:
           extname(path).toLowerCase() === '.pdf'
             ? ('pdf' as const)
@@ -643,7 +691,7 @@ export class CourseRagService {
         'PDF modificato o non disponibile. Aggiorna le fonti e riprova.'
       )
     }
-    return { path: source.path, version: source.version }
+    return { path: source.path, version: source.version, title: source.title }
   }
   async pdfPath(course: string, sourceId: string) {
     return (await this.pdfGrant(course, sourceId)).path
@@ -805,6 +853,7 @@ export class CourseRagService {
               id: source.id,
               title: source.title.slice(0, 120),
               kind: source.kind,
+              collection: source.collection,
               lectureOrdinal: source.lectureOrdinal,
               chronologicalOrdinal: source.chronologicalOrdinal,
               numbering: source.numbering,

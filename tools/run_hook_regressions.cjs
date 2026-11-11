@@ -6,6 +6,7 @@ const { spawnSync } = require('node:child_process')
 const { buildSync } = require('esbuild')
 const directory = mkdtempSync(join(tmpdir(), 'lezionify-hooks-'))
 const screenshotDirectory = process.env.LEZIONIFY_VIDEO_SCREENSHOT_DIR || null
+const hookTimeoutMs = Math.max(30000, Math.min(300000, Number(process.env.LEZIONIFY_HOOK_TIMEOUT_MS) || 180000))
 const october28Only = process.argv.includes('--october28-only')
 const repetitionOnly = process.argv.includes('--repetition-only')
 const october22Only = process.argv.includes('--october22-only')
@@ -146,7 +147,7 @@ try {
       });
       win.loadFile(${JSON.stringify(join(directory, 'index.html'))}, process.argv.includes('--resume-reading') ? { query: { resumeReading: '1' } } : ${JSON.stringify(october28Only ? { query: { 'october28-only': '1' } } : repetitionOnly ? { query: { 'repetition-only': '1' } } : october22Only ? { query: { 'october22-only': '1' } } : interfacePolishOnly ? { query: { 'interface-polish-only': '1' } } : todayOnly ? { query: { 'today-only': '1' } } : memoLogsExportOnly ? { query: { 'memo-logs-export-only': '1' } } : lectureListOnly ? { query: { 'lecture-list-only': '1' } } : courseRagOnly ? { query: { 'course-rag-only': '1' } } : studyToolsOnly ? { query: { 'study-tools-only': '1' } } : languageShortcutOnly ? { query: { languageShortcutOnly: '1' } } : focusPdfOnly ? { query: { focusPdfOnly: '1' } } : musicOnly ? { query: { musicOnly: '1' } } : mathRenderingOnly ? { query: { mathRenderingOnly: '1' } } : dictionaryOnly ? { query: { dictionaryOnly: '1' } } : studyPauseOnly ? { query: { studyPauseOnly: '1' } } : readingPositionOnly ? { query: { readingPositionOnly: '1' } } : readingRestartOnly ? { query: { readingRestartOnly: '1' } } : {})});
     });
-    setTimeout(() => { console.error('Hook tests timed out'); app.exit(1) }, 180000);
+    setTimeout(() => { console.error('Hook tests timed out'); app.exit(1) }, ${hookTimeoutMs});
   `
   )
   const env = { ...process.env }
@@ -157,7 +158,7 @@ try {
     env,
     encoding: 'utf8',
     windowsHide: true,
-    timeout: 190000
+    timeout: hookTimeoutMs + 10000
   })
   process.stdout.write(result.stdout || '')
   process.stderr.write(result.stderr || '')

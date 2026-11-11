@@ -111,3 +111,12 @@
 .ambient-options label { display: block; margin-top: 10px; }
 .ambient-player-track { min-width: 0; }
 .ambient-player-track strong { overflow-wrap: anywhere; }
+.ambient-random-button {
+  display: inline-flex; align-self: flex-start; align-items: center; justify-content: center;
+  min-height: 36px; padding: 8px 16px; border: 1px solid var(--border-subtle);
+  border-radius: 999px; font: inherit; font-size: 13px; font-weight: 600;
+  color: var(--text-main); background: var(--bg-surface); cursor: pointer;
+}
+.ambient-random-button:hover:not(:disabled) { border-color: var(--primary); background: var(--bg-hover); }
+.ambient-random-button:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; }
+.ambient-random-button:disabled { opacity: .5; cursor: default; }

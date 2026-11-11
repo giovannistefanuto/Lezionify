@@ -185,34 +185,38 @@ it('evita schemi dinamici grandi nel provider senza ridurre il piano da validare
 })
 
 
-it('il percorso reale con piano grande omette la grammatica ma valida ancora ogni frammento', async () => {
+it('il percorso reale con piano grande traduce sezioni intere con schema vincolato', async () => {
   const source = '# Titolo\n\n' + Array.from({ length: 140 }, (_, i) => `Testo ${i} $x_${i}$ prosegue. `).join('')
   const envelope = prepareTranslation(source)
   const plan = prepareTranslationPlan(envelope)
-  const response = translate(plan)
+  let missing = false
   const manager = new GeminiRequestManager()
-  const generateContent = vi.fn(async (_params: any) => ({ text: JSON.stringify(response), candidates: [{ finishReason: 'STOP' }] }))
+  const generateContent = vi.fn(async (params: any) => ({ text: missing ? '{}' : params.contents.split('SOURCE_DOCUMENT_JSON:\n')[1], candidates: [{ finishReason: 'STOP' }] }))
   vi.spyOn(manager.getTransport(), 'getClient').mockReturnValue({ models: { generateContent } } as never)
   vi.spyOn(manager, 'execute').mockImplementation(async options => options.call('synthetic', 'gemini-3.6-flash', new AbortController().signal) as never)
   const service = new GeminiService({ requestManager: manager })
   expect(await service.translateToEnglish({ apiKey: 'synthetic', model: 'gemini-3.6-flash', markdownIta: source })).toBe(source.trim())
-  expect(generateContent.mock.calls[0][0].config.responseJsonSchema).toBeUndefined()
-  delete response.s0.p1
-  await expect(service.translateToEnglish({ apiKey: 'synthetic', model: 'gemini-3.6-flash', markdownIta: source })).rejects.toThrow('frammenti')
+  expect(generateContent.mock.calls[0][0].config.responseJsonSchema.properties.s0).toEqual({ type: 'string' })
+  expect(Object.values(plan).flat().length).toBeGreaterThan(128)
+  missing = true
+  await expect(service.translateToEnglish({ apiKey: 'synthetic', model: 'gemini-3.6-flash', markdownIta: source })).rejects.toThrow('sezioni')
 })
 
 it('conserva la risposta e la ricostruzione prima del rifiuto strutturale', async () => {
   const source = '# Titolo\n\nTesto.\n\n```python\nprint(1)\n```'
-  const plan = prepareTranslationPlan(prepareTranslation(source))
-  const response = translate(plan, text => text + '\n\n```js\nextra()\n```')
-  const raw = JSON.stringify(response)
+  let raw = ''
   const manager = new GeminiRequestManager()
-  vi.spyOn(manager.getTransport(), 'getClient').mockReturnValue({ models: { generateContent: async () => ({ text: raw, candidates: [{ finishReason: 'STOP' }] }) } } as never)
+  vi.spyOn(manager.getTransport(), 'getClient').mockReturnValue({ models: { generateContent: async (params: any) => {
+    const sections = JSON.parse(params.contents.split('SOURCE_DOCUMENT_JSON:\n')[1]) as Record<string, string>
+    raw = JSON.stringify(Object.fromEntries(Object.entries(sections).map(([key, text]) => [key, text + '\n\n```js\nextra()\n```'])))
+    return { text: raw, candidates: [{ finishReason: 'STOP' }] }
+  } } } as never)
   vi.spyOn(manager, 'execute').mockImplementation(async options => options.call('synthetic', 'gemini-3.6-flash', new AbortController().signal) as never)
-  const onAttempt = vi.fn(async (_raw: string, _preview: string | null) => {})
-  await expect(new GeminiService({ requestManager: manager }).translateToEnglish({ apiKey: 'synthetic', model: 'gemini-3.6-flash', markdownIta: source, onAttempt })).rejects.toThrow('blocchi di codice')
-  expect(onAttempt).toHaveBeenCalledOnce()
-  expect(onAttempt.mock.calls[0][0]).toBe(raw)
+  const onAttempt = vi.fn(async (_raw: string, _preview: string | null, _repair?: boolean) => {})
+  await expect(new GeminiService({ requestManager: manager }).translateToEnglish({ apiKey: 'synthetic', model: 'gemini-3.6-flash', markdownIta: source, onAttempt })).rejects.toMatchObject({ category: 'invalid_output' })
+  expect(onAttempt).toHaveBeenCalledTimes(2)
+  expect(JSON.parse(onAttempt.mock.calls[0][0]).responses[0]).toBe(raw)
   expect(onAttempt.mock.calls[0][1]).toContain('print(1)')
   expect(onAttempt.mock.calls[0][1]).toContain('extra()')
+  expect(onAttempt.mock.calls[1][2]).toBe(true)
 })

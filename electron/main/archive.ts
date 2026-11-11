@@ -1307,12 +1307,16 @@ export class ArchiveService {
         keys: managedKeys,
         model: settings.model,
         markdownIta,
-        onAttempt: async (raw, preview) => {
+        onProgress: (completed, total) => {
+          this.progressCallback?.({ jobId, lectureId: id, phase: 'segmenting', percent: 10 + Math.floor(75 * completed / total),
+            message: `Traduzione inglese: ${completed} di ${total} gruppi di sezioni completati; verifica finale prima del salvataggio…` })
+        },
+        onAttempt: async (raw, preview, repair) => {
           await this.repository.runExclusive(async () => {
             const current = (await this.repository.readLibrary()).lectures.find(item => item.id === id)
             if (!current || current.markdownFileName !== lecture.markdownFileName || await this.storage.readMarkdown(current.markdownFileName!) !== markdownIta)
               throw new PipelineSourceChangedError('La dispensa è cambiata durante la traduzione. Riprova.')
-            await this.storage.writeTranslationAttempt(current.markdownFileName!, raw, preview)
+            await this.storage.writeTranslationAttempt(current.markdownFileName!, raw, preview, repair)
             attemptSaved = true
           })
         },

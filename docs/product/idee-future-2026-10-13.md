@@ -1,7 +1,7 @@
 # Idee e modifiche future — 13 ottobre 2026
 
 Raccolta delle richieste dell’utente per lo sviluppo futuro di Lezionify,
-iniziata il 13 ottobre e aggiornata con nuove idee fino all'8 novembre 2026.
+iniziata il 13 ottobre e aggiornata con nuove idee fino all'11 novembre 2026.
 La classificazione è preliminare: gli interventi immediati hanno un obiettivo
 già definito e non richiedono una ricerca preventiva; restano necessari i normali
 controlli del codice e i collaudi. Gli approfondimenti richiedono invece una
@@ -78,9 +78,9 @@ avviata da questo aggiornamento documentale (D-0390).
 | 21. [x] | Diagnosi errore course-rag:ask «Risposta non completata» | 69 | D-0392: output strutturato, fallback e retry collaudati; due prove RAG complete reali riuscite con fonti sintetiche. D-0395: recupero da timeout/503 e confronto RL reale verificato, con 12 invii e 10 minuti condivisi: [diagnosi](../quality/rag-recupero-2026-10-22.md). |
 | 22. [ ] | Collaudi residui del traduttore offline | 7 | Media: prove tecniche, formule/codice e glossario; funzione base già integrata. |
 | 23. [x] | Validazione qualitativa residua dei modelli Q&A | 9 | D-0450: implementata/verificata; esiti e limiti nel report interventi-selezionati-2026-10-29.md. |
-| 24. [ ] | Verifica personale residua delle versioni ENG mancanti | 20 | Media incerta: riusare diagnosi/correzioni, serve un caso dopo l'aggiornamento. |
+| 24. [x] | Verifica personale residua delle versioni ENG mancanti | 20 | 11 novembre: l'utente conferma che le dispense ci sono tutte, dopo i recuperi D-0496/D-0497. Affidabilità generale della pipeline ancora nella voce 122. |
 | 25. [x] | Ctrl+T: modalità Dizionario italiano oltre al traduttore | 71 | D-0439: corpus italiano offline con flessioni e licenza, switch e input conservato verificati. |
-| 26. [ ] | Pilota personale della sezione musica | 5 | Media con dipendenza esterna: account, PC e cuffie; rinvio precedente conservato. |
+| 26. [x] | Pilota personale della sezione musica | 5 | 11 novembre: prova rapida Spotify positiva riferita dall'utente, che non desidera ulteriori prove per ora. Copertura limitata alla prova effettuata. |
 | 28. [x] | Misurare l'inattività personale e chiedere se si studia ancora | 56 | D-0443: osservazione volontaria, proposta da confermare e dialogo con timer fermo collaudati; nessuna sottrazione retroattiva. |
 | 29. [x] | Rigenerare un singolo paragrafo dalla trascrizione | 59 | D-0444: sezione ITA con fonte completa dichiarata, anteprima, conferma, CAS, ripristino ed ENG conservata da aggiornare. |
 | 30. [ ] | Completare transizioni canzone → canzone / canzone → suono | 38 | Alta e vincolata ai player: dissolvenze offline già implementate, limiti D-0370. |
@@ -125,6 +125,23 @@ avviata da questo aggiornamento documentale (D-0390).
 | 75. [ ] | Controllo aggiornamenti GitHub all'avvio e pulsante Aggiorna | 129 | Alta: versionamento, distribuzione e aggiornamento recuperabile. |
 | 76. [x] | Grafico giornaliero di studio, pause e cambi di schermata | 130 | Cronologia implementata e collaudata; test Focus corretto per selezionare la schermata corrente. |
 | 77. [ ] | Intervallo statistico del tempo restante calibrato sullo storico | 131 | D-0482: raccolta prospettica e intervalli implementati/collaudati; resta la calibrazione personale su almeno 20 lezioni confrontabili per fase, lingua e metodo. |
+| 78. [x] | Scatola esami: PDF del docente ricercabili nel RAG | 132 | Da approfondire: organizzazione, indicizzazione e citazione delle prove. |
+| 79. [x] | Rivedere e sistemare i pulsanti aggiunti in modo rozzo | 133 | Da inventariare e coordinare con la revisione generale della voce 128. |
+| 80. [ ] | Sezione Altre cose per materiali fuori dagli esami | 134 | Ampia: organizzazione e riuso dei flussi audio, video e dispense da definire. |
+| 81. [x] | Rendere più visibile il pulsante Musica nella Home | 135 | Da verificare nella Home e coordinare con la revisione dei pulsanti. |
+| 82. [x] | Aggiungere suoni pieni e dal volume abbastanza costante | 136 | Da selezionare e ascoltare: onde forti e alternative anche non marine. |
+
+**Aggiunte dell'11 novembre:** cinque richieste, voci 132–136, posizioni
+78–82 in fondo alla coda e nell'ordine ricevuto. Totale: **82 attività,
+55 concluse, 17 aperte operative, 8 archiviate e 2 ritirate**. Nessuna
+implementazione è stata avviata; l'ordine precedente resta invariato.
+
+**Esiti personali dell'11 novembre:** chiuse la verifica di presenza ENG
+(voce 20) e il pilota Spotify nel perimetro della prova rapida accettata
+dall'utente (voce 5). Totale: **82 attività, 57 concluse, 15 aperte operative,
+8 archiviate e 2 ritirate**. Traduttore ancora aperto per qualità tecnica;
+suoni attuali approvati, senza chiudere i nuovi suoni della voce 136 o le
+transizioni residue della voce 38. Ripresa rinviata su richiesta dell'utente.
 
 **Aggiornamento dell'8 novembre, D-0480:** aggiunte sei attività, voci 126–131,
 posizioni 72–77, ordinate fra loro per difficoltà crescente senza cambiare
@@ -379,7 +396,7 @@ mantenere i diagrammi alle dimensioni necessarie: l’utente accetta questo esit
 - [x] Valutare link YouTube aggiunti dall’utente e modalità di ascolto.
 - [x] Valutare audio disponibili offline, incluso l’eventuale scaricamento da link tramite una libreria.
 - [x] Confrontare il collegamento dell'account Spotify Premium proposto dall'utente durante l'indagine.
-- [ ] Eseguire il pilota personale Spotify con account, PC e cuffie. Pannello e controlli implementati in D-0309 con API simulate; l’utente configurerà il Client ID successivamente.
+- [x] Eseguire il pilota personale Spotify. L'11 novembre l'utente riferisce una prova rapida positiva e non desidera altre prove per ora; nessuna verifica estesa di dispositivi o riconnessione dichiarata.
 
 Indagine documentale del 13 ottobre completata:
 [Spotify, YouTube e file locali](../research/musica-integrazione-valutazione-2026-10-13.md).
@@ -425,6 +442,27 @@ senza anticipare un genere universalmente migliore. Usare gli esiti per orientar
 la futura sezione musica.
 
 ### 7. Vocabolario offline rapido e supporto offline per frasi
+
+**Prova personale dell'11 novembre:** l'utente conferma il funzionamento
+senza internet e riporta questi esiti, conservati come risultati osservati:
+
+- `collusion`: «collusione»; `policy`: «politica, prassi; politica; polizza»;
+  `reward`: «ricompensa; taglia, ricompensa».
+- Per `overfitting` riporta lingua non riconosciuta, direzione mantenuta,
+  nessuna voce trovata e passaggio al traduttore offline.
+- «L'agente sceglie un'azione secondo la sua politica.»
+- «La ricompensa viene osservata dopo il passaggio allo stato successivo.»
+- «Il sovraadattamento si verifica quando un modello si adatta ai dati di
+  allenamento troppo da vicino.»
+- «Politics associates each state with a distribution of odds on stocks.»
+- «The expected value of the reward depends on the policy adopted.»
+- «Se x > 0, restituire f(x); altrimenti restituire 0.»
+
+La frase con «Politics», «odds» e «stocks» segnala un errore di terminologia
+nel contesto RL. Gli input originali e l'associazione completa input/output
+non sono stati riportati: ricostruirli prima di attribuire cause o confermare
+protezione di formule e codice. Restano da verificare glossario tecnico,
+direzione/rilevamento lingua e qualità delle frasi. Nessuna correzione avviata.
 
 - [x] **Parole e locuzioni:** funzione già implementata secondo D-0250 e D-0251, con Ctrl+T e dizionari locali inglese ↔ italiano.
 - [x] **Frasi libere:** Mozilla/Bergamot EN ↔ IT integrato e collaudato; download esplicito dei modelli, nessun fallback online (D-0307/D-0308).
@@ -731,7 +769,7 @@ Problemi segnalati dall'utente: diagnosi ed esiti aggiornati nelle singole voci.
 
 ### 20. Versioni ENG spesso mancanti nelle «Elaborazioni in corso»
 
-- [ ] Indagare perché «Elaborazioni in corso» trascrive gli audio e genera le dispense italiane, ma di solito non produce le versioni ENG.
+- [x] Completare la verifica personale residua delle versioni ENG: l'11 novembre l'utente conferma che le dispense sono tutte presenti, dopo i recuperi D-0496/D-0497. L'indagine sull'affidabilità generale della pipeline resta aperta nella voce 122; la presenza dei file non dimostra la risoluzione di ogni causa storica.
 
 Diagnosi parziale del 15 ottobre in D-0300:
 [stati ENG, percorsi automatico/manuale e prova residua](../quality/versioni-eng-diagnosi-2026-10-15.md).
@@ -2533,6 +2571,15 @@ fino a diagnosi, gestione concordata quando necessaria e collaudo della correzio
 
 ### 122. Indagare e collaudare le difficoltà della traduzione ITA→ENG
 
+**11 novembre:** riprodotti 10 rifiuti su 13 tentativi conservati e individuato
+anche disallineamento semantico non rilevabile dal solo conteggio. Il percorso
+ora traduce sezioni intere con segnaposto verificati, gruppi limitati e una
+passata correttiva. Prova reale positiva sulla sezione critica confrontata con
+la versione corretta; 855 unit e build passati, ricostruzione locale su 53
+dispense. **Resta aperta:** collaudo completo del percorso finale su documenti
+reali ostacolato da 503/timeout. Nessun nuovo tasso di successo dichiarato.
+[Diagnosi, prove e limiti](../quality/pipeline-eng-2026-11-11.md).
+
 - [ ] Capire con evidenze perché la traduzione delle dispense italiane in inglese fallisce o risulta difficile, distinguendo le cause effettive senza attribuirle anticipatamente a un solo componente.
 - [ ] Riprodurre e verificare sistematicamente le categorie di errore individuate, correggere i difetti confermati e aggiungere collaudi di regressione pertinenti; documentare i limiti ancora aperti.
 
@@ -2708,6 +2755,42 @@ installata né una lettura dei campioni personali.
   retroattiva. I limiti su traduttore, cambio finestra e Q&A sono descritti
   nella voce 127. L'app non può distinguere automaticamente lettura e
   distrazione restando sulla stessa schermata senza input.
+
+## Aggiunte dell'11 novembre 2026
+
+### 132. Scatola esami ricercabile dal RAG
+
+- [x] Aggiungere uno spazio dove raccogliere i PDF degli esami del docente
+  trovati dall'utente e indicizzarli come materiale consultabile dal RAG.
+- Permettere domande come «il prof ha mai chiesto A?», cercando anche dentro
+  le prove; valutare organizzazione per corso e riferimenti alle fonti, senza
+  interpretare un mancato risultato come prova assoluta di assenza.
+
+### 133. Revisione dei pulsanti aggiunti in modo rozzo
+
+- [x] Individuare nell'app i pulsanti aggiunti in maniera approssimativa e
+  sistemarli. Inventariare i casi e coordinare il lavoro con la revisione
+  complessiva dell'interfaccia della voce 128 e con la voce 135.
+
+### 134. Sezione Altre cose
+
+- [ ] Valutare una sezione accanto agli esami attuali e archiviati per
+  materiali che non appartengono a quegli esami: audio da trascrivere,
+  lezioni di corsi seguiti per curiosità e lavori fatti per altre persone.
+- Consentire i flussi utili per ottenere trascrizioni e dispense da audio,
+  video o trascrizioni esistenti; definire organizzazione e dettaglio del
+  flusso rispettando la conservazione delle fonti e il modello local-first.
+
+### 135. Pulsante Musica più visibile nella Home
+
+- [x] Rivedere posizione e riconoscibilità del pulsante Musica nella Home:
+  attualmente l'utente fatica a trovarlo. Coordinare con la voce 133.
+
+### 136. Nuovi suoni di sottofondo più pieni
+
+- [x] Aggiungere una scelta di suoni più pieni, con volume abbastanza
+  costante, per esempio onde forti del mare, includendo anche alternative
+  diverse dal mare. Valutare qualità d'ascolto e continuità del volume.
 
 ## Nota sulla classificazione
 
@@ -2914,3 +2997,6 @@ journal duraturo, completamento recuperabile e dodici gruppi prospettici;
 resta aperta per la copertura personale su esiti futuri. Totale: 77 attivita,
 55 concluse, 12 aperte operative, 8 archiviate e 2 ritirate.
 [Uso e verifiche](cronologia-stima-2026-11-09.md).
+
+
+**11 novembre, D-0501:** posizioni 78, 79, 81 e 82 implementate e collaudate: 859 unit, 24 Python, 41 Node, suite Electron completa con riavvio, PDF reali e QA mirata. Totale: 82 attività, 61 concluse, 11 aperte operative, 8 archiviate e 2 ritirate. Setup verificato D-0502 nella successiva proroga esplicita alle 17:55. [Resoconto](esami-pulsanti-suoni-2026-11-11.md).

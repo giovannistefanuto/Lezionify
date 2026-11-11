@@ -144,6 +144,8 @@ export async function runMusicTranslationScenarios(root: Root, api: any) {
     await act(async () => root.render(<AmbientSoundProvider><AmbientProbe /><SpotifyPanel /></AmbientSoundProvider>)); await flush()
     await act(async () => ambient!.play('rain'))
     check(ambient!.isPlaying && !ambient!.error, 'Synthetic WAV must play through the real ambient loop')
+    await act(async () => ambient!.play('waves-full'))
+    check(ambient!.isPlaying && ambient!.activeSoundId === 'waves-full' && !ambient!.error, 'Leveled wave variant must decode and play through real Web Audio')
     await click('Pausa')
     check(commands.at(-1)[0] === 'pause' && ambient!.isPlaying && !document.querySelector('[role="alert"]'), 'Spotify pause must succeed while ambient sounds continue')
     await act(async () => { await new Promise(resolve => setTimeout(resolve, 900)) })

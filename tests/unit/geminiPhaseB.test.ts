@@ -611,9 +611,9 @@ describe('Fase B — Gestore Condiviso e Trasporto AI', () => {
             if (model === 'gemini-3.7-flash') {
               throw new Error('503 Service Unavailable')
             }
-            const sections = JSON.parse(contents.split('SOURCE_TRANSLATION_PLAN_JSON:\n')[1]) as Record<string, unknown>
+            const sections = JSON.parse(contents.split('SOURCE_DOCUMENT_JSON:\n')[1]) as Record<string, unknown>
             expect(Object.keys(sections)).toEqual(['s0'])
-            return { text: JSON.stringify({ s0: { p0: '# English notes' } }), candidates: [{ finishReason: 'STOP' }] }
+            return { text: JSON.stringify({ s0: '# English notes' }), candidates: [{ finishReason: 'STOP' }] }
           })
         }
       }

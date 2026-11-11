@@ -2,6 +2,19 @@
 
 ## Stato attuale
 
+Setup generale aggiornato D-0502: scatola esami, pulsanti/Musica, quattro profili
+audio e percorso ENG D-0500 inclusi. Verificati 378 file, payload NSIS e runtime
+locali; gate 859 unit, Electron completo con riavvio e PDF reali passato.
+Dettagli in `docs/product/esami-pulsanti-suoni-2026-11-11.md`.
+
+La richiesta dell'11 novembre aggiunge `CourseSource.collection` per i PDF
+della scatola esami, conservati sotto `course-rag/exams/<hash-corso>/` con
+copie deduplicate; API IPC separate per aggiunta e rimozione dalle fonti.
+`ambientLeveling.ts` tratta soltanto i quattro nuovi profili del catalogo,
+che comprende anche la categoria ambienti. Pulsanti e ingressi Musica riusano
+i componenti esistenti. Perimetro, misure e stato del collaudo in
+`docs/product/esami-pulsanti-suoni-2026-11-11.md`.
+
 L'intervento dell'8 novembre sposta la stima Focus in `StudyEstimateDetails`.
 `studyActivity` unifica esclusioni e tick di studio; `paragraphObservation`
 attribuisce il Q&A ai blocchi e mantiene la posizione indipendente dallo zoom.
@@ -129,10 +142,16 @@ Il controllo ENG in `electron/main/ai/translationIntegrity.ts` recupera i
 diagrammi Mermaid originali quando la traduzione ne altera la struttura
 (D-0366), conservando i controlli sul resto della sezione, e distingue
 componente strutturale e indice di sezione negli errori, senza testo privato.
-`translationPlan.ts` prepara i frammenti di prosa, lo schema JSON e la
-ricostruzione locale di formule/codice e spazi: il modello vede tutto il
-documento come contesto in una sola richiesta, ma restituisce soltanto la
-prosa. Diagnosi e due collaudi reali riusciti in
+`translationDocument.ts` traduce sezioni intere con segnaposto verificati per
+formule/codice, schema stringa per sezione, gruppi seriali con contesto completo
+e una passata correttiva limitata alle sezioni non valide. La pipeline mostra
+l'avanzamento e conserva risposte aggregate e tentativi correttivi separati.
+`translationPlan.ts` resta disponibile per i tentativi storici e per riconoscere
+documenti privi di prosa. `tools/diagnose_eng_replay.cjs` controlla i tentativi
+precedenti e la ricostruzione locale senza rete. Prove reali, limite dei 503,
+formato dei tentativi e stato ancora aperto della voce 122 in
+`docs/quality/pipeline-eng-2026-11-11.md`; incluso nel setup verificato D-0502.
+Il percorso precedente è documentato in
 `docs/quality/integrita-eng-indagine-2026-10-19.md` (D-0355).
 La successiva ricorrenza D-0357 gestisce soltanto copie display aggiuntive,
 identiche a formule già conservate nella stessa sezione e su righe autonome;

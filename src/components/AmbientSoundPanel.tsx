@@ -7,6 +7,7 @@ import { useAmbientSound } from './AmbientSoundContext'
 import { MusicIcon } from './MusicIcon'
 
 const ICONS: Record<string, string> = {
+  'waves-full': '🌊', boat: '⛵', train: '🚆', 'coffee-shop': '☕',
   white: '⚪',
   pink: '🌸',
   brown: '🍂',
@@ -42,6 +43,7 @@ export function AmbientSoundPanel() {
 
   const noises = AMBIENT_SOUNDS.filter((s) => s.category === 'noise')
   const natures = AMBIENT_SOUNDS.filter((s) => s.category === 'nature')
+  const ambiences = AMBIENT_SOUNDS.filter((s) => s.category === 'ambience')
 
   const renderCard = (sound: AmbientSoundDefinition) => {
     const isThisActive = activeSoundId === sound.id
@@ -228,6 +230,7 @@ export function AmbientSoundPanel() {
       </div>
 
       {/* Accordion licenze e attribuzioni */}
+      <div className="ambient-section" style={{ marginTop: 24 }}><h4 className="ambient-section-title">Ambienti avvolgenti</h4><div className="ambient-grid">{ambiences.map(renderCard)}</div></div>
       <div className="ambient-credits-section">
         <button
           type="button"

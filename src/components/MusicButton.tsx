@@ -8,7 +8,7 @@ import './music.css'
 import { useToolSettings } from './ToolSettingsContext'
 import { musicPreferences, type MusicSource } from '../utils/musicPreferences'
 
-export function MusicButton({ compact = false }: { compact?: boolean }) {
+export function MusicButton({ compact = false, prominent = false }: { compact?: boolean; prominent?: boolean }) {
   const [open, setOpen] = useState(false)
   const button = useRef<HTMLButtonElement>(null)
   return (
@@ -16,12 +16,12 @@ export function MusicButton({ compact = false }: { compact?: boolean }) {
       <button
         type="button"
         ref={button}
-        className={compact ? 'sidebar-icon-btn' : 'button secondary'}
+        className={compact ? 'sidebar-icon-btn' : prominent ? 'music-launch-button' : 'button secondary'}
         title="Musica e suoni"
         aria-label="Apri musica e suoni"
         onClick={() => setOpen(true)}
       >
-        ♫{!compact && ' Musica'}
+        <span aria-hidden="true" className={prominent ? 'music-launch-symbol' : undefined}>♫</span>{!compact && (prominent ? <span className="music-launch-label"><strong>Musica e suoni</strong><small>Scegli il tuo sottofondo</small></span> : ' Musica')}
       </button>
       {open && (
         <MusicDialog

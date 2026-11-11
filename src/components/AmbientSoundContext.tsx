@@ -6,7 +6,8 @@ import React, {
   useState,
   useCallback
 } from 'react'
-import type { AmbientSoundStatus } from '../../shared/ambientSounds'
+import { AMBIENT_SOUNDS, type AmbientSoundStatus } from '../../shared/ambientSounds'
+import { levelAmbientBuffer } from '../utils/ambientLeveling'
 import { musicPreferences } from '../utils/musicPreferences'
 import { AmbientLoopPlayer } from '../utils/ambientLoopPlayer'
 import { nextShuffledSound } from '../utils/soundShuffle'
@@ -167,6 +168,7 @@ export function AmbientSoundProvider({
             rawBytes.byteOffset + rawBytes.byteLength
           ) as ArrayBuffer
           audioBuffer = await ctx.decodeAudioData(arrayBuffer)
+          if (AMBIENT_SOUNDS.find(sound => sound.id === soundId)?.leveled) levelAmbientBuffer(audioBuffer)
           bufferCacheRef.current.set(soundId, audioBuffer)
         }
 

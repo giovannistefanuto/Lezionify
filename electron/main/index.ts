@@ -291,11 +291,16 @@ function registerIpcHandlers(): void {
       filters: [{ name: 'Documenti del corso', extensions: ['pdf', 'md', 'txt'] }] })
     return chosen.canceled ? courseRag.state(course) : courseRag.addFiles(course, chosen.filePaths)
   })
+  ipcMain.handle('course-rag:add-exams', async (_event, course: string) => {
+    const chosen = await dialog.showOpenDialog({ title: 'Aggiungi PDF alla scatola esami', properties: ['openFile', 'multiSelections'], filters: [{ name: 'PDF degli esami', extensions: ['pdf'] }] })
+    return chosen.canceled ? courseRag.state(course) : courseRag.addExams(course, chosen.filePaths)
+  })
+  ipcMain.handle('course-rag:remove-exam', (_event, course: string, sourceId: string) => courseRag.removeExam(course, sourceId))
   ipcMain.handle('course-rag:save-thread', (_event, course: string, thread: import('../../shared/courseRag').CourseThread) => courseRag.saveThread(course, thread))
   ipcMain.handle('course-rag:delete-thread', (_event, course: string, id: string) => courseRag.deleteThread(course, id))
   ipcMain.handle('course-rag:count', (_event, course: string, term: string) => courseRag.count(course, term))
   ipcMain.handle('course-rag:stop', (_event, course: string, request: string) => courseRag.stop(course, request))
-  ipcMain.handle('course-rag:pdf', async (_event, course: string, id: string) => { const grant = await courseRag.pdfGrant(course, id); return { ...await focusPdfs.grantCourseSource(grant.path), sourceVersion: grant.version } })
+  ipcMain.handle('course-rag:pdf', async (_event, course: string, id: string) => { const grant = await courseRag.pdfGrant(course, id); return { ...await focusPdfs.grantCourseSource(grant.path), name: grant.title, sourceVersion: grant.version } })
   ipcMain.handle('course-rag:ask', async (_event, course: string, thread: string, question: string, request: string, images?: QnaImageInput[], sourceId?: string, sourceVersion?: string) => {
     if (images !== undefined) {
       if (!Array.isArray(images) || !images.length || images.length > QNA_IMAGE_LIMIT || typeof sourceId !== 'string') throw new Error('Pagine allegate non valide.')

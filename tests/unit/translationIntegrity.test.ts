@@ -4,7 +4,6 @@ import { GeminiService } from '../../electron/main/gemini'
 import { GeminiRequestManager } from '../../electron/main/ai/geminiRequestManager'
 import { GeminiTransport } from '../../electron/main/ai/geminiTransport'
 import { DEFAULT_GEMINI_POLICY } from '../../electron/main/ai/geminiPolicy'
-import type { TranslationPlan } from '../../electron/main/ai/translationPlan'
 
 const source = '# 1. Introduzione\n\nUn automa con $x^2$ e `state`.\n\n## 1.1 Formula\n\n$$\n\\frac{a}{b}\n$$\n\n> [!KEY CONCEPT]\n> Concetto importante.\n\n```python\n# Titolo di esempio\nprint("ciao")\n```\n\n## 1.2 Schema\n\n```mermaid\nflowchart LR\nA["Ingresso"] --> B["Uscita"]\naccTitle: Schema\n```\n\nUltimo paragrafo.'
 const english = (text: string) => text.replace('Introduzione', 'Introduction').replace('Un automa con', 'An automaton with').replace('Formula', 'Formula').replace('Concetto importante.', 'Important concept.').replace('Schema', 'Diagram').replace('Ingresso', 'Input').replace('Uscita', 'Output').replace('Ultimo paragrafo.', 'Last paragraph.')
@@ -136,11 +135,8 @@ describe('Traduzione intera con confini verificati', () => {
   it.each([true, false])('usa una sola richiesta logica e nessun retry di output invalido (valid=%s)', async valid => {
     const transport = new GeminiTransport()
     const generateContent = vi.fn(async ({ contents }: { contents: string }) => {
-      const plan = JSON.parse(contents.split('SOURCE_TRANSLATION_PLAN_JSON:\n')[1]) as TranslationPlan
-      const sections = Object.fromEntries(Object.entries(plan).flatMap(([key, parts]) => {
-        const values = Object.fromEntries(parts.flatMap(part => 'key' in part ? [[part.key, english(part.translate)]] : []))
-        return Object.keys(values).length ? [[key, values]] : []
-      }))
+      const plan = JSON.parse(contents.split('SOURCE_DOCUMENT_JSON:\n')[1]) as Record<string, string>
+      const sections = Object.fromEntries(Object.entries(plan).map(([key, text]) => [key, english(text)]))
       return { text: JSON.stringify(sections), candidates: [{ finishReason: valid ? 'STOP' : 'MAX_TOKENS' }] }
     })
     vi.spyOn(transport, 'getClient').mockReturnValue({ models: { generateContent } } as never)

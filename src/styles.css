@@ -22,6 +22,7 @@
   --border-subtle: #e2eae5;
   --border-card: #e4ece7;
   --primary: #226649;
+  --on-primary: #ffffff;
   --primary-hover: #174f38;
   --primary-glow: rgba(34, 102, 73, 0.2);
   --accent-mint: #a9e08e;
@@ -47,6 +48,7 @@
   --border-subtle: #1e352c;
   --border-card: #223c32;
   --primary: #34d399;
+  --on-primary: #10281f;
   --primary-hover: #10b981;
   --primary-glow: rgba(52, 211, 153, 0.25);
   --accent-mint: #6ee7b7;
@@ -149,6 +151,25 @@ button {
   outline: 2px solid #a9e08e;
   outline-offset: 3px;
 }
+
+.music-launch-button {
+  display: inline-flex; align-items: center; gap: 12px;
+  padding: 12px 16px; border: 1px solid var(--border-subtle); border-radius: 12px;
+  background: var(--bg-surface); color: var(--text-main); text-align: left;
+  font: inherit; cursor: pointer; flex-shrink: 0;
+}
+.music-launch-symbol { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 10px; background: #205541; color: #e9f5d7; font-size: 25px; }
+.music-launch-label { display: grid; gap: 3px; }
+.music-launch-label strong { font-size: 14px; line-height: 1.3; }
+.music-launch-label small { font-size: 11px; opacity: .8; line-height: 1.4; }
+.sidebar-music-access > .music-launch-button { background: #dceec4; color: #173c31; border-color: #dceec4; display: flex; padding: 12px; }
+.sidebar-music-access > .music-launch-button:hover { background: #ebf6dc; }
+.music-launch-button:focus-visible { outline: 3px solid var(--primary, #508d70); outline-offset: 3px; }
+.sidebar-section-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.sidebar-section-heading .sidebar-label { margin: 0; }
+.sidebar-manage-courses { border: 1px solid #ffffff45; color: #edf6ef; background: #ffffff0b; border-radius: 7px; padding: 6px 9px; font: inherit; font-size: 11px; cursor: pointer; }
+.sidebar-manage-courses:hover { background: #ffffff20; }
+.sidebar-manage-courses:focus-visible { outline: 2px solid #c4e6b3; outline-offset: 2px; }
 
 .brand {
   display: flex;
@@ -9196,3 +9217,28 @@ mark {
 .course-answer-section.kind-sources { border-left: 3px solid var(--primary); }
 .course-answer-section.kind-deduction { border-left-style: dashed; }
 .course-answer-section.kind-general { border: 1px solid var(--border-subtle); border-radius: 8px; padding: 6px 14px; }
+.course-exam-box { padding: 18px; margin-bottom: 20px; border: 1px solid var(--border-subtle, #b6c9bd); border-radius: 12px; background: var(--bg-surface); }
+.course-exam-box-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px; }
+.course-exam-box h3 { margin: 0 0 6px; font-size: 19px; }
+.course-exam-box p { margin: 6px 0; line-height: 1.5; }
+.course-exam-box-note { color: var(--text-muted); font-size: 12px; }
+.course-exam-box ul { list-style: none; padding: 0; margin: 12px 0 0; }
+.course-exam-box li { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 0; border-top: 1px solid var(--border-subtle); }
+.course-exam-box li > div:first-child { min-width: 0; overflow-wrap: anywhere; }
+.course-exam-box small { display: block; margin-top: 5px; color: var(--text-muted); }
+.course-exam-actions { display: flex; flex-shrink: 0; flex-wrap: wrap; gap: 8px; }
+.course-chat .course-exam-box .button.primary { background: var(--primary, #205541); color: var(--on-primary); border-color: transparent; padding: 10px 14px; }
+.course-chat button { font-family: inherit; line-height: 1.4; min-height: 32px; }
+.course-chat-sources button { background: var(--bg-surface); color: var(--text-main); border-color: var(--border-subtle); }
+.course-chat-sources button:hover:not(:disabled) { border-color: var(--primary, #508d70); }
+@media (max-width: 700px) { .dashboard-header { flex-wrap: wrap; gap: 16px; } .course-exam-box li { align-items: flex-start; flex-direction: column; } }
+
+.dashboard-study-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.dashboard-study-actions .secondary-button { margin: 0; min-height: 36px; }
+.primary-button { color: var(--on-primary); background: var(--primary); border-color: var(--primary); }
+.primary-button:hover { background: var(--primary-hover); }
+.dashboard-view .secondary-button:focus-visible, .dashboard-view .primary-button:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; }
+
+.dashboard-header { display: flex; justify-content: space-between; align-items: center; gap: 20px; }
+.dashboard-header > div { min-width: 0; }
+.course-exam-box-heading > button { max-width: 100%; white-space: normal; }

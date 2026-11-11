@@ -5,16 +5,17 @@ import { join } from 'node:path'
 import { AMBIENT_SOUNDS } from '../../shared/ambientSounds'
 import { AmbientSoundService } from '../../electron/main/ambientSounds'
 
-it('valida catalogo, formati, dimensioni e licenze dei sedici suoni', () => {
-  expect(AMBIENT_SOUNDS).toHaveLength(16)
+it('valida catalogo, formati, dimensioni e licenze dei venti suoni', () => {
+  expect(AMBIENT_SOUNDS).toHaveLength(20)
   const totalBytes = AMBIENT_SOUNDS.reduce((n, s) => n + s.bytes, 0)
   expect(totalBytes).toBeGreaterThan(11623969)
-  expect(new Set(AMBIENT_SOUNDS.map(sound => sound.id)).size).toBe(16)
+  expect(new Set(AMBIENT_SOUNDS.map(sound => sound.id)).size).toBe(20)
 
   const noises = AMBIENT_SOUNDS.filter((s) => s.category === 'noise')
   const natures = AMBIENT_SOUNDS.filter((s) => s.category === 'nature')
   expect(noises).toHaveLength(3)
-  expect(natures).toHaveLength(13)
+  expect(natures).toHaveLength(14)
+  expect(AMBIENT_SOUNDS.filter(s => s.category === 'ambience')).toHaveLength(3)
 
   for (const sound of AMBIENT_SOUNDS) {
     expect(sound.id).toMatch(/^[a-z-]+$/)
@@ -37,7 +38,7 @@ it('gestisce stato iniziale vuoto, errori di rete e download con verifica integr
     expect(initialStatus.installed).toBe(false)
     expect(initialStatus.installing).toBe(false)
     expect(initialStatus.installedBytes).toBe(0)
-    expect(initialStatus.sounds).toHaveLength(16)
+    expect(initialStatus.sounds).toHaveLength(20)
     expect(initialStatus.sounds.every((s) => !s.installed)).toBe(true)
 
     await expect(service.read('white')).rejects.toThrow('non disponibile offline')

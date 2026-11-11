@@ -86,6 +86,45 @@ async function fixture(
 }
 
 describe('indice e copertura locale', () => {
+  it('conserva i PDF degli esami localmente, evita duplicati e li cerca con citazioni alla pagina', async () => {
+    const f = await fixture(async prompt => {
+      const input = JSON.parse(prompt)
+      const found = input.passages.find((item: any) => item.source.collection === 'exams')
+      expect(found).toBeTruthy()
+      return JSON.stringify({ action: 'answer', text: 'Nella prova aggiunta compare la matrice speciale.', passageIds: [found.passage.id] })
+    })
+    const original = join(f.folder, 'Prova del docente.pdf')
+    const bytes = '%PDF-1.7\nMatrice speciale esame: calcolare equilibrio matrice_esame_2026.\n'
+    await writeFile(original, bytes)
+    await f.service.addExams('GAME', [original, original])
+    await f.service.waitForSync('GAME')
+    const exams = (await f.service.state('GAME')).sources.filter(s => s.collection === 'exams')
+    expect(exams).toHaveLength(1)
+    expect(exams[0].title).toBe('Esame · Prova del docente.pdf')
+    const grant = await f.service.pdfGrant('GAME', exams[0].id)
+    expect(grant.path).not.toBe(original)
+    expect(await readFile(grant.path, 'utf8')).toBe(bytes)
+    await rm(original)
+    f.service.startSync('GAME', true); await f.service.waitForSync('GAME')
+    expect((await f.service.state('GAME')).sources.find(s => s.id === exams[0].id)?.status).toBe('partial')
+    await f.service.saveThread('GAME', thread())
+    const result = await f.service.ask('GAME', 'thread', 'Il prof ha chiesto matrice_esame_2026?', 'exam-question')
+    expect(result.messages.at(-1)?.citations?.some(c => c.source.collection === 'exams' && c.passage.page === 1)).toBe(true)
+    const restored = new CourseRagService(join(f.directory, 'profile'), { archiveSources: async () => ({ sources: [], missingTranscripts: 0 }), complete: async () => '' })
+    expect((await restored.state('GAME')).sources.some(s => s.collection === 'exams')).toBe(true)
+    await expect(f.service.removeExam('OTHER', exams[0].id)).rejects.toThrow('Esame non disponibile')
+    await f.service.removeExam('GAME', exams[0].id); await f.service.waitForSync('GAME')
+    expect((await f.service.state('GAME')).sources.some(s => s.collection === 'exams')).toBe(false)
+    expect(await readFile(grant.path, 'utf8')).toBe(bytes)
+  })
+  it('rifiuta file non PDF senza avviare chiamate AI o creare fonti esame', async () => {
+    const f = await fixture(async () => { throw new Error('Nessuna chiamata AI ammessa') })
+    const fake = join(f.folder, 'falso.pdf')
+    await writeFile(fake, 'Questo non è un PDF anche se ha estensione pdf.')
+    await expect(f.service.addExams('GAME', [fake])).rejects.toThrow('non è un PDF')
+    await expect(f.service.addExams('GAME', [fake.replace('.pdf', '.txt')])).rejects.toThrow('soltanto PDF')
+    expect((await f.service.state('GAME')).sources.some(s => s.collection === 'exams')).toBe(false)
+  })
   it('trova fonti trasversali per teorema, esercizio e indicazioni del laboratorio', () => {
     const sources = [
       source(

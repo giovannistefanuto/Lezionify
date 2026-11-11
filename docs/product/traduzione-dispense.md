@@ -1,28 +1,54 @@
 # Traduzione delle dispense IT → EN
 
-Valutazione del 14 ottobre 2026, voce 7 di LISTA_ORDINE; pipeline aggiornata
-il 19 ottobre dopo la diagnosi reale della voce 43.
+Valutazione iniziale del 14 ottobre 2026; percorso aggiornato l'11 novembre
+dopo riproduzione dei fallimenti e confronto con le dispense corrette.
 
 ## Comportamento verificato nel codice
 
-`ArchiveService.translateLectureNotes` legge tutta la dispensa italiana e passa
-il testo a `GeminiService.translateToEnglish`. Quest'ultimo esegue una sola
-richiesta logica `translation`, non traduce separatamente le parti usate per
-generare la dispensa italiana. Traduzione singola, batch e pipeline archivio
-usano lo stesso percorso. Le lezioni del batch sono tradotte separatamente.
+`ArchiveService.translateLectureNotes` legge la dispensa italiana e passa il
+testo a `GeminiService.translateToEnglish`. `translationDocument.ts` traduce
+sezioni intere: formule e codice vengono sostituiti con segnaposto casuali
+distinti per sezione, verificati e reinseriti localmente byte per byte.
+Le frasi restano continue, evitando la ricomposizione da frammenti di prosa
+che nelle prove reali potevano slittare rispetto alle formule.
 
-Il gestore condiviso conserva rotazione delle chiavi, modelli di fallback,
-massimo sei tentativi fisici per richiesta logica, limite di cinque richieste
-al minuto per gruppo/modello, timeout di 180 secondi per tentativo e deadline
-logica di dieci minuti. Sono limiti locali della configurazione attuale,
-non le quote o i limiti di output garantiti dal provider.
+Le risposte sono divise in gruppi seriali, con obiettivo 6.000 caratteri
+mascherati e massimo 16 sezioni; una sezione più lunga non viene spezzata.
+Ogni richiesta include il documento completo mascherato come contesto e uno
+schema JSON con un campo stringa per sezione richiesta. Una sola passata
+correttiva, eventualmente divisa in gruppi, può ritradurre le sezioni con
+segnaposto o struttura non validi. Non esistono cicli di riparazione illimitati.
+Una risposta interrotta o un secondo esito invalido non vengono salvati come ENG.
+
+Il gestore condiviso conserva rotazione, modelli completi di fallback, quote,
+timeout di 180 secondi e cinque richieste/minuto per gruppo/modello. Come da
+D-0423, il budget archivio raggiunge il pool finito configurato e non ha una
+deadline complessiva implicita. Ogni gruppo è una richiesta logica con i suoi
+retry del provider: la ripetizione del contesto può aumentare invii e token.
+Il pannello mostra il numero di gruppi completati. Non è ancora implementato
+il riuso automatico dei gruppi tra job o dopo un riavvio.
 
 L'inglese è scritto solo dopo la verifica della risposta e un secondo controllo
 della sorgente italiana nell'archivio serializzato. Una dispensa cambiata durante
 l'attesa non riceve una traduzione obsoleta. Audio e trascrizione non sono usati
 come input della traduzione e restano conservati.
 
-## Confronto e scelta
+Il record `_en_tentativo.txt` usa `lezionify-eng-sections-v1`, con prefissi dei
+segnaposto, impronta della fonte e risposte del provider conservate verbatim
+nella lista `responses`.
+Le risposte correttive hanno file separati `_en_riparazione_tentativo.txt/.md`;
+una nuova risposta primaria rimuove la vecchia riparazione. Le anteprime sono
+non validate e non sono indicizzate/pubblicate. La cancellazione della lezione
+comprende questi tentativi. I vecchi tentativi con oggetti di frammenti restano
+evidenze storiche, interpretabili dal relativo validatore.
+
+Uso, prove reali, consumi e limiti: [diagnosi dell'11 novembre](../quality/pipeline-eng-2026-11-11.md).
+La presenza dei segnaposto e la validità strutturale non certificano la fedeltà
+linguistica. La voce 122 resta aperta per il collaudo completo su fonti reali
+quando il provider sarà disponibile; non è stato misurato un nuovo tasso di
+successo dell'archivio.
+
+## Storico — confronto e scelta del 14 ottobre, superati dal percorso sopra
 
 | Aspetto | Dispensa intera (adottata) | Parti separate (alternativa valutata) |
 | --- | --- | --- |

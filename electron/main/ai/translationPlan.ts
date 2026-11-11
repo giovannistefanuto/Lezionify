@@ -52,7 +52,9 @@ export function translationPlanSchema(plan: TranslationPlan) {
   return { type: 'object', properties, required: Object.keys(properties), additionalProperties: false }
 }
 
-/** Large dynamic schemas can be rejected by the provider before generation.
+/** Legacy fragment transport, retained for historical diagnostics.
+ * Production translation uses the section schema in translationDocument.ts.
+ * Large dynamic schemas can be rejected by the provider before generation.
  * The complete local validator remains mandatory even when no grammar is sent.
  */
 export function translationProviderSchema(plan: TranslationPlan) {

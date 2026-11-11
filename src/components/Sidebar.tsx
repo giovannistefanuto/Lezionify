@@ -334,7 +334,7 @@ export function Sidebar({
       {!isCollapsed && (
         <>
           <div className="sidebar-music-access">
-            <MusicButton />
+            <MusicButton prominent />
           </div>
           <div className="sidebar-search">
             <input
@@ -387,15 +387,15 @@ export function Sidebar({
               ))}
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <p className="sidebar-label" style={{ margin: 0 }}>MATERIE</p>
+            <div className="sidebar-section-heading">
+              <p className="sidebar-label">MATERIE</p>
               <button
-                className="text-button"
+                type="button"
+                className="sidebar-manage-courses"
                 onClick={onOpenCourseManagement}
                 title="Gestione Corsi, CFU e Orari"
-                style={{ fontSize: '11px', padding: '2px 4px', color: 'var(--primary-color, #10b981)' }}
               >
-                ⚙️ Gestisci
+                Gestisci corsi
               </button>
             </div>
             <button

@@ -122,10 +122,16 @@ export class FileStorageService {
     await writeFile(markdownPath, content, 'utf8')
   }
 
-  async writeTranslationAttempt(fileName: string, raw: string, preview: string | null): Promise<void> {
-    const base = fileName.replace(/\.md$/, '_en_tentativo')
+  async writeTranslationAttempt(fileName: string, raw: string, preview: string | null, repair = false): Promise<void> {
+    const base = fileName.replace(/\.md$/, repair ? '_en_riparazione_tentativo' : '_en_tentativo')
     // Keep the provider response verbatim, including malformed or duplicate JSON keys.
     await writeFile(path.join(this.markdownDirectory, `${base}.txt`), raw, 'utf8')
+    if (!repair) {
+      for (const ext of ['md', 'txt']) {
+        try { await unlink(path.join(this.markdownDirectory, fileName.replace(/\.md$/, `_en_riparazione_tentativo.${ext}`))) }
+        catch (error) { if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error }
+      }
+    }
     await writeFile(path.join(this.markdownDirectory, `${base}.md`),
       `> **Tentativo inglese non validato.** Controllare completezza e struttura prima dell'uso.\n\n${preview ?? 'Risposta non ricostruibile: consultare il file .txt associato.'}\n`, 'utf8')
   }
@@ -200,6 +206,9 @@ export class FileStorageService {
         : null,
       ...(['md', 'txt'] as const).map(ext => lecture.markdownFileName
         ? path.join(this.markdownDirectory, lecture.markdownFileName.replace(/\.md$/, `_en_tentativo.${ext}`))
+        : null),
+      ...(['md', 'txt'] as const).map(ext => lecture.markdownFileName
+        ? path.join(this.markdownDirectory, lecture.markdownFileName.replace(/\.md$/, `_en_riparazione_tentativo.${ext}`))
         : null),
       path.join(this.studySetsDirectory, `${lecture.id}.json`),
       path.join(this.qnaDirectory, `${lecture.id}.json`),

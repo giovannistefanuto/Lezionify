@@ -1,4 +1,5 @@
 import { captureGroups } from '../utils/quickCapture'
+import { MusicButton } from './MusicButton'
 import { StudyDayTimeline } from './StudyDayTimeline'
 import { StudyTimeRemovalDialog } from './StudyTimeRemovalDialog'
 import React, { useState, useEffect, useCallback, useMemo } from 'react'
@@ -349,6 +350,7 @@ export function Dashboard({
               concentrazione e controlla il ritmo di studio.
             </p>
           </div>
+          <MusicButton prominent />
         </header>
 
         {/* --- WIDGET COUNTDOWN ESAMI --- */}
@@ -467,7 +469,7 @@ export function Dashboard({
                 Tempo accreditato dai segnali di studio disponibili, con crediti manuali e stimati distinti.
               </span>
             </div>
-            <button
+            <div className="dashboard-study-actions"><button
               className="secondary-button small add-manual-btn"
               onClick={openManualTimeModal}
               title="Aggiungi sessione di studio svolta su carta o libri"
@@ -475,6 +477,7 @@ export function Dashboard({
               ➕ Aggiungi Studio Manuale
             </button>
             <button className="secondary-button small" onClick={() => setShowRemovalModal(true)}>Togli tempo di studio</button>
+            </div>
           </div>
 
           {/* Hero KPI Studio */}

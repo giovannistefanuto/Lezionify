@@ -378,6 +378,7 @@ export function CourseChat({
           <nav aria-label="Strumenti del corso">
             <button type="button" disabled={busy} aria-expanded={showHistory} aria-controls="course-history" onClick={() => { setShowHistory(value => !value); setShowSources(false) }}>Ricerche recenti</button>
             <button type="button" disabled={busy} aria-expanded={showSources} aria-controls="course-materials" onClick={() => { setShowSources(value => !value); setShowHistory(false) }}>Materiali del corso</button>
+            <button type="button" disabled={busy} onClick={() => { setShowSources(true); setShowHistory(false) }}>Scatola esami</button>
             <button onClick={close} aria-label="Chiudi chat del corso">Chiudi</button>
           </nav>
         </header> : <header>
@@ -413,6 +414,14 @@ export function CourseChat({
         </p>
         {showSources && (
           <section id="course-materials" className="course-chat-sources" aria-label="Fonti del corso">
+            <section className="course-exam-box" aria-label="Scatola esami">
+              <div className="course-exam-box-heading"><div><h3>Scatola esami</h3><p>Le prove del docente, insieme alle altre fonti delle tue domande.</p></div>
+                <button type="button" className="button primary" disabled={busy || data?.syncing || !course} onClick={() => void perform(() => window.archive.addCourseExams(course))}>Aggiungi PDF degli esami</button>
+              </div>
+              <p className="course-exam-box-note">Una copia resta in Lezionify. L’indicizzazione è locale; gli estratti arrivano all’AI soltanto quando invii una domanda.</p>
+              {!data?.sources.some(source => source.collection === 'exams') && <p>Nessuna prova aggiunta. Potrai chiedere, per esempio: «Il prof ha mai chiesto l’equilibrio di Nash? Mostrami la prova e la pagina».</p>}
+              <ul>{data?.sources.filter(source => source.collection === 'exams').map(source => <li key={source.id}><div><strong>{source.title.replace(/^Esame · /, '')}</strong><small>{source.status === 'ready' ? `${source.pages ?? 0} pagine · testo indicizzato` : source.status === 'partial' ? 'Copertura parziale: alcune pagine richiedono lettura visiva' : source.issue ?? 'Indicizzazione da controllare'}</small></div><div className="course-exam-actions"><button type="button" disabled={busy || source.status === 'missing'} onClick={() => void openPdf(source.id)}>Apri PDF</button><button type="button" disabled={busy || data?.syncing} onClick={() => { if (window.confirm('Rimuovere questo esame dalle fonti del corso? Il PDF originale resta conservato.')) void perform(() => window.archive.removeCourseExam(course, source.id)) }}>Rimuovi</button></div></li>)}</ul>
+            </section>
             <p>
               Collega la cartella di questo corso: autorizzi download e
               indicizzazione dei PDF presenti e futuri mentre l’app è aperta. La
@@ -497,7 +506,7 @@ export function CourseChat({
             {data?.semantic?.issue && <p role="alert">{data.semantic.issue}</p>}
             {data?.issue && <p role="alert">{data.issue}</p>}
             <ul>
-              {data?.sources.map((source) => (
+              {data?.sources.filter(source => source.collection !== 'exams').map((source) => (
                 <li key={source.id}>
                   <strong>{source.title}</strong> {source.provenance === 'ai-derived' || source.kind === 'notes' ? '· Derivazione AI' : ''} ·{' '}
                   {source.status === 'ready'

@@ -88,6 +88,14 @@ export async function runCourseChatScenarios(root: Root, api: any) {
   }
   api.syncCourseRag = async (course: string) => structuredClone(states[course])
   api.addCourseDocuments = api.syncCourseRag
+  api.addCourseExams = async (course: string) => {
+    states[course].sources.push({ ...source, id: 'exam', title: 'Esame · Prova sintetica.pdf', collection: 'exams' })
+    return structuredClone(states[course])
+  }
+  api.removeCourseExam = async (course: string, id: string) => {
+    states[course].sources = states[course].sources.filter(source => source.id !== id)
+    return structuredClone(states[course])
+  }
   api.manageCourseIndex = async (course: string, action: string) => {
     if (action === 'start') states[course].indexing = { status: 'running', revision: 'synthetic', total: 12, completed: 8, sources: [{ sourceId: 'pdf', completed: 8, total: 12 }], updatedAt: '' }
     if (action === 'cancel') states[course].indexing!.status = 'cancelled'
@@ -235,7 +243,25 @@ export async function runCourseChatScenarios(root: Root, api: any) {
       document.querySelector('textarea')!.value === 'Bozza da conservare',
       'Closing course chat lost draft'
     )
-    await click('Materiali del corso')
+    await click('Scatola esami')
+    await click('Aggiungi PDF degli esami')
+    check(document.querySelector('[aria-label="Scatola esami"]')?.textContent?.includes('Prova sintetica.pdf'), 'Exam box did not show imported PDF')
+    check(sent.length === 0, 'Adding an exam contacted AI')
+    await ipc.invoke('capture-video-import', 'oct22-exam-box')
+    document.documentElement.setAttribute('data-theme', 'dark')
+    await ipc.invoke('capture-video-import', 'oct22-exam-box-dark')
+    document.documentElement.removeAttribute('data-theme')
+    await ipc.invoke('feature-test-window-size', { width: 390, height: 844 })
+    await settle()
+    const addExamButton = document.querySelector<HTMLElement>('.course-exam-box .button.primary')!.getBoundingClientRect()
+    check(addExamButton.left >= 0 && addExamButton.right <= innerWidth, 'Exam add button overflows narrow viewport')
+    await ipc.invoke('capture-video-import', 'oct22-exam-box-narrow')
+    await ipc.invoke('feature-test-window-size', { width: 1240, height: 820 })
+    await settle()
+    const oldConfirm = window.confirm
+    window.confirm = () => true
+    try { await click('Rimuovi') } finally { window.confirm = oldConfirm }
+    check(!states.GAME.sources.some(source => source.collection === 'exams'), 'Exam removal did not update source collection')
     check(
       document
         .querySelector('[aria-label="Fonti del corso"]')

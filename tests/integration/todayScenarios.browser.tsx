@@ -420,7 +420,7 @@ export async function runTodayScenarios(root: Root, api: any) {
     )
     await wait()
     check(
-      document.querySelectorAll('.ambient-card').length === 16,
+      document.querySelectorAll('.ambient-card').length === 20,
       'Expanded sound catalog missing'
     )
     await act(async () => Array.from(document.querySelectorAll<HTMLButtonElement>('button')).find(button => button.textContent === 'Casuale')!.click())
@@ -441,7 +441,7 @@ export async function runTodayScenarios(root: Root, api: any) {
     await wait()
     check(
       downloads.length === 2 &&
-        document.querySelectorAll('.ambient-play-btn').length === 16,
+        document.querySelectorAll('.ambient-play-btn').length === 20,
       'Download all did not update sound cards'
     )
     check(plays === 0, 'Download unexpectedly started playback')

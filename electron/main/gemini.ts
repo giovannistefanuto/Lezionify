@@ -23,7 +23,8 @@ import { CLEANUP_BUDGET_MS } from './ai/geminiPolicy'
 import { getQnaModelFallbackChain } from '../../shared/qnaModelPolicy'
 import { logger } from './logger'
 import { prepareTranslation } from './ai/translationIntegrity'
-import { prepareTranslationPlan, previewTranslationAttempt, translationProviderSchema, validateTranslationPlan } from './ai/translationPlan'
+import { prepareTranslationPlan, validateTranslationPlan } from './ai/translationPlan'
+import { translateDocument } from './ai/translationDocument'
 
 export function toKeyConfigs(apiKey?: string, keys?: KeyConfig[]): KeyConfig[] {
   if (keys && keys.length > 0) return keys
@@ -575,6 +576,7 @@ Rules you MUST follow without exception:
 7. Translate technical terms accurately — use established English terminology for the field (e.g. "Automa a Stati Finiti" → "Finite State Automaton").
 8. Keep inline code (\`...\`) and non-Mermaid code blocks (\`\`\`...\`\`\`) completely untouched.
 9. For every \`\`\`mermaid block, preserve the diagram type, node identifiers, arrows, relationships, static style and classDef directives and line structure exactly. Translate only human-readable labels enclosed in quotes plus accTitle and accDescr. Never add frontmatter, click, links, HTML, linkStyle, themes or init directives.`
+
 
 export function formatTimecode(seconds: number): string {
   const total = Math.max(0, Math.floor(seconds))
@@ -2220,7 +2222,8 @@ ${params.otherQnaContext ? `ALTRI Q&A PERTINENTI DELLA STESSA LEZIONE (estratti 
     markdownIta: string
     jobId?: string
     onRetry?: (attempt: number, delayMs: number, reason: string) => void
-    onAttempt?: (raw: string, preview: string | null) => Promise<void>
+    onAttempt?: (raw: string, preview: string | null, repair?: boolean) => Promise<void>
+    onProgress?: (completed: number, total: number) => void
     signal?: AbortSignal
   }): Promise<string> {
     const { apiKey, keys, model, markdownIta, jobId, onRetry, onAttempt, signal } = params
@@ -2229,46 +2232,8 @@ ${params.otherQnaContext ? `ALTRI Q&A PERTINENTI DELLA STESSA LEZIONE (estratti 
 
     const envelope = prepareTranslation(markdownIta)
     const plan = prepareTranslationPlan(envelope)
-    const responseSchema = translationProviderSchema(plan)
     if (!Object.values(plan).some(parts => parts.some(part => 'key' in part))) return validateTranslationPlan(envelope, plan, '{}', 'STOP')
-    const prompt = `Translate these Italian lecture notes to English in full, using the complete document as context. Each section contains an ordered sequence of parts. A part with "keep" is immutable context: it will be inserted locally, verbatim, in its original position. Never return, translate or duplicate a keep part. For each part with "key" and "translate", return its complete English Markdown as a string under that key, nested inside the corresponding section key. Return only the JSON object required by the schema. Preserve Markdown headings, lists, tables and Mermaid structure in translated fragments. Do not add math or code already present in keep parts, do not merge or omit prose fragments, and do not include commentary. Edge whitespace will be restored locally. SOURCE_TRANSLATION_PLAN_JSON:\n${JSON.stringify(plan)}`
-
-    return await this.requestManager.execute({
-      jobId: jobId ?? 'translation',
-      purpose: 'translation',
-      priority: 'background',
-      keys: keyConfigs,
-      preferredModel: preferred,
-      fallbackModels: fallbacks.filter(candidate => !candidate.includes('-lite')),
-      signal,
-      call: async (k, m, s) => {
-        const ai = this.requestManager.getTransport().getClient(k)
-        const response = await ai.models.generateContent({
-          model: m,
-          contents: prompt,
-          config: {
-            systemInstruction: TRANSLATION_SYSTEM_INSTRUCTION,
-            responseMimeType: 'application/json',
-            responseJsonSchema: responseSchema,
-            temperature: 0.1,
-            abortSignal: s
-          }
-        })
-        if (s.aborted) {
-          throw new GeminiError({ category: 'cancelled', isRetryable: false, isDailyQuota: false, sanitizedMessage: 'Traduzione annullata.' })
-        }
-        const raw = response.text ?? ''
-        if (raw.trim()) await onAttempt?.(raw, previewTranslationAttempt(plan, raw))
-        return validateTranslationPlan(envelope, plan, raw, response.candidates?.[0]?.finishReason, sections => {
-          logger.info('translation-integrity', 'Copie display identiche escluse dalla prosa; formule originali conservate e integrità verificata.', JSON.stringify({ sections }))
-        }, sections => {
-          logger.info('translation-integrity', 'Diagrammi Mermaid originali conservati: traduzione della dispensa completata.', JSON.stringify({ sections }))
-        })
-      },
-      onRetry: (attempt, delayMs, reason) => {
-        onRetry?.(attempt, delayMs, reason)
-      }
-    })
+    return translateDocument({ manager: this.requestManager, envelope, keys: keyConfigs, preferred, fallbacks, jobId, signal, onRetry, onAttempt, onProgress: params.onProgress })
 
   }
 }

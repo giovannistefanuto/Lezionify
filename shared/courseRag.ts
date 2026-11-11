@@ -8,6 +8,7 @@ export interface CourseSource {
   id: string
   title: string
   kind: CourseSourceKind
+  collection?: 'exams'
   version: string
   status: 'ready' | 'partial' | 'error' | 'missing' | 'indexing'
   lectureId?: string
@@ -114,6 +115,8 @@ export interface CourseRagApi {
   ) => Promise<CourseRagState>
   syncCourseRag: (course: string) => Promise<CourseRagState>
   addCourseDocuments: (course: string) => Promise<CourseRagState>
+  addCourseExams: (course: string) => Promise<CourseRagState>
+  removeCourseExam: (course: string, sourceId: string) => Promise<CourseRagState>
   saveCourseThread: (course: string, thread: CourseThread) => Promise<void>
   deleteCourseThread: (course: string, threadId: string) => Promise<void>
   askCourse: (
