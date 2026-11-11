@@ -5458,3 +5458,25 @@ Non modificare manualmente la sezione `Registro`: aggiungi le nuove decisioni es
 - **Impatto:** Rimossa una coda con tre attivita e nessuna importazione accodata; fonti, derivazioni e checkpoint conservati. Nessuna chiamata AI avviata.
 - **Follow-up:** Avviare Elabora archivio nell app per ricostruire il piano e iniziare le fasi mancanti.
 - **File coinvolti:** DECISIONI.md, archivio locale personale non versionato
+
+## D-0496 — Recupero e pubblicazione della traduzione richiesta
+
+- **Data:** 2026-11-11
+- **Stato:** accettata
+- **Area:** recupero-eng
+- **Decisione:** Recuperare manualmente la traduzione fallita della singola lezione richiesta, reintegrando frammenti e titolo mancanti, salvare con backup a app chiusa e pubblicare sul repository appunti configurato.
+- **Motivazione:** La pipeline era gia terminata con errore di integrita; il tentativo era recuperabile senza altre chiamate AI.
+- **Impatto:** Verificate 28 sezioni, lettore reale con 29 titoli, 196 elementi matematici e 5 diagrammi senza errori; fonti e tentativi invariati, ricerca e rilettura positive, coda solo terminale salvata e azzerata. Pubblicata una lezione senza errori.
+- **Follow-up:** Ricostruzione automatica dell indice al prossimo avvio; altre dispense mancanti fuori dal perimetro.
+- **File coinvolti:** DECISIONI.md, archivio personale locale non versionato
+
+## D-0497 — Completamento delle due traduzioni inglesi residue
+
+- **Data:** 2026-11-11
+- **Stato:** accettata
+- **Area:** recupero-eng
+- **Decisione:** Controllare tutte le 53 lezioni e recuperare le due dispense inglesi mancanti dai tentativi locali, correggendo associazioni dei frammenti, una frase troncata e due identificatori Mermaid non validi nella sola versione inglese. Salvare con backup e pubblicare entrambe sul repository appunti autorizzato.
+- **Motivazione:** I tentativi erano recuperabili senza nuove chiamate AI; la revisione della prosa e il lettore reale hanno rilevato difetti oltre ai controlli strutturali.
+- **Impatto:** Inventario finale 53 inglesi leggibili su 53 lezioni, nessuna mancante o obsoleta. Verificate 42 e 55 sezioni, 42 e 57 titoli, 120 e 281 elementi matematici, 10 e 7 diagrammi senza errori. Cinque diagrammi conservano il contenuto originale secondo il fallback corrente. Fonti e tentativi invariati, ricerca e rilettura positive, coda gia assente. Due push senza errori, remoto finale verificato.
+- **Follow-up:** Indice ricostruito automaticamente al prossimo avvio; audit delle traduzioni preesistenti limitato a presenza, leggibilita e metadati.
+- **File coinvolti:** DECISIONI.md, archivio personale locale non versionato
