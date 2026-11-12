@@ -153,6 +153,41 @@ export function isSafeMermaidSvg(svg: string): boolean {
   )
 }
 
+/** Export a separate light rendering; never capture the dark reading surface. */
+export async function mermaidPng(source: string): Promise<Uint8Array> {
+  const definition = validateMermaidSource(source)
+  const svg = await enqueueRender(async () => {
+    const { default: mermaid } = await import('mermaid')
+    mermaid.initialize({ startOnLoad: false, securityLevel: 'strict', suppressErrorRendering: true,
+      maxTextSize: MAX_SOURCE_LENGTH, maxEdges: 300, htmlLabels: false, theme: 'default',
+      secure: ['secure', 'securityLevel', 'startOnLoad', 'maxTextSize', 'suppressErrorRendering', 'maxEdges', 'theme', 'themeCSS', 'themeVariables', 'fontFamily', 'altFontFamily'] })
+    const result = await mermaid.render(`ipad-${crypto.randomUUID()}`, definition)
+    if (!isSafeMermaidSvg(result.svg)) throw new Error('Schema non esportabile.')
+    return result.svg
+  })
+  await document.fonts.ready
+  const element = new DOMParser().parseFromString(svg, 'image/svg+xml').documentElement
+  const box = element.getAttribute('viewBox')?.trim().split(/\s+/).map(Number)
+  if (!box || box.length !== 4 || !box.every(Number.isFinite) || box[2] <= 0 || box[3] <= 0) throw new Error('Dimensioni dello schema non valide.')
+  const width = Math.ceil(box[2] * 2) + 32, height = Math.ceil(box[3] * 2) + 32
+  if (width > 12000 || height > 12000 || width * height > 24_000_000) throw new Error('Schema troppo grande per iPad.')
+  element.setAttribute('width', String(box[2])); element.setAttribute('height', String(box[3]))
+  const url = URL.createObjectURL(new Blob([new XMLSerializer().serializeToString(element)], { type: 'image/svg+xml' }))
+  try {
+    const image = new Image()
+    image.src = url
+    await image.decode()
+    const canvas = document.createElement('canvas')
+    canvas.width = width; canvas.height = height
+    const context = canvas.getContext('2d')
+    if (!context) throw new Error('Esportazione immagine non disponibile.')
+    context.fillStyle = '#fff'; context.fillRect(0, 0, width, height)
+    context.drawImage(image, 16, 16, width - 32, height - 32)
+    const blob = await new Promise<Blob>((resolve, reject) => canvas.toBlob(value => value ? resolve(value) : reject(new Error('Esportazione PNG non riuscita.')), 'image/png'))
+    return new Uint8Array(await blob.arrayBuffer())
+  } finally { URL.revokeObjectURL(url) }
+}
+
 interface MermaidDiagramProps {
   source: string
 }
@@ -266,7 +301,7 @@ export function MermaidDiagram({ source }: MermaidDiagramProps) {
   }, [isDark, printing, reactId, source])
 
   return (
-    <figure className="mermaid-diagram" aria-label="Diagramma Mermaid" data-render-state={svg ? 'ready' : error ? 'error' : 'loading'}>
+    <figure className="mermaid-diagram" aria-label="Diagramma Mermaid" data-mermaid-source={source} data-render-state={svg ? 'ready' : error ? 'error' : 'loading'}>
       <div className="mermaid-diagram-header">
         <figcaption>Schema</figcaption>
         {collapsible && <button

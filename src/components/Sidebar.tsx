@@ -255,16 +255,16 @@ export function Sidebar({
                 </button>
               )}
 
-              {onOpenLogViewer && (<details className="sidebar-more-actions"><summary aria-label="Altri strumenti">⋯</summary>
+              {onOpenLogViewer && (
                 <button
                   className="settings-gear-btn"
                   onClick={onOpenLogViewer}
                   title="Log di Sistema & Diagnostica (Ctrl+Shift+L)"
                   aria-label="Apri log di sistema"
                 >
-                  📜 Log di sistema
+                  <span aria-hidden="true">📋</span><span className="sidebar-action-label">Log</span>
                 </button>
-              </details>)}
+              )}
 
               <button
                 className="settings-gear-btn"
@@ -469,7 +469,7 @@ export function Sidebar({
               title="Log di Sistema (Ctrl+Shift+L)"
               aria-label="Log di Sistema"
             >
-              📜
+              📋
             </button>
           )}
           <button

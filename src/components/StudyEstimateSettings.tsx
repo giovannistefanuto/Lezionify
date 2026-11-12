@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { IpadExportSettings } from './IpadExportSettings'
 import { StudyInactivitySettings } from './StudyInactivitySettings'
 import {
   isStudyEstimateEnabled,
@@ -41,6 +42,6 @@ export function StudyEstimateSettings() {
         Preferenza salvata subito.
       </p>
       {error && <p role="alert">Impossibile salvare la preferenza. Riprova.</p>}
-    </section><StudyInactivitySettings /></>
+    </section><IpadExportSettings /><StudyInactivitySettings /></>
   )
 }

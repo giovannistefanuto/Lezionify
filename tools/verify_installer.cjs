@@ -38,6 +38,12 @@ async function main() {
   if (process.argv.includes('--repetition')) {
     for (const marker of ['Come vuoi usare il registratore?', 'RIPETERE', 'Cambia appunti', 'Riprendi sessione', 'Cosa hai capito bene', 'Difficoltà che hai superato', 'Cosa devi rivedere', 'repetition:start', 'repetition:resume']) assert(javascript.includes(marker), 'Missing repetition feature: ' + marker)
   }
+  if (process.argv.includes('--ipad')) {
+    for (const marker of ['ipad:export', 'ipad:status', 'ipad-diagrams.json', 'lezionify-schema-',
+      'Invia automaticamente gli schemi tramite Foto di iCloud', 'e 10 secondi sul paragrafo corrente',
+      'Schema salvato nella cartella iCloud', 'Apri log di sistema'])
+      assert(javascript.includes(marker), 'Missing iPad export feature: ' + marker)
+  }
   if (process.argv.includes('--study-nov4')) {
     for (const marker of ['repetition:credit-reading', 'repetition-audio:', 'audioRecordedAt',
       'Durata o data della ripetizione non valida.', '.markdown-body > .markdown-alert', 'Registra tempo di studio'])

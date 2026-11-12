@@ -1,4 +1,5 @@
 import { readBatteryStatus } from './battery'
+import { IpadExportService } from './ipadExport'
 import { CourseRagService } from './courseRag'
 import { checkPackagedCourseRag } from './courseRagPackageCheck'
 import { completeCourseResponse } from './ai/courseRagCompletion'
@@ -326,6 +327,16 @@ function registerIpcHandlers(): void {
       throw new Error('Richiesta PDF non autorizzata.')
     }
   }
+  const ipadExport = new IpadExportService(app.getPath('userData'), join(app.getPath('pictures'), 'iCloud Photos', 'Photos'))
+  ipcMain.handle('ipad:status', (event, enabled: unknown) => {
+    assertPdfSender(event)
+    if (enabled !== undefined && typeof enabled !== 'boolean') throw new Error('Preferenza iPad non valida.')
+    return ipadExport.status(enabled)
+  })
+  ipcMain.handle('ipad:export', (event, request: unknown) => {
+    assertPdfSender(event)
+    return ipadExport.export(request)
+  })
   ipcMain.handle('archive:get-focus-pdf', (event, id: unknown) => {
     assertPdfSender(event)
     return focusPdfs.get(id)

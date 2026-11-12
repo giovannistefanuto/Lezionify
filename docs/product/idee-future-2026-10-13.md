@@ -17,6 +17,11 @@ Le ricerche concluse non chiudono le caselle delle funzioni ancora da integrare.
 
 ## Coda LISTA_ORDINE
 
+**12 novembre, D-0505:** riattivata la voce 63 su richiesta diretta: anticipazione
+Mermaid implementata, prova personale automatica ancora aperta. Totale aggiornato:
+**82 attività, 61 concluse, 12 aperte operative, 7 archiviate e 2 ritirate**.
+La posizione storica 27 è ripristinata senza riordinare le altre voci.
+
 ### Ordine operativo aggiornato al 29 ottobre 2026
 
 **Stato al 28 ottobre, D-0437–D-0444:** 62 attività, 44 concluse e 18 aperte. I dodici interventi sono implementati e collaudati; verifica del provider e calibrazione sul nuovo uso personale restano limiti espliciti nel [report](studio-dodici-interventi-2026-10-28.md). Ordine invariato; prima voce aperta 33.
@@ -81,6 +86,7 @@ avviata da questo aggiornamento documentale (D-0390).
 | 24. [x] | Verifica personale residua delle versioni ENG mancanti | 20 | 11 novembre: l'utente conferma che le dispense ci sono tutte, dopo i recuperi D-0496/D-0497. Affidabilità generale della pipeline ancora nella voce 122. |
 | 25. [x] | Ctrl+T: modalità Dizionario italiano oltre al traduttore | 71 | D-0439: corpus italiano offline con flessioni e licenza, switch e input conservato verificati. |
 | 26. [x] | Pilota personale della sezione musica | 5 | 11 novembre: prova rapida Spotify positiva riferita dall'utente, che non desidera ulteriori prove per ora. Copertura limitata alla prova effettuata. |
+| 27. [ ] | Anticipazione automatica Mermaid → iPad → nota Notability corrente | 63 | Riattivata il 12 novembre: soglie 5 minuti/10 secondi, PNG iCloud e registro implementati; prova finale sulla nota personale ancora aperta. |
 | 28. [x] | Misurare l'inattività personale e chiedere se si studia ancora | 56 | D-0443: osservazione volontaria, proposta da confermare e dialogo con timer fermo collaudati; nessuna sottrazione retroattiva. |
 | 29. [x] | Rigenerare un singolo paragrafo dalla trascrizione | 59 | D-0444: sezione ITA con fonte completa dichiarata, anteprima, conferma, CAS, ripristino ed ENG conservata da aggiornare. |
 | 30. [ ] | Completare transizioni canzone → canzone / canzone → suono | 38 | Alta e vincolata ai player: dissolvenze offline già implementate, limiti D-0370. |
@@ -183,12 +189,11 @@ Il lavoro del 23 ottobre è autorizzato dalla richiesta diretta, non da LISTA_OR
 
 ### Archiviate per ora — 29 ottobre 2026
 
-Queste otto attività corrispondono ai numeri 1, 5, 7, 8, 9, 10, 14 e 15 della lista riepilogativa fornita in chat. Sono sospese perché per ora non servono: non sono completate né annullate. Descrizioni, ricerche e limiti restano conservati nelle voci originali; le loro caselle storiche non le reinseriscono nella coda operativa. Riattivazione solo su richiesta dell'utente.
+In origine queste otto attività corrispondevano ai numeri 1, 5, 7, 8, 9, 10, 14 e 15 della lista riepilogativa fornita in chat. Il 12 novembre la voce 63 viene riattivata su richiesta diretta: restano sette archiviate. Sono sospese perché per ora non servono: non sono completate né annullate. Descrizioni, ricerche e limiti restano conservati nelle voci originali; le loro caselle storiche non le reinseriscono nella coda operativa. Riattivazione solo su richiesta dell'utente.
 
 | Posizione precedente | Attività | Voce | Stato tecnico conservato |
 | --- | --- | --- | --- |
 | 18 | Ctrl / Ctrl+L e cerchio bianco attorno al mouse | 33 | Media incerta: test nativi positivi e cerchio spiegato; serve l'episodio personale storico. |
-| 27 | Percorso rapido Mermaid → iPad → nota Notability corrente | 63 | Medio/alta: intera catena e prova reale tra dispositivi. |
 | 31 | Valutare limite YouTube di 30 minuti al giorno negli orari di studio | 75 | Alta: strumento esterno e perimetro d'uso da concordare, affidabilità su PC da provare. |
 | 32 | Timer pausa sul telefono | 32 | Alta: trasporto locale e avvisi affidabili a schermo bloccato. |
 | 33 | Audio nel Q&A e registrazione dal telefono | 31 | Alta: acquisizione, trasferimento, allegati e invio AI esplicito. |
@@ -1599,11 +1604,18 @@ una scelta che può essere interamente locale.
 
 ### 63. Mermaid dalla dispensa alla nota corrente di Notability su iPad
 
-**Stato attuale: archiviata per ora dal 29 ottobre 2026, su richiesta utente. Esclusa da LISTA_ORDINE fino a riattivazione esplicita.**
+**Stato attuale: riattivata su richiesta diretta il 12 novembre 2026. Implementata l'anticipazione automatica, collaudo personale finale ancora aperto.**
 
-- [ ] Esaminare l'intera catena di componenti, strumenti e possibili installazioni per trasferire l'immagine di uno schema Mermaid da Lezionify all'iPad.
-- [ ] Confrontare i percorsi per inserirla nella nota Notability su cui si sta già lavorando, riducendo passaggi e tempo totale.
+- [x] Esaminare l'intera catena di componenti, strumenti e possibili installazioni per trasferire l'immagine di uno schema Mermaid da Lezionify all'iPad.
+- [x] Confrontare i percorsi per inserirla nella nota Notability su cui si sta già lavorando, riducendo passaggi e tempo totale.
 - [ ] Eseguire un pilota del percorso scelto, distinguendo esportazione, trasferimento e inserimento nella nota corrente.
+
+L'utente riferisce arrivo manuale entro circa 20 secondi e autorizza esportazioni
+automatiche su Foto iCloud. In Focus, dopo 300 tick effettivi sulla lezione e
+10 sul blocco corrente (D-0506), vengono esportati gli schemi dopo il blocco successivo.
+Registro locale senza duplicati per lezione/lingua/sorgente, PNG chiaro e
+interruttore nelle impostazioni. Nessuna attestazione di consegna sull'iPad.
+Uso, prove e limiti nel [piano aggiornato](condivisione-mermaid-ipad-2026-11-12.md).
 
 Partire dalle capacità di esportazione/copia effettivamente disponibili e dagli
 strumenti già presenti sui dispositivi. Valutare qualità e formato dell'immagine,

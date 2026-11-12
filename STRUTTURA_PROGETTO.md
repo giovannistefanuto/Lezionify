@@ -2,6 +2,18 @@
 
 ## Stato attuale
 
+Il 12 novembre viene implementata l'anticipazione Mermaid verso Foto iCloud:
+`useIpadAnticipation` riusa i tick di studio Focus, `ipadAnticipation` identifica
+il blocco e gli schemi successivi, `MermaidDiagram.mermaidPng` genera copie chiare.
+`electron/main/ipadExport.ts` possiede destinazione, coda e registro locale
+`ipad-diagrams.json` nel profilo, con contratti `shared/ipadExport.ts` e IPC
+riservato al renderer principale. Impostazioni in `IpadExportSettings`;
+nessuna dipendenza nuova. Prove e limiti nel
+[piano di condivisione](docs/product/condivisione-mermaid-ipad-2026-11-12.md).
+Soglia sul blocco ridotta a 10 secondi in D-0506. Setup generale rigenerato e
+verificato D-0507: 378 file build confrontati, otto componenti NSIS, manifesto,
+backup e runtime locali controllati. Gate completo con 864 unit passato.
+
 Setup generale aggiornato D-0502: scatola esami, pulsanti/Musica, quattro profili
 audio e percorso ENG D-0500 inclusi. Verificati 378 file, payload NSIS e runtime
 locali; gate 859 unit, Electron completo con riavvio e PDF reali passato.

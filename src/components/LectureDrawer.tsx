@@ -1,4 +1,6 @@
 import { useStudyEstimate } from '../hooks/useStudyEstimate'
+import { useIpadAnticipation } from '../hooks/useIpadAnticipation'
+import { IpadExportNotice } from './IpadExportSettings'
 import { StudyEstimateDetails } from './StudyEstimateDetails'
 import { getStudyHistoryClient } from '../utils/studyHistoryClient'
 import { completeStudyForecast } from '../utils/studyForecast'
@@ -426,6 +428,9 @@ export function LectureDrawer({
     collecting: selectedLecture?.studyStatus !== 'completata',
     managedActivity: true,
     qnaAnchor: isQnaSidebarOpen ? threads.find(thread => thread.id === activeThreadId)?.anchorString : '' })
+  useIpadAnticipation({ lectureId: selectedLectureId ?? null, markdown: currentMarkdown, language: effectiveLanguage,
+    enabled: isFullScreen && !isLoadingContent && !isReturningToList && !isGenerating && !isTranslating,
+    paused: trackingPaused || showFocusLock || pauseTimerActive, rootRef: contentRef })
   persistEstimate.current = studyEstimate.persist
 
   const readingKey = selectedLecture ? `notes:${selectedLecture.id}:${effectiveLanguage}` : null
@@ -663,6 +668,7 @@ export function LectureDrawer({
     if (markdownText) {
       return (
         <div className="focus-mode-overlay">
+          <IpadExportNotice />
           {isReturningToList && <p className="final-lecture-notice" role="status">Ultima lezione · Ritorno a Tutte le lezioni…</p>}
           <div className="focus-mode-toolbar">
             <div className="focus-toolbar-left">
@@ -875,6 +881,7 @@ export function LectureDrawer({
 
   return (
     <aside className="detail-drawer" aria-label="Dettaglio e studio lezione">
+      <IpadExportNotice />
       {isReturningToList && <p className="final-lecture-notice" role="status">Ultima lezione · Ritorno a Tutte le lezioni…</p>}
       <div className="detail-header">
         <div className="detail-header-left">

@@ -5535,3 +5535,58 @@ Non modificare manualmente la sezione `Registro`: aggiungi le nuove decisioni es
 - **Impatto:** Setup 299995415 byte, SHA256 62f84dc4f91ed16d382272544c5d075e5d9af70c6d840a51739b80ee9d6ccb52. Verificati 378 file build, otto componenti NSIS, manifesto e tre backup. Passati 859 unit, 24 Python, 41 Node, Electron completo con riavvio, PDF reali, runtime RAG e traduttore WASM. Nessuna installazione o release automatica.
 - **Follow-up:** Verificare commit remoto prima di concludere. Installare il setup con app chiusa. Collaudo online ENG completo ancora aperto per i limiti del provider documentati in D-0500.
 - **File coinvolti:** dist/Lezionify-Setup-0.1.0.exe, docs/product/esami-pulsanti-suoni-2026-11-11.md, STRUTTURA_PROGETTO.md, docs/product/idee-future-2026-10-13.md, docs/quality/pipeline-eng-2026-11-11.md, DECISIONI.md
+
+## D-0503 — Comando log coerente con la barra laterale
+
+- **Data:** 2026-11-12
+- **Stato:** accettata
+- **Area:** interfaccia
+- **Decisione:** Sostituire il menu aggiuntivo del log con un comando compatto nella barra laterale, coerente nelle viste estesa e ridotta.
+- **Motivazione:** Il comando precedente risultava visivamente incoerente e richiedeva un passaggio aggiuntivo.
+- **Impatto:** Accesso diretto al log, etichetta compatta e scorciatoia conservata; nessuna modifica alla diagnostica.
+- **Follow-up:** Verificare visivamente nella applicazione installata.
+- **File coinvolti:** src/components/Sidebar.tsx, src/styles.css
+
+## D-0504 — Piano Mermaid iPad subordinato al pilota iCloud Foto
+
+- **Data:** 2026-11-12
+- **Stato:** accettata
+- **Area:** condivisione-ipad
+- **Decisione:** Preparare il piano della voce 63 usando iCloud Foto come candidata, subordinando implementazione definitiva a copia programmatica e prova reale di 60 minuti con Notability a schermo intero.
+- **Motivazione:** Il report individua il percorso più vicino ai vincoli; disponibilità locale, latenza e acquisizione dei file Windows restano da dimostrare.
+- **Impatto:** Solo documentazione: nessuna installazione, sincronizzazione o esportazione attivata. PNG chiaro, configurazione esplicita, stati onesti e criteri di collaudo definiti.
+- **Follow-up:** Raccogliere configurazione dei dispositivi e concordare gli effetti della sincronizzazione prima del pilota; nessun riordino automatico della coda.
+- **File coinvolti:** docs/product/condivisione-mermaid-ipad-2026-11-12.md
+
+## D-0505 — Anticipare automaticamente gli schemi con i tick di studio
+
+- **Data:** 2026-11-12
+- **Stato:** accettata
+- **Area:** studio-ipad
+- **Decisione:** Su richiesta esplicita abilitare il salvataggio PNG chiaro verso Foto iCloud dopo 5 minuti cumulativi sulla lezione e 30 secondi sul blocco corrente, con un blocco prima dello schema. Registro persistente per evitare duplicati e interruttore nelle impostazioni.
+- **Motivazione:** L utente riferisce circa 20 secondi per la ricezione e preferisce anticipare automaticamente gli invii senza attendere il pilota lungo.
+- **Impatto:** Tick Focus e contratti IPC dedicati, destinazione nel main, PNG da Mermaid validato, nessuna nuova dipendenza o chiamata AI. 864 unit, typecheck, lint, build e due collaudi Electron isolati passati. Installazione esistente invariata.
+- **Follow-up:** Voce 63 riattivata ma aperta: verificare salvataggio automatico sulla cartella reale, acquisizione iCloud e importazione nella nota corrente dopo sessione lunga. Nessuna garanzia di consegna; nessun installer rigenerato.
+- **File coinvolti:** shared/ipadExport.ts, electron/main/ipadExport.ts, electron/main/index.ts, electron/preload/index.ts, shared/archive.ts, src/hooks/useIpadAnticipation.ts, src/utils/ipadAnticipation.ts, src/components/MermaidDiagram.tsx, src/components/LectureDrawer.tsx, src/components/IpadExportSettings.tsx, src/components/StudyEstimateSettings.tsx, src/styles.css, tests/unit/ipadExport.test.ts, tests/integration/ipadExport.browser.tsx, tools/verify_ipad_export.cjs, docs/product/condivisione-mermaid-ipad-2026-11-12.md, docs/product/idee-future-2026-10-13.md, STRUTTURA_PROGETTO.md
+
+## D-0506 — Anticipazione schema dopo dieci secondi sul paragrafo
+
+- **Data:** 2026-11-12
+- **Stato:** accettata
+- **Area:** studio-ipad
+- **Decisione:** Ridurre da 30 a 10 tick effettivi la soglia sul blocco corrente; conservare 300 tick cumulativi sulla lezione e un blocco intermedio. Rigenerare e verificare il setup generale richiesto.
+- **Motivazione:** L utente richiede un anticipo maggiore prima di raggiungere lo schema e la distribuzione tramite installer.
+- **Impatto:** Aggiornati comportamento, impostazioni e regressioni. Il pacchetto includera anche le modifiche pubblicabili di questa chat; nessuna garanzia di sincronizzazione iCloud.
+- **Follow-up:** Completare verifiche installer e commit/push automatici, poi prova personale su iPad.
+- **File coinvolti:** src/utils/ipadAnticipation.ts, src/components/IpadExportSettings.tsx, tests/unit/ipadExport.test.ts, docs/product/condivisione-mermaid-ipad-2026-11-12.md, STRUTTURA_PROGETTO.md
+
+## D-0507 — Installer con anticipazione iPad a dieci secondi verificato
+
+- **Data:** 2026-11-12
+- **Stato:** accettata
+- **Area:** distribuzione
+- **Decisione:** Rigenerare il setup generale includendo D-0503 e D-0505-D-0506, verificare build, contenuto NSIS e runtime, quindi eseguire commit e push automatici secondo AGENTS.
+- **Motivazione:** L utente richiede la riduzione della soglia e il nuovo installer; il gate completo e i controlli del pacchetto sono passati.
+- **Impatto:** Setup 300000247 byte, SHA256 d8b213b4ae774efde164c48a0ee8d735642ab084df5cce0f9d7f390a55e88ba8. Verificati 378 file build, otto componenti NSIS, manifesto e tre backup; 864 unit, 24 Python, 41 Node, Electron completo con riavvio, PDF reali e runtime locali passati. Nessuna installazione automatica.
+- **Follow-up:** Verificare presenza del commit sul remoto. Installare con app chiusa e collaudare il percorso automatico fino alla nota iPad; voce 63 ancora aperta per questa prova.
+- **File coinvolti:** dist/Lezionify-Setup-0.1.0.exe, tools/verify_installer.cjs, docs/product/condivisione-mermaid-ipad-2026-11-12.md, docs/product/idee-future-2026-10-13.md, STRUTTURA_PROGETTO.md, DECISIONI.md

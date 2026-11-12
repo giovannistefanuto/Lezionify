@@ -12,6 +12,8 @@ import type {
 } from '../../shared/archive'
 
 const archiveApi: ArchiveApi = {
+  ipadExportStatus: enabled => ipcRenderer.invoke('ipad:status', enabled),
+  exportIpadDiagram: request => ipcRenderer.invoke('ipad:export', request),
   creditRepetitionReading: (id, courseCode) => ipcRenderer.invoke('repetition:credit-reading', id, courseCode),
   answerRepetition: (id, answer) => ipcRenderer.invoke('repetition:answer', id, answer),
   repetitionState: () => ipcRenderer.invoke('repetition:state'),
