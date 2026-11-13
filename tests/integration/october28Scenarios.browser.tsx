@@ -7,6 +7,8 @@ import { DictionaryOverlay } from '../../src/components/DictionaryOverlay'
 import { FocusReminders } from '../../src/components/FocusReminders'
 import { SectionRegenerator } from '../../src/components/SectionRegenerator'
 import { useHighlights } from '../../src/hooks/useHighlights'
+import { useQuickCapture } from '../../src/hooks/useQuickCapture'
+import { QuickCaptureOverlay } from '../../src/components/QuickCaptureOverlay'
 import { useStudyTracker } from '../../src/hooks/useStudyTracker'
 import { FocusLockModal } from '../../src/components/FocusLockModal'
 import { saveInactivityProfile } from '../../src/utils/studyInactivity'
@@ -107,6 +109,15 @@ Fine spiegazione.` }] }
     }
 
 
+    api.getScratchpad = async () => ({ todos: [], notes: 'Appunto sintetico', groups: [{ id: 'g', name: 'Studio', shortcut: 'S', notes: 'Nota studio' }], selectedGroupId: 'g', updatedAt: '' })
+    api.saveScratchpad = async () => {}
+    function MemoPageHarness() { const capture = useQuickCapture(); return <QuickCaptureOverlay capture={capture} page onClosePage={() => {}} /> }
+    await render(<MemoPageHarness />)
+    check(document.querySelector('.memo-page [role="region"]') && document.body.textContent?.includes('Studio') && document.body.textContent?.includes('Ctrl+M'), 'Memo page or its groups and shortcuts are missing')
+    check(!document.querySelector('.memo-page [aria-modal="true"]'), 'Memo page traps navigation as a dialog')
+    await ipc.invoke('capture-video-import','oct28-memo-page')
+    await render(null)
+
     const highlights = new Map<string, any[]>()
     api.getHighlights = async (id: string) => structuredClone(highlights.get(id) ?? [])
     api.saveHighlights = async (id: string, items: any[]) => { highlights.set(id, structuredClone(items)) }
@@ -123,6 +134,10 @@ Fine spiegazione.` }] }
     await wait()
     check(highlights.get(owner)?.[0]?.style === 'underline', 'DOM selection not persisted as underline')
     check((CSS as any).highlights.get('lezionify-underline')?.size === 1, 'Underline missing from CSS highlight registry')
+    const beforeOutsideEnd = annotations.highlights[0].endOffset
+    range.setStart(text, 14); range.setEnd(text, 20); selection.removeAllRanges(); selection.addRange(range)
+    await act(async () => { document.querySelector('.markdown-body')!.dispatchEvent(new MouseEvent('mousedown', { bubbles: true })); document.body.dispatchEvent(new MouseEvent('mouseup', { bubbles: true })) })
+    check(annotations.highlights.length === 1 && annotations.highlights[0].endOffset > beforeOutsideEnd, 'Release outside reader failed to preserve merged selection')
     await act(async () => annotations.setAnnotationStyle('highlight'))
     await act(async () => annotations.addHighlight(12, 30, 'Sovrapposto'))
     await wait()
@@ -142,6 +157,20 @@ Fine spiegazione.` }] }
     await act(async () => { annotations.setAnnotationStyle('underline') })
     await act(async () => annotations.removeHighlightAtOffset(12))
     check(annotations.highlights.length === 1 && (CSS as any).highlights.get('lezionify-underline') === undefined, 'Removing underline removed highlight or left stale drawing')
+    await render(null)
+    owner = 'annot-multiple'
+    function MultiParagraph() {
+      annotations = useHighlights(owner)
+      return <MarkdownViewer content={'Prima frase di prova.\n\nSecondo paragrafo di prova.'} highlights={annotations.highlights} isHighlightMode={annotations.isHighlightMode} onAddHighlight={annotations.addHighlight} />
+    }
+    await render(<MultiParagraph />)
+    await act(async () => annotations.setIsHighlightMode(true))
+    const paragraphs = document.querySelectorAll('.markdown-body p')
+    range.setStart(paragraphs[0].firstChild!, 3); range.setEnd(paragraphs[1].firstChild!, 8)
+    selection.removeAllRanges(); selection.addRange(range)
+    await act(async () => document.querySelector('.markdown-body')!.dispatchEvent(new MouseEvent('mouseup', { bubbles: true })))
+    await wait()
+    check(annotations.highlights.length === 1 && annotations.highlights[0].text.includes('Secondo'), 'Selection across paragraphs did not persist')
     await render(null)
 
     localStorage.removeItem('lezionify.paragraph-samples.v1')

@@ -1,4 +1,3 @@
-import { captureGroups } from '../utils/quickCapture'
 import { MusicButton } from './MusicButton'
 import { StudyHistoryOverview } from './StudyHistoryOverview'
 import { StudyDayTimeline } from './StudyDayTimeline'
@@ -105,8 +104,6 @@ export function Dashboard({
   settings,
   saveCourseConfig,
   onOpenCourseManagement,
-  onOpenQuickCapture,
-  scratchpadData
 }: DashboardProps) {
   const courseStats = useMemo(() => {
     const archived = new Set(archivedCourseCodes ?? settings.archivedCourseCodes ?? [])
@@ -119,8 +116,6 @@ export function Dashboard({
   // Study Analytics State
   const [analytics, setAnalytics] = useState<StudyAnalytics | null>(null)
   const analyticsRevision = React.useRef(0)
-  const [storedScratchpad, setStoredScratchpad] = useState<ScratchpadData | null>(null)
-  const scratchpad = scratchpadData ?? storedScratchpad
   const [showManualModal, setShowManualModal] = useState(false)
   const [showRemovalModal, setShowRemovalModal] = useState(false)
   const [manualCourse, setManualCourse] = useState(
@@ -160,26 +155,11 @@ export function Dashboard({
 
   const invalidateAnalytics = useCallback(() => { analyticsRevision.current++ }, [])
 
-  const loadScratchpad = useCallback(async () => {
-    if (window.archive?.getScratchpad) {
-      try {
-        const data = await window.archive.getScratchpad()
-        setStoredScratchpad(data)
-      } catch (err) {
-        console.error('Errore nel caricamento dello scratchpad:', err)
-      }
-    }
-  }, [])
-
   useEffect(() => {
     setAnalytics(null)
     void loadAnalytics()
     return invalidateAnalytics
   }, [loadAnalytics, invalidateAnalytics, courseStats])
-
-  useEffect(() => {
-    void loadScratchpad()
-  }, [loadScratchpad])
 
   // Calcolo countdown per tutti gli esami configurati
   const examCountdowns = useMemo(() => {
@@ -527,6 +507,7 @@ export function Dashboard({
           <div className="study-charts-grid">
             <StudyHistoryOverview history={analytics?.dailyHistory} />
 
+            <div>
             {/* Ripartizione per Materia */}
             <div className="chart-card breakdown-chart-card">
               <div className="chart-card-header">
@@ -567,7 +548,10 @@ export function Dashboard({
                 )}
               </div>
             </div>
+            <div style={{ marginTop: 16 }}><StudyHistoryOverview history={analytics?.dailyHistory} view="summary" /></div>
+            </div>
           </div>
+          <div style={{ marginTop: 16 }}><StudyHistoryOverview history={analytics?.dailyHistory} view="averages" /></div>
         </div>
 
         {/* --- SEZIONE AVANZAMENTO LEZIONI & CORSI --- */}
@@ -857,72 +841,6 @@ export function Dashboard({
           })}
         </div>
 
-        {/* --- SEZIONE SCRATCHPAD & NOTE RAPIDE --- */}
-        {scratchpad &&
-          (scratchpad.todos.length > 0 ||
-            captureGroups(scratchpad).some(group => group.notes.trim().length > 0)) && (
-            <div className="dashboard-scratchpad-section">
-              <div className="study-analytics-header">
-                <div className="study-analytics-title">
-                  <h2>📝 Memo</h2>
-                  <span className="study-analytics-subtitle">
-                    Raccolti durante le sessioni con il Memo (premi Ctrl+M
-                    o Ctrl+P)
-                  </span>
-                </div>
-                {onOpenQuickCapture && (
-                  <button
-                    className="secondary-button small"
-                    onClick={onOpenQuickCapture}
-                    title="Apri Memo (Ctrl+M)"
-                  >
-                    📌 Apri Memo
-                  </button>
-                )}
-              </div>
-
-              <div className="dashboard-scratchpad-grid">
-                <div className="dashboard-scratchpad-card">
-                  <div className="dash-card-header">
-                    <strong>⚡ Cose da fare dopo</strong>
-                    <span className="dash-count-badge">
-                      {scratchpad.todos.filter((t) => t.completed).length}/
-                      {scratchpad.todos.length}
-                    </span>
-                  </div>
-                  <div className="dash-todo-list">
-                    {scratchpad.todos.slice(0, 10).map((todo) => (
-                      <div
-                        key={todo.id}
-                        className={`dash-todo-item ${todo.completed ? 'is-completed' : ''}`}
-                      >
-                        <span className="dash-todo-check">
-                          {todo.completed ? '✓' : '☐'}
-                        </span>
-                        <span className="dash-todo-text">{todo.groupId && `${scratchpad.groups?.find(group => group.id === todo.groupId)?.name ?? 'Senza tag'}: `}{todo.text}</span>
-                      </div>
-                    ))}
-                    {scratchpad.todos.length === 0 && (
-                      <p className="empty-hint">Nessun to-do registrato.</p>
-                    )}
-                  </div>
-                </div>
-
-                <div className="dashboard-scratchpad-card">
-                  <div className="dash-card-header">
-                    <strong>💡 Idee & Note Sparse</strong>
-                  </div>
-                  <div className="dash-notes-preview">
-                    {captureGroups(scratchpad).some(group => group.notes.trim()) ? (
-                      <pre className="dash-notes-pre">{captureGroups(scratchpad).filter(group => group.notes.trim()).map(group => `${group.name}\n${group.notes}`).join('\n\n')}</pre>
-                    ) : (
-                      <p className="empty-hint">Nessuna nota registrata.</p>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
       </section>
 
       {/* Manual Study Time Modal */}

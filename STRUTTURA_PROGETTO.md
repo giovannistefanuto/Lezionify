@@ -2,6 +2,13 @@
 
 ## Stato attuale
 
+Il 13 novembre le voci 146–151 aggiornano le statistiche a settimane locali
+lunedì–domenica, separano riepilogo e medie in grafici dedicati e aggiungono
+la ripartizione mattino/pomeriggio con soglia locale configurabile. In presenza
+di rettifiche non collocabili la ripartizione viene sospesa. Memo dispone di
+una pagina nella barra laterale e conserva il pannello rapido; l’evidenziatore
+gestisce anche il rilascio fuori dal lettore. Nessuna nuova dipendenza.
+
 Setup generale rigenerato il 13 novembre con statistiche e salvataggio Mermaid:
 379 file build confrontati, otto componenti NSIS, manifesto e backup verificati.
 Gate completo: 868 unit, 24 Python, 41 Node, Electron con riavvio e PDF reali.
@@ -350,8 +357,11 @@ dell'app: criteri di scelta, prompt, limiti e coordinamento con le regole locali
 La guida include anche `grilling`, aggiunta successivamente per l'intervista;
 `docs/product/priorita-1-5-2026-10-15.md` raccoglie scelte e verifiche risultanti.
 
-`docs/product/idee-future-2026-10-13.md` conserva le nuove idee per lo studio,
-distinguendo interventi immediati, approfondimenti e vocabolario già implementato.
+`docs/product/idee-future-2026-10-13.md` conserva la coda delle attività ancora
+aperte e quelle sospese, con descrizioni e identificativi originali.
+`docs/product/idee-future-backup-2026-11-13.md` è il backup integrale precedente
+alla pulizia: conserva le attività concluse, i vecchi ordini e tutti gli
+aggiornamenti storici. La coda operativa resta soltanto nel primo file.
 
 `docs/product/resoconto-interventi-2026-10-15.md` è il punto di ripresa della
 revisione iterativa autorizzata su tutte le voci aperte: esiti, scelte e collaudi.

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { formatLocalCalendarDate } from '../../shared/calendarDate'
 import { studyDayBounds, type StudyCredit, type StudyDay, type StudyProvenance, type StudySegment } from '../../shared/studyHistory'
+import { calculateStudyPeriods } from '../utils/studyPeriods'
 import './studyDay.css'
 
 const sources: Record<StudyProvenance, string> = { 'focus-observed': 'Focus osservato', 'repetition-audio': 'RIPETERE · audio',
@@ -21,6 +22,8 @@ function compact(segments: StudySegment[]) {
   return result
 }
 export function StudyDayTimeline({ courses = [], refreshToken = 0 }: { courses?: string[]; refreshToken?: number }) {
+  const [boundary, setBoundary] = useState(() => localStorage.getItem('study-day-boundary') || '13:00')
+  useEffect(() => { const update = () => setBoundary(localStorage.getItem('study-day-boundary') || '13:00'); window.addEventListener('study-day-boundary-change', update); return () => window.removeEventListener('study-day-boundary-change', update) }, [])
   const [date, setDate] = useState(formatLocalCalendarDate)
   const [course, setCourse] = useState<string | undefined>()
   const [source, setSource] = useState<StudyProvenance | undefined>()
@@ -57,6 +60,7 @@ export function StudyDayTimeline({ courses = [], refreshToken = 0 }: { courses?:
     return { min, max, span: max-min }
   }, [segments,timed,allHours,date,day?.timeZone])
   const shiftDay = (offset: number) => { const d = new Date(date+'T12:00:00'); d.setDate(d.getDate()+offset); setDate(formatLocalCalendarDate(d)) }
+  const splitTotals = useMemo(() => calculateStudyPeriods(day, date, boundary), [day, date, boundary])
   const creditLabel = (c: StudyCredit) => `${sources[c.provenance]}${c.quality === 'declared' ? ' · orario dichiarato' : c.quality === 'estimated' ? ' · orario stimato' : ''}`
   if (!window.archive.getStudyDay) return null
   return <section className="study-day" aria-labelledby="study-day-title">
@@ -72,6 +76,8 @@ export function StudyDayTimeline({ courses = [], refreshToken = 0 }: { courses?:
     {error && <p role="alert" className="study-day-warning">{error} <button type="button" onClick={()=>void load()}>Riprova</button></p>}
     {!day && !error && <p role="status">Caricamento della giornata…</p>}
     {day && <>
+      {!splitTotals && day.credits.some(credit => credit.correctionSeconds > 0) && <p className="study-day-warning">Mattino e pomeriggio non disponibili: le rettifiche non hanno un orario affidabile.</p>}
+      {splitTotals && <p className="study-day-note">Mattino (fino alle {boundary}): <strong>{duration(splitTotals.morning)}</strong> · Pomeriggio (dalle {boundary}): <strong>{duration(splitTotals.afternoon)}</strong>. Solo crediti con orario; eventuali rettifiche non collocabili restano distinte.</p>}
       <div className="study-day-metrics">
         <div><span>Studio accreditato</span><strong>{duration(day.creditedSeconds)}</strong></div>
         <div><span>Tempo osservato collocabile</span><strong>{duration(day.observedSeconds)}</strong></div>

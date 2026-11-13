@@ -1284,52 +1284,7 @@ async function run() {
     }
   }
   await act(async () => root.render(<Dashboard {...(dashboardProps as any)} />))
-  check(
-    document.body.textContent?.includes('prima versione'),
-    'Dashboard did not render the shared Quick Capture state'
-  )
-  await act(async () =>
-    root.render(
-      <Dashboard
-        {...(dashboardProps as any)}
-        scratchpadData={{
-          todos: [
-            {
-              id: 'dashboard-todo',
-              text: 'Attività modificata',
-              completed: true,
-              createdAt: new Date().toISOString()
-            }
-          ],
-          notes: 'seconda versione',
-          updatedAt: new Date().toISOString()
-        }}
-      />
-    )
-  )
-  check(
-    document.body.textContent?.includes('seconda versione') &&
-      document.body.textContent?.includes('Attività modificata') &&
-      !document.body.textContent?.includes('prima versione'),
-    'Dashboard did not update Quick Capture without remounting'
-  )
-  await act(async () =>
-    root.render(
-      <Dashboard
-        {...(dashboardProps as any)}
-        scratchpadData={{
-          todos: [],
-          notes: '',
-          updatedAt: new Date().toISOString()
-        }}
-      />
-    )
-  )
-  check(
-    !document.body.textContent?.includes('Attività modificata') &&
-      !document.body.textContent?.includes('seconda versione'),
-    'Dashboard did not remove deleted Quick Capture content'
-  )
+  check(!document.querySelector('.dashboard-scratchpad-section'), 'Memo should no longer appear as a Dashboard box')
 
   const dashboardStats = ['ACTIVE', 'ARCHIVED', 'EMPTY'].map(courseCode => ({
     courseCode, totalLectures: 3, completedLectures: 2, inProgressLectures: 1,
@@ -1356,17 +1311,16 @@ async function run() {
   await renderStudyDashboard(dashboardStats, ['ARCHIVED'])
   check(document.querySelectorAll('.course-stat-card').length === 2 &&
     !document.querySelector('[aria-label="Visualizza logistica corso ARCHIVED"]'), 'Archived course leaked into dashboard cards')
-  check(document.querySelector('.history-overview')?.textContent?.includes('Ultimi 7 giorni'), 'Study history chart missing')
+  check(document.querySelector('.history-overview')?.textContent?.includes('Questa settimana'), 'Study history chart missing')
   check(document.querySelector('.history-summary strong')?.textContent === '1 h 0 min', 'Current week must use credited daily totals')
-  check(document.querySelectorAll('.history-overview .bar-fill')[6]?.getAttribute('style')?.includes('100%'), 'Today bar must represent study time')
+  check(document.querySelector('.history-overview .is-today .bar-fill')?.getAttribute('style')?.includes('100%'), 'Today bar must represent study time')
   await act(async () => (document.querySelector('[aria-label="Sette giorni precedenti"]') as HTMLButtonElement).click())
-  check(document.querySelector('.history-overview')?.textContent?.includes('Settimana precedente'), 'Study history navigation failed')
+  check(document.querySelector('.history-overview')?.textContent?.includes('Settimana'), 'Study history navigation failed')
   await act(async () => (document.querySelector('.history-nav button:last-child') as HTMLButtonElement).click())
-  check(document.querySelector('.history-overview')?.textContent?.includes('Ultimi 7 giorni'), 'Study history failed to return to today')
-  await act(async () => (document.querySelector('.history-averages summary') as HTMLElement).click())
-  check(document.querySelectorAll('.history-averages tbody tr').length === 7, 'Weekday averages missing')
+  check(document.querySelector('.history-overview')?.textContent?.includes('Questa settimana'), 'Study history failed to return to today')
+  check(document.querySelectorAll('.weekday-average').length === 7, 'Weekday averages missing')
   const oldWeekday = (fixtureOld.getDay() + 6) % 7
-  const oldRow = document.querySelectorAll('.history-averages tbody tr')[oldWeekday]
+  const oldRow = document.querySelectorAll('.weekday-average')[oldWeekday]
   check(oldRow?.textContent?.includes('0 h 12 min') && oldRow.textContent.includes('5'), 'Weekday mean must include zero-credit days and exclude today')
   const dashboardStyle = document.createElement('style')
   dashboardStyle.textContent = await require('electron').ipcRenderer.invoke('video-import-styles')

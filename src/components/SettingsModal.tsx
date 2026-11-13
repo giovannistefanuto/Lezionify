@@ -118,6 +118,7 @@ export function SettingsModal({
 }: SettingsModalProps) {
   const [showAdvanced, setShowAdvanced] = useState<boolean>(inputApiKeys.length >= 2)
   const [section, setSection] = useState<'general' | ToolSettingsSection>(initialSection ?? 'general')
+  const [dayBoundary, setDayBoundary] = useState(() => localStorage.getItem('study-day-boundary') || '13:00')
   const panel = useRef<HTMLDivElement>(null)
   useEffect(() => {
     if (!show) return
@@ -154,6 +155,7 @@ export function SettingsModal({
           <button type="button" aria-pressed={section === 'music'} onClick={() => setSection('music')}>Musica</button>
         </nav>
         <div className="settings-modal-body" hidden={section !== 'general'}>
+          <section className="publishing-settings"><h4>La mia giornata</h4><label>Orario di separazione tra mattino e pomeriggio <input type="time" value={dayBoundary} onChange={event => { const value = event.target.value; if (!value) return; setDayBoundary(value); localStorage.setItem('study-day-boundary', value); window.dispatchEvent(new Event('study-day-boundary-change')) }} /></label><p>La modifica aggiorna anche le giornate precedenti.</p></section>
           <StudyEstimateSettings />
           <CopyGuardSettings />
           <section className="publishing-settings" aria-labelledby="publishing-settings-title">

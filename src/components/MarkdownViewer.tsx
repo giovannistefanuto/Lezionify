@@ -298,6 +298,23 @@ function RawMarkdownViewer({
     }
   }, [highlights, content])
 
+  const selectionStartedHere = useRef(false)
+  useEffect(() => {
+    if (!isHighlightMode) return
+    const finishOutside = (event: MouseEvent) => {
+      const container = containerRef.current
+      if (!selectionStartedHere.current || !container) return
+      selectionStartedHere.current = false
+      if (event.target instanceof Node && container.contains(event.target)) return
+      const selection = window.getSelection()
+      if (!selection || selection.rangeCount === 0 || selection.isCollapsed) return
+      const offsets = getOffsetsFromSelection(container, selection.getRangeAt(0))
+      if (offsets && offsets.text.trim()) { onAddHighlight?.(offsets.start, offsets.end, offsets.text); selection.removeAllRanges() }
+    }
+    window.addEventListener('mouseup', finishOutside)
+    return () => window.removeEventListener('mouseup', finishOutside)
+  }, [isHighlightMode, onAddHighlight])
+
   // Gestione selezione testo o click per evidenziare/rimuovere
   const handleMouseUp = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
@@ -351,6 +368,7 @@ function RawMarkdownViewer({
     <div
       ref={containerRef}
       className={`markdown-body ${isHighlightMode ? 'is-highlight-mode' : ''}`}
+      onMouseDown={() => { selectionStartedHere.current = true }}
       onMouseUp={handleMouseUp}
       onCopy={copyRenderedMath}
     >

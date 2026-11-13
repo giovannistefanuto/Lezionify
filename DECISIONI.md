@@ -5678,3 +5678,80 @@ Non modificare manualmente la sezione `Registro`: aggiungi le nuove decisioni es
 - **Impatto:** Runtime RAG, worker PDF e download esplicito verificati sul medesimo ASAR del setup; nessuna installazione o modifica dell archivio personale.
 - **Follow-up:** Eseguire commit e push automatici e verificarne la presenza sul remoto.
 - **File coinvolti:** dist/Lezionify-Setup-0.1.0.exe, tools/verify_installer.cjs, STRUTTURA_PROGETTO.md, DECISIONI.md
+
+## D-0516 — Pulizia delle idee future con backup integrale
+
+- **Data:** 2026-11-13
+- **Stato:** accettata
+- **Area:** documentazione
+- **Decisione:** Salvare una copia integrale della lista prima della pulizia e mantenere nel documento attivo soltanto le 13 voci operative e le 7 sospese, con ordine, identificativi e descrizioni invariati; conservare l appendice musicale con requisiti ancora aperti.
+- **Motivazione:** Rendere consultabile la lista delle cose ancora da fare senza perdere requisiti, esiti, decisioni e limiti delle attivita concluse.
+- **Impatto:** 122 descrizioni concluse, due ritirate e gli ordini storici sono consultabili nel backup integrale; la lista attiva passa da 3174 a 571 righe. Nessun cambiamento agli stati o al prodotto; i sottopassi gia svolti delle voci parziali restano come contesto.
+- **Follow-up:** Usare solo la lista attiva per LISTA_ORDINE; il backup e una fotografia storica e non una seconda coda operativa.
+- **File coinvolti:** docs/product/idee-future-2026-10-13.md, docs/product/idee-future-backup-2026-11-13.md, STRUTTURA_PROGETTO.md
+
+## D-0517 — Sette richieste dopo la pulizia della lista futura
+
+- **Data:** 2026-11-13
+- **Stato:** accettata
+- **Area:** pianificazione-prodotto
+- **Decisione:** Aggiungere le voci 145-151 e le posizioni 91-97 nell ordine ricevuto: altri provider API, box settimanale, grafico medie giornaliere, settimane lunedi-domenica, pagina Memo, ripartizione mattino-pomeriggio e verifica evidenziatore.
+- **Motivazione:** Conservare tutte le nuove richieste con criteri verificabili e distinguere vincoli espliciti dalle scelte ancora da definire.
+- **Impatto:** Lista attiva con 20 attivita operative e 7 sospese; prima voce 7 e ordine precedente invariati. Backup storico intatto. Nessuna implementazione avviata; scorciatoie Memo attuali Ctrl+M e Ctrl+P verificate nel codice.
+- **Follow-up:** Valutare provider e ambito API, tipo di grafico, disposizione pagina Memo e ricalcolo della soglia oraria quando si avviano le relative voci.
+- **File coinvolti:** docs/product/idee-future-2026-10-13.md, DECISIONI.md
+
+## D-0518 — Revisione parziale delle viste statistiche
+
+- **Data:** 2026-11-13
+- **Stato:** accettata
+- **Area:** statistiche
+- **Decisione:** Separare il riepilogo settimanale e le medie giornaliere in riquadri dedicati, rappresentare le medie con barre e mostrare il grafico settimanale da lunedi a domenica.
+- **Motivazione:** Avanzare sulle richieste 146-148 mantenendo i dati e le etichette leggibili.
+- **Impatto:** Modificati componenti Dashboard e StudyHistoryOverview e regressioni; typecheck superato. Collaudi Electron e verifica visiva ancora necessari prima di chiudere le voci.
+- **Follow-up:** Completare collaudi e verifiche UI, quindi affrontare le voci 149-151; lasciare aperte tutte le caselle fino alla verifica.
+- **File coinvolti:** src/components/Dashboard.tsx, src/components/StudyHistoryOverview.tsx, src/components/studyHistoryOverview.css, tests/integration/hookRegression.browser.tsx
+
+## D-0519 — Ripartizione preliminare mattino e pomeriggio
+
+- **Data:** 2026-11-13
+- **Stato:** accettata
+- **Area:** cronologia-studio
+- **Decisione:** Aggiungere un orario locale modificabile nelle impostazioni, inizialmente alle 13, e calcolare in cronologia i crediti collocabili prima e dopo tale orario.
+- **Motivazione:** Consentire una prima valutazione delle fasce richieste conservando separati i crediti senza orario.
+- **Impatto:** La soglia e locale e ricalcola anche le giornate precedenti; typecheck superato. Le rettifiche non collocabili e i crediti stimati richiedono ulteriori verifiche e chiarimenti nella UI.
+- **Follow-up:** Completare le verifiche di calcolo, fuso, rettifiche e interfaccia prima di chiudere la voce 150.
+- **File coinvolti:** src/components/SettingsModal.tsx, src/components/StudyDayTimeline.tsx
+
+## D-0520 — Pagina Memo e rilascio evidenziatore
+
+- **Data:** 2026-11-13
+- **Stato:** accettata
+- **Area:** studio-interfaccia
+- **Decisione:** Aggiungere una pagina Memo accessibile dalla barra laterale riusando lo stesso stato e i comandi del pannello rapido; rimuovere il riquadro Memo dalla Dashboard e gestire la selezione rilasciata fuori dal lettore.
+- **Motivazione:** Riunire tag e contenuti in uno spazio dedicato e non perdere una selezione iniziata nel testo e rilasciata fuori.
+- **Impatto:** Dati e scorciatoie Ctrl+M e Ctrl+P conservati. Richieste 149 e 151 in corso: typecheck e test unitari superati, collaudi visivi e integrazione da completare.
+- **Follow-up:** Collaudare pagina, finestre ridotte, tutte le selezioni e persistenza; completare le verifiche delle statistiche prima dell installer.
+- **File coinvolti:** src/App.tsx, src/components/QuickCaptureOverlay.tsx, src/components/Dashboard.tsx, src/components/memo.css, src/components/MarkdownViewer.tsx
+
+## D-0521 — Collaudo delle sei richieste di interfaccia
+
+- **Data:** 2026-11-13
+- **Stato:** accettata
+- **Area:** verifica-prodotto
+- **Decisione:** Concludere le voci 146-151 dopo controlli statici, test unitari, regressioni Electron e PDF reali, con prova delle selezioni tra paragrafi e del rilascio fuori dal lettore.
+- **Motivazione:** Le sei modifiche richieste sono disponibili e i controlli sui dati sintetici e sul comportamento del renderer sono riusciti.
+- **Impatto:** Resta aperta la voce 145 sui provider API. La ripartizione non attribuisce rettifiche prive di orario; soglia salvata localmente e applicata anche alle giornate precedenti.
+- **Follow-up:** Rigenerare e verificare installer generale, quindi pubblicare commit e push.
+- **File coinvolti:** docs/product/idee-future-2026-10-13.md, STRUTTURA_PROGETTO.md, tests/unit/studyPeriods.test.ts, tests/integration/october28Scenarios.browser.tsx
+
+## D-0522 — Installer per statistiche Memo ed evidenziatore
+
+- **Data:** 2026-11-13
+- **Stato:** accettata
+- **Area:** distribuzione
+- **Decisione:** Rigenerare il setup generale con le sei modifiche e pubblicare tutte le modifiche del checkout secondo AGENTS.
+- **Motivazione:** L utente ha richiesto installer e pubblicazione dopo i collaudi.
+- **Impatto:** Setup 299998614 byte SHA256 1a3e105c550b7078c136321eebbe67ccc3e67f27eea630681f4f16c411715632; confrontati 378 file build, otto componenti NSIS, manifesto e tre backup. Gate completo: 868 unit, 24 Python, 41 Node, Electron con riavvio e PDF reali; due test aggiuntivi fasce e regressioni mirate Electron superati. Installer non eseguito.
+- **Follow-up:** Eseguire commit e push e verificare il commit sul remoto.
+- **File coinvolti:** dist/Lezionify-Setup-0.1.0.exe, tools/verify_installer.cjs, tools/verify_nsis_payload.cjs, STRUTTURA_PROGETTO.md, DECISIONI.md

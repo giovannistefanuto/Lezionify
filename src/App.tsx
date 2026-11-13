@@ -113,6 +113,7 @@ export default function App() {
   const dictionary = useDictionaryShortcut()
   const [toolSettingsSection, setToolSettingsSection] = useState<ToolSettingsSection | undefined>()
   const [mainView, setMainView] = useState<'archive' | 'dashboard'>('archive')
+  const [showMemoPage, setShowMemoPage] = useState(false)
   const [selectedLectureId, setSelectedLectureId] = useState<string | null>(
     null
   )
@@ -440,6 +441,7 @@ export default function App() {
       <Sidebar
         mainView={mainView}
         setMainView={(view) => {
+          setShowMemoPage(false)
           setMainView(view)
           if (view === 'dashboard') {
             refreshCourseStats()
@@ -480,7 +482,7 @@ export default function App() {
         onToggleTheme={toggleTheme}
         onOpenCourseManagement={() => setShowCourseModal(true)}
         onOpenCourseChat={() => { setCourseChatLoaded(true); setCourseChatOpen(true) }}
-        onOpenQuickCapture={quickCapture.toggleOpen}
+        onOpenQuickCapture={() => setShowMemoPage(true)}
         onOpenLogViewer={() => setShowLogModal(true)}
         onOpenUsbRecorder={() => setShowUsbModal(true)}
         onOpenRepetitions={() => setShowRepetitions(true)}
@@ -500,7 +502,8 @@ export default function App() {
           />
         )}
 
-        {mainView === 'archive' && (
+        {showMemoPage && <Suspense fallback={<LazyFallback />}><QuickCaptureOverlay capture={quickCapture} page onClosePage={() => setShowMemoPage(false)} /></Suspense>}
+        {!showMemoPage && mainView === 'archive' && (
           <ErrorBoundary fallbackTitle="Errore nel caricamento dell'archivio lezioni">
             <LectureList
               selectedCourse={selectedCourse}
@@ -567,7 +570,7 @@ export default function App() {
           </ErrorBoundary>
         )}
 
-        {mainView === 'dashboard' && (
+        {!showMemoPage && mainView === 'dashboard' && (
           <Suspense fallback={<LazyFallback />}>
             <ErrorBoundary fallbackTitle="Errore nel caricamento delle statistiche">
               <Dashboard
@@ -588,7 +591,7 @@ export default function App() {
         )}
       </div>
 
-      {selectedLecture && mainView === 'archive' && (
+      {!showMemoPage && selectedLecture && mainView === 'archive' && (
         <Suspense fallback={<LazyFallback />}>
           <ErrorBoundary fallbackTitle="Errore nel pannello della lezione">
             <LectureDrawer

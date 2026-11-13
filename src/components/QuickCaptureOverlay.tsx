@@ -7,7 +7,7 @@ import { CopyGuardDialog } from './CopyGuard'
 import { COPY_PHRASES, isCopyProtected, readCopyGuardHours } from '../utils/copyGuard'
 
 type Capture = ReturnType<typeof useQuickCapture>
-export function QuickCaptureOverlay({ capture }: { capture: Capture }) {
+export function QuickCaptureOverlay({ capture, page = false, onClosePage }: { capture: Capture; page?: boolean; onClosePage?: () => void }) {
   const [pendingCopy, setPendingCopy] = useState<{ text: string; phrase: string } | null>(null)
   const [editing, setEditing] = useState<string | null | undefined>(undefined)
   const [name, setName] = useState('')
@@ -17,7 +17,7 @@ export function QuickCaptureOverlay({ capture }: { capture: Capture }) {
   const [deleting, setDeleting] = useState<string | null>(null)
   const actions = useRef<HTMLDetailsElement>(null)
   const panel = useRef<HTMLDivElement>(null)
-  useModalFocus(panel, true)
+  useModalFocus(panel, !page)
   useEffect(() => {
     const dismiss = (event: PointerEvent) => {
       if (actions.current && !actions.current.contains(event.target as Node))
@@ -54,16 +54,16 @@ export function QuickCaptureOverlay({ capture }: { capture: Capture }) {
   }
   const groups = captureGroups(capture.data)
   return (
-    <div className="quick-capture-backdrop" onClick={capture.closeOverlay}>
+    <div className={page ? "memo-page" : "quick-capture-backdrop"} onClick={page ? undefined : capture.closeOverlay}>
       <div
         className="quick-capture-deck"
         ref={panel}
-        role="dialog"
-        aria-modal="true"
+        role={page ? "region" : "dialog"}
+        aria-modal={page ? undefined : true}
         aria-label="Memo"
         onClick={(event) => event.stopPropagation()}
         onKeyDown={(event) => {
-          if (event.key !== 'Tab') return
+          if (page || event.key !== 'Tab') return
           const items = Array.from(
             panel.current?.querySelectorAll<HTMLElement>(
               'button:not(:disabled), input:not(:disabled), textarea:not(:disabled), select:not(:disabled), summary'
@@ -84,7 +84,7 @@ export function QuickCaptureOverlay({ capture }: { capture: Capture }) {
           <div>
             <span className="memo-eyebrow">IL TUO SPAZIO</span>
             <h2>Memo</h2>
-            <p>Attività e appunti, organizzati per gruppo.</p>
+            <p>Attività e appunti, organizzati per gruppo. Scorciatoie: Ctrl+M o Ctrl+P.</p>
           </div>
           <div className="memo-heading-actions">
             <span className="memo-progress">
@@ -93,7 +93,7 @@ export function QuickCaptureOverlay({ capture }: { capture: Capture }) {
             <button
               type="button"
               className="memo-close"
-              onClick={capture.closeOverlay}
+              onClick={page ? onClosePage : capture.closeOverlay}
               aria-label="Chiudi Memo"
             >
               ×

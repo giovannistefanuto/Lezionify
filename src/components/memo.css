@@ -381,3 +381,5 @@
 .memo-copy-actions button[type=submit] { background: #226649; color: white; border-color: #226649; }
 .memo-copy-actions button:disabled { opacity: .5; cursor: default; }
 .memo-text-preview { font: inherit; }
+
+.memo-page{padding:24px;min-height:100%;box-sizing:border-box}.memo-page .quick-capture-deck{width:100%;max-width:1120px;max-height:none;overflow:visible;margin:0 auto;padding:28px;border-radius:20px;background:var(--bg-surface);color:var(--text-main);box-sizing:border-box}@media(max-width:600px){.memo-page{padding:10px}.memo-page .quick-capture-deck{padding:16px}}
