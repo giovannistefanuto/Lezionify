@@ -1,5 +1,6 @@
 import { captureGroups } from '../utils/quickCapture'
 import { MusicButton } from './MusicButton'
+import { StudyHistoryOverview } from './StudyHistoryOverview'
 import { StudyDayTimeline } from './StudyDayTimeline'
 import { StudyTimeRemovalDialog } from './StudyTimeRemovalDialog'
 import React, { useState, useEffect, useCallback, useMemo } from 'react'
@@ -333,11 +334,6 @@ export function Dashboard({
     }
   }
 
-  // Calcolo scala massima per il grafico a barre (minimo 1 ora)
-  const maxDaySeconds = Math.max(
-    ...(analytics?.weekDays?.map((d) => d.totalSeconds) || [0]),
-    3600
-  )
 
   return (
     <>
@@ -529,49 +525,7 @@ export function Dashboard({
 
           {/* Grafico a Barre 7 Giorni & Breakdown Materie */}
           <div className="study-charts-grid">
-            {/* Grafico a barre verticali */}
-            <div className="chart-card week-chart-card">
-              <div className="chart-card-header">
-                <h3>Ultimi 7 Giorni</h3>
-                <span className="chart-legend">
-                  Media:{' '}
-                  {formatHoursMinutes(analytics?.weekAvgDailySeconds || 0)}/g
-                </span>
-              </div>
-
-              <div className="bar-chart-container">
-                {analytics?.weekDays?.map((day) => {
-                  const heightPct = Math.round(
-                    (day.totalSeconds / maxDaySeconds) * 100
-                  )
-                  const isToday = day.date === formatLocalCalendarDate()
-
-                  return (
-                    <div
-                      key={day.date}
-                      className={`bar-chart-col ${isToday ? 'is-today' : ''}`}
-                    >
-                      <div
-                        className="bar-wrapper"
-                        title={`${day.dayLabel}: ${formatHoursMinutes(day.totalSeconds)}`}
-                      >
-                        <div
-                          className="bar-fill"
-                          style={{ height: `${Math.max(heightPct, 4)}%` }}
-                        >
-                          {day.totalSeconds > 0 && (
-                            <span className="bar-tooltip">
-                              {formatHoursMinutes(day.totalSeconds)}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      <span className="bar-label">{day.dayLabel}</span>
-                    </div>
-                  )
-                })}
-              </div>
-            </div>
+            <StudyHistoryOverview history={analytics?.dailyHistory} />
 
             {/* Ripartizione per Materia */}
             <div className="chart-card breakdown-chart-card">

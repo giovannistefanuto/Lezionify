@@ -1,6 +1,6 @@
 import { useEffect, type RefObject } from 'react'
 import { STUDY_TICK_EVENT, studySurfaceBlocked } from '../utils/studyActivity'
-import { IpadAnticipation, upcomingDiagrams, IPAD_PREFERENCE_EVENT, IPAD_EXPORT_EVENT } from '../utils/ipadAnticipation'
+import { IpadAnticipation, upcomingDiagrams, IPAD_PREFERENCE_EVENT, IPAD_EXPORT_EVENT, ipadDiagramKey } from '../utils/ipadAnticipation'
 
 export function useIpadAnticipation({ lectureId, language, markdown, enabled, paused, rootRef }: {
   lectureId: string | null; language: string; markdown: string | null; enabled: boolean; paused: boolean
@@ -48,9 +48,7 @@ export function useIpadAnticipation({ lectureId, language, markdown, enabled, pa
           if (disposed || !preference) break
           attempted.add(source)
           try {
-            const bytes = new TextEncoder().encode(`${lectureId}\n${language}\n${source}`)
-            const digest = await crypto.subtle.digest('SHA-256', bytes)
-            const key = Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, '0')).join('')
+            const key = await ipadDiagramKey(lectureId, language, source)
             const { mermaidPng } = await import('../components/MermaidDiagram')
             const png = await mermaidPng(source)
             if (disposed || !preference) break

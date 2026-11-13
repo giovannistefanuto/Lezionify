@@ -32,3 +32,18 @@ it('accetta il terminatore standard anche nel caso minimo e conserva etichette e
     validateMermaidSource(source.replace(/^\s*acc(?:Title|Descr):.*$/gm, ''))
   ).toContain('<br/>')
 })
+
+it('ripara identificatori di sottografi con spazi mantenendo titolo e stile', () => {
+  const input = 'flowchart TD\nsubgraph Punto di Sella ["Punto di Sella (Equilibrio di Nash)"]\ndirection TB\nP1["MASSIMIZZARE U_1"]\nend\nstyle Punto di Sella fill:#f9f9f9,stroke:#333,stroke-width:2px'
+  const result = validateMermaidSource(input)
+  expect(result).toContain('subgraph lezionify_subgraph_0["Punto di Sella (Equilibrio di Nash)"]')
+  expect(result).toContain('style lezionify_subgraph_0 fill:#f9f9f9,stroke:#333,stroke-width:2px')
+  expect(() => validateMermaidSource(input.replace('fill:#f9f9f9', 'fill:url(javascript:alert(1))'))).toThrow()
+})
+
+it('conserva il titolo implicito del sottografo Maximin Misto', () => {
+  const source = 'flowchart LR\nsubgraph Costruzione Grafica del Maximin Misto\ndirection LR\nA["Rette Payoff"] --> B["Inviluppo Inferiore"]\nB --> C["Massimo"]\nend\nstyle Costruzione Grafica del Maximin Misto fill:#eef7ff,stroke:#0066cc,stroke-width:1px'
+  const output = validateMermaidSource(source)
+  expect(output).toContain('subgraph lezionify_subgraph_0["Costruzione Grafica del Maximin Misto"]')
+  expect(output).toContain('style lezionify_subgraph_0 fill:#eef7ff,stroke:#0066cc,stroke-width:1px')
+})

@@ -1,7 +1,7 @@
 # Idee e modifiche future — 13 ottobre 2026
 
 Raccolta delle richieste dell’utente per lo sviluppo futuro di Lezionify,
-iniziata il 13 ottobre e aggiornata con nuove idee fino all'11 novembre 2026.
+iniziata il 13 ottobre e aggiornata con nuove idee fino al 13 novembre 2026.
 La classificazione è preliminare: gli interventi immediati hanno un obiettivo
 già definito e non richiedono una ricerca preventiva; restano necessari i normali
 controlli del codice e i collaudi. Gli approfondimenti richiedono invece una
@@ -16,6 +16,11 @@ Revisione iterativa del 15 ottobre, autorizzata su tutte le voci aperte:
 Le ricerche concluse non chiudono le caselle delle funzioni ancora da integrare.
 
 ## Coda LISTA_ORDINE
+
+**13 novembre:** aggiunte otto richieste, voci 137–144, posizioni 83–90,
+nell'ordine ricevuto e senza riordinare le precedenti. Totale aggiornato:
+**90 attività, 68 concluse, 13 aperte operative, 7 archiviate e 2 ritirate**.
+Le nuove voci sono requisiti futuri: nessuna implementazione avviata.
 
 **12 novembre, D-0505:** riattivata la voce 63 su richiesta diretta: anticipazione
 Mermaid implementata, prova personale automatica ancora aperta. Totale aggiornato:
@@ -136,6 +141,14 @@ avviata da questo aggiornamento documentale (D-0390).
 | 80. [ ] | Sezione Altre cose per materiali fuori dagli esami | 134 | Ampia: organizzazione e riuso dei flussi audio, video e dispense da definire. |
 | 81. [x] | Rendere più visibile il pulsante Musica nella Home | 135 | Da verificare nella Home e coordinare con la revisione dei pulsanti. |
 | 82. [x] | Aggiungere suoni pieni e dal volume abbastanza costante | 136 | Da selezionare e ascoltare: onde forti e alternative anche non marine. |
+| 83. [ ] | Notifica Bluetooth animata in Focus per connessione cuffiette | 137 | Da verificare: eventi reali Windows e animazione non invasiva di 5 secondi. |
+| 84. [x] | Salvare ogni schema Mermaid una sola volta | 138 | Diagnosi della deduplicazione persistente e delle copie già presenti. |
+| 85. [x] | Rendering Mermaid: subgraph Punto di Sella e Maximin Misto | 139 | Da riprodurre: distinguere sintassi generata e limiti del renderer. |
+| 86. [x] | Ore della settimana e media delle tre settimane precedenti | 140 | Definire collocazione, settimane locali e dati incompleti. |
+| 87. [x] | Rivedere UI/UX e design di Cronologia locale / La mia giornata | 141 | Revisione mirata della voce 130, coordinata con la voce 128. |
+| 88. [x] | Grafico Ultimi 7 giorni con navigazione delle settimane precedenti | 142 | Conservare vista iniziale e definire intervalli e navigazione storica. |
+| 89. [x] | Tabella delle ore medie per giorno della settimana | 143 | Da valutare: periodo di riferimento, denominatore e dati mancanti. |
+| 90. [x] | Pulsante download Mermaid verso iCloud con controllo dei duplicati | 144 | Riusare esportazione e registro; avviso già salvato di 3 secondi. |
 
 **Aggiunte dell'11 novembre:** cinque richieste, voci 132–136, posizioni
 78–82 in fondo alla coda e nell'ordine ricevuto. Totale: **82 attività,
@@ -2803,6 +2816,153 @@ installata né una lettura dei campioni personali.
 - [x] Aggiungere una scelta di suoni più pieni, con volume abbastanza
   costante, per esempio onde forti del mare, includendo anche alternative
   diverse dal mare. Valutare qualità d'ascolto e continuità del volume.
+
+## Aggiunte del 13 novembre 2026
+
+**Stato di avanzamento, D-0509/D-0510:** introdotti salvataggio manuale
+con verifica dei duplicati, recupero di file mancanti, normalizzazione di
+sottografi con spazi e nuove viste statistiche. Test unitari, build e
+collaudi Electron sintetici passati; persistono da verificare i casi di
+duplicazione riferiti nell'archivio personale, la formattazione originale
+dei Mermaid e il comportamento effettivo della sincronizzazione iCloud.
+Le voci 138–144 sono state verificate; la causa dei duplicati precedentemente riferiti non è stata ricostruita.
+
+
+Otto richieste conservate come attività distinte, nell'ordine del messaggio.
+I dettagli da definire non costituiscono scelte tecniche già approvate.
+
+### 137. Notifica Bluetooth animata per le cuffiette in Focus
+
+- [ ] Quando le cuffiette si connettono effettivamente al PC durante la
+  modalità Focus, mostrare un simbolo Bluetooth per confermare la connessione
+  senza obbligare l'utente a uscire dalla lettura.
+- Il simbolo parte dal basso dello schermo, sale come un palloncino, rallenta,
+  si ferma e scompare gradualmente. L'intera sequenza dura **5 secondi**,
+  senza rubare il focus o richiedere interazione.
+- Verificare come rilevare la connessione reale delle cuffiette su Windows,
+  distinguendola da semplice associazione o Bluetooth attivo. Definire posizione,
+  gestione delle riconnessioni e movimento ridotto per accessibilità.
+- Coordinare con la voce 106 sui comandi EarFun, che resta archiviata:
+  la notifica è una richiesta distinta e non ne riattiva l'integrazione.
+
+### 138. Salvare ciascuno schema Mermaid una sola volta
+
+- [x] Verificare e correggere gli eventuali salvataggi duplicati degli schemi
+  nel percorso di esportazione verso iCloud: lo stesso schema deve essere
+  salvato una sola volta, anche dopo rilettura, riapertura o riavvio.
+- Partire dal registro persistente della voce 63 (D-0505–D-0506), senza
+  considerare la presenza del registro una prova che il caso segnalato sia risolto.
+- Definire l'identità dello schema e il comportamento per revisioni reali,
+  lingua diversa, file rimosso ed esportazioni concorrenti. Allineare il
+  controllo dei duplicati tra esportazione automatica e pulsante della voce 144.
+- Verificare i duplicati già presenti senza eliminarli automaticamente.
+  La riuscita della copia locale non attesta la consegna sull'iPad.
+
+**Verifica D-0513:** deduplicazione per lezione, lingua e sorgente condivisa
+tra salvataggio automatico e manuale, serializzata e persistente; il file
+mancante viene ripristinato. I quattro PNG Lezionify presenti nella cartella
+personale sono distinti per dimensioni, contenuto e miniature. Nessuna
+immagine è stata modificata o rimossa. La causa di precedenti duplicazioni
+riferite non è stata ricostruita; la verifica non esclude varianti visivamente
+simili o schemi diversi generati dallo stesso contenuto.
+
+### 139. Visualizzare i flowchart Mermaid con subgraph Punto di Sella e Maximin Misto
+
+- [x] Riprodurre i due casi forniti e far visualizzare i diagrammi validi,
+  distinguendo un errore nella sintassi generata da Gemini da un limite di
+  normalizzazione, validazione o rendering di Lezionify.
+- Verificare titoli e identificatori dei sottografi, spazi, direttive
+  `direction` e `style`, oltre alla separazione delle istruzioni nei blocchi
+  originali. Se occorre correggere la sintassi, conservare la fonte e applicare
+  soltanto trasformazioni verificabili senza cambiare il contenuto didattico.
+- Riusare le regressioni delle voci 51 e 116; mantenere le restrizioni di
+  sicurezza e rendere comprensibile l'eventuale errore residuo.
+- Esempi originali conservati come testo per la diagnosi, senza dichiararli
+  già validi o già corretti:
+
+```text
+flowchart TD     subgraph Punto di Sella ["Punto di Sella (Equilibrio di Nash)"]         direction TB         P1["Direzione Giocatore 1 (s_1): MASSIMIZZARE U_1"]         P2["Direzione Giocatore 2 (s_2): MINIMIZZARE U_1"]     end     style Punto di Sella fill:#f9f9f9,stroke:#333,stroke-width:2px
+```
+
+```text
+flowchart LR     subgraph Costruzione Grafica del Maximin Misto         direction LR         A["Rette Payoff vs Strategie Pure Avversario"] --> B["Inviluppo Inferiore (Minimo dei Payoff)"]         B --> C["Massimo dell'Inviluppo (Maximin Misto)"]     end     style Costruzione Grafica del Maximin Misto fill:#eef7ff,stroke:#0066cc,stroke-width:1px
+```
+
+**Verifica D-0512:** gli esempi esattamente come incollati su una riga non
+sono sintassi Mermaid valida nel parser reale; non si può attribuire la causa
+alla generazione senza il blocco originale. Le versioni ricostruite con
+istruzioni su righe separate e identificatori con spazi vengono normalizzate
+e renderizzate in Electron, mantenendo etichette e stili sicuri.
+
+### 140. Totale delle ore settimanali e media delle tre settimane precedenti
+
+- [x] Aggiungere alle statistiche il totale delle ore studiate nella settimana
+  corrente e la media dei totali settimanali delle **tre settimane precedenti**.
+- Definire collocazione e presentazione, confini della settimana nel fuso locale,
+  filtri per corso e uso del tempo di studio accreditato, senza confonderlo con
+  il tempo osservato sulla cronologia.
+- Esplicitare che la settimana corrente è parziale. Definire il comportamento
+  se manca parte dello storico, distinguendo giorni a zero da dati non disponibili
+  ed evitando confronti fuorvianti con settimane complete.
+
+### 141. Revisione UI/UX e design di Cronologia locale / La mia giornata
+
+- [x] Rivedere in modo mirato gerarchia, leggibilità, densità, termini e
+  interazioni della sezione «Cronologia locale — La mia giornata», già
+  implementata nella voce 130; coordinare con la revisione generale 128.
+- Includere navigazione Giorno / Oggi, selettori corso, provenienza e ore,
+  Aggiorna, riepiloghi Studio accreditato / Tempo osservato collocabile /
+  Senza orario registrato / Blocco più lungo e mediano, asse temporale e legenda.
+- Rivedere anche Interruzioni e strumenti (Memo/RIPETERE, attesa di conferma,
+  strumenti, pausa programmata, traduttore e inattività), cambi di contesto,
+  elenco delle fasce con provenienza e previsioni registrate.
+- Rendere comprensibili differenze tra credito e tempo sull'orologio,
+  sovrapposizioni, dati senza orario, periodi non osservati e fuso locale.
+  Non presentare spazi vuoti come pause né i cambi di contesto come un voto
+  di attenzione. I valori forniti dall'utente sono esempi, non dati da fissare.
+- Partire da evidenze visive dell'interfaccia attuale e verificare tastiera,
+  finestre piccole e zoom prima di considerare conclusa la revisione.
+
+### 142. Navigare le settimane precedenti dal grafico Ultimi 7 giorni
+
+- [x] Conservare il grafico «Ultimi 7 giorni» come vista predefinita e
+  aggiungere la possibilità di consultare lo storico settimana per settimana.
+- Prevedere navigazione avanti/indietro, intervallo di date sempre visibile e
+  ritorno alla vista corrente, mantenendo la qualità visiva del grafico attuale.
+- Definire esplicitamente se lo storico usa finestre mobili di sette giorni
+  o settimane di calendario e come avviene il passaggio dalla vista iniziale.
+  Coordinare filtri e confini temporali con la voce 140.
+- Gestire settimane parziali, giorni senza studio e dati mancanti senza
+  inventare valori o rendere confrontabili intervalli diversi senza segnalarlo.
+
+### 143. Tabella delle ore medie per giorno della settimana
+
+- [x] Valutare e progettare nelle statistiche una tabella da lunedì a domenica
+  che mostri quanto si studia mediamente in ciascun giorno della settimana.
+- Definire periodo di riferimento e calcolo della media, chiarendo quali
+  occorrenze di ciascun giorno entrano nel denominatore, come trattare giorni
+  a zero, dati mancanti e giornata corrente non ancora conclusa.
+- Mostrare periodo, unità e numero di giornate considerate; coordinare filtri
+  per corso e fonte del tempo accreditato con le voci 140 e 142.
+- La forma interrogativa della proposta originale resta una valutazione
+  aperta: non è ancora approvata una collocazione o una formula definitiva.
+
+### 144. Pulsante download accanto a ogni Mermaid per recuperare il salvataggio iCloud
+
+- [x] Aggiungere accanto a ogni schema Mermaid un pulsante con icona download
+  che lo salvi nella cartella iCloud già configurata, come recupero manuale
+  quando l'esportazione automatica durante la lettura non è avvenuta.
+- Se lo schema risulta già salvato, non creare una nuova copia e mostrare
+  l'avviso **«È già salvato»**, che scompare dopo **3 secondi**.
+- Riusare destinazione, formato e registro dell'esportazione automatica della
+  voce 63 e la deduplicazione della voce 138, anche per clic ripetuti o
+  contemporanei al salvataggio automatico. Distinguere in corso, riuscita,
+  già salvato ed errore; un tentativo fallito deve poter essere ritentato.
+- Verificare perché l'automatismo a volte non interviene, senza considerare
+  il pulsante una prova che la causa sia risolta. Gestire destinazione assente,
+  file rimosso e schema non renderizzabile con esiti comprensibili.
+- Il pulsante deve essere riconoscibile e accessibile da tastiera; confermare
+  il salvataggio locale senza promettere sincronizzazione o importazione in Notability.
 
 ## Nota sulla classificazione
 

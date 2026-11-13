@@ -38,6 +38,10 @@ async function main() {
   if (process.argv.includes('--repetition')) {
     for (const marker of ['Come vuoi usare il registratore?', 'RIPETERE', 'Cambia appunti', 'Riprendi sessione', 'Cosa hai capito bene', 'Difficoltà che hai superato', 'Cosa devi rivedere', 'repetition:start', 'repetition:resume']) assert(javascript.includes(marker), 'Missing repetition feature: ' + marker)
   }
+  if (process.argv.includes('--study-nov13')) {
+    for (const marker of ['Sette giorni precedenti', 'Media per giorno della settimana', 'Questa settimana', 'Salva schema nella cartella iCloud', 'È già salvato'])
+      assert(javascript.includes(marker), 'Missing November 13 feature: ' + marker)
+  }
   if (process.argv.includes('--ipad')) {
     for (const marker of ['ipad:export', 'ipad:status', 'ipad-diagrams.json', 'lezionify-schema-',
       'Invia automaticamente gli schemi tramite Foto di iCloud', 'e 10 secondi sul paragrafo corrente',

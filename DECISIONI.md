@@ -5590,3 +5590,91 @@ Non modificare manualmente la sezione `Registro`: aggiungi le nuove decisioni es
 - **Impatto:** Setup 300000247 byte, SHA256 d8b213b4ae774efde164c48a0ee8d735642ab084df5cce0f9d7f390a55e88ba8. Verificati 378 file build, otto componenti NSIS, manifesto e tre backup; 864 unit, 24 Python, 41 Node, Electron completo con riavvio, PDF reali e runtime locali passati. Nessuna installazione automatica.
 - **Follow-up:** Verificare presenza del commit sul remoto. Installare con app chiusa e collaudare il percorso automatico fino alla nota iPad; voce 63 ancora aperta per questa prova.
 - **File coinvolti:** dist/Lezionify-Setup-0.1.0.exe, tools/verify_installer.cjs, docs/product/condivisione-mermaid-ipad-2026-11-12.md, docs/product/idee-future-2026-10-13.md, STRUTTURA_PROGETTO.md, DECISIONI.md
+
+## D-0508 — Otto idee su Bluetooth, Mermaid e statistiche
+
+- **Data:** 2026-11-13
+- **Stato:** accettata
+- **Area:** pianificazione-prodotto
+- **Decisione:** Registrare le voci 137-144 e le posizioni 83-90 nell ordine ricevuto, senza riordinare la coda: notifica Bluetooth, salvataggio unico Mermaid, due casi subgraph, riepilogo settimanale, revisione cronologia, navigazione settimane, medie per giorno e recupero manuale iCloud.
+- **Motivazione:** Formalizzare tutte le richieste del 13 novembre con criteri verificabili, preservando esempi Mermaid e punti ancora da definire.
+- **Impatto:** Solo documentazione: 90 attivita, 61 concluse, 20 aperte operative, 7 archiviate e 2 ritirate. Nessuna funzione implementata; collegamenti alle voci 63, 128 e 130 e nessuna riattivazione delle archiviate.
+- **Follow-up:** Definire e collaudare ciascuna voce quando avviata; distinguere copia locale, sincronizzazione iCloud e inserimento nella nota iPad.
+- **File coinvolti:** docs/product/idee-future-2026-10-13.md, DECISIONI.md
+
+## D-0509 — Ripristino schema iPad rimosso
+
+- **Data:** 2026-11-13
+- **Stato:** accettata
+- **Area:** studio-ipad
+- **Decisione:** Verificare che il file registrato esista prima di dichiarare duplicata una esportazione; se manca ripristinarlo tramite il percorso serializzato esistente.
+- **Motivazione:** Riprodotto il falso duplicato quando il file e stato rimosso dalla cartella dopo il salvataggio.
+- **Impatto:** Il registro resta invariato fino alla scrittura riuscita; non vengono eliminate copie e le altre cause dei duplicati restano da verificare.
+- **Follow-up:** Completare le voci 138-144, inclusi pulsante manuale e collaudi personali iCloud.
+- **File coinvolti:** electron/main/ipadExport.ts, tests/unit/ipadExport.test.ts, DECISIONI.md
+
+## D-0510 — Salvataggio manuale Mermaid e viste statistiche
+
+- **Data:** 2026-11-13
+- **Stato:** accettata
+- **Area:** studio-statistiche-ipad
+- **Decisione:** Aggiungere esportazione manuale degli schemi con identita condivisa con l automatismo, normalizzazione limitata di sottografi con spazi, storico giornaliero accreditato e navigazione a periodi di sette giorni con riepiloghi settimanali e medie per giorno; affinare la cronologia.
+- **Motivazione:** Consentire il recupero esplicito degli schemi e rendere consultabile lo storico con periodi e denominatori dichiarati.
+- **Impatto:** La copia manuale usa la cartella configurata anche con automatismo disattivato; lo storico considera i corsi attivi, i giorni senza crediti come zero dal primo giorno registrato e limita la media settimanale ai tre periodi precedenti quando disponibili.
+- **Follow-up:** Verificare UI e casi personali iCloud, comportamento dei duplicati e diagrammi originali con formattazione effettiva; mantenere aperte le voci non completamente collaudate.
+- **File coinvolti:** electron/main/archive.ts, electron/main/ipadExport.ts, shared/archive.ts, shared/ipadExport.ts, src/components/Dashboard.tsx, src/components/StudyHistoryOverview.tsx, src/components/studyHistoryOverview.css, src/components/studyDay.css, src/components/LectureDrawer.tsx, src/components/MarkdownViewer.tsx, src/components/MermaidDiagram.tsx, src/hooks/useIpadAnticipation.ts, src/utils/ipadAnticipation.ts, tests, DECISIONI.md
+
+## D-0511 — Collaudi statistiche e invio manuale Mermaid
+
+- **Data:** 2026-11-13
+- **Stato:** accettata
+- **Area:** verifica-prodotto
+- **Decisione:** Completare le voci 140-144 dopo le verifiche delle statistiche, della cronologia e dell invio manuale; mantenere aperte 138-139 per la riproduzione dei casi originali personali.
+- **Motivazione:** Le regressioni Electron e i test unitari verificano valori, navigazione, layout e deduplicazione nel percorso sintetico; la causa delle copie personali e i sorgenti originali non sono acquisiti.
+- **Impatto:** Coda a 90 attivita: 66 concluse, 15 aperte, 7 archiviate e 2 ritirate. Nessun installer rigenerato.
+- **Follow-up:** Riprodurre i duplicati originari e verificare i diagrammi esatti e la consegna iCloud personale; mantenere le fonti intatte.
+- **File coinvolti:** docs/product/idee-future-2026-10-13.md, tests/integration, DECISIONI.md
+
+## D-0512 — Verifica degli esempi Mermaid originali
+
+- **Data:** 2026-11-13
+- **Stato:** accettata
+- **Area:** verifica-mermaid
+- **Decisione:** Concludere la voce 139: gli esempi su una sola riga sono rifiutati dal parser Mermaid; le versioni ricostruite su righe separate con identificatori riparati sono renderizzate nel runtime Electron.
+- **Motivazione:** Il collaudo dei due testi esatti distingue sintassi non valida e normalizzazione verificata senza attribuire la causa a Gemini.
+- **Impatto:** Coda 90 attivita: 67 concluse, 14 aperte, 7 archiviate e 2 ritirate. La voce 138 resta aperta per duplicazione personale non riprodotta.
+- **Follow-up:** Se disponibili confrontare i blocchi originali della dispensa e il caso di copie visivamente duplicate, senza rimuovere immagini automaticamente.
+- **File coinvolti:** src/components/MermaidDiagram.tsx, tests/integration/october28Scenarios.browser.tsx, docs/product/idee-future-2026-10-13.md, DECISIONI.md
+
+## D-0513 — Deduplicazione esportazioni e verifica dei file presenti
+
+- **Data:** 2026-11-13
+- **Stato:** accettata
+- **Area:** verifica-mermaid
+- **Decisione:** Concludere la voce 138 nel perimetro della deduplicazione persistente per lezione, lingua e sorgente, condivisa tra esportazioni automatiche e manuali, con ripristino del file mancante.
+- **Motivazione:** Superate prove di concorrenza, riavvio, file mancante e percorso manuale; i quattro PNG Lezionify attualmente presenti nella cartella personale sono distinti per dimensioni, pixel e miniature.
+- **Impatto:** Coda 90 attivita: 68 concluse, 13 aperte, 7 archiviate e 2 ritirate. Non sono stati rimossi o modificati file personali.
+- **Follow-up:** La causa delle duplicazioni precedentemente riferite resta non ricostruita; varianti visivamente simili e schemi con sorgenti differenti non sono garantiti come identici.
+- **File coinvolti:** electron/main/ipadExport.ts, src/utils/ipadAnticipation.ts, tests/unit/ipadExport.test.ts, tests/integration/ipadExport.browser.tsx, docs/product/idee-future-2026-10-13.md, DECISIONI.md
+
+## D-0514 — Installer con statistiche e salvataggio Mermaid
+
+- **Data:** 2026-11-13
+- **Stato:** accettata
+- **Area:** distribuzione
+- **Decisione:** Rigenerare il setup generale dopo il gate completo e verificare contenuto NSIS, build, manifesto, backup e runtime RAG isolato; pubblicare commit e push come previsto dalle regole del progetto.
+- **Motivazione:** L utente chiede un installer se non emergono blocchi; test unitari, Electron, PDF e verifiche di funzionamento locale sono passati.
+- **Impatto:** Setup 300006098 byte, SHA256 c6a5a05bf93ac06f503952bcaa26051f2aecccdfc0d0b77add3d02096486ac1f; 379 file build e otto componenti NSIS confrontati, tre backup verificati, 868 unit, 24 Python e 41 Node passati. Nessuna installazione automatica.
+- **Follow-up:** Completare la verifica di download del modello pubblico e verificare commit e push sul remoto; restano i limiti personali di iCloud e duplicazioni storiche documentati.
+- **File coinvolti:** dist/Lezionify-Setup-0.1.0.exe, tools/verify_installer.cjs, STRUTTURA_PROGETTO.md, DECISIONI.md
+
+## D-0515 — Runtime e modello pubblico del nuovo setup verificati
+
+- **Data:** 2026-11-13
+- **Stato:** accettata
+- **Area:** distribuzione
+- **Decisione:** Convalidare il setup generato con inferenza locale senza rete, preparazione esplicita del modello pubblico, rifiuto del modello corrotto e confronto delle impronte tra runtime e payload NSIS.
+- **Motivazione:** Le prove isolate completano le verifiche del pacchetto costruito prima della pubblicazione Git.
+- **Impatto:** Runtime RAG, worker PDF e download esplicito verificati sul medesimo ASAR del setup; nessuna installazione o modifica dell archivio personale.
+- **Follow-up:** Eseguire commit e push automatici e verificarne la presenza sul remoto.
+- **File coinvolti:** dist/Lezionify-Setup-0.1.0.exe, tools/verify_installer.cjs, STRUTTURA_PROGETTO.md, DECISIONI.md

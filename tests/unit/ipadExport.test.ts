@@ -49,6 +49,30 @@ describe('anticipazione schemi iPad', () => {
       await expect(restarted.export({ ...request, key: 'b'.repeat(64) })).rejects.toThrow('disattivato')
     } finally { await rm(directory, { recursive: true, force: true }) }
   })
+  it('ripristina uno schema rimosso dalla cartella anche se presente nel registro', async () => {
+    const directory = await mkdtemp(join(tmpdir(), 'lezionify-ipad-'))
+    try {
+      const destination = join(directory, 'photos'); await mkdir(destination)
+      const service = new IpadExportService(directory, destination)
+      const request = { key: 'c'.repeat(64), png: png() }
+      await service.export(request)
+      await rm(join(destination, (await readdir(destination))[0]))
+      expect((await service.export(request)).duplicate).toBe(false)
+      expect(await readdir(destination)).toHaveLength(1)
+    } finally { await rm(directory, { recursive: true, force: true }) }
+  })
+  it('permette il salvataggio manuale anche con automatismo disattivato e deduplica', async () => {
+    const directory = await mkdtemp(join(tmpdir(), 'lezionify-ipad-'))
+    try {
+      const destination = join(directory, 'photos'); await mkdir(destination)
+      const service = new IpadExportService(directory, destination)
+      await service.status(false)
+      const request = { key: 'd'.repeat(64), png: png(), manual: true }
+      expect((await service.export(request)).duplicate).toBe(false)
+      expect((await service.export(request)).duplicate).toBe(true)
+      expect(await readdir(destination)).toHaveLength(1)
+    } finally { await rm(directory, { recursive: true, force: true }) }
+  })
   it('non crea false destinazioni iCloud né registra invii falliti', async () => {
     const directory = await mkdtemp(join(tmpdir(), 'lezionify-ipad-'))
     try {

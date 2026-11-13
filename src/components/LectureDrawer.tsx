@@ -780,6 +780,7 @@ export function LectureDrawer({
               <div className="focus-text-document" style={{ zoom: textZoom }}>
               <MarkdownViewer
                 content={currentMarkdown ?? ''}
+                mermaidExport={{ lectureId: selectedLecture.id, language: effectiveLanguage }}
                 highlights={highlights}
                 isHighlightMode={isHighlightMode}
                 onAddHighlight={addHighlight}
@@ -1241,6 +1242,7 @@ export function LectureDrawer({
                       >
                         <MarkdownViewer
                           content={currentMarkdown ?? ''}
+                mermaidExport={{ lectureId: selectedLecture.id, language: effectiveLanguage }}
                           highlights={highlights}
                           isHighlightMode={isHighlightMode}
                           onAddHighlight={addHighlight}

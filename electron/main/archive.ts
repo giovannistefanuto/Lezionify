@@ -2680,6 +2680,7 @@ export class ArchiveService {
       todaySeconds,
       todayByCourse,
       weekDays,
+      dailyHistory: [...totalsByDate].map(([date, totalSeconds]) => ({ date, totalSeconds })).sort((a, b) => a.date.localeCompare(b.date)),
       weekAvgDailySeconds,
       monthAvgDailySeconds,
       totalSemesterSeconds,

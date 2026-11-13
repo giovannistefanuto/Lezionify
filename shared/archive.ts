@@ -476,6 +476,7 @@ export interface StudyAnalytics {
   todaySeconds: number
   todayByCourse: Record<string, number>
   weekDays: DailyStudySummary[]
+  dailyHistory?: Array<{ date: string; totalSeconds: number }>
   weekAvgDailySeconds: number
   monthAvgDailySeconds: number
   totalSemesterSeconds: number

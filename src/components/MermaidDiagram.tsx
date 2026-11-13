@@ -1,4 +1,5 @@
 import { createContext, memo, useCallback, useContext, useEffect, useId, useMemo, useState } from 'react'
+import { ipadDiagramKey } from '../utils/ipadAnticipation'
 import { mermaidPrintAlternative, mermaidPrintScale, needsMermaidPrintAlternative } from '../utils/mermaidPrint'
 
 // Only the Focus reading workspace enables folding; exports stay fully expanded.
@@ -11,6 +12,7 @@ interface MermaidCollapseControls {
 
 export const MermaidCollapseContext = createContext<boolean | MermaidCollapseControls>(false)
 export const MermaidPrintContext = createContext(false)
+export const MermaidExportContext = createContext<{ lectureId: string; language: string } | null>(null)
 
 /** One group per explanation: other panes and PDF export keep their own display. */
 export function useMermaidCollapseGroup(scope: string) {
@@ -113,7 +115,7 @@ function useDarkTheme(): boolean {
 }
 
 export function validateMermaidSource(source: string): string {
-  const normalized = source.trim()
+  let normalized = source.trim()
   if (!normalized) throw new Error('Il diagramma è vuoto.')
   if (normalized.length > MAX_SOURCE_LENGTH) {
     throw new Error('Il diagramma supera il limite di dimensione.')
@@ -127,6 +129,29 @@ export function validateMermaidSource(source: string): string {
   }
   if (FORBIDDEN_DIRECTIVE.test(normalized)) {
     throw new Error('Il diagramma contiene una direttiva non consentita.')
+  }
+  // Repair only whole-line subgraph identifiers containing spaces. The generated
+  // identifier must not collide with source text; labels remain unchanged.
+  if (/^(?:graph|flowchart)\s+/i.test(firstDefinition)) {
+    const replacements = new Map<string, string>()
+    const lines = normalized.split(/\r?\n/)
+    for (let i = 0; i < lines.length; i++) {
+      const match = /^(\s*)subgraph\s+([A-Za-z][\w-]*(?:[ \t]+[A-Za-z][\w-]*)+)(?:[ \t]+(\["[^"\r\n]*"\]))?[ \t]*$/i.exec(lines[i])
+      if (!match || replacements.has(match[2])) continue
+      let id = `lezionify_subgraph_${replacements.size}`
+      while (normalized.includes(id)) id += '_'
+      replacements.set(match[2], id)
+      const title = match[3] ?? `["${match[2]}"]`
+      lines[i] = `${match[1]}subgraph ${id}${title}`
+    }
+    if (replacements.size) normalized = lines.map(line => {
+      for (const [name, id] of replacements) {
+        const prefix = `style ${name} `
+        const trimmed = line.trimStart()
+        if (trimmed.startsWith(prefix)) return line.slice(0, line.length - trimmed.length) + `style ${id} ` + trimmed.slice(prefix.length)
+      }
+      return line
+    }).join('\n')
   }
   const supportsStaticStyles = /^(?:(?:graph|flowchart)\s+|stateDiagram-v2\b)/i.test(firstDefinition)
   for (const line of normalized.split(/\r?\n/)) {
@@ -198,6 +223,21 @@ const MermaidCanvas = memo(function MermaidCanvas({ svg }: { svg: string }) {
 
 export function MermaidDiagram({ source }: MermaidDiagramProps) {
   const printing = useContext(MermaidPrintContext)
+  const exportContext = useContext(MermaidExportContext)
+  const [exportMessage, setExportMessage] = useState('')
+  const [exportBusy, setExportBusy] = useState(false)
+  useEffect(() => { if (!exportMessage) return; const timer = setTimeout(() => setExportMessage(''), 3000); return () => clearTimeout(timer) }, [exportMessage])
+  const saveDiagram = async () => {
+    if (!exportContext || exportBusy) return
+    setExportBusy(true); setExportMessage('')
+    try {
+      const key = await ipadDiagramKey(exportContext.lectureId, exportContext.language, source)
+      const png = await mermaidPng(source)
+      const result = await window.archive.exportIpadDiagram({ key, png, manual: true })
+      setExportMessage(result.duplicate ? 'È già salvato' : 'Salvato nella cartella iCloud')
+    } catch { setExportMessage('Salvataggio non riuscito. Controlla la cartella iCloud e riprova.') }
+    finally { setExportBusy(false) }
+  }
   const collapseContext = useContext(MermaidCollapseContext)
   const collapsible = Boolean(collapseContext)
   const group = typeof collapseContext === 'object' ? collapseContext : null
@@ -304,6 +344,8 @@ export function MermaidDiagram({ source }: MermaidDiagramProps) {
     <figure className="mermaid-diagram" aria-label="Diagramma Mermaid" data-mermaid-source={source} data-render-state={svg ? 'ready' : error ? 'error' : 'loading'}>
       <div className="mermaid-diagram-header">
         <figcaption>Schema</figcaption>
+        {!printing && exportContext && <button type="button" className="mermaid-source-toggle" aria-label="Salva schema nella cartella iCloud" title="Salva schema nella cartella iCloud" disabled={!svg || exportBusy} onClick={() => void saveDiagram()}>⇩</button>}
+        {exportMessage && <span role="status">{exportMessage}</span>}
         {collapsible && <button
           type="button"
           className="mermaid-collapse-toggle"

@@ -45,8 +45,17 @@ export class IpadExportService {
     return this.serial(async () => {
       const request = validateIpadExport(value)
       const ledger = await this.read()
-      if (!ledger.enabled) throw new Error('Invio automatico iPad disattivato.')
-      if (ledger.entries[request.key]) return { duplicate: true, bytes: ledger.entries[request.key].bytes }
+      if (!ledger.enabled && !request.manual) throw new Error('Invio automatico iPad disattivato.')
+      const recorded = ledger.entries[request.key]
+      if (recorded) {
+        try {
+          if (!(await stat(join(this.destination, recorded.name))).isFile()) throw new Error('Il percorso dello schema non è un file.')
+          return { duplicate: true, bytes: recorded.bytes }
+        } catch (error) {
+          if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error
+          // A missing file can be recreated; the existing ledger is kept until the write succeeds.
+        }
+      }
       if (nativeImage.createFromBuffer(Buffer.from(request.png)).isEmpty()) throw new Error('Immagine non decodificabile.')
       const name = `lezionify-schema-${request.key}.png`
       try {

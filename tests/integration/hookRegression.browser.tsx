@@ -1336,8 +1336,12 @@ async function run() {
     toStudyLectures: 0, totalAudioSeconds: 7200,
     pipelineStatus: { audioOnly: 0, transcriptAvailable: 0, markdownReady: 3 }
   }))
+  const fixtureToday = new Date()
+  const fixtureOld = new Date(fixtureToday); fixtureOld.setDate(fixtureOld.getDate() - 35)
+  const localDay = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
   const dashboardAnalytics = {
     todaySeconds: 3600, todayByCourse: { ACTIVE: 3600 }, weekDays: [], weekAvgDailySeconds: 514,
+    dailyHistory: [{ date: localDay(fixtureOld), totalSeconds: 3600 }, { date: localDay(fixtureToday), totalSeconds: 3600 }],
     monthAvgDailySeconds: 120, totalSemesterSeconds: 3600, currentStreakDays: 1,
     courseBreakdown: [{ courseCode: 'ACTIVE', totalSeconds: 3600, percentage: 100 }],
     courseLectureAverages: [
@@ -1352,9 +1356,23 @@ async function run() {
   await renderStudyDashboard(dashboardStats, ['ARCHIVED'])
   check(document.querySelectorAll('.course-stat-card').length === 2 &&
     !document.querySelector('[aria-label="Visualizza logistica corso ARCHIVED"]'), 'Archived course leaked into dashboard cards')
+  check(document.querySelector('.history-overview')?.textContent?.includes('Ultimi 7 giorni'), 'Study history chart missing')
+  check(document.querySelector('.history-summary strong')?.textContent === '1 h 0 min', 'Current week must use credited daily totals')
+  check(document.querySelectorAll('.history-overview .bar-fill')[6]?.getAttribute('style')?.includes('100%'), 'Today bar must represent study time')
+  await act(async () => (document.querySelector('[aria-label="Sette giorni precedenti"]') as HTMLButtonElement).click())
+  check(document.querySelector('.history-overview')?.textContent?.includes('Settimana precedente'), 'Study history navigation failed')
+  await act(async () => (document.querySelector('.history-nav button:last-child') as HTMLButtonElement).click())
+  check(document.querySelector('.history-overview')?.textContent?.includes('Ultimi 7 giorni'), 'Study history failed to return to today')
+  await act(async () => (document.querySelector('.history-averages summary') as HTMLElement).click())
+  check(document.querySelectorAll('.history-averages tbody tr').length === 7, 'Weekday averages missing')
+  const oldWeekday = (fixtureOld.getDay() + 6) % 7
+  const oldRow = document.querySelectorAll('.history-averages tbody tr')[oldWeekday]
+  check(oldRow?.textContent?.includes('0 h 12 min') && oldRow.textContent.includes('5'), 'Weekday mean must include zero-credit days and exclude today')
   const dashboardStyle = document.createElement('style')
   dashboardStyle.textContent = await require('electron').ipcRenderer.invoke('video-import-styles')
   document.head.appendChild(dashboardStyle)
+  document.querySelector('.history-overview')!.scrollIntoView({ block: 'center', behavior: 'instant' })
+  await require('electron').ipcRenderer.invoke('capture-video-import', 'dashboard-history')
   const averageCard = document.querySelector('[aria-label="Visualizza logistica corso ACTIVE"]')!
   check(averageCard.querySelector('.lecture-study-average')?.textContent?.includes('45 min') &&
     averageCard.textContent?.includes('2 lezioni completate con tempo registrato'), 'Study average or sample size missing')

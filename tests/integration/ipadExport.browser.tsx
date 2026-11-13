@@ -1,6 +1,6 @@
 import React, { useRef } from 'react'
 import { createRoot } from 'react-dom/client'
-import { mermaidPng } from '../../src/components/MermaidDiagram'
+import { mermaidPng, MermaidDiagram, MermaidExportContext } from '../../src/components/MermaidDiagram'
 import { useIpadAnticipation } from '../../src/hooks/useIpadAnticipation'
 import { creditStudyTick } from '../../src/utils/studyActivity'
 import { upcomingDiagrams } from '../../src/utils/ipadAnticipation'
@@ -57,6 +57,18 @@ async function run() {
   reader.scrollTop = 300
   check(upcomingDiagrams(reader)?.diagrams.length === 0, 'non anticipa con zero paragrafi intermedi')
   root.unmount()
+  await ipcRenderer.invoke('status', false)
+  const manual = createRoot(document.getElementById('root')!)
+  manual.render(<MermaidExportContext.Provider value={{ lectureId: 'synthetic', language: 'it' }}><MermaidDiagram source={source} /></MermaidExportContext.Provider>)
+  for (let i = 0; i < 100 && !document.querySelector('.mermaid-diagram-canvas svg'); i++) await delay(100)
+  const download = document.querySelector<HTMLButtonElement>('[aria-label="Salva schema nella cartella iCloud"]')
+  check(download && !download.disabled, 'pulsante manuale disponibile')
+  download!.click()
+  for (let i = 0; i < 100 && !document.body.textContent?.includes('È già salvato'); i++) await delay(100)
+  check(document.body.textContent?.includes('È già salvato'), 'duplicato manuale segnalato')
+  await delay(3300)
+  check(!document.body.textContent?.includes('È già salvato'), 'avviso duplicato rimosso dopo tre secondi')
+  manual.unmount()
   for (const [name, definition] of [['flow', source], ['sequence', 'sequenceDiagram\n Alice->>Bob: Qualità e quantità'], ['state', 'stateDiagram-v2\n [*] --> Studio\n Studio --> Pausa']] as const) {
     const png = await mermaidPng(definition)
     await ipcRenderer.invoke('preview', name, png)

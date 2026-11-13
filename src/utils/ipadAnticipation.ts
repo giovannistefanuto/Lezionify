@@ -29,3 +29,10 @@ export function upcomingDiagrams(root: HTMLElement): { paragraph: HTMLElement; d
   for (let offset = index + 2; offset < blocks.length && blocks[offset].matches('.mermaid-diagram'); offset++) diagrams.push(blocks[offset])
   return { paragraph: blocks[index], diagrams }
 }
+
+/** The automatic and manual paths must use the same identity. */
+export async function ipadDiagramKey(lectureId: string, language: string, source: string): Promise<string> {
+  const bytes = new TextEncoder().encode(`${lectureId}\n${language}\n${source}`)
+  const digest = await crypto.subtle.digest('SHA-256', bytes)
+  return Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, '0')).join('')
+}

@@ -2,6 +2,21 @@
 
 ## Stato attuale
 
+Setup generale rigenerato il 13 novembre con statistiche e salvataggio Mermaid:
+379 file build confrontati, otto componenti NSIS, manifesto e backup verificati.
+Gate completo: 868 unit, 24 Python, 41 Node, Electron con riavvio e PDF reali.
+Runtime RAG locale isolato e rifiuto modello corrotto verificati; i limiti
+sulla consegna iCloud e sulle duplicazioni storiche restano in D-0512/D-0513.
+
+
+Il 13 novembre: `StudyHistoryOverview` usa lo storico giornaliero dei crediti
+dei corsi attivi restituito da `getStudyAnalytics`, con intervalli mobili di
+sette giorni e medie esplicitate. `MermaidExportContext` rende disponibile
+il pulsante manuale nella lettura; condivide l'identità con l'anticipazione.
+Il registro verifica la presenza del file e la normalizzazione Mermaid tratta
+identificatori di sottografi con spazi. Dettagli e limiti in D-0509/D-0510.
+
+
 Il 12 novembre viene implementata l'anticipazione Mermaid verso Foto iCloud:
 `useIpadAnticipation` riusa i tick di studio Focus, `ipadAnticipation` identifica
 il blocco e gli schemi successivi, `MermaidDiagram.mermaidPng` genera copie chiare.

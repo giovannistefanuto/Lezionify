@@ -85,6 +85,27 @@ Fine spiegazione.` }] }
     for (let index = 0; index < 40 && !document.querySelector('.mermaid-diagram-canvas svg'); index++) await wait(100)
     check(document.querySelector('.mermaid-diagram-canvas svg'), `State diagram failed actual renderer: ${document.querySelector('.mermaid-diagram-error')?.textContent}`)
     await ipc.invoke('capture-video-import', 'oct28-state-diagram')
+    const rawExamples = [
+      'flowchart TD     subgraph Punto di Sella ["Punto di Sella (Equilibrio di Nash)"]         direction TB         P1["Direzione Giocatore 1 (s_1): MASSIMIZZARE U_1"]         P2["Direzione Giocatore 2 (s_2): MINIMIZZARE U_1"]     end     style Punto di Sella fill:#f9f9f9,stroke:#333,stroke-width:2px',
+      `flowchart LR     subgraph Costruzione Grafica del Maximin Misto         direction LR         A["Rette Payoff vs Strategie Pure Avversario"] --> B["Inviluppo Inferiore (Minimo dei Payoff)"]         B --> C["Massimo dell'Inviluppo (Maximin Misto)"]     end     style Costruzione Grafica del Maximin Misto fill:#eef7ff,stroke:#0066cc,stroke-width:1px`
+    ]
+    const { default: mermaid } = await import('mermaid')
+    mermaid.initialize({ startOnLoad: false, securityLevel: 'strict', suppressErrorRendering: true })
+    for (const example of rawExamples) {
+      let invalid = false
+      try { await mermaid.parse(example) } catch { invalid = true }
+      check(invalid, 'Original single-line Mermaid unexpectedly parses')
+    }
+
+    for (const source of [
+      'flowchart TD\nsubgraph Punto di Sella ["Punto di Sella (Equilibrio di Nash)"]\ndirection TB\nP1["Direzione Giocatore 1 (s_1): MASSIMIZZARE U_1"]\nP2["Direzione Giocatore 2 (s_2): MINIMIZZARE U_1"]\nend\nstyle Punto di Sella fill:#f9f9f9,stroke:#333,stroke-width:2px',
+      'flowchart LR\nsubgraph Costruzione Grafica del Maximin Misto\ndirection LR\nA["Rette Payoff vs Strategie Pure Avversario"] --> B["Inviluppo Inferiore (Minimo dei Payoff)"]\nB --> C["Massimo dell Inviluppo (Maximin Misto)"]\nend\nstyle Costruzione Grafica del Maximin Misto fill:#eef7ff,stroke:#0066cc,stroke-width:1px'
+    ]) {
+      await render(<MermaidDiagram source={source} />)
+      for (let i = 0; i < 40 && !document.querySelector('.mermaid-diagram-canvas svg'); i++) await wait(100)
+      check(document.querySelector('.mermaid-diagram-canvas svg'), `Subgraph failed actual renderer: ${document.querySelector('.mermaid-diagram-error')?.textContent}`)
+    }
+
 
     const highlights = new Map<string, any[]>()
     api.getHighlights = async (id: string) => structuredClone(highlights.get(id) ?? [])

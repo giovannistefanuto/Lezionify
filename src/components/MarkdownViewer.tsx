@@ -6,12 +6,13 @@ import rehypeKatex from 'rehype-katex'
 import remarkGfm from 'remark-gfm'
 
 import type { LectureHighlight } from '../../shared/archive'
-import { MermaidDiagram } from './MermaidDiagram'
+import { MermaidDiagram, MermaidExportContext } from './MermaidDiagram'
 import { normalizeDisplayMath } from '../utils/markdownMath'
 import { copyRenderedMath } from '../utils/copyMath'
 
 export interface MarkdownViewerProps {
   content: string
+  mermaidExport?: { lectureId: string; language: string }
   allowImages?: boolean
   highlights?: LectureHighlight[]
   isHighlightMode?: boolean
@@ -387,7 +388,7 @@ const MemoizedMarkdownViewer = React.memo(
 export function MarkdownViewer(props: MarkdownViewerProps) {
   return (
     <ErrorBoundary fallbackTitle="Errore nel rendering della dispensa">
-      <MemoizedMarkdownViewer {...props} />
+      <MermaidExportContext.Provider value={props.mermaidExport ?? null}><MemoizedMarkdownViewer {...props} /></MermaidExportContext.Provider>
     </ErrorBoundary>
   )
 }

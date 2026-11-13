@@ -104,6 +104,7 @@ describe('Statistiche dei corsi attivi e media per lezione', () => {
     expect(analytics.totalSemesterSeconds).toBe(3600)
     expect(analytics.todaySeconds).toBe(3600)
     expect(analytics.todayByCourse).toEqual({ A: 3600 })
+    expect(analytics.dailyHistory).toEqual([{ date: formatLocalCalendarDate(), totalSeconds: 3600 }])
     expect(
       analytics.weekDays.reduce((sum, day) => sum + day.totalSeconds, 0)
     ).toBe(3600)
