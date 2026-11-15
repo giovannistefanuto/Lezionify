@@ -71,6 +71,15 @@ it('invia al SDK la vera domanda e uno storico senza domanda duplicata o placeho
   expect(sdk.config.config.systemInstruction).not.toContain('AI: \n')
 })
 
+it('usa Hydrogen come prima scelta Q&A quando selezionato', async () => {
+  const gemini = new GeminiService()
+  const thread: any = { id: 'hydrogen', quote: 'testo', messages: [{ role: 'user', text: 'Spiega' }] }
+  let response = ''
+  for await (const chunk of gemini.generateQnaResponse({ apiKey: 'test', model: 'gemini-4-hydrogen', thread })) response += chunk
+  expect(response).toBe('risposta')
+  expect(sdk.config.model).toBe('gemini-4-hydrogen')
+})
+
 it('invia solo le immagini attive come parti PNG e la domanda corrente senza alterare lo storico', async () => {
   const gemini = new GeminiService()
   const stream = gemini.generateQnaResponse({ apiKey: 'test', model: 'gemini-3.6-flash', thread: { id: 'images', quote: 'synthetic', contextHeading: null, messages: [{ role: 'user', text: 'Explain page 7', timestamp: '' }], createdAt: '', updatedAt: '' }, images: [{ page: 7, mimeType: 'image/png', data: 'c3ludGhldGlj' }] })

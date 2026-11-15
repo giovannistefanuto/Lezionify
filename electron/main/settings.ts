@@ -7,6 +7,7 @@ import { AsyncMutex } from './asyncMutex'
 import { normalizeRepoUrl, validateBranch } from './publishing/publishGitClient'
 
 const VALID_MODELS: GeminiModel[] = [
+  'gemini-4-hydrogen',
   'gemini-3.8-flash',
   'gemini-3.7-flash',
   'gemini-3.6-flash',

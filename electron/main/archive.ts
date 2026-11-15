@@ -61,7 +61,7 @@ import type {
 import { getLectureDurationSeconds } from '../../shared/archive'
 import { countLectureWords } from '../../shared/lectureLength'
 import { extractLectureTitle, replaceLectureTitle, validateLectureTitles } from '../../shared/lectureTitles'
-import { QNA_PRIMARY_MODEL } from '../../shared/qnaModelPolicy'
+import { getQnaModelFallbackChain } from '../../shared/qnaModelPolicy'
 import { notesProgressMessage } from './ai/progressDiagnostics'
 import {
   formatLocalCalendarDate,
@@ -2292,9 +2292,10 @@ export class ArchiveService {
         current: null
       }
 
+      const qnaPrimaryModel = getQnaModelFallbackChain(settings.model).preferred
       logger.info(
         'qna',
-        `Avvio richiesta QnA con modello ${QNA_PRIMARY_MODEL}; ${images.length} slide allegate; ricerca online ${searchOnline ? 'richiesta' : 'disattivata'}.`
+        `Avvio richiesta QnA con modello ${qnaPrimaryModel}; ${images.length} slide allegate; ricerca online ${searchOnline ? 'richiesta' : 'disattivata'}.`
       )
 
       if (Buffer.byteLength(JSON.stringify({ thread, fullLectureText, otherQnaContext, images }), 'utf8') > 18_000_000) throw new Error('Contesto troppo grande: riduci le slide o disattiva il contesto completo.')
@@ -2318,7 +2319,7 @@ export class ArchiveService {
             ? Number(configuredIndexMatch[1])
             : info.keyIndex
           const phase =
-            info.model !== QNA_PRIMARY_MODEL
+            info.model !== qnaPrimaryModel
               ? 'fallback_model'
               : previous && previous.keyAlias !== info.keyAlias
                 ? 'rotating_key'

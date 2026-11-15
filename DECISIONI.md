@@ -5755,3 +5755,47 @@ Non modificare manualmente la sezione `Registro`: aggiungi le nuove decisioni es
 - **Impatto:** Setup 299998614 byte SHA256 1a3e105c550b7078c136321eebbe67ccc3e67f27eea630681f4f16c411715632; confrontati 378 file build, otto componenti NSIS, manifesto e tre backup. Gate completo: 868 unit, 24 Python, 41 Node, Electron con riavvio e PDF reali; due test aggiuntivi fasce e regressioni mirate Electron superati. Installer non eseguito.
 - **Follow-up:** Eseguire commit e push e verificare il commit sul remoto.
 - **File coinvolti:** dist/Lezionify-Setup-0.1.0.exe, tools/verify_installer.cjs, tools/verify_nsis_payload.cjs, STRUTTURA_PROGETTO.md, DECISIONI.md
+
+## D-0523 — Archiviazione ricerca costi dispense Gemini e OpenAI
+
+- **Data:** 2026-11-14
+- **Stato:** accettata
+- **Area:** ricerca-costi
+- **Decisione:** Conservare la ricerca del 14 novembre in docs/research con indice, tabelle API, fonti ufficiali, misure aggregate anonime e formule di preventivo.
+- **Motivazione:** L utente richiede di salvare la ricerca per riprenderla in futuro senza confondere ipotesi di budget e consumi fatturati.
+- **Impatto:** Solo documentazione; nessuna integrazione provider, modifica della pipeline o chiamata AI. Prezzi datati, promozioni e limiti espliciti; nessun contenuto personale o credenziale archiviato.
+- **Follow-up:** Ricontrollare listini e disponibilita e misurare usage per fase prima di una scelta o di un nuovo preventivo.
+- **File coinvolti:** docs/research/costi-dispense-gemini-openai-2026-11-14.md, docs/research/README.md, STRUTTURA_PROGETTO.md, DECISIONI.md
+
+## D-0524 — Gemini 4 Hydrogen selezionabile
+
+- **Data:** 2026-11-15
+- **Stato:** accettata
+- **Area:** modelli-ai
+- **Decisione:** Aggiungere gemini-4-hydrogen alla selezione e alla validazione impostazioni; quando selezionato diventa modello iniziale anche nel Q&A e nella consultazione, mantenendo il fallback esistente.
+- **Motivazione:** Consentire la scelta esplicita del modello per dispense e domande richiesta dall utente, senza modificare il comportamento predefinito degli altri modelli.
+- **Impatto:** Nuovo modello configurabile e salvabile; Q&A e consultazione lo tentano per primo se selezionato. La prova comparativa su tre corsi e in corso; disponibilita, costi e quote dipendono dal provider.
+- **Follow-up:** Completare confronto delle tre lezioni e verificare chiamate Q&A reali e fallback.
+- **File coinvolti:** shared/archive.ts, shared/qnaModelPolicy.ts, electron/main/settings.ts, electron/main/archive.ts, src/components/SettingsModal.tsx, tests/unit/modelOrder.test.ts, tests/unit/qnaRequest.test.ts
+
+## D-0525 — Confronto Hydrogen su tre corsi
+
+- **Data:** 2026-11-15
+- **Stato:** accettata
+- **Area:** verifica-modelli
+- **Decisione:** Completare il confronto locale su tre lezioni casuali di RL, IR e RC tramite la pipeline esistente e conservare gli artefatti personali esclusivamente in local-artifacts ignorato.
+- **Motivazione:** Valutare fedelta, completezza e affidabilita del nuovo modello su esempi di corsi diversi.
+- **Impatto:** Venti risposte riuscite Hydrogen, sei tentativi 503 recuperati; miglioramenti puntuali nei tre esempi e maggiore lunghezza media, senza generalizzare da tre casi. Precedente errore Game Theory non rilevato resta un limite.
+- **Follow-up:** Valutare controlli critici separati e verificare Q&A reale quando necessario; non considerare il confronto come garanzia generale.
+- **File coinvolti:** STRUTTURA_PROGETTO.md, DECISIONI.md, local-artifacts/hydrogen-3-corsi/CONFRONTO.md
+
+## D-0526 — Installer generale con Gemini 4 Hydrogen
+
+- **Data:** 2026-11-15
+- **Stato:** accettata
+- **Area:** distribuzione
+- **Decisione:** Rigenerare il setup Windows generale includendo Hydrogen selezionabile per dispense, Q&A e Sala e pubblicare le modifiche del checkout.
+- **Motivazione:** L utente richiede il setup aggiornato dopo la verifica della disponibilita del modello.
+- **Impatto:** Setup 299999334 byte SHA256 e712000271bc4a8aa3de3c8a0ef2d22f7d89b2b90985a312df768081e4250646; verificati 378 file build, otto componenti NSIS, manifesto e tre backup. Gate 871 unit, 24 Python, 41 Node, Electron con riavvio e PDF reali passato. Installer non eseguito.
+- **Follow-up:** Eseguire commit e push e verificare il commit remoto; installare manualmente con Lezionify chiuso.
+- **File coinvolti:** dist/Lezionify-Setup-0.1.0.exe, STRUTTURA_PROGETTO.md, DECISIONI.md

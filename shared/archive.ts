@@ -8,6 +8,7 @@ import type { PdfExportDocument, PdfExportRequest, PdfExportResult } from './pdf
 export type LectureStatus = 'audio-only' | 'transcript-available'
 export type StudyStatus = 'da-studiare' | 'in-corso' | 'completata'
 export type GeminiModel =
+  | 'gemini-4-hydrogen'
   | 'gemini-3.8-flash'
   | 'gemini-3.7-flash'
   | 'gemini-3.6-flash'

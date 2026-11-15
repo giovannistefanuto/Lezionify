@@ -16,6 +16,12 @@ export const AVAILABLE_MODELS: {
   description: string
 }[] = [
   {
+    value: 'gemini-4-hydrogen',
+    label: 'Gemini 4 Hydrogen',
+    tag: 'Modello avanzato',
+    description: 'Modello Gemini per dispense e Q&A; disponibilità e costi dipendono dalla chiave API.'
+  },
+  {
     value: 'gemini-3.8-flash',
     label: 'Gemini 3.8 Flash',
     tag: 'Ultimissima Uscita (Sett. 2026)',

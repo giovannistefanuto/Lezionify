@@ -2,6 +2,16 @@
 
 ## Stato attuale
 
+Setup generale rigenerato il 15 novembre con Gemini 4 Hydrogen selezionabile
+anche per Q&A: verificati 378 file build, otto componenti NSIS, manifesto e
+tre backup. Gate completo: 871 unit, 24 Python, 41 Node, Electron con riavvio
+e PDF reali. Il setup richiede installazione manuale con Lezionify chiuso.
+
+Gemini 4 Hydrogen è selezionabile nelle impostazioni; quando scelto viene
+tentato per primo anche nel Q&A e nella Sala, con fallback esistente (D-0524).
+La prova comparativa su tre lezioni di corsi diversi è completata; dati e
+risultati personali restano in `local-artifacts/hydrogen-3-corsi/` ignorato.
+
 Il 13 novembre le voci 146–151 aggiornano le statistiche a settimane locali
 lunedì–domenica, separano riepilogo e medie in grafici dedicati e aggiungono
 la ripartizione mattino/pomeriggio con soglia locale configurabile. In presenza
@@ -171,6 +181,12 @@ Benchmark aggiuntivo di otto casi sintetici e ispezione locale di 32 domande
 sui quattro corsi; risultati e limiti in
 `docs/product/rag-domande-studio-2026-10-23.md`.
 - **Ricerca:** benchmark riproducibili per confrontare pipeline ASR locali, Colab e Gemini senza versionare audio o trascrizioni reali.
+
+`docs/research/costi-dispense-gemini-openai-2026-11-14.md` conserva la ricerca
+sui costi API per le dispense inglesi: listini datati, misure aggregate,
+chiamate del flusso e preventivi distinti per traduzione, italiano + inglese
+e trascrizione audio. Fonti, formule e limiti consentono di aggiornare la
+stima senza interpretarla come consuntivo o scelta di provider (D-0523).
 
 Il controllo ENG in `electron/main/ai/translationIntegrity.ts` recupera i
 diagrammi Mermaid originali quando la traduzione ne altera la struttura
