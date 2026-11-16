@@ -1,0 +1,48 @@
+name: Prepare Windows release
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-windows
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.10'
+      - run: npm ci
+      - name: Validate version and release notes
+        run: npm run release:validate
+      - name: Quality gate
+        run: npm run check
+      - name: Build installer without publishing
+        run: npm run package:win -- --publish never
+        env:
+          CSC_LINK: ${{ secrets.WINDOWS_CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.WINDOWS_CSC_KEY_PASSWORD }}
+      - name: Verify matching assets and metadata
+        run: npm run release:validate -- --artifacts
+      - name: Prepare complete draft release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $version = node -p "require('./package.json').version"
+          $tag = "v$version"
+          gh release view $tag --json tagName 2>$null
+          if ($LASTEXITCODE -eq 0) { throw "Release already exists: $tag. Increment the version; do not replace distributed assets." }
+          gh release create $tag "dist/Lezionify-Setup-$version.exe" "dist/Lezionify-Setup-$version.exe.blockmap" "dist/latest.yml" --draft --target $env:GITHUB_SHA --title "Lezionify $version" --notes-file "docs/releases/$version.md"
+          if ($LASTEXITCODE -ne 0) { throw 'Draft release preparation failed.' }

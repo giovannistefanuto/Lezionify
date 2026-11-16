@@ -73,6 +73,7 @@ function cleanCitation(value: CourseCitation): CourseCitation {
 
 /** The only document access paths originate in native selections or an approved folder. */
 export class CourseRagService {
+  isBusy() { return Boolean(this.running.size || this.indexJobs.size || this.syncing.size) }
   private mutexes = new Map<string, AsyncMutex>()
   private syncing = new Map<string, Promise<void>>()
   private retrievals = new Map<string, CourseRetrieval>()

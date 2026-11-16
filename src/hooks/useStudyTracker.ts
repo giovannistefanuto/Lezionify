@@ -1,4 +1,5 @@
 import { creditFocusRagStudy } from '../utils/focusRagPreparation'
+import { registerUpdatePreparation, updateRestartPrepared } from '../utils/updatePreparation'
 import { useState, useEffect, useRef, useCallback } from 'react'
 import type { StudySession, StudySessionMode } from '../../shared/archive'
 import { formatLocalCalendarDate } from '../../shared/calendarDate'
@@ -132,6 +133,12 @@ export function useStudyTracker({
     })
     return flushQueue.current
   }, [getStudyMode])
+
+  useEffect(() => registerUpdatePreparation(async () => {
+    await flushCurrentSession()
+    await historyClient.current?.flush()
+    if (pendingSessions.current.size) throw new Error('Sessione di studio non salvata')
+  }), [flushCurrentSession])
 
   useEffect(() => {
     lastTickRef.current = Date.now()
@@ -286,6 +293,7 @@ export function useStudyTracker({
   useEffect(() => {
     let closing = false
     const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      if (updateRestartPrepared()) return
       if (
         closing ||
         (sessionSecondsRef.current === 0 && pendingSessions.current.size === 0)

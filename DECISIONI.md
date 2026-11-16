@@ -5799,3 +5799,47 @@ Non modificare manualmente la sezione `Registro`: aggiungi le nuove decisioni es
 - **Impatto:** Setup 299999334 byte SHA256 e712000271bc4a8aa3de3c8a0ef2d22f7d89b2b90985a312df768081e4250646; verificati 378 file build, otto componenti NSIS, manifesto e tre backup. Gate 871 unit, 24 Python, 41 Node, Electron con riavvio e PDF reali passato. Installer non eseguito.
 - **Follow-up:** Eseguire commit e push e verificare il commit remoto; installare manualmente con Lezionify chiuso.
 - **File coinvolti:** dist/Lezionify-Setup-0.1.0.exe, STRUTTURA_PROGETTO.md, DECISIONI.md
+
+## D-0527 — Ricerca aggiornamenti automatici da GitHub
+
+- **Data:** 2026-11-15
+- **Stato:** accettata
+- **Area:** ricerca-distribuzione
+- **Decisione:** Archiviare la ricerca e la proposta per aggiornamenti Windows tramite GitHub Releases ed electron-updater compatibile con NSIS, distinguendo proposta e implementazione.
+- **Motivazione:** L utente richiede un controllo rapido all avvio con novita, consenso e aggiornamento senza procedura manuale ripetuta; lo stack attuale consente di riusare NSIS.
+- **Impatto:** Solo documentazione: descritti versionamento crescente, rilascio di artefatti e metadati, installazione silenziosa con possibili richieste UAC, protezione dei dati e collaudi. Nessuna dipendenza aggiunta, funzione o installer modificati.
+- **Follow-up:** Prima dell implementazione verificare destinazione pubblica dei rilasci, firma e installazioni esistenti; provare due versioni installate con profilo temporaneo e barriera di salvataggio prima del riavvio.
+- **File coinvolti:** docs/research/aggiornamenti-automatici-github-2026-11-15.md, docs/research/README.md, STRUTTURA_PROGETTO.md, DECISIONI.md
+
+## D-0528 — Updater Windows con consenso e Release versionate
+
+- **Data:** 2026-11-16
+- **Stato:** accettata
+- **Area:** aggiornamenti-app
+- **Decisione:** Integrare electron-updater 6.8.9 con GitHub Releases nel pacchetto NSIS, introdurre versione 0.2.0, avviso e note, consenso al download e comando esplicito di riavvio con barriera sui salvataggi e sui lavori attivi; preparare Release in bozza con gate e asset coerenti.
+- **Motivazione:** Riutilizzare il packaging esistente e un trasporto mantenuto, evitando sostituzione artigianale dei file e installazioni durante il lavoro; rendere obbligatorie note e versione di ogni rilascio.
+- **Impatto:** Aggiunta dipendenza runtime electron-updater fissata alla famiglia compatibile v26; controllo non bloccante una volta per processo, nessun download o installazione implicita, portable e sviluppo esclusi dal percorso NSIS. Identita e formato dell archivio invariati. Workflow manuale prepara una bozza; firma tramite certificati esterni opzionali non creati.
+- **Follow-up:** Completare i collaudi e prima della distribuzione provare due installer reali, UAC e conservazione dei dati in ambiente isolato; configurare firma per la distribuzione pubblica e pubblicare una Release completa. Il bootstrap attuale richiede installazione manuale.
+- **File coinvolti:** electron/main/appUpdater.ts, electron/main/updateShutdownGate.ts, electron/main/index.ts, electron/main/archive.ts, electron/main/courseRag.ts, electron/main/repetition.ts, electron/main/publishing/publishService.ts, electron/preload/index.ts, shared/appUpdate.ts, src/components/AppUpdates.tsx, src/utils/updatePreparation.ts, src/hooks/useQuickCapture.ts, src/hooks/useStudyTracker.ts, src/components/CourseChat.tsx, package.json, package-lock.json, electron-builder.yml, .github/workflows/release.yml, docs/releases/0.2.0.md, docs/publishing/aggiornamenti-windows.md, tests, tools/run_app_update_regressions.cjs, tools/validate_release.cjs
+
+## D-0529 — Focus del menu corsi senza scroll involontario
+
+- **Data:** 2026-11-16
+- **Stato:** accettata
+- **Area:** interfaccia-corsi
+- **Decisione:** Mettere a fuoco il comando del menu contestuale con preventScroll e aggiungere una regressione Electron su documento lungo, eseguibile anche singolarmente.
+- **Motivazione:** Il gate pre-installer ha rilevato una chiusura intermittente del menu archiviati; la riproduzione minima ha mostrato scrollY oltre 2100 e menu assente, causati dallo scroll generato dal focus e dal listener di chiusura.
+- **Impatto:** Una sola modifica al comportamento del focus; archivio e selezione dei corsi invariati. Riproduzione rossa prima della modifica e verde dopo; il controllo completo viene ripetuto prima del setup.
+- **Follow-up:** Completare regressioni complete e verifica del pacchetto prima della pubblicazione Git.
+- **File coinvolti:** src/components/Sidebar.tsx, tests/integration/sidebarMenu.browser.tsx, tests/integration/hookRegression.browser.tsx, tools/run_hook_regressions.cjs, docs/releases/0.2.0.md
+
+## D-0530 — Installer generale 0.2.0 con aggiornamenti GitHub
+
+- **Data:** 2026-11-16
+- **Stato:** accettata
+- **Area:** distribuzione
+- **Decisione:** Rigenerare il setup generale Windows includendo updater, barriera sui salvataggi, note versionate e correzione del focus del menu; verificare il pacchetto e pubblicare tutte le modifiche pubblicabili con commit e push secondo AGENTS.
+- **Motivazione:** L utente richiede di completare le verifiche e rigenerare l installer dopo l implementazione degli aggiornamenti automatici.
+- **Impatto:** Setup 300207135 byte SHA256 2bf2de3357ce1aad48650ec594db99fbee0da5c91d45ff2df510a039f94ec612; 378 file build, nove componenti NSIS, manifesto con note e tre backup confrontati. Passati 880 unit, 24 Python, 41 Node, updater reale loopback, Electron con riavvio, ricerca locale, PDF reali e runtime RAG isolato con download modello pubblico e rifiuto corrotto. Setup non eseguito e non firmato; nessuna Release binaria pubblicata.
+- **Follow-up:** Completare commit e push e verificare il remoto; la prima installazione e manuale con Lezionify chiuso. Restano prova tra due installazioni reali, UAC e firma prima della distribuzione pubblica automatica.
+- **File coinvolti:** dist/Lezionify-Setup-0.2.0.exe, tools/verify_installer.cjs, tools/verify_nsis_payload.cjs, docs/publishing/aggiornamenti-windows.md, docs/research/aggiornamenti-automatici-github-2026-11-15.md, docs/research/README.md, STRUTTURA_PROGETTO.md, DECISIONI.md

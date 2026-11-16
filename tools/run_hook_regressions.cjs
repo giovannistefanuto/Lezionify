@@ -23,6 +23,7 @@ const musicOnly = process.argv.includes('--music-only')
 const focusPdfOnly = process.argv.includes('--focus-pdf-only')
 const dictionaryOnly = process.argv.includes('--dictionary-only')
 const mathRenderingOnly = process.argv.includes('--math-rendering-only')
+const sidebarMenuOnly = process.argv.includes('--sidebar-menu-only')
 const languageShortcutOnly = process.argv.includes('--language-shortcut-only')
 if (screenshotDirectory) mkdirSync(screenshotDirectory, { recursive: true })
 try {
@@ -145,7 +146,7 @@ try {
         const screenshot = await win.webContents.capturePage();
         require('node:fs').writeFileSync(require('node:path').join(directory, name + '.png'), screenshot.toPNG());
       });
-      win.loadFile(${JSON.stringify(join(directory, 'index.html'))}, process.argv.includes('--resume-reading') ? { query: { resumeReading: '1' } } : ${JSON.stringify(october28Only ? { query: { 'october28-only': '1' } } : repetitionOnly ? { query: { 'repetition-only': '1' } } : october22Only ? { query: { 'october22-only': '1' } } : interfacePolishOnly ? { query: { 'interface-polish-only': '1' } } : todayOnly ? { query: { 'today-only': '1' } } : memoLogsExportOnly ? { query: { 'memo-logs-export-only': '1' } } : lectureListOnly ? { query: { 'lecture-list-only': '1' } } : courseRagOnly ? { query: { 'course-rag-only': '1' } } : studyToolsOnly ? { query: { 'study-tools-only': '1' } } : languageShortcutOnly ? { query: { languageShortcutOnly: '1' } } : focusPdfOnly ? { query: { focusPdfOnly: '1' } } : musicOnly ? { query: { musicOnly: '1' } } : mathRenderingOnly ? { query: { mathRenderingOnly: '1' } } : dictionaryOnly ? { query: { dictionaryOnly: '1' } } : studyPauseOnly ? { query: { studyPauseOnly: '1' } } : readingPositionOnly ? { query: { readingPositionOnly: '1' } } : readingRestartOnly ? { query: { readingRestartOnly: '1' } } : {})});
+      win.loadFile(${JSON.stringify(join(directory, 'index.html'))}, process.argv.includes('--resume-reading') ? { query: { resumeReading: '1' } } : ${JSON.stringify(sidebarMenuOnly ? { query: { sidebarMenuOnly: '1' } } : october28Only ? { query: { 'october28-only': '1' } } : repetitionOnly ? { query: { 'repetition-only': '1' } } : october22Only ? { query: { 'october22-only': '1' } } : interfacePolishOnly ? { query: { 'interface-polish-only': '1' } } : todayOnly ? { query: { 'today-only': '1' } } : memoLogsExportOnly ? { query: { 'memo-logs-export-only': '1' } } : lectureListOnly ? { query: { 'lecture-list-only': '1' } } : courseRagOnly ? { query: { 'course-rag-only': '1' } } : studyToolsOnly ? { query: { 'study-tools-only': '1' } } : languageShortcutOnly ? { query: { languageShortcutOnly: '1' } } : focusPdfOnly ? { query: { focusPdfOnly: '1' } } : musicOnly ? { query: { musicOnly: '1' } } : mathRenderingOnly ? { query: { mathRenderingOnly: '1' } } : dictionaryOnly ? { query: { dictionaryOnly: '1' } } : studyPauseOnly ? { query: { studyPauseOnly: '1' } } : readingPositionOnly ? { query: { readingPositionOnly: '1' } } : readingRestartOnly ? { query: { readingRestartOnly: '1' } } : {})});
     });
     setTimeout(() => { console.error('Hook tests timed out'); app.exit(1) }, ${hookTimeoutMs});
   `
@@ -163,7 +164,7 @@ try {
   process.stdout.write(result.stdout || '')
   process.stderr.write(result.stderr || '')
   process.exitCode = result.status ?? 1
-  if (result.status === 0 && !october28Only && !repetitionOnly && !october22Only && !interfacePolishOnly && !todayOnly && !memoLogsExportOnly && !lectureListOnly && !courseRagOnly && !studyToolsOnly && !focusPdfOnly && !musicOnly && !readingPositionOnly && !studyPauseOnly && !dictionaryOnly && !mathRenderingOnly && !languageShortcutOnly) {
+  if (result.status === 0 && !sidebarMenuOnly && !october28Only && !repetitionOnly && !october22Only && !interfacePolishOnly && !todayOnly && !memoLogsExportOnly && !lectureListOnly && !courseRagOnly && !studyToolsOnly && !focusPdfOnly && !musicOnly && !readingPositionOnly && !studyPauseOnly && !dictionaryOnly && !mathRenderingOnly && !languageShortcutOnly) {
     const restarted = spawnSync(require('electron'), [join(directory, 'main.cjs'), '--resume-reading'], { env, encoding: 'utf8', windowsHide: true, timeout: 190000 })
     process.stdout.write(restarted.stdout || '')
     process.stderr.write(restarted.stderr || '')

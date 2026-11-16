@@ -271,3 +271,18 @@ const archiveApi: ArchiveApi = {
 }
 
 contextBridge.exposeInMainWorld('archive', archiveApi)
+
+const appUpdate: import('../../shared/appUpdate').AppUpdateApi = {
+  getState: () => ipcRenderer.invoke('update:state'),
+  check: () => ipcRenderer.invoke('update:check'),
+  download: () => ipcRenderer.invoke('update:download'),
+  install: () => ipcRenderer.invoke('update:install'),
+  openReleases: () => ipcRenderer.invoke('update:releases'),
+  acknowledge: () => ipcRenderer.invoke('update:acknowledge'),
+  onState: callback => {
+    const handler = (_event: unknown, state: import('../../shared/appUpdate').AppUpdateState) => callback(state)
+    ipcRenderer.on('update:state-changed', handler)
+    return () => { ipcRenderer.removeListener('update:state-changed', handler) }
+  }
+}
+contextBridge.exposeInMainWorld('appUpdate', appUpdate)

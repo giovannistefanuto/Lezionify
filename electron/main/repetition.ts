@@ -75,6 +75,7 @@ const textHash = (text: string) =>
 
 /** A separate local archive: never inserts repetition recordings in the lecture library. */
 export class RepetitionService {
+  isBusy() { return Boolean(this.active || this.opening || this.replying.size) }
   private active: {
     id: string
     controller: AbortController

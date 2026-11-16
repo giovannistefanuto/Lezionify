@@ -140,6 +140,11 @@ export function isRetryableApiError(errorText: string): boolean {
 }
 
 export class ArchiveService {
+  private updating = false
+  setUpdating(value: boolean) { this.updating = value }
+  isBusyForUpdate() {
+    return Boolean(this.archivePipeline.isProcessing() || this.autoPipelineLaunch || this.repetition.isBusy() || this.publishService.isBusy())
+  }
   readonly sectionRevisions: SectionRevisionService
   public readonly repetition: RepetitionService
   private readonly wordCountCache = new Map<string, { signature: string; words: number }>()
@@ -214,7 +219,7 @@ export class ArchiveService {
     })
     this.automaticPublisher = new AutomaticPublisher({
       enabled: async () => (await this.settingsService.getSettings()).publishing?.enabled === true,
-      busy: () => this.archivePipeline.isProcessing(),
+      busy: () => this.updating || this.archivePipeline.isProcessing(),
       publish: () => this.publishLectures()
     })
     this.jobStore = customJobStore ?? new AiJobStore(this.rootDirectory)

@@ -21,6 +21,7 @@ import { useLectureContent, invalidateLectureContentCache } from './hooks/useLec
 import { useGeminiGeneration } from './hooks/useGeminiGeneration'
 import { useArchivePipeline } from './hooks/useArchivePipeline'
 import { useQuickCapture } from './hooks/useQuickCapture'
+import { AppUpdates } from './components/AppUpdates'
 import { useDictionaryShortcut } from './hooks/useDictionaryShortcut'
 import { useFinalLectureReturn } from './hooks/useFinalLectureReturn'
 
@@ -435,6 +436,7 @@ export default function App() {
   const quickCapture = useQuickCapture()
 
   return (
+    <AppUpdates canRestart={!selectedLectureId && !courseChatOpen && !showRepetitions && !videoSelection}>
     <ToolSettingsContext.Provider value={{ isOpen: showSettingsModal, open: section => { setToolSettingsSection(section); openSettingsModal() } }}>
     <AmbientSoundProvider>
     <main className={`app-shell ${theme === 'dark' ? 'dark-theme' : ''}`}>
@@ -742,5 +744,6 @@ export default function App() {
     </main>
     </AmbientSoundProvider>
     </ToolSettingsContext.Provider>
+    </AppUpdates>
   )
 }

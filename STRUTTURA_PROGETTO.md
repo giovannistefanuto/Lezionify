@@ -2,6 +2,23 @@
 
 ## Stato attuale
 
+Il 16 novembre la versione sorgente passa a 0.2.0 e integra `electron-updater`
+6.8.9 per Windows NSIS: controllo in background, note, consenso al download
+e riavvio esplicito con barriera sui salvataggi e sui lavori attivi (D-0528).
+`shared/appUpdate.ts`, `electron/main/appUpdater.ts` e `AppUpdates.tsx` separano
+contratto, servizio main e interfaccia; `updateShutdownGate` blocca nuovi IPC
+durante il riavvio. Note versionate in `docs/releases/`; il workflow manuale
+`release.yml` prepara una bozza dopo il gate. Setup generale 0.2.0 rigenerato
+e verificato: 378 file build, nove componenti NSIS incluso `app-update.yml`,
+manifesto/note e tre backup coerenti; runtime RAG isolato, modello pubblico e
+rifiuto modello corrotto passati. Verifiche: 880 unit, 24 Python, 41 Node,
+updater reale su loopback, Electron con riavvio, ricerca locale e PDF reali.
+Il menu dei corsi evita lo scroll provocato dal focus (D-0529). Installer
+non eseguito, non firmato; nessuna Release binaria pubblicata. Prima della
+distribuzione restano collaudo tra due installazioni reali e firma/UAC.
+[Procedura e limiti](docs/publishing/aggiornamenti-windows.md);
+[ricerca iniziale](docs/research/aggiornamenti-automatici-github-2026-11-15.md).
+
 Setup generale rigenerato il 15 novembre con Gemini 4 Hydrogen selezionabile
 anche per Q&A: verificati 378 file build, otto componenti NSIS, manifesto e
 tre backup. Gate completo: 871 unit, 24 Python, 41 Node, Electron con riavvio

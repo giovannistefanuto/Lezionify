@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
+import { registerUpdatePreparation } from '../utils/updatePreparation'
 import type {
   CourseCitation,
   CourseCount,
@@ -142,8 +143,13 @@ export function CourseChat({
       await write
     } catch {
       setError('Bozza non salvata. Riprova prima di chiudere l’app.')
+      if (!pendingDraft.current) pendingDraft.current = pending
     }
   }, [])
+  useEffect(() => registerUpdatePreparation(async () => {
+    await flushDraft()
+    if (pendingDraft.current) throw new Error('Bozza non salvata')
+  }), [flushDraft])
   useEffect(() => {
     const token = ++generation.current
     setData(null)

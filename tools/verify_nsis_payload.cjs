@@ -8,7 +8,7 @@ const root = process.cwd()
 const output = path.resolve(root, 'local-artifacts/rag-package-2026-10-23/nsis-payload')
 assert(output.startsWith(path.resolve(root, 'local-artifacts') + path.sep))
 const extractor = path.join(root, 'node_modules/electron-winstaller/vendor/7z-x64.exe')
-const setup = path.join(root, 'dist/Lezionify-Setup-0.1.0.exe')
+const setup = path.join(root, 'dist', `Lezionify-Setup-${require('../package.json').version}.exe`)
 const hash = async file => { const value = crypto.createHash('sha256'); for await (const chunk of fs.createReadStream(file)) value.update(chunk); return value.digest('hex') }
 function extract(archive, directory, names) {
   fs.mkdirSync(directory, { recursive: true })
@@ -21,7 +21,7 @@ async function main() {
   const payload = path.join(outer, '$PLUGINSDIR/app-64.7z')
   assert(fs.statSync(payload).size > 1000000, 'Embedded application payload missing')
   const files = [
-    'Lezionify.exe', 'resources/app.asar',
+    'Lezionify.exe', 'resources/app.asar', 'resources/app-update.yml',
     ...['embedding-worker.cjs', 'pdf-worker.cjs', 'pdf-layout.cjs'].map(name => 'resources/app.asar.unpacked/out/main/course-rag/' + name),
     ...['onnxruntime_binding.node', 'onnxruntime.dll'].map(name => 'resources/app.asar.unpacked/node_modules/onnxruntime-node/bin/napi-v6/win32/x64/' + name),
     'resources/app.asar.unpacked/node_modules/ffmpeg-static/ffmpeg.exe'

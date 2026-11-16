@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { registerUpdatePreparation } from '../utils/updatePreparation'
 import type {
   ScratchpadData,
   ScratchpadTodoItem,
@@ -95,6 +96,12 @@ export function useQuickCapture() {
   }, [])
 
   // Trigger di salvataggio debouncato (300ms)
+  useEffect(() => registerUpdatePreparation(async () => {
+    await flushSave()
+    await saveQueueRef.current
+    if (revisionRef.current > persistedRevisionRef.current) throw new Error('Memo non salvato')
+  }), [flushSave])
+
   const scheduleSave = useCallback(() => {
     if (!isLoaded) return
     if (saveTimerRef.current) {

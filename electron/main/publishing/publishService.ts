@@ -44,6 +44,7 @@ interface PreparedLecture {
 }
 
 export class PublishService {
+  isBusy() { return this.publishing }
   private readonly state: PublishState
   private publishing = false
   private phase: NonNullable<PublishingStatus['phase']> = 'idle'

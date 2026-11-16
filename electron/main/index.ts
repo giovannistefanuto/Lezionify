@@ -1,4 +1,8 @@
 import { readBatteryStatus } from './battery'
+import electronUpdater from 'electron-updater'
+import { AppUpdateService } from './appUpdater'
+import { UpdateShutdownGate } from './updateShutdownGate'
+import { APP_RELEASES_URL } from '../../shared/appUpdate'
 import { IpadExportService } from './ipadExport'
 import { CourseRagService } from './courseRag'
 import { checkPackagedCourseRag } from './courseRagPackageCheck'
@@ -65,6 +69,17 @@ protocol.registerSchemesAsPrivileged([
 
 let mainWindow: BrowserWindow | null = null
 const ragSelfCheck = process.argv.includes('--rag-self-check')
+if (app.isPackaged && !ragSelfCheck) {
+  if (!app.requestSingleInstanceLock()) app.exit(0)
+  app.on('second-instance', () => {
+    if (mainWindow?.isMinimized()) mainWindow.restore()
+    mainWindow?.show()
+    mainWindow?.focus()
+  })
+}
+const updateGate = new UpdateShutdownGate()
+let appUpdates: AppUpdateService
+let updateStarted = false
 if (ragSelfCheck) app.setPath('userData', join(app.getPath('temp'), `Lezionify-rag-selfcheck-${Date.now()}-${process.pid}`))
 const archive = new ArchiveService()
 const dictionary = new LocalDictionaryService(join(app.getAppPath(), app.isPackaged ? 'out/renderer/dictionaries' : 'public/dictionaries'))
@@ -250,27 +265,30 @@ async function repetitionIpc<T>(action: () => Promise<T>): Promise<T> {
 }
 
 function registerIpcHandlers(): void {
-  ipcMain.handle('repetition:answer', (_event, id: string, answer: string) => repetitionIpc(() => archive.repetition.answer(id, answer)))
-  ipcMain.handle('repetition:state', () => repetitionIpc(() => archive.repetition.state()))
-  ipcMain.handle('repetition:reference', () => repetitionIpc(async () => {
+  const handle = (channel: string, listener: Parameters<typeof ipcMain.handle>[1]) => {
+    ipcMain.handle(channel, (event, ...args) => updateGate.run(() => listener(event, ...args)))
+  }
+  handle('repetition:answer', (_event, id: string, answer: string) => repetitionIpc(() => archive.repetition.answer(id, answer)))
+  handle('repetition:state', () => repetitionIpc(() => archive.repetition.state()))
+  handle('repetition:reference', () => repetitionIpc(async () => {
     const selection = await dialog.showOpenDialog({ title: 'Appunti di riferimento per RIPETERE',
       properties: ['openFile'], filters: [{ name: 'Appunti Markdown o TXT', extensions: ['md', 'txt', 'markdown'] }] })
     if (selection.canceled || !selection.filePaths[0]) return false
     await archive.repetition.setReference(selection.filePaths[0])
     return true
   }))
-  ipcMain.handle('repetition:start', () => repetitionIpc(() => archive.repetition.startLatest()))
-  ipcMain.handle('repetition:resume', (_event, id: string) => repetitionIpc(() => archive.repetition.resume(id)))
-  ipcMain.handle('repetition:stop', () => repetitionIpc(() => archive.repetition.stop()))
-  ipcMain.handle('repetition:credit-reading', (_event, id: string, course: string | null) => repetitionIpc(() => archive.creditRepetitionReading(id, course)))
-  ipcMain.handle('repetition:read', (_event, id: string) => repetitionIpc(() => archive.repetition.read(id)))
-  ipcMain.handle('course-rag:state', (_event, course: string) => courseRag.state(course))
-  ipcMain.handle('course-rag:prepare-semantic', (_event, course: string) => courseRag.prepareSemantic(course))
-  ipcMain.handle('course-rag:manage-index', (_event, course: string, action: string) => courseRag.manageIndex(course, action))
-  ipcMain.handle('course-rag:lecture-number', (_event, course: string, lectureId: string, number: number) => courseRag.setLectureNumber(course, lectureId, number))
-  ipcMain.handle('course-rag:sync', async (_event, course: string) => { courseRag.startSync(course, true); return courseRag.state(course) })
-  ipcMain.handle('course-rag:enabled', (_event, course: string, enabled: boolean) => courseRag.configure(course, null, enabled))
-  ipcMain.handle('course-rag:link', async (_event, course: string) => {
+  handle('repetition:start', () => repetitionIpc(() => archive.repetition.startLatest()))
+  handle('repetition:resume', (_event, id: string) => repetitionIpc(() => archive.repetition.resume(id)))
+  handle('repetition:stop', () => repetitionIpc(() => archive.repetition.stop()))
+  handle('repetition:credit-reading', (_event, id: string, course: string | null) => repetitionIpc(() => archive.creditRepetitionReading(id, course)))
+  handle('repetition:read', (_event, id: string) => repetitionIpc(() => archive.repetition.read(id)))
+  handle('course-rag:state', (_event, course: string) => courseRag.state(course))
+  handle('course-rag:prepare-semantic', (_event, course: string) => courseRag.prepareSemantic(course))
+  handle('course-rag:manage-index', (_event, course: string, action: string) => courseRag.manageIndex(course, action))
+  handle('course-rag:lecture-number', (_event, course: string, lectureId: string, number: number) => courseRag.setLectureNumber(course, lectureId, number))
+  handle('course-rag:sync', async (_event, course: string) => { courseRag.startSync(course, true); return courseRag.state(course) })
+  handle('course-rag:enabled', (_event, course: string, enabled: boolean) => courseRag.configure(course, null, enabled))
+  handle('course-rag:link', async (_event, course: string) => {
     const suggestions: string[] = []
     try {
       for (const entry of await readdir(app.getPath('home'), { withFileTypes: true })) {
@@ -287,22 +305,22 @@ function registerIpcHandlers(): void {
       defaultPath: suggestions[0], properties: ['openDirectory'], buttonLabel: 'Collega e attiva download e indice' })
     return chosen.canceled ? courseRag.state(course) : courseRag.configure(course, chosen.filePaths[0], true)
   })
-  ipcMain.handle('course-rag:add', async (_event, course: string) => {
+  handle('course-rag:add', async (_event, course: string) => {
     const chosen = await dialog.showOpenDialog({ title: 'Aggiungi fonti al corso', properties: ['openFile', 'multiSelections'],
       filters: [{ name: 'Documenti del corso', extensions: ['pdf', 'md', 'txt'] }] })
     return chosen.canceled ? courseRag.state(course) : courseRag.addFiles(course, chosen.filePaths)
   })
-  ipcMain.handle('course-rag:add-exams', async (_event, course: string) => {
+  handle('course-rag:add-exams', async (_event, course: string) => {
     const chosen = await dialog.showOpenDialog({ title: 'Aggiungi PDF alla scatola esami', properties: ['openFile', 'multiSelections'], filters: [{ name: 'PDF degli esami', extensions: ['pdf'] }] })
     return chosen.canceled ? courseRag.state(course) : courseRag.addExams(course, chosen.filePaths)
   })
-  ipcMain.handle('course-rag:remove-exam', (_event, course: string, sourceId: string) => courseRag.removeExam(course, sourceId))
-  ipcMain.handle('course-rag:save-thread', (_event, course: string, thread: import('../../shared/courseRag').CourseThread) => courseRag.saveThread(course, thread))
-  ipcMain.handle('course-rag:delete-thread', (_event, course: string, id: string) => courseRag.deleteThread(course, id))
-  ipcMain.handle('course-rag:count', (_event, course: string, term: string) => courseRag.count(course, term))
-  ipcMain.handle('course-rag:stop', (_event, course: string, request: string) => courseRag.stop(course, request))
-  ipcMain.handle('course-rag:pdf', async (_event, course: string, id: string) => { const grant = await courseRag.pdfGrant(course, id); return { ...await focusPdfs.grantCourseSource(grant.path), name: grant.title, sourceVersion: grant.version } })
-  ipcMain.handle('course-rag:ask', async (_event, course: string, thread: string, question: string, request: string, images?: QnaImageInput[], sourceId?: string, sourceVersion?: string) => {
+  handle('course-rag:remove-exam', (_event, course: string, sourceId: string) => courseRag.removeExam(course, sourceId))
+  handle('course-rag:save-thread', (_event, course: string, thread: import('../../shared/courseRag').CourseThread) => courseRag.saveThread(course, thread))
+  handle('course-rag:delete-thread', (_event, course: string, id: string) => courseRag.deleteThread(course, id))
+  handle('course-rag:count', (_event, course: string, term: string) => courseRag.count(course, term))
+  handle('course-rag:stop', (_event, course: string, request: string) => courseRag.stop(course, request))
+  handle('course-rag:pdf', async (_event, course: string, id: string) => { const grant = await courseRag.pdfGrant(course, id); return { ...await focusPdfs.grantCourseSource(grant.path), name: grant.title, sourceVersion: grant.version } })
+  handle('course-rag:ask', async (_event, course: string, thread: string, question: string, request: string, images?: QnaImageInput[], sourceId?: string, sourceVersion?: string) => {
     if (images !== undefined) {
       if (!Array.isArray(images) || !images.length || images.length > QNA_IMAGE_LIMIT || typeof sourceId !== 'string') throw new Error('Pagine allegate non valide.')
       const grant = await courseRag.pdfGrant(course, sourceId)
@@ -328,248 +346,248 @@ function registerIpcHandlers(): void {
     }
   }
   const ipadExport = new IpadExportService(app.getPath('userData'), join(app.getPath('pictures'), 'iCloud Photos', 'Photos'))
-  ipcMain.handle('ipad:status', (event, enabled: unknown) => {
+  handle('ipad:status', (event, enabled: unknown) => {
     assertPdfSender(event)
     if (enabled !== undefined && typeof enabled !== 'boolean') throw new Error('Preferenza iPad non valida.')
     return ipadExport.status(enabled)
   })
-  ipcMain.handle('ipad:export', (event, request: unknown) => {
+  handle('ipad:export', (event, request: unknown) => {
     assertPdfSender(event)
     return ipadExport.export(request)
   })
-  ipcMain.handle('archive:get-focus-pdf', (event, id: unknown) => {
+  handle('archive:get-focus-pdf', (event, id: unknown) => {
     assertPdfSender(event)
     return focusPdfs.get(id)
   })
-  ipcMain.handle('archive:export-notes-pdf', (event, request: unknown) => {
+  handle('archive:export-notes-pdf', (event, request: unknown) => {
     assertPdfSender(event)
     return pdfExport.export(request, mainWindow!)
   })
-  ipcMain.handle('archive:pdf-export-document', (event, token: unknown) => pdfExport.getDocument(event, token))
-  ipcMain.handle('archive:pdf-export-ready', (event, token: unknown, failed: unknown) => pdfExport.ready(event, token, failed))
-  ipcMain.handle('archive:select-focus-pdf', (event, id: unknown) => {
+  handle('archive:pdf-export-document', (event, token: unknown) => pdfExport.getDocument(event, token))
+  handle('archive:pdf-export-ready', (event, token: unknown, failed: unknown) => pdfExport.ready(event, token, failed))
+  handle('archive:select-focus-pdf', (event, id: unknown) => {
     assertPdfSender(event)
     return focusPdfs.select(id)
   })
-  ipcMain.handle('archive:release-focus-pdf', (event, id: unknown) => {
+  handle('archive:release-focus-pdf', (event, id: unknown) => {
     assertPdfSender(event)
     focusPdfs.release(id)
   })
-  ipcMain.handle('archive:list', () => archive.listLectures())
-  ipcMain.handle('archive:lecture-word-counts', (_event, lectureId: string) => archive.getLectureWordCounts(lectureId))
-  ipcMain.handle('archive:dictionary-lookup', (_event, query: unknown, direction: unknown) => dictionary.lookup(query, direction))
-  ipcMain.handle('archive:section-preview', (_event, id: string, expected: unknown, start: unknown, instructions: unknown) => archive.sectionRevisions.preview(id, expected, start, instructions))
-  ipcMain.handle('archive:section-apply', (_event, id: string, token: unknown) => archive.sectionRevisions.apply(id, token))
-  ipcMain.handle('archive:section-restore', (_event, id: string) => archive.sectionRevisions.restore(id))
-  ipcMain.handle('archive:phrase-status', () => offlineTranslation.status())
-  ipcMain.handle('archive:battery-status', () => readBatteryStatus(powerMonitor.isOnBatteryPower()))
-  ipcMain.handle('archive:ambient-status', () => ambientSounds.status())
-  ipcMain.handle('archive:ambient-install', (_event, soundIds: unknown) =>
+  handle('archive:list', () => archive.listLectures())
+  handle('archive:lecture-word-counts', (_event, lectureId: string) => archive.getLectureWordCounts(lectureId))
+  handle('archive:dictionary-lookup', (_event, query: unknown, direction: unknown) => dictionary.lookup(query, direction))
+  handle('archive:section-preview', (_event, id: string, expected: unknown, start: unknown, instructions: unknown) => archive.sectionRevisions.preview(id, expected, start, instructions))
+  handle('archive:section-apply', (_event, id: string, token: unknown) => archive.sectionRevisions.apply(id, token))
+  handle('archive:section-restore', (_event, id: string) => archive.sectionRevisions.restore(id))
+  handle('archive:phrase-status', () => offlineTranslation.status())
+  handle('archive:battery-status', () => readBatteryStatus(powerMonitor.isOnBatteryPower()))
+  handle('archive:ambient-status', () => ambientSounds.status())
+  handle('archive:ambient-install', (_event, soundIds: unknown) =>
     ambientSounds.install(soundIds)
   )
-  ipcMain.handle('archive:ambient-read', (_event, id: unknown) =>
+  handle('archive:ambient-read', (_event, id: unknown) =>
     ambientSounds.read(String(id || ''))
   )
-  ipcMain.handle('archive:spotify-connection', () => spotify.status())
-  ipcMain.handle('archive:spotify-configure', (_event, clientId: unknown) => spotify.configure(clientId))
-  ipcMain.handle('archive:spotify-connect', () => spotify.login())
-  ipcMain.handle('archive:spotify-disconnect', () => spotify.disconnect())
-  ipcMain.handle('archive:spotify-devices', () => spotify.devices())
-  ipcMain.handle('archive:spotify-playback', () => spotify.playback())
-  ipcMain.handle('archive:spotify-command', (_event, command: unknown, deviceId: unknown, argument: unknown) => spotify.command(command, deviceId, argument))
-  ipcMain.handle('archive:spotify-library-connect', () => spotify.login(true))
-  ipcMain.handle('archive:spotify-device', (_event, deviceId: unknown) => spotify.selectDevice(deviceId))
-  ipcMain.handle('archive:spotify-library', (_event, kind: unknown, offset: unknown) => spotify.library(kind, offset))
-  ipcMain.handle('archive:spotify-play-item', (_event, uri: unknown, deviceId: unknown) => spotify.playItem(uri, deviceId))
-  ipcMain.handle('archive:spotify-open-item', (_event, uri: unknown) => shell.openExternal(spotifyItemUrl(uri)))
-  ipcMain.handle('archive:spotify-open', () => shell.openExternal('spotify:'))
-  ipcMain.handle('archive:open-compilation', (_event, videoId: unknown, start: unknown) => shell.openExternal(compilationUrl(videoId, start)))
-  ipcMain.handle('archive:phrase-install', () => offlineTranslation.install())
-  ipcMain.handle('archive:phrase-translate', (_event, text: unknown, direction: unknown) => offlineTranslation.translate(text, direction))
-  ipcMain.handle('archive:import-files', () => archive.selectAndImportFiles())
-  ipcMain.handle('archive:import-folder', () => archive.selectAndImportFolder())
-  ipcMain.handle('archive:select-videos', () => archive.selectVideos())
-  ipcMain.handle('archive:convert-videos', (_event, sessionId: string, orderedIds: unknown) => archive.convertVideos(sessionId, orderedIds))
-  ipcMain.handle('archive:save-video-import', (_event, sessionId: string, destination: unknown) => archive.saveVideoImport(sessionId, destination))
-  ipcMain.handle('archive:cancel-video-import', (_event, sessionId: string) => archive.cancelVideoImport(sessionId))
-  ipcMain.handle('archive:read-transcript', (_event, id: string) =>
+  handle('archive:spotify-connection', () => spotify.status())
+  handle('archive:spotify-configure', (_event, clientId: unknown) => spotify.configure(clientId))
+  handle('archive:spotify-connect', () => spotify.login())
+  handle('archive:spotify-disconnect', () => spotify.disconnect())
+  handle('archive:spotify-devices', () => spotify.devices())
+  handle('archive:spotify-playback', () => spotify.playback())
+  handle('archive:spotify-command', (_event, command: unknown, deviceId: unknown, argument: unknown) => spotify.command(command, deviceId, argument))
+  handle('archive:spotify-library-connect', () => spotify.login(true))
+  handle('archive:spotify-device', (_event, deviceId: unknown) => spotify.selectDevice(deviceId))
+  handle('archive:spotify-library', (_event, kind: unknown, offset: unknown) => spotify.library(kind, offset))
+  handle('archive:spotify-play-item', (_event, uri: unknown, deviceId: unknown) => spotify.playItem(uri, deviceId))
+  handle('archive:spotify-open-item', (_event, uri: unknown) => shell.openExternal(spotifyItemUrl(uri)))
+  handle('archive:spotify-open', () => shell.openExternal('spotify:'))
+  handle('archive:open-compilation', (_event, videoId: unknown, start: unknown) => shell.openExternal(compilationUrl(videoId, start)))
+  handle('archive:phrase-install', () => offlineTranslation.install())
+  handle('archive:phrase-translate', (_event, text: unknown, direction: unknown) => offlineTranslation.translate(text, direction))
+  handle('archive:import-files', () => archive.selectAndImportFiles())
+  handle('archive:import-folder', () => archive.selectAndImportFolder())
+  handle('archive:select-videos', () => archive.selectVideos())
+  handle('archive:convert-videos', (_event, sessionId: string, orderedIds: unknown) => archive.convertVideos(sessionId, orderedIds))
+  handle('archive:save-video-import', (_event, sessionId: string, destination: unknown) => archive.saveVideoImport(sessionId, destination))
+  handle('archive:cancel-video-import', (_event, sessionId: string) => archive.cancelVideoImport(sessionId))
+  handle('archive:read-transcript', (_event, id: string) =>
     archive.readTranscript(id)
   )
-  ipcMain.handle('archive:attach-transcript', (_event, id: string) =>
+  handle('archive:attach-transcript', (_event, id: string) =>
     archive.attachTranscript(id)
   )
-  ipcMain.handle('archive:read-markdown', (_event, id: string) =>
+  handle('archive:read-markdown', (_event, id: string) =>
     archive.readMarkdown(id)
   )
-  ipcMain.handle(
+  handle(
     'archive:save-markdown',
     (_event, id: string, content: unknown) => archive.saveMarkdown(id, content)
   )
-  ipcMain.handle(
+  handle(
     'archive:update-lecture',
     (_event, id: string, updates: unknown) =>
       archive.updateLecture(id, updates)
   )
-  ipcMain.handle('archive:rename-lecture-titles', (_event, id: string, titles: unknown) => archive.renameLectureTitles(id, titles))
-  ipcMain.handle('archive:delete-lecture', (_event, id: string) =>
+  handle('archive:rename-lecture-titles', (_event, id: string, titles: unknown) => archive.renameLectureTitles(id, titles))
+  handle('archive:delete-lecture', (_event, id: string) =>
     archive.deleteLecture(id)
   )
-  ipcMain.handle('archive:search-fulltext', (_event, query: string) =>
+  handle('archive:search-fulltext', (_event, query: string) =>
     archive.searchFullText(query)
   )
-  ipcMain.handle('archive:get-settings', () => archive.getSettings())
-  ipcMain.handle('archive:publish-lectures', () => archive.publishLectures())
-  ipcMain.handle('archive:get-publishing-status', () => archive.getPublishingStatus())
-  ipcMain.handle(
+  handle('archive:get-settings', () => archive.getSettings())
+  handle('archive:publish-lectures', () => archive.publishLectures())
+  handle('archive:get-publishing-status', () => archive.getPublishingStatus())
+  handle(
     'archive:save-settings',
     (_event, settings: unknown) => archive.saveSettings(settings)
   )
-  ipcMain.handle('archive:test-api-key', (_event, apiKey: string) =>
+  handle('archive:test-api-key', (_event, apiKey: string) =>
     archive.testApiKey(apiKey)
   )
-  ipcMain.handle('archive:generate-lecture-notes', (_event, id: string, jobId?: string) =>
+  handle('archive:generate-lecture-notes', (_event, id: string, jobId?: string) =>
     archive.generateLectureNotes(id, jobId)
   )
-  ipcMain.handle('archive:generate-selected', (_event, lectureIds: string[], jobId?: string) =>
+  handle('archive:generate-selected', (_event, lectureIds: string[], jobId?: string) =>
     archive.generateSelectedNotes(lectureIds, jobId)
   )
-  ipcMain.handle('archive:sync-library', () => archive.scanAndSyncLibrary())
-  ipcMain.handle('archive:open-folder', () => archive.openLibraryFolder())
-  ipcMain.handle('archive:transcribe-audio', (_event, id: string, jobId?: string) =>
+  handle('archive:sync-library', () => archive.scanAndSyncLibrary())
+  handle('archive:open-folder', () => archive.openLibraryFolder())
+  handle('archive:transcribe-audio', (_event, id: string, jobId?: string) =>
     archive.transcribeAudio(id, jobId)
   )
-  ipcMain.handle('archive:read-markdown-en', (_event, id: string) =>
+  handle('archive:read-markdown-en', (_event, id: string) =>
     archive.readMarkdownEn(id)
   )
-  ipcMain.handle('archive:translate-lecture-notes', (_event, id: string, jobId?: string) =>
+  handle('archive:translate-lecture-notes', (_event, id: string, jobId?: string) =>
     archive.translateLectureNotes(id, jobId)
   )
-  ipcMain.handle(
+  handle(
     'archive:translate-selected-notes',
     (_event, lectureIds: string[], jobId?: string) =>
       archive.translateSelectedNotes(lectureIds, jobId)
   )
-  ipcMain.handle('archive:get-translation-candidates', () =>
+  handle('archive:get-translation-candidates', () =>
     archive.getTranslationCandidates()
   )
-  ipcMain.handle('archive:get-pipeline-status', () =>
+  handle('archive:get-pipeline-status', () =>
     archive.getArchivePipelineStatus()
   )
-  ipcMain.handle('archive:start-pipeline', () => archive.startArchivePipeline())
-  ipcMain.handle('archive:resume-pipeline', () => archive.resumeArchivePipeline())
-  ipcMain.handle('archive:stop-pipeline', () =>
+  handle('archive:start-pipeline', () => archive.startArchivePipeline())
+  handle('archive:resume-pipeline', () => archive.resumeArchivePipeline())
+  handle('archive:stop-pipeline', () =>
     archive.requestArchivePipelineStop()
   )
-  ipcMain.handle('archive:get-course-stats', () => archive.getCourseStats())
-  ipcMain.handle('archive:read-course-info', (_event, code: string) =>
+  handle('archive:get-course-stats', () => archive.getCourseStats())
+  handle('archive:read-course-info', (_event, code: string) =>
     archive.readCourseInfo(code)
   )
-  ipcMain.handle('archive:read-study-set', (_event, id: string) =>
+  handle('archive:read-study-set', (_event, id: string) =>
     archive.readStudySet(id)
   )
-  ipcMain.handle('archive:generate-study-set', (_event, id: string) =>
+  handle('archive:generate-study-set', (_event, id: string) =>
     archive.generateStudySet(id)
   )
-  ipcMain.handle('archive:load-qna', (_event, id: string) =>
+  handle('archive:load-qna', (_event, id: string) =>
     archive.loadQnaThreads(id)
   )
-  ipcMain.handle('archive:save-qna', (_event, id: string, threads: unknown) =>
+  handle('archive:save-qna', (_event, id: string, threads: unknown) =>
     archive.saveQnaThreads(id, threads)
   )
-  ipcMain.handle(
+  handle(
     'archive:generate-qna',
     (_event, id: string, thread: unknown, useFullContext: unknown, includeOtherQna: unknown = false, responseLength: unknown = 'brief', searchOnline: unknown = false) =>
       archive.generateQnaResponse(id, thread, useFullContext, includeOtherQna, responseLength, searchOnline)
   )
-  ipcMain.handle('archive:save-qna-image', (_event, lectureId: string, threadId: string, input: unknown) => archive.saveQnaImage(lectureId, threadId, input))
-  ipcMain.handle('archive:list-qna-images', () => archive.qnaImages.list())
-  ipcMain.handle('archive:read-qna-image', (_event, id: unknown) => archive.qnaImages.read(id))
-  ipcMain.handle('archive:delete-qna-images', (_event, selection: unknown) => archive.qnaImages.remove(selection))
-  ipcMain.handle(
+  handle('archive:save-qna-image', (_event, lectureId: string, threadId: string, input: unknown) => archive.saveQnaImage(lectureId, threadId, input))
+  handle('archive:list-qna-images', () => archive.qnaImages.list())
+  handle('archive:read-qna-image', (_event, id: unknown) => archive.qnaImages.read(id))
+  handle('archive:delete-qna-images', (_event, selection: unknown) => archive.qnaImages.remove(selection))
+  handle(
     'archive:save-study-session',
     (_event, session: unknown) => archive.saveStudySession(session)
   )
-  ipcMain.handle('archive:get-study-analytics', () =>
+  handle('archive:get-study-analytics', () =>
     archive.getStudyAnalytics()
   )
-  ipcMain.handle('archive:get-study-time-removal-targets', () => archive.getStudyTimeRemovalTargets())
-  ipcMain.handle('study:observe', (_, batch) => archive.saveStudyObservations(batch))
-  ipcMain.handle('study:predict', (_, request) => archive.recordStudyPrediction(request))
-  ipcMain.handle('study:reset', (_, lectureId, sessionId) => archive.resetStudyForecast(lectureId, sessionId))
-  ipcMain.handle('study:day', (_, date, filter) => archive.getStudyDay(date, filter))
-  ipcMain.handle('study:legacy', (_, data) => archive.studyHistory.importLegacy(data))
-  ipcMain.handle('archive:remove-study-time', (_event, targetId: unknown, minutes: unknown) => archive.removeStudyTime(targetId, minutes))
-  ipcMain.handle('archive:get-lecture-study-seconds', (_event, lectureId: unknown, excludedSessionId: unknown) =>
+  handle('archive:get-study-time-removal-targets', () => archive.getStudyTimeRemovalTargets())
+  handle('study:observe', (_, batch) => archive.saveStudyObservations(batch))
+  handle('study:predict', (_, request) => archive.recordStudyPrediction(request))
+  handle('study:reset', (_, lectureId, sessionId) => archive.resetStudyForecast(lectureId, sessionId))
+  handle('study:day', (_, date, filter) => archive.getStudyDay(date, filter))
+  handle('study:legacy', (_, data) => archive.studyHistory.importLegacy(data))
+  handle('archive:remove-study-time', (_event, targetId: unknown, minutes: unknown) => archive.removeStudyTime(targetId, minutes))
+  handle('archive:get-lecture-study-seconds', (_event, lectureId: unknown, excludedSessionId: unknown) =>
     archive.getLectureStudySeconds(lectureId, excludedSessionId)
   )
-  ipcMain.handle(
+  handle(
     'archive:add-manual-study-time',
     (_event, courseCode: unknown, minutes: unknown, date?: unknown, time?: unknown) =>
       archive.addManualStudyTime(courseCode, minutes, date, time)
   )
-  ipcMain.handle('archive:get-courses', () => archive.getCourses())
-  ipcMain.handle(
+  handle('archive:get-courses', () => archive.getCourses())
+  handle(
     'archive:save-course',
     (_event, course: unknown, oldCode?: unknown) =>
       archive.saveCourse(course, oldCode)
   )
-  ipcMain.handle(
+  handle(
     'archive:delete-course',
     (_event, code: string, options?: unknown) =>
       archive.deleteCourse(code, options)
   )
-  ipcMain.handle(
+  handle(
     'archive:match-lecture-to-course',
     (_event, recordedAt: string, durationSeconds: number) =>
       archive.matchLectureToCourse(recordedAt, durationSeconds)
   )
-  ipcMain.handle(
+  handle(
     'archive:auto-assign-courses',
     (_event, lectureIds?: string[], minConfidence?: number) =>
       archive.autoAssignCoursesBySchedule(lectureIds, minConfidence)
   )
-  ipcMain.handle('archive:detect-usb-recorder', () =>
+  handle('archive:detect-usb-recorder', () =>
     archive.detectUsbRecorder()
   )
-  ipcMain.handle(
+  handle(
     'archive:import-usb-recorder-files',
     (_event, items: UsbImportItemSelection[]) =>
       archive.importUsbRecorderFiles(items)
   )
-  ipcMain.handle(
+  handle(
     'archive:delete-usb-recorder-files',
     (_event, filePaths: string[]) => archive.deleteUsbRecorderFiles(filePaths)
   )
-  ipcMain.handle('archive:get-archived-courses', () => archive.getArchivedCourseCodes())
-  ipcMain.handle('archive:set-course-archived', (_event, code: unknown, archived: unknown) =>
+  handle('archive:get-archived-courses', () => archive.getArchivedCourseCodes())
+  handle('archive:set-course-archived', (_event, code: unknown, archived: unknown) =>
     archive.setCourseArchived(code, archived)
   )
-  ipcMain.handle('archive:get-scratchpad', () => archive.getScratchpad())
-  ipcMain.handle('archive:save-scratchpad', (_event, data: unknown) =>
+  handle('archive:get-scratchpad', () => archive.getScratchpad())
+  handle('archive:save-scratchpad', (_event, data: unknown) =>
     archive.saveScratchpad(data)
   )
-  ipcMain.handle('archive:get-reminders', () => archive.getReminders())
-  ipcMain.handle('archive:save-reminders', (_event, reminders: unknown) =>
+  handle('archive:get-reminders', () => archive.getReminders())
+  handle('archive:save-reminders', (_event, reminders: unknown) =>
     archive.saveReminders(reminders)
   )
-  ipcMain.handle('archive:get-highlights', (_event, lectureId: string) =>
+  handle('archive:get-highlights', (_event, lectureId: string) =>
     archive.getHighlights(lectureId)
   )
-  ipcMain.handle(
+  handle(
     'archive:save-highlights',
     (_event, lectureId: string, highlights: unknown) =>
       archive.saveHighlights(lectureId, highlights)
   )
-  ipcMain.handle('archive:print-notes', (event) => {
+  handle('archive:print-notes', (event) => {
     const win = BrowserWindow.fromWebContents(event.sender)
     if (win) {
       win.webContents.print({ silent: false, printBackground: true })
     }
   })
-  ipcMain.handle('archive:get-app-logs', () => archive.getAppLogs())
-  ipcMain.handle('archive:get-app-log-day', (_event, day: unknown) => logger.getLogDay(day))
-  ipcMain.handle('archive:clear-app-logs', () => archive.clearAppLogs())
-  ipcMain.handle(
+  handle('archive:get-app-logs', () => archive.getAppLogs())
+  handle('archive:get-app-log-day', (_event, day: unknown) => logger.getLogDay(day))
+  handle('archive:clear-app-logs', () => archive.clearAppLogs())
+  handle(
     'archive:log-client-message',
     (
       _event,
@@ -620,9 +638,43 @@ app.whenReady().then(async () => {
     })
     registerProtocols()
     registerIpcHandlers()
+    const supportedUpdates = app.isPackaged && process.platform === 'win32' &&
+      !process.env.PORTABLE_EXECUTABLE_FILE && existsSync(join(process.resourcesPath, 'app-update.yml'))
+    const nativeUpdater = supportedUpdates ? new electronUpdater.NsisUpdater({
+      provider: 'github', owner: 'giovannistefanuto', repo: 'Lezionify', private: false
+    }) : null
+    appUpdates = new AppUpdateService(nativeUpdater, app.getVersion(), state => {
+      if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('update:state-changed', state)
+    }, async () => {
+      updateGate.lock(archive.isBusyForUpdate() || courseRag.isBusy())
+      archive.setUpdating(true)
+      await mainWindow?.webContents.session.flushStorageData()
+      await logger.flush()
+    }, () => { updateGate.unlock(); archive.setUpdating(false) }, join(app.getPath('userData'), 'app-update-receipt.json'))
+    await appUpdates.initialize()
+    const assertUpdateSender = (event: Electron.IpcMainInvokeEvent) => {
+      const expected = process.env.ELECTRON_RENDERER_URL ?? pathToFileURL(join(__dirname, '../renderer/index.html')).href
+      if (!mainWindow || event.sender !== mainWindow.webContents || event.senderFrame !== mainWindow.webContents.mainFrame || event.senderFrame.url !== expected) {
+        throw new Error('Richiesta aggiornamento non autorizzata.')
+      }
+    }
+    ipcMain.handle('update:state', event => {
+      assertUpdateSender(event)
+      if (!updateStarted) {
+        updateStarted = true
+        // The first renderer subscription has been installed before requesting state.
+        setTimeout(() => { void appUpdates.check() }, 1500).unref()
+      }
+      return appUpdates.getState()
+    })
+    ipcMain.handle('update:check', event => { assertUpdateSender(event); return appUpdates.check() })
+    ipcMain.handle('update:download', event => { assertUpdateSender(event); return appUpdates.download() })
+    ipcMain.handle('update:install', event => { assertUpdateSender(event); return appUpdates.install() })
+    ipcMain.handle('update:acknowledge', event => { assertUpdateSender(event); return appUpdates.acknowledge() })
+    ipcMain.handle('update:releases', event => { assertUpdateSender(event); return shell.openExternal(APP_RELEASES_URL) })
     createWindow()
-    void courseRag.syncEnabled()
-    courseRagTimer = setInterval(() => { void courseRag.syncEnabled() }, 5 * 60_000)
+    void updateGate.run(() => courseRag.syncEnabled()).catch(() => {})
+    courseRagTimer = setInterval(() => { void updateGate.run(() => courseRag.syncEnabled()).catch(() => {}) }, 5 * 60_000)
     courseRagTimer.unref()
     // Start networking only after creating the window; publishing failures never block startup.
     void archive.initializePublishing()

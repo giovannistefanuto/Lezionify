@@ -12,6 +12,7 @@ Deep Research e la possibile indagine con REA; nessuna prova hardware eseguita.
 
 | Documento | Contenuto |
 | --- | --- |
+| [Aggiornamenti automatici da GitHub](aggiornamenti-automatici-github-2026-11-15.md) | Ricerca iniziale Windows Electron/NSIS; implementazione 0.2.0, setup e limiti nella [procedura aggiornata](../publishing/aggiornamenti-windows.md) |
 | [Costi dispense inglesi: Gemini e OpenAI](costi-dispense-gemini-openai-2026-11-14.md) | Fotografia dei listini al 14 novembre, misure aggregate su 56 lezioni, chiamate della pipeline, tabelle per traduzione e italiano + inglese, trascrizione separata, ipotesi e limiti del preventivo |
 | [Distribuzione agli studenti: Mac, beta e portfolio](distribuzione-studenti-fonti-2026-10-25.md) | Fonti Apple/Gemini/licenze, inventario del codice, piano proposto per prova privata e beta; nessuna build Mac o nuova funzione implementata |
 | [Suoni equivalenti — catalogo candidato](suoni-equivalenti-catalogo-2026-10-16.md) | Sei audio con provenienza, licenze, URL e hash; acquisizione e decodifica tecnica per valutazione, catalogo adottato in D-0340, player offline implementato e dissolvenze in D-0370 |

@@ -1,4 +1,5 @@
 import { runOctober22Scenarios } from './october22Scenarios.browser'
+import { runSidebarMenuScenario } from './sidebarMenu.browser'
 import { runOctober28Scenarios } from './october28Scenarios.browser'
 import { runRepetitionScenarios } from './repetitionScenarios.browser'
 import { runInterfacePolishScenarios } from './interfacePolishScenarios.browser'
@@ -375,6 +376,11 @@ async function runFinalLectureScenario() {
 }
 
 async function run() {
+  if (new URLSearchParams(location.search).has('sidebarMenuOnly')) {
+    await runSidebarMenuScenario(root)
+    require('electron').ipcRenderer.send('done', 'PASS: archived course context menu retains focus without scrolling')
+    return
+  }
   if (new URLSearchParams(location.search).has('repetition-only')) {
     await runRepetitionScenarios(root, api)
     require('electron').ipcRenderer.send('done', 'PASS: RIPETERE automatic start, reference, local archive, resume, STUDIO and responsive layout')
@@ -478,6 +484,8 @@ async function run() {
     require('electron').ipcRenderer.send('done', 'PASS: Markdown and PDF reading coordinates restored after a full Electron process restart')
     return
   }
+  require('electron').ipcRenderer.send('test-checkpoint', 'runSidebarMenuScenario')
+  await runSidebarMenuScenario(root)
   require('electron').ipcRenderer.send('test-checkpoint', 'runFinalLectureScenario')
   await runFinalLectureScenario()
   require('electron').ipcRenderer.send('test-checkpoint', 'runExpiredPauseScenario')

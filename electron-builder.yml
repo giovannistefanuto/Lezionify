@@ -1,6 +1,13 @@
 appId: com.lezionify.app
 productName: Lezionify
 copyright: Copyright © 2026 Lezionify
+publish:
+  provider: github
+  owner: giovannistefanuto
+  repo: Lezionify
+  releaseType: draft
+releaseInfo:
+  releaseNotesFile: docs/releases/0.2.0.md
 
 directories:
   output: dist
@@ -28,6 +35,8 @@ win:
 
 nsis:
   oneClick: false
+  perMachine: false
+  selectPerMachineByDefault: false
   allowToChangeInstallationDirectory: true
   createDesktopShortcut: always
   createStartMenuShortcut: true

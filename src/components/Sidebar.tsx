@@ -79,7 +79,7 @@ export function Sidebar({
 
   useEffect(() => {
     if (!courseMenu) return
-    menuRef.current?.querySelector<HTMLButtonElement>('button')?.focus()
+    menuRef.current?.querySelector<HTMLButtonElement>('button')?.focus({ preventScroll: true })
     const dismiss = () => setCourseMenu(null)
     const outside = (event: PointerEvent) => {
       if (!menuRef.current?.contains(event.target as Node)) dismiss()

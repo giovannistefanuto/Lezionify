@@ -9,7 +9,7 @@ const backups = path.join(root, 'local-artifacts', 'installer-backups')
 const backup = path.resolve(process.argv[2] || path.join(backups, '20261022-diciassette-rag'))
 assert(backup.startsWith(backups + path.sep), 'Unexpected backup directory')
 const archive = path.join(root, 'dist', 'win-unpacked', 'resources', 'app.asar')
-const setupName = 'Lezionify-Setup-0.1.0.exe'
+const setupName = `Lezionify-Setup-${require('../package.json').version}.exe`
 const setup = path.join(root, 'dist', setupName)
 const hash = async (file, algorithm = 'sha256', encoding = 'hex') => {
   const value = crypto.createHash(algorithm)
@@ -35,6 +35,19 @@ async function main() {
   }
   for (const marker of ['Risposta media: tra 200 e 400 parole.', '08:00', '17:30', 'Copia appunti', 'publishToGithub', 'legacyPublishingCourseCodes', 'responseJsonSchema', 'Elabora archivio', 'gemini_recovery_wait', 'lectureOrdinal', 'Riprova domanda']) assert(javascript.includes(marker), 'Missing feature: ' + marker)
   for (const marker of ['Sala di consultazione', 'Consulta il corso', 'Ricerche recenti', 'Materiali disponibili']) assert(javascript.includes(marker), 'Missing consultation start: ' + marker)
+  if (process.argv.includes('--app-update')) {
+    for (const marker of ['update:state', 'update:download', 'update:install', 'Aggiornamenti di Lezionify', 'Riavvia e aggiorna', 'app-update-receipt.json'])
+      assert(javascript.includes(marker), 'Missing updater feature: ' + marker)
+    const metadata = JSON.parse(asar.extractFile(archive, 'package.json').toString('utf8'))
+    const updaterMetadata = JSON.parse(asar.extractFile(archive, path.normalize('node_modules/electron-updater/package.json')).toString('utf8'))
+    assert.equal(metadata.version, require('../package.json').version, 'Packaged app version mismatch')
+    assert.equal(updaterMetadata.version, '6.8.9', 'Pinned updater missing from runtime')
+    const feed = require('js-yaml').load(fs.readFileSync(path.join(root, 'dist/win-unpacked/resources/app-update.yml'), 'utf8'))
+    assert.equal(feed.provider, 'github')
+    assert.equal(feed.owner, 'giovannistefanuto')
+    assert.equal(feed.repo, 'Lezionify')
+    require('./validate_release.cjs').validateRelease(root, true)
+  }
   if (process.argv.includes('--repetition')) {
     for (const marker of ['Come vuoi usare il registratore?', 'RIPETERE', 'Cambia appunti', 'Riprendi sessione', 'Cosa hai capito bene', 'Difficoltà che hai superato', 'Cosa devi rivedere', 'repetition:start', 'repetition:resume']) assert(javascript.includes(marker), 'Missing repetition feature: ' + marker)
   }
