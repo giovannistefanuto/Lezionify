@@ -2,6 +2,18 @@
 
 ## Stato attuale
 
+La versione 0.2.1 uniforma la lista delle lezioni per data decrescente in
+Tutti i corsi, singoli corsi e filtri di studio (D-0531). `useLectures`
+ordina solo il risultato filtrato, con fallback alla data di importazione,
+senza modificare l'ordine usato dai consumatori backend. La regressione
+`lectureOrdering.browser.tsx` verifica corsi attivi, archiviati e senza corso,
+stati, ricerca e cambio di stato nel renderer Electron. Nessuna migrazione.
+Note in `docs/releases/0.2.1.md`. Gate completo passato: 880 unit, 24 Python,
+41 Node, updater, Electron con riavvio, build e PDF reali. Setup verificato
+con 378 file build, nove componenti NSIS e tre backup; runtime RAG isolato
+e gate ricerca locale superati (D-0532). Installer non firmato e non eseguito;
+restano i limiti sulle installazioni reali descritti nelle note.
+
 Il 16 novembre la versione sorgente passa a 0.2.0 e integra `electron-updater`
 6.8.9 per Windows NSIS: controllo in background, note, consenso al download
 e riavvio esplicito con barriera sui salvataggi e sui lavori attivi (D-0528).

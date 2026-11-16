@@ -82,6 +82,23 @@ collegata. Questa regola autorizza commit e push senza ulteriori conferme.
   il lavoro, segnala il blocco concreto e indica il push come ancora da
   completare. Non usare force push per superare il blocco.
 
+## Versioni e Release per l'aggiornamento automatico
+
+Prima di rigenerare un installer o preparare una Release, consulta
+`docs/publishing/aggiornamenti-windows.md` per procedura e collaudi.
+
+- Ogni aggiornamento distribuito deve avere una versione crescente. Non
+  riutilizzare una versione gia' distribuita per binari diversi.
+- Scrivi le note della versione prima della distribuzione, includendo novita',
+  correzioni, eventuali cambiamenti ai dati e problemi noti.
+- Verifica la coerenza tra versione dell'app, lockfile, note, tag della Release,
+  installer, blockmap e manifesto, prodotti dalla stessa build.
+- La rigenerazione del setup e il push automatico dei sorgenti sono distinti
+  dalla pubblicazione della Release con i binari necessari all'updater.
+- Pubblica la Release solo dopo i collaudi pertinenti e con tutti gli asset
+  verificati presenti. Considera l'aggiornamento disponibile agli utenti solo
+  quando la Release completa e' pubblicata.
+
 ## Comando LISTA_ORDINE
 
 Quando l'utente invia `LISTA_ORDINE`, avvia direttamente l'implementazione e il

@@ -239,10 +239,8 @@ export function useLectures() {
 
       return true
     })
-    if (selectedCourse !== 'tutti') return filtered
-    const rank = (status: Lecture['studyStatus']) =>
-      status === 'in-corso' ? 0 : status === 'completata' ? 2 : 1
-    return filtered.sort((a, b) => rank(a.studyStatus) - rank(b.studyStatus))
+    return filtered.sort((a, b) =>
+      (b.recordedAt ?? b.importedAt ?? '').localeCompare(a.recordedAt ?? a.importedAt ?? ''))
   }, [
     lectures,
     activeLectures,

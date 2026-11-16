@@ -39,6 +39,7 @@ import { LectureDrawer } from '../../src/components/LectureDrawer'
 import { StudySetTab } from '../../src/components/StudySetTab'
 import { runVideoImportScenarios } from './videoImportScenarios.browser'
 import { runLectureListScenarios } from './lectureListScenarios.browser'
+import { runLectureOrderingScenarios } from './lectureOrdering.browser'
 import { runFocusPdfScenarios } from './focusPdfScenarios.browser'
 import { runDiscussionDiagnosticsScenarios } from './discussionDiagnosticsScenarios.browser'
 import { runDictionaryScenarios } from './dictionaryScenarios.browser'
@@ -402,6 +403,7 @@ async function run() {
     return
   }
   if (new URLSearchParams(location.search).has('lecture-list-only')) {
+    await runLectureOrderingScenarios(root)
     await runLectureListScenarios(root)
     require('electron').ipcRenderer.send('done', 'PASS: lecture list and two-step course PDF export with optional laboratory')
     return
@@ -934,13 +936,13 @@ async function run() {
   await reset(useLectures, {})
   check(output.activeLectures.length === 4 && output.visibleLectures.length === 4,
     'Archived lessons leaked into general list or count')
-  check(output.visibleLectures.map((lecture: any) => lecture.id).join(',') === 'active-1,active-0,unassigned,active-2',
-    'All lectures should put in progress first, to study second and completed last, preserving order within groups')
+  check(output.visibleLectures.map((lecture: any) => lecture.id).join(',') === 'active-0,active-1,active-2,unassigned',
+    'Undated lectures should preserve source order regardless of study status')
   check(archiveFixtures[0].id === 'archived-0', 'Display sorting mutated the source collection')
   await act(async () => output.setLectures((current: any[]) => current.map(lecture =>
     lecture.id === 'active-2' ? { ...lecture, studyStatus: 'in-corso' } : lecture)))
-  check(output.visibleLectures.map((lecture: any) => lecture.id).join(',') === 'active-1,active-2,active-0,unassigned',
-    'Changed study status did not reorder all lectures')
+  check(output.visibleLectures.map((lecture: any) => lecture.id).join(',') === 'active-0,active-1,active-2,unassigned',
+    'Changed study status should not reorder lectures with the same date')
   await act(async () => output.setLectures(archiveFixtures))
 
   for (const status of ['tutti', 'da-studiare', 'in-corso', 'completata']) {
@@ -1954,6 +1956,7 @@ flowchart TD
   require('electron').ipcRenderer.send('test-checkpoint', 'runMathRenderingScenario')
   await runMathRenderingScenario()
   require('electron').ipcRenderer.send('test-checkpoint', 'runLectureListScenarios')
+  await runLectureOrderingScenarios(root)
   await runLectureListScenarios(root)
   require('electron').ipcRenderer.send('test-checkpoint', 'runFocusPdfScenarios')
   await runFocusPdfScenarios(root, api)

@@ -5843,3 +5843,25 @@ Non modificare manualmente la sezione `Registro`: aggiungi le nuove decisioni es
 - **Impatto:** Setup 300207135 byte SHA256 2bf2de3357ce1aad48650ec594db99fbee0da5c91d45ff2df510a039f94ec612; 378 file build, nove componenti NSIS, manifesto con note e tre backup confrontati. Passati 880 unit, 24 Python, 41 Node, updater reale loopback, Electron con riavvio, ricerca locale, PDF reali e runtime RAG isolato con download modello pubblico e rifiuto corrotto. Setup non eseguito e non firmato; nessuna Release binaria pubblicata.
 - **Follow-up:** Completare commit e push e verificare il remoto; la prima installazione e manuale con Lezionify chiuso. Restano prova tra due installazioni reali, UAC e firma prima della distribuzione pubblica automatica.
 - **File coinvolti:** dist/Lezionify-Setup-0.2.0.exe, tools/verify_installer.cjs, tools/verify_nsis_payload.cjs, docs/publishing/aggiornamenti-windows.md, docs/research/aggiornamenti-automatici-github-2026-11-15.md, docs/research/README.md, STRUTTURA_PROGETTO.md, DECISIONI.md
+
+## D-0531 — Lezioni recenti prima in ogni corso e filtro
+
+- **Data:** 2026-11-16
+- **Stato:** accettata
+- **Area:** interfaccia-corsi
+- **Decisione:** Ordinare le lezioni visibili per data decrescente in Tutti i corsi, singoli corsi e filtri di studio, usando importedAt quando recordedAt manca; eliminare la priorita per stato nella lista generale.
+- **Motivazione:** Uniformare tutte le schede alla richiesta utente e impedire che il cambio di stato alteri la posizione cronologica.
+- **Impatto:** Solo ordine di visualizzazione nel useMemo esistente; nessuna migrazione, chiamata AI o modifica dell ordine restituito dal backend agli altri consumatori. Regressione Electron rossa prima della correzione e verde dopo su corsi, stati, ricerca e fallback data.
+- **Follow-up:** Completare gate, pacchetto e pubblicazione della Release 0.2.1 richiesta.
+- **File coinvolti:** src/hooks/useLectures.ts, tests/integration/lectureOrdering.browser.tsx, tests/integration/hookRegression.browser.tsx, docs/releases/0.2.1.md, package.json, package-lock.json, electron-builder.yml
+
+## D-0532 — Setup e Release 0.2.1 per ordine cronologico uniforme
+
+- **Data:** 2026-11-16
+- **Stato:** accettata
+- **Area:** distribuzione
+- **Decisione:** Rigenerare il setup generale 0.2.1, pubblicare tutte le modifiche pubblicabili inclusa la regola Release gia presente in AGENTS e pubblicare la Release GitHub con installer, blockmap e latest.yml verificati della stessa build, come richiesto dall utente.
+- **Motivazione:** Distribuire la correzione dopo regressione specifica e gate completo, con versione crescente e note scritte prima della build.
+- **Impatto:** Setup 300207519 byte SHA256 849a5775f03db6e6fab29de1f7b7dc95b2a1678d75890591e494617b7a2380a6; 378 file build, nove componenti NSIS, tre backup e manifesto verificati. Passati 880 unit, 24 Python, 41 Node, updater loopback, Electron con riavvio, PDF reali, gate ricerca e runtime RAG confezionato isolato. Nessuna migrazione dati. Setup non firmato e non eseguito; limiti firma, upgrade reale, UAC e SmartScreen dichiarati nelle note.
+- **Follow-up:** Completare commit e push, controllare il commit remoto e pubblicare la Release solo con tutti e tre gli asset e hash remoti verificati; mantenere espliciti i limiti di installazione non collaudati.
+- **File coinvolti:** AGENTS.md, src/hooks/useLectures.ts, tests/integration/lectureOrdering.browser.tsx, tests/integration/hookRegression.browser.tsx, package.json, package-lock.json, electron-builder.yml, docs/releases/0.2.1.md, docs/publishing/aggiornamenti-windows.md, STRUTTURA_PROGETTO.md, DECISIONI.md

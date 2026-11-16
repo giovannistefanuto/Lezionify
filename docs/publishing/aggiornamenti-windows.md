@@ -80,6 +80,24 @@ per installazioni amministrative. Non è previsto rollback automatico dei dati.
 
 ## Verifiche e limiti
 
+### Pacchetto 0.2.1 del 16 novembre
+
+Correzione dell'ordine delle lezioni e richiesta esplicita di pubblicazione:
+D-0531 e D-0532. Gate completo passato con 880 unit, 24 Python, 41 Node,
+updater su loopback, regressioni Electron con riavvio, build e PDF reali.
+Regressione ordine rossa prima della modifica e verde dopo; gate della
+ricerca locale e runtime RAG confezionato su profilo temporaneo passati.
+Confrontati 378 file build, nove componenti NSIS, manifesto/note e tre backup.
+
+Setup 300207519 byte, SHA256
+`849a5775f03db6e6fab29de1f7b7dc95b2a1678d75890591e494617b7a2380a6`.
+Installer `NotSigned`, non eseguito. Firma, upgrade tra installazioni reali,
+UAC e SmartScreen restano non collaudati e dichiarati nelle note della Release.
+La pubblicazione richiesta usa i tre asset verificati della medesima build;
+non rappresenta una verifica dei limiti ancora aperti.
+
+### Verifiche iniziali 0.2.0
+
 Esito finale del 16 novembre: typecheck, lint, build di produzione e schema
 builder superati; suite completa con 880 test unitari, 24 Python e 41 Node.
 Regressioni React/Electron generali e persistenza dopo riavvio passate,
