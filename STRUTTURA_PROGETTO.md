@@ -13,6 +13,9 @@ Note in `docs/releases/0.2.1.md`. Gate completo passato: 880 unit, 24 Python,
 con 378 file build, nove componenti NSIS e tre backup; runtime RAG isolato
 e gate ricerca locale superati (D-0532). Installer non firmato e non eseguito;
 restano i limiti sulle installazioni reali descritti nelle note.
+Release pubblica [v0.2.1](https://github.com/giovannistefanuto/Lezionify/releases/tag/v0.2.1)
+con installer, blockmap e manifesto verificati; feed pubblico confrontato
+con il file locale e tag sul commit `ec8e3f4` (D-0533).
 
 Il 16 novembre la versione sorgente passa a 0.2.0 e integra `electron-updater`
 6.8.9 per Windows NSIS: controllo in background, note, consenso al download

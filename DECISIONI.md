@@ -5865,3 +5865,14 @@ Non modificare manualmente la sezione `Registro`: aggiungi le nuove decisioni es
 - **Impatto:** Setup 300207519 byte SHA256 849a5775f03db6e6fab29de1f7b7dc95b2a1678d75890591e494617b7a2380a6; 378 file build, nove componenti NSIS, tre backup e manifesto verificati. Passati 880 unit, 24 Python, 41 Node, updater loopback, Electron con riavvio, PDF reali, gate ricerca e runtime RAG confezionato isolato. Nessuna migrazione dati. Setup non firmato e non eseguito; limiti firma, upgrade reale, UAC e SmartScreen dichiarati nelle note.
 - **Follow-up:** Completare commit e push, controllare il commit remoto e pubblicare la Release solo con tutti e tre gli asset e hash remoti verificati; mantenere espliciti i limiti di installazione non collaudati.
 - **File coinvolti:** AGENTS.md, src/hooks/useLectures.ts, tests/integration/lectureOrdering.browser.tsx, tests/integration/hookRegression.browser.tsx, package.json, package-lock.json, electron-builder.yml, docs/releases/0.2.1.md, docs/publishing/aggiornamenti-windows.md, STRUTTURA_PROGETTO.md, DECISIONI.md
+
+## D-0533 — Pubblicazione verificata della Release 0.2.1
+
+- **Data:** 2026-11-16
+- **Stato:** accettata
+- **Area:** distribuzione
+- **Decisione:** Pubblicare come stabile la Release v0.2.1 con i tre asset della build verificata dopo la ripresa esplicitamente richiesta dall utente.
+- **Motivazione:** Concludere la distribuzione autorizzata mantenendo invariati i binari dopo il timeout e lo stop sicuro della fase di upload.
+- **Impatto:** Release pubblica su https://github.com/giovannistefanuto/Lezionify/releases/tag/v0.2.1; tag sul commit ec8e3f458c114ff67dd40bfae8826fb096139d48. Installer, blockmap e latest.yml hanno dimensioni e SHA256 remoti coerenti con i file locali. Manifesto pubblico scaricato senza autenticazione e identico byte per byte. Nessuna modifica ai dati. Restano i limiti del setup non firmato e delle installazioni reali non collaudate dichiarati nelle note.
+- **Follow-up:** Nessuno per la pubblicazione; firma, UAC e upgrade tra installazioni reali restano collaudi futuri e non sono attestati da questo rilascio.
+- **File coinvolti:** STRUTTURA_PROGETTO.md, docs/publishing/aggiornamenti-windows.md, DECISIONI.md, docs/releases/0.2.1.md

@@ -96,6 +96,13 @@ UAC e SmartScreen restano non collaudati e dichiarati nelle note della Release.
 La pubblicazione richiesta usa i tre asset verificati della medesima build;
 non rappresenta una verifica dei limiti ancora aperti.
 
+[Release v0.2.1 pubblicata](https://github.com/giovannistefanuto/Lezionify/releases/tag/v0.2.1)
+il 16 novembre sul commit `ec8e3f4` (D-0533). Installer, blockmap e `latest.yml`
+risultano caricati con dimensioni e SHA256 remoti uguali ai file locali;
+manifesto pubblico scaricato senza autenticazione e confrontato byte per byte.
+Il primo caricamento interrotto è stato ripreso con gli stessi binari, senza
+rigenerare o sostituire una versione già distribuita.
+
 ### Verifiche iniziali 0.2.0
 
 Esito finale del 16 novembre: typecheck, lint, build di produzione e schema
