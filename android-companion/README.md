@@ -1,7 +1,7 @@
 # Lezionify Android — anteprima
 
-App e widget: integrazione desktop nel sorgente, versione installata Windows
-ancora da aggiornare. La [guida](../docs/product/statistiche-android.md)
+App e widget: integrazione desktop disponibile dalla versione Windows 0.2.5.
+La [guida](../docs/product/statistiche-android.md)
 documenta configurazione GitHub, limiti e collaudo sintetico.
 L'APK di debug si puo' compilare con Gradle e l'Android SDK 35. In alternativa,
 su Windows `build-local.ps1` usa build-tools 35 e il JDK di Android Studio senza
@@ -15,5 +15,5 @@ condividerlo o caricarlo nel repository. Il codice viene mostrato dal desktop
 come testo; la scansione QR non e' ancora disponibile. La chiave e' protetta
 dal Keystore del dispositivo. Il widget mostra
 l'ultima copia valida e la data di generazione; Android puo' ritardare gli
-aggiornamenti periodici. La verifica di rete end-to-end con dati sintetici e'
-riuscita sul telefono; quella con dati personali resta da completare.
+aggiornamenti periodici. La verifica end-to-end con dati sintetici e' riuscita;
+l'utente ha confermato la visualizzazione di statistiche personali.

@@ -6,9 +6,9 @@ Setup locale 0.2.5 preparato per l'integrazione Android: gate completo con
 941 test unitari, 49 Python, 41 Node, updater, Electron, raccolte e PDF; build
 unica confrontata con 382 file e nove componenti NSIS. SHA256 setup
 `91f8e02b8998b6f6082c203ebffd558c6664924788697c4b4add3dcdf56acdd6`;
-tre backup verificati, nessun artefatto personale, firma assente. Installer
-non eseguito e nessuna Release binaria pubblicata. Il token GitHub personale
-e il collaudo con dati reali restano da completare.
+tre backup verificati, nessun artefatto personale, firma assente. Setup eseguito
+con app chiusa, uscita 0 e Windows rileva 0.2.5. Nessuna Release binaria
+pubblicata. L'utente ha attivato il collegamento e confermato statistiche reali.
 
 Avviata la base indipendente per il widget Android: `shared/mobileStatistics.ts`
 definisce lo snapshot minimo, `electron/main/mobileStatisticsCrypto.ts` cifra con
@@ -17,7 +17,7 @@ Test sintetici in `tests/unit/mobileStatistics.test.ts` e
 `tests/android/MobileCryptoInterop.java`. `android-companion/` contiene una
 prima app e widget Android di prova, compilati e avviati su Android 15: il widget
 usa cache e aggiornamenti periodici e l'abbinamento accetta un codice manuale.
-Il percorso con dati reali non e' ancora collaudato.
+Il telefono conferma aggiornamento riuscito dopo l'abbinamento reale.
 
 I moduli `mobilePairing.ts`,
 `mobileSecureConfig.ts` e `mobileGithubPublisher.ts` gestiscono generazione
@@ -26,8 +26,9 @@ tramite `mobileCompanion.ts` e IPC alla sezione Impostazioni;
 sincronizzazione esplicitamente attivabile e periodica solo con app in uso.
 Il repository dati `giovannistefanuto/lezionify-statistiche` e' stato creato;
 un riepilogo sintetico cifrato e' stato mostrato nell'app e nel widget Android.
-Nessun dato personale pubblicato. Desktop aggiornato e token limitato ancora
-da configurare; istruzioni in `docs/product/statistiche-android.md`.
+Dopo l'attivazione esplicita e' stato pubblicato un riepilogo personale cifrato;
+l'utente ne conferma la visualizzazione. Istruzioni in
+`docs/product/statistiche-android.md`; nessun valore personale registrato qui.
 
 La preparazione locale delle release usa `tools/prepare_release.py` tramite
 `npm run release:local`: backup verificato, profilo completo o UI ristretto,

@@ -6228,3 +6228,14 @@ Non modificare manualmente la sezione `Registro`: aggiungi le nuove decisioni es
 - **Impatto:** Gate: 941 unitari, 49 Python, 41 Node, updater, Electron, raccolte e PDF. Build unica, 382 file, nove componenti NSIS, tre backup e assenza di artefatti personali verificati. Setup 300217207 byte SHA256 91f8e02b8998b6f6082c203ebffd558c6664924788697c4b4add3dcdf56acdd6, non firmato e non eseguito. Repository dati contiene solo fixture sintetica cifrata.
 - **Follow-up:** Verificare push remoto, installare solo con app chiusa, configurare token limitato e collaudare statistiche personali; nessuna Release pubblica autorizzata.
 - **File coinvolti:** docs/releases/0.2.5.md, STRUTTURA_PROGETTO.md, DECISIONI.md
+
+## D-0566 — Installazione e collegamento personale confermati
+
+- **Data:** 2026-11-17
+- **Stato:** accettata
+- **Area:** android-statistiche
+- **Decisione:** Confermare l installazione locale Windows 0.2.5 e l attivazione esplicita del collegamento personale GitHub e Android, dopo una prova sintetica completa.
+- **Motivazione:** L utente ha chiuso Lezionify per l aggiornamento, configurato il token e confermato di vedere le statistiche reali sul telefono.
+- **Impatto:** Installer terminato con codice 0; Windows rileva versione 0.2.5. Schermata desktop mostrava ultimo invio riuscito; Android segnala aggiornamento completato e non mostra il corso sintetico, widget associato alla Home. Il repository dati pubblico contiene riepilogo personale cifrato autorizzato. Nessun token o valore personale registrato qui.
+- **Follow-up:** Valutare uso quotidiano, ritardi Android e confronto dei valori; nessuna Release binaria pubblica. L ultimo controllo non ha visto il widget nella pagina Home corrente; l utente ha confermato le statistiche reali.
+- **File coinvolti:** docs/product/statistiche-android.md, android-companion/README.md, STRUTTURA_PROGETTO.md, DECISIONI.md

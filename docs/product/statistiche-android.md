@@ -33,7 +33,8 @@ manuale e' disponibile nell'app e nel widget.
 
 Il collaudo su Android 15 del 17 novembre ha usato un corso sintetico. Dopo
 upload cifrato, il telefono ha mostrato «Corso di prova · 3 da completare»
-sia nell'app sia nel widget sulla Home. Non sono ancora stati pubblicati o
-verificati dati personali: occorrono il token limitato e la versione desktop
-aggiornata installata. Il widget contiene fino all'abbinamento personale il
-riepilogo sintetico di prova.
+sia nell'app sia nel widget sulla Home. Successivamente l'utente ha installato
+la versione desktop 0.2.5, configurato il token e confermato la visualizzazione
+delle statistiche reali; Android riporta aggiornamento riuscito. I valori e i
+codici personali non sono riportati qui. Non e' stato eseguito un confronto
+automatico valore per valore con il desktop ne' un collaudo prolungato di Doze.

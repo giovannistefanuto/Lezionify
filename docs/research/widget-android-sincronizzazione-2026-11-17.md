@@ -141,12 +141,12 @@ Sono stati predisposti moduli desktop per generazione
 del codice, salvataggio cifrato con adapter di protezione del sistema e Contents
 API GitHub, verificati con risposte simulate. Il publisher richiede repository
 pubblico separato, controlla identita/revisione e usa SHA per evitare scritture
-in conflitto. Generazione e publisher sono collegati all'app desktop; e' stato
-caricato un riepilogo sintetico cifrato, nessun dato personale.
+in conflitto. Generazione e publisher sono collegati all'app desktop; dopo il
+collaudo sintetico l'utente ha attivato e confermato il riepilogo personale.
 
 Verifica locale del 17 novembre: ADB vede un dispositivo autorizzato con
 Android 15 (API 35); sul PC sono presenti SDK 34/35/36 e build-tools 35/36.
-L'APK debug e' installato sul telefono; la versione desktop e' in preparazione.
+L'APK debug e la versione desktop 0.2.5 sono installati.
 
 `shared/archive.ts` espone `StudyStatus`, `CourseStats` e `StudyAnalytics`;
 `electron/main/archive.ts:getStudyAnalytics` applica rettifiche ed esclusione
@@ -165,7 +165,7 @@ l'eta'. Definire al massimo un PC scrittore per flusso nella prima versione.
 
 Lettura Android: repository dati pubblico con contenuto cifrato per evitare
 credenziali GitHub sul telefono. Creato `giovannistefanuto/lezionify-statistiche`;
-contiene un riepilogo sintetico cifrato, nessuna statistica personale.
+contiene un riepilogo sintetico e uno personale, entrambi cifrati.
 Usare GET del singolo oggetto con timeout finito, limite dimensione, verifica
 AES-GCM, schema e revisione prima della sostituzione atomica della cache.
 Mantenere l'ultima copia valida in caso di errore; distinguere generazione sul
@@ -175,7 +175,7 @@ i periodi esposti, evitando la pubblicazione dello storico intero per default.
 
 La sincronizzazione iniziale Git e' stata completata dopo aver conservato le
 modifiche preesistenti nel commit locale 738b776. I moduli sono integrati nel
-runtime desktop; la configurazione personale e' ancora disattivata.
+runtime desktop; la configurazione personale e' stata attivata esplicitamente.
 
 Restano da confermare la definizione proposta di lezioni mancanti e l'eventuale
 necessita' futura di piu' PC.
