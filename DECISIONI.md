@@ -6074,3 +6074,14 @@ Non modificare manualmente la sezione `Registro`: aggiungi le nuove decisioni es
 - **Impatto:** Quattro nuove regressioni: 20 test helper e 44 Python complessivi passati. Skill locale aggiornata dopo confronto con la copia precedente. App, note, installer e asset rimangono identici; il tag della 0.2.3 deve restare sul commit sorgente c59a00ee7ffc730d5fa1a60d1c5e31f912759061. Nessun secondo upload o nuova build.
 - **Follow-up:** Completare la pubblicazione della bozza esistente con source-commit esplicito e verificare in pubblico tag, hash e manifesto.
 - **File coinvolti:** skills/lezionify-release/scripts/github_release.py, skills/lezionify-release/SKILL.md, skills/lezionify-release/references/incidenti-0.2.2.md, tests/python/test_release_skill.py, docs/quality/richieste-studio-2026-11-17.md, docs/publishing/aggiornamenti-windows.md, DECISIONI.md
+
+## D-0552 — Release 0.2.3 pubblica completa e verificata
+
+- **Data:** 2026-11-17
+- **Stato:** accettata
+- **Area:** release
+- **Decisione:** Confermare pubblicata la release stabile v0.2.3 con le cinque voci concluse, sul commit sorgente dei binari c59a00ee7ffc730d5fa1a60d1c5e31f912759061. La correzione del solo helper e sul commit b3abfed, senza rigenerare o sostituire gli asset.
+- **Motivazione:** Richiesta esplicita completata dopo controllo del gate, del pacchetto e dei risultati pubblici. La bozza esistente e stata recuperata tramite lookup corretto, mantenendo provenienza e binari immutati.
+- **Impatto:** Tre asset GitHub uploaded con dimensioni e SHA256 coincidenti. Tag sul commit originale, release latest stabile e manifesto pubblico senza autenticazione identico. Verifiche: 930 unit, 44 Python finali, 41 Node, integrazioni Electron e riavvio, build, app compilata, runtime confezionato locale e PDF. Materiali personali esclusi da GitHub e installer; raccolta personale ancora leggibile senza API. Restano dichiarati notifica OS dipendente da Windows, app necessaria per gli avvisi, disponibilita dei modelli, firma assente e upgrade reale non collaudato.
+- **Follow-up:** Aggiornamento disponibile da app o installer pubblico. Nessuna voce diversa dalle 152-156 avviata o segnata conclusa.
+- **File coinvolti:** docs/publishing/aggiornamenti-windows.md, STRUTTURA_PROGETTO.md, DECISIONI.md

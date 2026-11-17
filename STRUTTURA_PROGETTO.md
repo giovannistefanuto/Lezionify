@@ -2,7 +2,7 @@
 
 ## Stato attuale
 
-Il 17 novembre viene preparata la 0.2.3 per le richieste 152–156:
+Il 17 novembre viene pubblicata la 0.2.3 per le richieste 152–156:
 ricerca per pertinenza o data, ragionamento Q&A esplicito, traduzione accreditata
 come attività distinta e pannelli timer/musica esclusi dal tempo di studio.
 `shared/examReminders.ts` definisce cadenza e piano per calendario locale;

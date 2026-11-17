@@ -107,6 +107,13 @@ fallback all'elenco autenticato e recupero esplicito sul commit originale dei
 binari, con confronto dei soli cambiamenti documentali/test/strumento.
 Le quattro nuove regressioni portano la suite Python finale a 44 test passati.
 
+[Release v0.2.3 pubblicata](https://github.com/giovannistefanuto/Lezionify/releases/tag/v0.2.3)
+il 17 novembre sul commit dei binari `c59a00e`. La correzione del solo helper
+è pubblicata separatamente in `b3abfed`, senza modificare o ricaricare il setup.
+I tre asset remoti hanno dimensioni e digest SHA256 coincidenti con i file
+locali. Verificati tag sul commit originale, stato stabile latest e manifesto
+pubblico scaricato senza autenticazione identico byte per byte.
+
 ### Pacchetto 0.2.2 del 17 novembre
 
 Raccolte Altro e richiesta esplicita di pubblicazione: D-0534–D-0540.
