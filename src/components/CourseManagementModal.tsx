@@ -57,6 +57,9 @@ export function CourseManagementModal({
   const [formStartDate, setFormStartDate] = useState('')
   const [formEndDate, setFormEndDate] = useState('')
   const [formExamDate, setFormExamDate] = useState('')
+  const [examReminderEnabled, setExamReminderEnabled] = useState(false)
+  const [examReminderEvery, setExamReminderEvery] = useState(1)
+  const [examReminderUnit, setExamReminderUnit] = useState<'days' | 'weeks'>('weeks')
   const [formSchedule, setFormSchedule] = useState<CourseTimeSlot[]>([])
   const [formError, setFormError] = useState<string | null>(null)
 
@@ -84,6 +87,7 @@ export function CourseManagementModal({
   }, [isOpen, loadCourses])
 
   function handleOpenCreate() {
+    setExamReminderEnabled(false); setExamReminderEvery(1); setExamReminderUnit('weeks')
     setEditingCourseCode(null)
     setFormPublishing(null)
     setFormCode('')
@@ -108,6 +112,9 @@ export function CourseManagementModal({
   }
 
   function handleOpenEdit(course: CourseDefinition) {
+    setExamReminderEnabled(course.examReminder?.enabled ?? false)
+    setExamReminderEvery(course.examReminder?.every ?? 1)
+    setExamReminderUnit(course.examReminder?.unit ?? 'weeks')
     setEditingCourseCode(course.code)
     setFormPublishing(course.publishToGithub ?? true)
     setFormCode(course.code)
@@ -167,6 +174,9 @@ export function CourseManagementModal({
       setFormError('La data prevista dell’esame è obbligatoria.')
       return
     }
+    if (!Number.isInteger(examReminderEvery) || examReminderEvery < 1 || examReminderEvery > (examReminderUnit === 'weeks' ? 52 : 365)) {
+      setFormError('Scegli una frequenza intera fra 1 e 52 settimane oppure fra 1 e 365 giorni.'); return
+    }
     if (formSchedule.length === 0) {
       setFormError('Inserisci almeno uno slot orario settimanale per il matching.')
       return
@@ -202,6 +212,7 @@ export function CourseManagementModal({
       startDate: formStartDate,
       endDate: formEndDate,
       examDate: formExamDate,
+      examReminder: { enabled: examReminderEnabled, every: examReminderEvery, unit: examReminderUnit },
       schedule: formSchedule,
       laboratorySchedule: courses.find(course => course.code === editingCourseCode)?.laboratorySchedule
     }
@@ -607,6 +618,18 @@ export function CourseManagementModal({
               </div>
             </div>
 
+            <fieldset className="exam-reminder-settings">
+              <legend>Promemoria dell'esame</legend>
+              <label><input type="checkbox" checked={examReminderEnabled} onChange={event => {
+                setExamReminderEnabled(event.target.checked)
+                if (!event.target.checked && (!Number.isInteger(examReminderEvery) || examReminderEvery < 1 || examReminderEvery > (examReminderUnit === 'weeks' ? 52 : 365))) setExamReminderEvery(1)
+              }} /> Ricordami quanti giorni mancano</label>
+              <div className="exam-reminder-frequency">
+                <label>Ogni <input aria-label="Frequenza promemoria esame" type="number" min="1" max={examReminderUnit === 'weeks' ? 52 : 365} disabled={!examReminderEnabled} value={Number.isFinite(examReminderEvery) ? examReminderEvery : ''} onChange={event => setExamReminderEvery(event.target.valueAsNumber)} /></label>
+                <select aria-label="Unità frequenza promemoria" disabled={!examReminderEnabled} value={examReminderUnit} onChange={event => { setExamReminderUnit(event.target.value as 'days' | 'weeks'); setExamReminderEvery(1) }}><option value="days">giorni</option><option value="weeks">settimane</option></select>
+              </div>
+              <small>Un avviso silenzioso alla prima verifica, poi alla frequenza scelta. Funziona mentre Lezionify è aperto; alla riapertura recupera un solo avviso. Si ferma dopo l'esame o archiviando il corso.</small>
+            </fieldset>
             <div style={{ display: 'flex', gap: '8px', marginTop: '6px', alignItems: 'center' }}>
               <span style={{ fontSize: '12px', color: 'var(--text-secondary, #6b7280)' }}>Scorciatoie Semestre:</span>
               <button

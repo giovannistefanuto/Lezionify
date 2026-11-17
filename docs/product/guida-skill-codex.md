@@ -33,6 +33,7 @@ iniziale; per la nona skill vedi [Intervista con grilling](#intervista-con-grill
 
 | Situazione | Skill | Risultato principale |
 | --- | --- | --- |
+| Vuoi preparare un installer, pubblicare una release Windows o riprendere una bozza | [lezionify-release](../../skills/lezionify-release/SKILL.md) | Gate, backup, asset coerenti, push e verifica pubblica; materiali personali solo locali |
 | Qualcosa non funziona, si blocca o è diventato lento | `diagnosing-bugs` | Riproduzione, causa verificata e correzione dimostrabile |
 | Il comportamento desiderato è chiaro e vuoi implementarlo partendo dai test | `tdd` | Piccoli incrementi, ciascuno con una prova significativa |
 | Una modifica coinvolge troppi punti o il codice è difficile da testare | `codebase-design` | Un'interfaccia più semplice e responsabilità meglio raccolte |

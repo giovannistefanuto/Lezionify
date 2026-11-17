@@ -5986,3 +5986,80 @@ Non modificare manualmente la sezione `Registro`: aggiungi le nuove decisioni es
 - **Impatto:** Dimensioni e SHA256 dei tre asset remoti coincidono. Manifesto pubblico scaricato senza autenticazione e identico byte per byte; release stabile latest. Audio, trascrizione e scheda personali sono presenti solo nell archivio locale e non sono inclusi in GitHub o installer. Nessuna nuova API AI durante importazione e pubblicazione.
 - **Follow-up:** Aggiornamento disponibile tramite updater o installer pubblico. Restano dichiarati firma assente, upgrade reale non collaudato e download pubblico del modello semantico non riuscito; accettazione qualitativa personale della scheda ancora aperta.
 - **File coinvolti:** docs/publishing/aggiornamenti-windows.md, DECISIONI.md
+
+## D-0544 — Skill per release Windows con diagnosi della 0.2.2
+
+- **Data:** 2026-11-17
+- **Stato:** accettata
+- **Area:** strumenti-release
+- **Decisione:** Aggiungere la skill lezionify-release versionata e installata localmente, richiamata da AGENTS e guida skill. Documentare la sequenza completa, i criteri di arresto, la separazione dei dati personali e le cause dimostrate o ancora incerte dei problemi osservati. Includere un helper GitHub parametrico senza dipendenze Python aggiuntive e senza credenziali persistenti.
+- **Motivazione:** Richiesta dell utente di evitare che i futuri modelli ripetano errori di permessi, concorrenza test, scelta tardiva del trasporto GitHub e note aggiornate dopo il packaging. Il download fallito non consente di attribuire con certezza la causa alla rete lenta.
+- **Impatto:** Helper con prepare, resume, publish e verify: controlla versione crescente, commit sul remoto, tag, note, dimensioni e digest; riprende solo asset mancanti di bozze coerenti e non sostituisce asset pubblicati. Sedici test offline passati; verifica pubblica reale della 0.2.2 senza credenziali passata; validatore skill e audit inventario passati. Nessuna modifica runtime, dipendenza, installer o nuova pubblicazione.
+- **Follow-up:** Usare la skill alla prossima release; aggiornare la copia utente dopo modifiche alla fonte versionata. Diagnosi del trasferimento modello ancora incompleta; non aumentare timeout o dichiarare causa senza nuove misure.
+- **File coinvolti:** skills/lezionify-release/SKILL.md, skills/lezionify-release/scripts/github_release.py, skills/lezionify-release/references/incidenti-0.2.2.md, skills/lezionify-release/agents/openai.yaml, tests/python/test_release_skill.py, AGENTS.md, STRUTTURA_PROGETTO.md, docs/product/guida-skill-codex.md, docs/publishing/aggiornamenti-windows.md, DECISIONI.md
+
+## D-0545 — Ricerca lezioni per pertinenza e ragionamento Q&A esplicito
+
+- **Data:** 2026-11-17
+- **Stato:** accettata
+- **Area:** ricerca-qna
+- **Decisione:** Riutilizzare MiniSearch BM25+ preservandone il ranking in UI e aggiungere scelta Pertinenza/Data durante la query; senza query resta data decrescente. Aggiungere Pensa di piu per domanda con thinkingLevel HIGH su 3.5 Flash-Lite e riserve compatibili 3.1 Flash-Lite e 3.8 Flash, filtrate ulteriormente quando si usa web. Aumentare solo attesa iniziale a 90 secondi, mantenendo annullamento e limiti esistenti.
+- **Motivazione:** Richieste 152 e 153 dopo ricerca con fonti primarie. Il ranking era perso nel hook e Hydrogen usa gia HIGH di default: una nuova impostazione identica non dimostrerebbe un aumento. La policy scelta usa controlli supportati senza nuova dipendenza o invocazioni implicite.
+- **Impatto:** Lunghezza, contesto e web indipendenti dalla spunta. Modalita standard invariata; costo e attesa maggiori esplicitati. Contratto SDK, fallback e annullamento verificati con risposte sintetiche; nessuna nuova API reale o garanzia di qualita. D-0531 resta valido per ordine senza query e scelta Data.
+- **Follow-up:** Completare gate e release 0.2.3; conservare ricerca, limiti di disponibilita del provider e nessuna promessa di ricerca semantica nella barra.
+- **File coinvolti:** shared/qnaModelPolicy.ts, electron/main/gemini.ts, electron/main/archive.ts, electron/main/index.ts, electron/preload/index.ts, src/hooks/useLectures.ts, src/hooks/useQna.ts, src/components/Sidebar.tsx, src/components/QnaSidebar.tsx, docs/research/ricerca-lezioni-e-qna-thinking-2026-11-17.md
+
+## D-0546 — Traduttore accreditato e pannelli operativi esclusi
+
+- **Data:** 2026-11-17
+- **Stato:** accettata
+- **Area:** studio
+- **Decisione:** Accreditare traduzione nel timer, nella stima e nello storico come attivita translation senza simulare avanzamento di lettura. Conservare esclusioni Memo e scelta musica e marcare il popover timer/sveglie come modalita operativa esclusa. Timer attivo e sottofondo da soli non sospendono lo studio.
+- **Motivazione:** Verifica richieste 154 e 155: traduttore era escluso contro il nuovo requisito; pannello timer non riconosciuto. Memo e musica gia esclusi e ora coperti da regressioni anche sovrapposte al traduttore.
+- **Impatto:** Unione attivita storico estesa in modo additivo; dati precedenti intatti e nessun accredito retroattivo. Timer, campioni, previsioni e diario usano esclusioni coerenti. Verifiche Electron su credito persistente e ripresa dopo chiusura pannelli.
+- **Follow-up:** Gate completo prima della distribuzione e verifica conservazione dei precedenti test.
+- **File coinvolti:** src/utils/studyActivity.ts, src/hooks/useStudyEstimate.ts, shared/studyHistory.ts, src/components/StudyDayTimeline.tsx, src/components/FocusReminders.tsx, tests/integration/studyTimingScenarios.browser.tsx, tests/integration/studyHistoryScenarios.browser.tsx
+
+## D-0547 — Promemoria periodici locali per corso
+
+- **Data:** 2026-11-17
+- **Stato:** accettata
+- **Area:** promemoria-esami
+- **Decisione:** Aggiungere preferenza esplicita per corso con intervallo intero da 1 a 365 giorni o da 1 a 52 settimane. Verifica locale all apertura, ogni minuto e alla ripresa del PC; avvisi Windows silenziosi con messaggio persistente in app, ricevuta atomica prima della consegna e al massimo un recupero per corso dopo assenza.
+- **Motivazione:** La richiesta 156 estende date esame e countdown gia presenti, senza duplicarli. Frequenza configurabile e deduplicazione evitano pressione e notifiche arretrate multiple. Nessuna rete, AI o servizio Windows aggiuntivo.
+- **Impatto:** Preferenze disattivate nei corsi precedenti; registro library/exam-reminders.json. Stop per esame passato, corso archiviato, eliminato o opzione disabilitata; cadenza per calendario locale e countdown aggiornato. Consegna OS dipendente dai permessi, messaggio in-app disponibile anche in caso di errore native. App chiusa non esegue notifiche; recupero alla riapertura dichiarato.
+- **Follow-up:** Completare gate e distribuzione. Non attestare presentazione delle notifiche personali Windows da test con notifier sintetico.
+- **File coinvolti:** shared/examReminders.ts, electron/main/examReminders.ts, electron/main/index.ts, electron/main/settings.ts, electron/main/archiveValidation.ts, shared/archive.ts, src/components/ExamReminders.tsx, src/components/CourseManagementModal.tsx, tests/unit/examReminders.test.ts, tests/integration/batchRequests.browser.tsx
+
+## D-0548 — Preparazione 0.2.3 per le cinque richieste studio
+
+- **Data:** 2026-11-17
+- **Stato:** accettata
+- **Area:** release
+- **Decisione:** Preparare e pubblicare 0.2.3 con le richieste 152-156, ricerca documentata, casi limite e skill release gia autorizzata. Includere tutte le modifiche pubblicabili nel commit dopo build verificata; mantenere personali i materiali gia importati.
+- **Motivazione:** Richiesta esplicita di completare autonomamente tutte le cinque voci, verificare e pubblicare. Questa richiesta non avvia altre attivita della coda LISTA_ORDINE.
+- **Impatto:** Versione, lockfile, note e riferimento builder aggiornati. Nessuna nuova dipendenza, nessun test escluso, nessun download del modello semantico aggiuntivo non pertinente; limiti precedenti dichiarati.
+- **Follow-up:** Eseguire gate completo, backup e verifica installer; commit/push, bozza con hash coincidenti e verifica pubblica prima di dichiarare disponibile.
+- **File coinvolti:** package.json, package-lock.json, electron-builder.yml, docs/releases/0.2.3.md, docs/product/idee-future-2026-10-13.md, docs/quality/richieste-studio-2026-11-17.md, DECISIONI.md
+
+## D-0549 — Cinque richieste completate con gate 0.2.3 verde
+
+- **Data:** 2026-11-17
+- **Stato:** accettata
+- **Area:** qualita-release
+- **Decisione:** Segnare completate le voci 152-156 dopo ricerca, implementazione e verifiche. Conservare tutti i test, aggiornando esplicitamente il vecchio requisito del traduttore e selezionando il consenso web per etichetta anziche posizione della checkbox.
+- **Motivazione:** Il gate ha rilevato due aspettative storiche incompatibili con i nuovi requisiti, non regressioni del prodotto. Le prove mirate e la ripetizione completa confermano correttezza dei nuovi comportamenti mantenendo pausa, ripresa, salvataggio e consenso web.
+- **Impatto:** Gate verde: 930 unit in 76 file, 40 Python, 41 Node, RAG offline, updater, Electron con riavvio, release contract, build, raccolte nell app compilata e PDF. Verifiche finali mirate studio/esami e typecheck/lint passate. Nessun test escluso, nuova dipendenza o API AI reale. Backup 0.2.2 verificato prima del packaging.
+- **Follow-up:** Verificare installer finale e asset remoti e pubblicare 0.2.3 secondo skill; nessun avanzamento di altre voci della coda.
+- **File coinvolti:** docs/product/idee-future-2026-10-13.md, docs/quality/richieste-studio-2026-11-17.md, tests/integration/hookRegression.browser.tsx, tests/integration/october28Scenarios.browser.tsx, DECISIONI.md
+
+## D-0550 — Installer 0.2.3 verificato per pubblicazione
+
+- **Data:** 2026-11-17
+- **Stato:** accettata
+- **Area:** release
+- **Decisione:** Pubblicare i tre asset coerenti della 0.2.3 dopo commit e push di tutte le modifiche pubblicabili, incluse la skill release e le ricerche richieste. Conservare i materiali personali esclusivamente nell archivio locale.
+- **Motivazione:** Le cinque voci sono concluse e il gate completo e verde. Build e payload del setup finale sono stati confrontati prima di creare la bozza GitHub.
+- **Impatto:** Setup 300212383 byte, SHA256 7ee6b5b9fbb6ffd8349c1f42bc994b6b90a53ce7d1bb9e08115a8b2a0cf1a000. Verificati 382 file build, nove componenti NSIS, tre backup e asset updater. Runtime confezionato con fixture locale e PDF worker passati senza API. Installer non firmato; nessuna attestazione di installazione reale o presentazione personale delle notifiche Windows. Materiali privati esclusi da commit e pacchetto.
+- **Follow-up:** Verificare digest remoti e manifesto pubblico prima di dichiarare disponibile la release; non rigenerare binari dopo la pubblicazione.
+- **File coinvolti:** docs/publishing/aggiornamenti-windows.md, docs/releases/0.2.3.md, DECISIONI.md

@@ -2,7 +2,7 @@ import type { StudySession } from './archive'
 import { effectiveStudySeconds } from './studyCorrections'
 import type { ForecastBand, ForecastMethod } from './studyForecast'
 
-export const STUDY_ACTIVITIES = ['reading', 'qna', 'slides', 'unknown'] as const
+export const STUDY_ACTIVITIES = ['reading', 'qna', 'slides', 'translation', 'unknown'] as const
 export type StudyActivity = typeof STUDY_ACTIVITIES[number]
 export const STUDY_EXCLUSIONS = ['memo', 'translator', 'modal', 'music', 'pause', 'focus-lock', 'inactive-window', 'inactivity', 'suspended', 'locked', 'unknown'] as const
 export type StudyExclusion = typeof STUDY_EXCLUSIONS[number]

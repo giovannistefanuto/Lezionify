@@ -20,7 +20,7 @@ import {
 } from './ai/aiJobStore'
 import { GeminiError, normalizeGeminiError } from './ai/geminiErrors'
 import { CLEANUP_BUDGET_MS } from './ai/geminiPolicy'
-import { getQnaModelFallbackChain } from '../../shared/qnaModelPolicy'
+import { getQnaModelFallbackChain, qnaThinkingConfig } from '../../shared/qnaModelPolicy'
 import { logger } from './logger'
 import { prepareTranslation } from './ai/translationIntegrity'
 import { prepareTranslationPlan, validateTranslationPlan } from './ai/translationPlan'
@@ -2053,6 +2053,7 @@ Return ONLY the verbatim transcript:`
     otherQnaContext?: string
     responseLength?: 'brief' | 'medium' | 'long'
     searchOnline?: boolean
+    thinkDeeper?: boolean
     fullLectureText?: string
     onRetry?: (attempt: number, delayMs: number, reason: string) => void
     onAttempt?: (info: RequestAttemptInfo) => void
@@ -2135,7 +2136,7 @@ ${params.otherQnaContext ? `ALTRI Q&A PERTINENTI DELLA STESSA LEZIONE (estratti 
       return queue.shift()!
     }
 
-    const { preferred, fallbacks } = getQnaModelFallbackChain(model)
+    const { preferred, fallbacks } = getQnaModelFallbackChain(model, params.thinkDeeper)
     const webModels = new Set(['gemini-3.5-flash-lite', 'gemini-3.6-flash', 'gemini-3.8-flash', 'gemini-3.1-pro-preview', 'gemini-2.5-pro', 'gemini-2.5-flash', 'gemini-2.5-flash-lite'])
     const webSources = new Map<string, string>()
 
@@ -2160,10 +2161,12 @@ ${params.otherQnaContext ? `ALTRI Q&A PERTINENTI DELLA STESSA LEZIONE (estratti 
             ] }] : lastUserMessage,
             config: {
               systemInstruction,
+              ...qnaThinkingConfig(activeModel, params.thinkDeeper),
               ...(params.searchOnline ? { tools: [{ googleSearch: {} }] } : {}),
               temperature: 0.2
             },
             onGrounding: sources => { if (params.searchOnline) for (const source of sources) webSources.set(source.uri, source.title) },
+            ...(params.thinkDeeper ? { firstChunkTimeoutMs: 90_000 } : {}),
             signal: attemptSignal,
             onChunk: (text) => {
               if (!text.trim() && !emittedChunk) return

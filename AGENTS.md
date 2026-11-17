@@ -86,6 +86,9 @@ collegata. Questa regola autorizza commit e push senza ulteriori conferme.
 
 Prima di rigenerare un installer o preparare una Release, consulta
 `docs/publishing/aggiornamenti-windows.md` per procedura e collaudi.
+Usa la skill [lezionify-release](skills/lezionify-release/SKILL.md) anche per
+riprendere upload o completare una bozza: raccoglie sequenza, verifiche degli
+asset, protezione dei dati personali e diagnosi dei fallimenti gia' osservati.
 
 - Ogni aggiornamento distribuito deve avere una versione crescente. Non
   riutilizzare una versione gia' distribuita per binari diversi.

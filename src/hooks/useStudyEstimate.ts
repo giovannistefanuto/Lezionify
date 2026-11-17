@@ -224,11 +224,13 @@ export function useStudyEstimate({
       if (!root || !root.getBoundingClientRect().height) return
       if (surface === 'qna' && !document.querySelector('.focus-qna-column')) surface = 'reading'
       if (surface === 'pdf' && !document.querySelector('.focus-pdf-column')?.getBoundingClientRect().height) surface = 'reading'
+      const dictionary = document.querySelector<HTMLElement>('[data-dictionary-overlay]')
+      const activity = dictionary && getComputedStyle(dictionary).display !== 'none' ? 'translation' : surface
       const visibleRange = studyVisibleRange(root)
-      state = sampleVisibleStudy(state, delta, surface === 'reading' ? visibleRange : null)
-      if (collecting && !client) forecast.tick(delta, surface === 'reading' && visibleRange ? visibleRange.end / STUDY_BINS : null)
-      client?.setContext(surface === 'pdf' ? 'slides' : surface, surface === 'reading' && visibleRange ? visibleRange.end / STUDY_BINS : undefined)
-      const paragraphLabel = surface !== 'pdf' ? paragraphs.tick(root, delta, surface, surface === 'qna' ? anchorRef.current : '') : null
+      state = sampleVisibleStudy(state, delta, activity === 'reading' ? visibleRange : null)
+      if (collecting && !client) forecast.tick(delta, activity === 'reading' && visibleRange ? visibleRange.end / STUDY_BINS : null)
+      client?.setContext(activity === 'pdf' ? 'slides' : activity, activity === 'reading' && visibleRange ? visibleRange.end / STUDY_BINS : undefined)
+      const paragraphLabel = activity === 'reading' || activity === 'qna' ? paragraphs.tick(root, delta, activity, activity === 'qna' ? anchorRef.current : '') : null
       const prediction = paragraphs.prediction()
       if (prediction && paragraphLabel) {
         uncertaintyFor(prediction.remaining, prediction.position, 'paragraph-v2')

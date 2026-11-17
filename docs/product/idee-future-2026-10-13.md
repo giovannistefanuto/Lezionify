@@ -42,10 +42,20 @@ soltanto dopo implementazione e verifiche pertinenti.
 | 95. [x] | Pagina Memo completa accessibile dal menu in alto a sinistra | 149 | Riorganizzare accesso, tag e contenuti preservando le scorciatoie. |
 | 96. [x] | Tempo di studio mattutino e pomeridiano con soglia configurabile | 150 | Ripartire i crediti effettivi, anche a cavallo della soglia. |
 | 97. [x] | Evidenziazione immediata al rilascio della selezione | 151 | Verificare parole, frasi, più righe e più paragrafi. |
+| 98. [x] | [R] Ricerca lezioni per pertinenza oltre il conteggio parole | 152 | Ricerca conclusa; Pertinenza/Data implementato e collaudato, distinto dal RAG. |
+| 99. [x] | [R] Q&A: opzione Pensa di più | 153 | Ricerca conclusa; HIGH esplicito, attesa e fallback compatibili verificati con SDK sintetico. |
+| 100. [x] | Traduttore incluso e Memo esclusi dal tempo di studio | 154 | Timer, stima e storico verificati; traduzione distinta dalla lettura. |
+| 101. [x] | Escludere configurazione timer, sveglie e musica dallo studio | 155 | Pannelli, sovrapposizioni, ripresa e conservazione della pausa verificati. |
+| 102. [x] | Promemoria esame periodico per corso | 156 | Frequenza e registro locale implementati; limiti delle notifiche Windows dichiarati. |
 
 **Aggiunte del 13 novembre dopo la pulizia:** sette richieste, voci 145–151,
 posizioni 91–97, nell’ordine ricevuto. La prima voce operativa resta la 7.
 Le voci 146–151 sono implementate; la voce 145 sulle API resta aperta.
+
+Le voci 152–156 sono state aggiunte il 17 novembre dopo confronto con lista attiva,
+backup e codice. La richiesta corrente autorizza il completamento delle cinque
+voci e la release in un unico lavoro: non è un comando LISTA_ORDINE e non avvia
+le altre voci residue. Le funzioni esistenti vengono riusate, non duplicate.
 
 ## Archiviate per ora — attività sospese
 
@@ -446,6 +456,60 @@ fatto certo dalla sola posizione.
 - Riprodurre il comportamento attuale prima di attribuire una causa e
   verificare i percorsi di lettura e Focus pertinenti. È un nuovo controllo
   della funzione già trattata nella voce 111.
+
+### 152. [R] Ricerca delle lezioni per pertinenza
+
+- [x] Completare ricerca e verifica: riusare la barra già presente, confrontare
+  conteggio parole, ranking lessicale e ricerca semantica; preservare l'ordine
+  del motore e offrire anche l'ordinamento per data.
+
+MiniSearch/BM25+ esisteva già: il problema trovato è il ranking perso nel hook.
+Le voci storiche 37 e 90–92 riguardano il RAG di corso, non sono una barra da
+ricreare. Fonti, alternative, costi e limiti nella
+[ricerca](../research/ricerca-lezioni-e-qna-thinking-2026-11-17.md).
+
+### 153. [R] Q&A con spunta Pensa di più
+
+- [x] Completare ricerca e integrazione verificabile di un controllo esplicito
+  del ragionamento, distinto dalla lunghezza e dalla ricerca web.
+
+Le voci storiche 9, 53/72, 112 e 145 coprono velocità/modelli, lunghezza, web e
+provider, senza questa spunta. La ricerca confronta livello di ragionamento,
+modelli più capaci, costi e supporto SDK. La scelta implementativa è HIGH su
+Flash-Lite e riserve compatibili, con prima attesa più lunga e cancellazione
+conservata. Nessun benchmark reale di qualità o consumo viene dato per eseguito.
+
+### 154. Traduttore incluso, Memo esclusi dal tempo di studio
+
+- [x] Verificare e correggere timer, stima e storico: traduzione accreditata,
+  Memo rapidi e pagina Memo esclusi. Conservare lo storico precedente e impedire
+  che il traduttore simuli avanzamento nella lettura della dispensa coperta.
+
+La pagina Memo esiste già (149); il nuovo requisito modifica la vecchia
+esclusione del traduttore, non richiede una seconda funzione Memo.
+
+### 155. Esclusione delle impostazioni timer, sveglie e musica
+
+- [x] Verificare le esclusioni dei pannelli aperti e la ripresa alla chiusura,
+  anche quando il traduttore è aperto. Timer in esecuzione e sottofondo musicale
+  non sospendono da soli lo studio.
+
+Le funzioni timer e musica esistono già. La verifica trova esclusione musica
+presente e mancanza del riconoscimento del popover timer/sveglie.
+
+### 156. Promemoria periodico per ciascun esame
+
+- [x] Implementare e collaudare frequenza configurabile in giorni/settimane,
+  giorni mancanti, avviso discreto e puntuale, assenza di duplicati e recupero
+  dopo riapertura. Sospendere per esame passato o corso archiviato/disattivato.
+
+Riusare data esame e Gestione corsi. Preferenza esplicita, notifiche silenziose
+e messaggio nell'app, nessuna AI. App chiusa: recupero di un solo avviso per
+corso alla riapertura, senza installare servizi di sistema aggiuntivi.
+
+Prove e criteri delle cinque voci:
+[resoconto del 17 novembre](../quality/richieste-studio-2026-11-17.md).
+Questa richiesta autonoma comprende la release; le altre voci restano fuori ambito.
 
 ## Descrizioni delle attività sospese
 

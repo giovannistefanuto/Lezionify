@@ -7,6 +7,7 @@ import { runTodayScenarios } from './todayScenarios.browser'
 import { runMemoLogsExportScenarios } from './memoLogsExportScenarios.browser'
 import { runCourseChatScenarios } from './courseChatScenarios.browser'
 import { runStudyToolsScenarios } from './studyToolsScenarios.browser'
+import { runBatchRequestsScenarios } from './batchRequests.browser'
 import { runStudyTimingScenarios } from './studyTimingScenarios.browser'
 import { runStudyHistoryScenarios } from './studyHistoryScenarios.browser'
 import React, { act } from 'react'
@@ -225,7 +226,7 @@ async function runExpiredPauseScenario() {
     dictionary.setAttribute('data-dictionary-overlay', '')
     document.body.append(dictionary)
     for (let second = 0; second < 5; second++) await tick()
-    check(output.activeSeconds === 60 && output.isPaused, 'Translator counted study time')
+    check(output.activeSeconds === 65 && !output.isPaused, 'Translator must count as study while the app is focused')
     dictionary.remove()
     await act(async () => window.dispatchEvent(new MouseEvent('mousemove')))
     await act(async () => output.startPauseTimer(5))
@@ -252,24 +253,24 @@ async function runExpiredPauseScenario() {
     })
     await tick()
     await act(async () => output.flushCurrentSession())
-    check(output.pauseTimerActive && output.isPaused && output.activeSeconds === 60 && output.lectureTotalSeconds === 180,
+    check(output.pauseTimerActive && output.isPaused && output.activeSeconds === 65 && output.lectureTotalSeconds === 185,
       'Expired pause or window return automatically resumed study')
-    check([...persisted.values()].reduce((sum, session) => sum + session.durationSeconds, 0) === 60,
+    check([...persisted.values()].reduce((sum, session) => sum + session.durationSeconds, 0) === 65,
       'Saved study statistics contain the thirty-minute pause')
     await act(async () => resumeButton.click())
     for (let second = 0; second < 10; second++) await tick()
-    check(!output.pauseTimerActive && output.activeSeconds === 70 && output.lectureTotalSeconds === 190,
+    check(!output.pauseTimerActive && output.activeSeconds === 75 && output.lectureTotalSeconds === 195,
       'Explicit resume included elapsed pause or failed to resume')
     await act(async () => output.startPauseTimer(5))
     await act(async () => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })))
     await tick()
-    check(output.activeSeconds === 71 && !output.pauseTimerActive, 'Escape did not explicitly resume the pause')
+    check(output.activeSeconds === 76 && !output.pauseTimerActive, 'Escape did not explicitly resume the pause')
     await tick(30 * 60 * 1000)
     await tick()
-    check(output.activeSeconds === 71 && output.isPaused, 'Suspension during active study counted time away')
+    check(output.activeSeconds === 76 && output.isPaused, 'Suspension during active study counted time away')
     await act(async () => window.dispatchEvent(new MouseEvent('mousemove')))
     await tick()
-    check(output.activeSeconds === 72, 'Return after suspension failed to resume from a fresh tick')
+    check(output.activeSeconds === 77, 'Return after suspension failed to resume from a fresh tick')
     await act(async () => {
       output.requestExitFocus(() => { exited = true })
       output.startPauseTimer(5)
@@ -277,7 +278,7 @@ async function runExpiredPauseScenario() {
     await tick(30 * 60 * 1000)
     await act(async () => (document.querySelector('.pause-timer-quit-btn') as HTMLButtonElement).click())
     await act(async () => output.flushCurrentSession())
-    check(exited && [...persisted.values()].reduce((sum, session) => sum + session.durationSeconds, 0) === 72,
+    check(exited && [...persisted.values()].reduce((sum, session) => sum + session.durationSeconds, 0) === 77,
       'Quit from expired pause lost active study or persisted pause time')
   } finally {
     await act(async () => root.render(null))
@@ -430,6 +431,7 @@ async function run() {
     return
   }
   if (new URLSearchParams(location.search).has('study-tools-only')) {
+    await runBatchRequestsScenarios(root, api)
     await runStudyToolsScenarios(root, api)
     await runStudyTimingScenarios(root, api)
     await runStudyHistoryScenarios(root, api)
@@ -1986,6 +1988,7 @@ flowchart TD
   require('electron').ipcRenderer.send('test-checkpoint', 'runCourseChatScenarios')
   await runCourseChatScenarios(root, api)
   require('electron').ipcRenderer.send('test-checkpoint', 'runStudyToolsScenarios')
+  await runBatchRequestsScenarios(root, api)
   await runStudyToolsScenarios(root, api)
   await runStudyTimingScenarios(root, api)
   await runStudyHistoryScenarios(root, api)

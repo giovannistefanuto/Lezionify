@@ -6,7 +6,7 @@ import './studyDay.css'
 
 const sources: Record<StudyProvenance, string> = { 'focus-observed': 'Focus osservato', 'repetition-audio': 'RIPETERE · audio',
   'repetition-reading-estimated': 'RIPETERE · lettura stimata', manual: 'Studio manuale', 'legacy-unlocated': 'Storico senza dettaglio' }
-const activities = { reading: 'Lettura', qna: 'Q&A', slides: 'Slide', unknown: 'Non osservato' }
+const activities = { reading: 'Lettura', qna: 'Q&A', slides: 'Slide', translation: 'Traduttore', unknown: 'Non osservato' }
 const reasons: Record<string, string> = { memo: 'Memo / RIPETERE aperto', translator: 'Traduttore', modal: 'Strumento aperto', music: 'Musica',
   pause: 'Pausa programmata', 'focus-lock': 'Attesa di conferma', 'inactive-window': 'Altra finestra', inactivity: 'Inattività rilevata', suspended: 'PC sospeso', locked: 'Schermo bloccato', unknown: 'Dati mancanti' }
 const duration = (seconds: number) => seconds < 60 ? `${Math.round(seconds)} s` : `${Math.floor(seconds / 3600) ? Math.floor(seconds / 3600) + ' h ' : ''}${Math.floor(seconds % 3600 / 60)} min`
@@ -86,7 +86,7 @@ export function StudyDayTimeline({ courses = [], refreshToken = 0 }: { courses?:
       </div>
       {range ? <div className="study-day-chart" aria-label="Cronologia oraria; i dati equivalenti sono nell'elenco sottostante">
         <div className="study-day-axis" aria-hidden="true">{Array.from({length:5},(_,i)=><span key={i}>{time(range.min+range.span*i/4)}</span>)}</div>
-        {(['reading','qna','slides','excluded','repetition-audio','manual'] as const).map(lane=>{
+        {(['reading','qna','slides','translation','excluded','repetition-audio','manual'] as const).map(lane=>{
           const entries = lane === 'manual' || lane === 'repetition-audio' ? timed.filter(c=>c.provenance === lane).map(c=>({id:c.id,start:c.start!,end:c.end!,label:creditLabel(c),estimated:c.quality !== 'observed'}))
             : segments.filter(s=>lane === 'excluded' ? s.exclusions.length > 0 : !s.exclusions.length && s.activity === lane).map(s=>({id:s.id,start:s.start,end:s.end,label:exclusionLabel(s)||activities[s.activity],estimated:false}))
           if (!entries.length) return null

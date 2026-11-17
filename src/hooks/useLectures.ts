@@ -36,6 +36,7 @@ export function useLectures() {
     useState<string>('tutti')
   const [searchQuery, setSearchQuery] = useState<string>('')
   const [searchMatchIds, setSearchMatchIds] = useState<string[] | null>(null)
+  const [searchOrder, setSearchOrder] = useState<'relevance' | 'date'>('relevance')
   const [isLoading, setIsLoading] = useState(true)
   const [isImporting, setIsImporting] = useState(false)
   const [notice, setNotice] = useState<string | null>(null)
@@ -213,6 +214,7 @@ export function useLectures() {
 
   const visibleLectures = useMemo(() => {
     const matches = new Set(searchMatchIds ?? [])
+    const rank = new Map((searchMatchIds ?? []).map((id, index) => [id, index]))
     const collection = isSelectedCourseArchived && selectedStudyStatus === 'tutti' ? lectures : activeLectures
     const filtered = collection.filter((lecture) => {
       const course = lecture.courseCode ?? 'Senza corso'
@@ -239,8 +241,13 @@ export function useLectures() {
 
       return true
     })
-    return filtered.sort((a, b) =>
-      (b.recordedAt ?? b.importedAt ?? '').localeCompare(a.recordedAt ?? a.importedAt ?? ''))
+    return filtered.sort((a, b) => {
+      if (searchQuery.trim() && searchOrder === 'relevance' && searchMatchIds !== null) {
+        const difference = (rank.get(a.id) ?? Infinity) - (rank.get(b.id) ?? Infinity)
+        if (difference) return difference
+      }
+      return (b.recordedAt ?? b.importedAt ?? '').localeCompare(a.recordedAt ?? a.importedAt ?? '')
+    })
   }, [
     lectures,
     activeLectures,
@@ -248,7 +255,8 @@ export function useLectures() {
     selectedCourse,
     selectedStudyStatus,
     searchQuery,
-    searchMatchIds
+    searchMatchIds,
+    searchOrder
   ])
 
   const activeCourseStats = useMemo(() => archivedCourseCodes === null ? [] : courseStats.filter(stats =>
@@ -386,6 +394,8 @@ export function useLectures() {
     setSelectedStudyStatus,
     searchQuery,
     setSearchQuery,
+    searchOrder,
+    setSearchOrder,
     searchMatchIds,
     isLoading,
     isImporting,

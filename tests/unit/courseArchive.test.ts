@@ -28,6 +28,15 @@ describe('Archiviazione reversibile dei corsi', () => {
     await rm(directory, { recursive: true, force: true })
   })
 
+  it('persists valid per-course exam reminders and rejects invalid IPC or settings payloads', async () => {
+    const value = { ...course('EXAM'), examDate: '2026-12-20', examReminder: { enabled: true, every: 2, unit: 'weeks' as const } }
+    await service.saveCourse(value)
+    expect((await service.getCourses()).find(item => item.code === 'EXAM')?.examReminder).toEqual(value.examReminder)
+    await expect(service.saveCourse({ ...value, examReminder: { enabled: true, every: 0, unit: 'days' } })).rejects.toThrow()
+    await expect(service.saveSettings({ courses: { EXAM: { ...value, examReminder: { enabled: 'yes', every: 2, unit: 'weeks' } } } } as any)).rejects.toThrow()
+    expect((await service.getCourses()).find(item => item.code === 'EXAM')?.examReminder).toEqual(value.examReminder)
+  })
+
   it('considera attive le librerie precedenti e preserva archivio su salvataggi di altre impostazioni', async () => {
     expect(await service.getArchivedCourseCodes()).toEqual([])
     await service.saveCourse(course('A'))

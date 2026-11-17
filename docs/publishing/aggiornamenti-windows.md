@@ -40,6 +40,11 @@ il codice per cercare aggiornamenti.
 
 ## Preparare ogni nuova versione
 
+La skill [lezionify-release](../../skills/lezionify-release/SKILL.md) guida
+l'esecuzione completa, incluse ripresa degli upload e verifica pubblica.
+La [diagnosi della 0.2.2](../../skills/lezionify-release/references/incidenti-0.2.2.md)
+distingue errori operativi, limiti dell'ambiente e cause ancora non dimostrate.
+
 1. Incrementare la versione stabile, ad esempio `npm version 0.2.1 --no-git-tag-version`.
 2. Creare `docs/releases/0.2.1.md` con sezioni Novità, Dati e riavvio, Limiti noti.
    Specificare eventuali cambiamenti ai dati. Aggiornare `releaseInfo.releaseNotesFile`
@@ -79,6 +84,24 @@ NSIS viene avviato in silent con riapertura richiesta; UAC può restare necessar
 per installazioni amministrative. Non è previsto rollback automatico dei dati.
 
 ## Verifiche e limiti
+
+### Pacchetto 0.2.3 del 17 novembre
+
+Richieste 152–156: ricerca per pertinenza, ragionamento Q&A esplicito,
+conteggio del traduttore e dei pannelli operativi, promemoria periodici esami.
+Gate completo verde: 930 unit in 76 file, 40 Python, 41 Node, RAG offline,
+updater, Electron con riavvio, build, raccolte nell'app compilata e PDF reali.
+Controlli mirati finali studio/esami, typecheck e lint passati.
+Inventario senza test mancanti, esclusioni o riduzioni. Contratto thinking SDK
+con risposte sintetiche, nessun nuovo benchmark Gemini reale.
+
+Verificati 382 file build, nove componenti NSIS e tre backup della 0.2.2.
+Runtime confezionato con modello locale e worker PDF passato senza rete AI;
+nessun nuovo tentativo del download pubblico non pertinente a questa modifica.
+Setup 300212383 byte, SHA256
+`7ee6b5b9fbb6ffd8349c1f42bc994b6b90a53ce7d1bb9e08115a8b2a0cf1a000`.
+Installer NotSigned, non eseguito; limiti su installazione reale e notifiche
+Windows dichiarati nelle note. Nessun materiale personale nel pacchetto.
 
 ### Pacchetto 0.2.2 del 17 novembre
 

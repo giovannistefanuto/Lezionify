@@ -1,4 +1,5 @@
 import { validateLaboratorySchedule } from './laboratorySchedule'
+import { validExamReminderPreference } from '../../shared/examReminders'
 import { validateQnaImageIds } from '../../shared/qnaImages'
 import type {
   CourseDefinition,
@@ -235,6 +236,7 @@ export function validateCourse(value: unknown): asserts value is CourseDefinitio
     !validDate(value.endDate) ||
     value.startDate > value.endDate ||
     (value.examDate !== undefined && !validDate(value.examDate)) ||
+    (value.examReminder !== undefined && !validExamReminderPreference(value.examReminder)) ||
     (value.color !== undefined &&
       (typeof value.color !== 'string' || value.color.length > 40)) ||
     value.schedule.length > 100

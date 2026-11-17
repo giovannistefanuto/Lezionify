@@ -2,6 +2,24 @@
 
 ## Stato attuale
 
+Il 17 novembre viene preparata la 0.2.3 per le richieste 152–156:
+ricerca per pertinenza o data, ragionamento Q&A esplicito, traduzione accreditata
+come attività distinta e pannelli timer/musica esclusi dal tempo di studio.
+`shared/examReminders.ts` definisce cadenza e piano per calendario locale;
+`electron/main/examReminders.ts` conserva ricevute e messaggi nel registro
+locale `library/exam-reminders.json`. Main/preload espongono lettura/conferma
+e il main esegue controlli periodici con notifiche silenziose. `ExamReminders`
+mostra gli avvisi nell'app e Gestione corsi permette di configurare la cadenza.
+Prove, casi limite e limiti in
+[richieste-studio-2026-11-17](docs/quality/richieste-studio-2026-11-17.md).
+
+La versione 0.2.2 e' pubblicata con le raccolte Altro. La skill versionata
+`skills/lezionify-release/` raccoglie il flusso Windows completo, la diagnosi
+dei problemi della pubblicazione e un helper Python senza dipendenze aggiuntive
+per bozza, upload riprendibile e verifica pubblica. `AGENTS.md` ne richiede l'uso;
+la copia installata nelle skill utente deriva da questa fonte. I test offline
+del trasporto sono in `tests/python/test_release_skill.py`.
+
 Il 16 novembre viene implementata la prima versione della voce 134:
 **Altro** ospita raccolte separate dai corsi con cinque modalità, istruzioni
 ereditate o sostitutive, importazione locale e schede versionate.
@@ -26,7 +44,8 @@ di contratto espongono solo motivi fissi e la ripresa esplicita usa feedback.
 L'interfaccia separa modello della prossima scheda e provenienza storica.
 Gate aggiornato: 914 unit, 24 Python, 41 Node e controlli Electron/build/PDF;
 resta la valutazione qualitativa finale dell'utente, con limiti nel rapporto.
-Nessuna dipendenza, migrazione dei corsi, versione o installer modificati.
+Nessuna nuova dipendenza o migrazione dei corsi. La prima implementazione e'
+stata distribuita nella 0.2.2 e viene estesa dalle richieste della 0.2.3.
 
 La versione 0.2.1 uniforma la lista delle lezioni per data decrescente in
 Tutti i corsi, singoli corsi e filtri di studio (D-0531). `useLectures`

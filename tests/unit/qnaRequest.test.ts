@@ -19,7 +19,7 @@ import { GeminiRequestManager } from '../../electron/main/ai/geminiRequestManage
 import { GeminiTransport } from '../../electron/main/ai/geminiTransport'
 import { DEFAULT_GEMINI_POLICY } from '../../electron/main/ai/geminiPolicy'
 import { GeminiError, normalizeGeminiError } from '../../electron/main/ai/geminiErrors'
-import { getQnaModelFallbackChain } from '../../shared/qnaModelPolicy'
+import { getQnaModelFallbackChain, qnaThinkingConfig } from '../../shared/qnaModelPolicy'
 
 it('abilita Google Search solo su richiesta e conserva fonti web separate dalla lezione', async () => {
   const gemini = new GeminiService({ requestManager: new GeminiRequestManager({ ...DEFAULT_GEMINI_POLICY, rpmLimit: 10000 }) })
@@ -89,6 +89,49 @@ it('invia solo le immagini attive come parti PNG e la domanda corrente senza alt
 })
 
 describe('Q&A centralizzato', () => {
+  it('cancels a deep request during the initial wait without waiting 90 seconds or falling back', async () => {
+    const transport = new GeminiTransport(), controller = new AbortController()
+    const attempts = vi.spyOn(transport, 'generateContentStream').mockImplementation(async params => {
+      const cancelled = new Promise<never>((_resolve, reject) => params.signal!.addEventListener('abort', () => reject(new GeminiError({ category: 'cancelled', isRetryable: false, isDailyQuota: false, sanitizedMessage: 'Annullata.' })), { once: true }))
+      controller.abort()
+      return cancelled
+    })
+    const service = new GeminiService({ requestManager: new GeminiRequestManager({ ...DEFAULT_GEMINI_POLICY, rpmLimit: 100 }, transport) })
+    await expect((async () => { for await (const chunk of service.generateQnaResponse({ apiKey: 'synthetic', model: 'gemini-3.5-flash-lite', thread, thinkDeeper: true, signal: controller.signal })) { void chunk } })()).rejects.toMatchObject({ category: 'cancelled' })
+    expect(attempts).toHaveBeenCalledTimes(1)
+  })
+  it('requests native HIGH reasoning only when explicitly enabled and preserves response length', async () => {
+    const service = new GeminiService()
+    for await (const chunk of service.generateQnaResponse({ apiKey: 'synthetic', model: 'gemini-4-hydrogen', thread, thinkDeeper: true, responseLength: 'brief' })) expect(chunk).toBe('risposta')
+    expect(sdk.config.model).toBe('gemini-3.5-flash-lite')
+    expect(sdk.config.config.thinkingConfig).toEqual({ thinkingLevel: 'HIGH' })
+    expect(sdk.config.config.systemInstruction).toContain('meno di 200 parole')
+    for await (const chunk of service.generateQnaResponse({ apiKey: 'synthetic', model: 'gemini-4-hydrogen', thread })) expect(chunk).toBe('risposta')
+    expect(sdk.config.model).toBe('gemini-4-hydrogen')
+    expect(sdk.config.config.thinkingConfig).toBeUndefined()
+    expect(qnaThinkingConfig('gemini-2.5-flash', true)).toEqual({})
+    expect(qnaThinkingConfig('unverified-model', true)).toEqual({})
+  })
+  it('keeps HIGH on compatible fallbacks, longer initial wait and unchanged cancellation signal', async () => {
+    const transport = new GeminiTransport(), requests: any[] = []
+    vi.spyOn(transport, 'generateContentStream').mockImplementation(async params => {
+      requests.push(params)
+      if (requests.length === 1) throw new Error('404 model not found')
+      params.onChunk('Risposta approfondita'); return { data: 'Risposta approfondita' }
+    })
+    const service = new GeminiService({ requestManager: new GeminiRequestManager({ ...DEFAULT_GEMINI_POLICY, rpmLimit: 100 }, transport) })
+    let text = ''
+    for await (const chunk of service.generateQnaResponse({ apiKey: 'synthetic', model: 'gemini-2.5-pro', thread, thinkDeeper: true, searchOnline: true })) text += chunk
+    expect(text.startsWith('Risposta approfondita')).toBe(true)
+    expect(text).toContain('Nessuna fonte web restituita dal provider')
+    expect(requests.map(request => request.model)).toEqual(['gemini-3.5-flash-lite', 'gemini-3.8-flash'])
+    for (const request of requests) {
+      expect(request.config.thinkingConfig).toEqual({ thinkingLevel: 'HIGH' })
+      expect(request.firstChunkTimeoutMs).toBe(90_000)
+      expect(request.signal).toBeInstanceOf(AbortSignal)
+      expect(request.config.tools).toEqual([{ googleSearch: {} }])
+    }
+  })
   it.each(['brief', 'medium', 'long'] as const)('applica lunghezza %s e stile diretto al prompt SDK', async responseLength => {
     const gemini = new GeminiService()
     for await (const chunk of gemini.generateQnaResponse({ apiKey: 'synthetic', model: 'gemini-3.6-flash', responseLength, thread })) expect(chunk).toBe('risposta')

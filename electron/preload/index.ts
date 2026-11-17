@@ -170,7 +170,8 @@ const archiveApi: ArchiveApi = {
     useFullContext: boolean,
     includeOtherQna = false,
     responseLength: 'brief' | 'medium' | 'long' = 'brief',
-    searchOnline = false
+    searchOnline = false,
+    thinkDeeper = false
   ) =>
     ipcRenderer.invoke(
       'archive:generate-qna',
@@ -179,7 +180,8 @@ const archiveApi: ArchiveApi = {
       useFullContext,
       includeOtherQna,
       responseLength,
-      searchOnline
+      searchOnline,
+      thinkDeeper
     ),
   saveStudySession: (session: StudySession) =>
     ipcRenderer.invoke('archive:save-study-session', session),
@@ -231,6 +233,8 @@ const archiveApi: ArchiveApi = {
   getScratchpad: () => ipcRenderer.invoke('archive:get-scratchpad'),
   saveScratchpad: (data) => ipcRenderer.invoke('archive:save-scratchpad', data),
   getReminders: () => ipcRenderer.invoke('archive:get-reminders'),
+  getExamReminders: () => ipcRenderer.invoke('exam-reminders:get'),
+  dismissExamReminder: id => ipcRenderer.invoke('exam-reminders:dismiss', id),
   saveReminders: (reminders) =>
     ipcRenderer.invoke('archive:save-reminders', reminders),
   getHighlights: (lectureId) =>

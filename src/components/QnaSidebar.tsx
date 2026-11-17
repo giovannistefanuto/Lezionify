@@ -17,7 +17,7 @@ interface QnaSidebarProps {
   isGenerating: boolean
   qnaStatus?: QnaStatusUpdate | null
   error: string | null
-  onSendMessage: (threadId: string, text: string, useFullContext: boolean, includeOtherQna?: boolean, responseLength?: 'brief' | 'medium' | 'long', searchOnline?: boolean) => void | boolean | Promise<void | boolean>
+  onSendMessage: (threadId: string, text: string, useFullContext: boolean, includeOtherQna?: boolean, responseLength?: 'brief' | 'medium' | 'long', searchOnline?: boolean, thinkDeeper?: boolean) => void | boolean | Promise<void | boolean>
   onDeleteThread: (threadId: string) => void
   onClose: () => void
   onRemoveImage?: (threadId: string, id: string) => void
@@ -80,6 +80,7 @@ export function QnaSidebar({
   const [useFullContext, setUseFullContext] = React.useState(true)
   const [includeOtherQna, setIncludeOtherQna] = React.useState(false)
   const [searchOnline, setSearchOnline] = React.useState(false)
+  const [thinkDeeper, setThinkDeeper] = React.useState(false)
   const activeThreadRef = React.useRef(activeThreadId)
   activeThreadRef.current = activeThreadId
   const [responseLength, setResponseLength] = React.useState<'brief' | 'medium' | 'long'>('brief')
@@ -89,6 +90,7 @@ export function QnaSidebar({
     setUseFullContext(true)
     setIncludeOtherQna(false)
     setSearchOnline(false)
+    setThinkDeeper(false)
     setResponseLength('brief')
   }, [activeThreadId])
   const [textZoom, setTextZoom] = useNumericPreference('lezionify:qna-text-zoom:v1', 1, 0.8, 2)
@@ -208,7 +210,7 @@ export function QnaSidebar({
       }
     }
     try {
-      if (await onSendMessage(threadId, draft, useFullContext, includeOtherQna, responseLength, searchOnline) === false) restoreDraft()
+      if (await onSendMessage(threadId, draft, useFullContext, includeOtherQna, responseLength, searchOnline, thinkDeeper) === false) restoreDraft()
       else setSearchOnline(false)
     } catch { restoreDraft() }
   }
@@ -314,6 +316,8 @@ export function QnaSidebar({
           Includi altri Q&amp;A pertinenti di questa lezione
         </label>
         {includeOtherQna && <small>Invia anche estratti di altre discussioni pertinenti (massimo 5). Le risposte AI non sono fonti originali.</small>}
+        <label className="qna-context-toggle"><input type="checkbox" checked={thinkDeeper} disabled={isGenerating} onChange={event => setThinkDeeper(event.target.checked)} />Pensa di più</label>
+        {thinkDeeper && <small>Richiede un ragionamento più approfondito a Gemini Flash-Lite. Può usare più tempo e credito API. La lunghezza resta quella scelta.</small>}
         <label className="qna-context-toggle"><input type="checkbox" checked={searchOnline} disabled={isGenerating} onChange={event => setSearchOnline(event.target.checked)} />Cerca online per questa domanda</label>
         {searchOnline && <small>Gemini può inviare query derivate dalla domanda e dal contesto a Google Search. Possono applicarsi costi aggiuntivi secondo il tuo piano. Le fonti web saranno separate dalla lezione.</small>}
         <div className="qna-input-row">

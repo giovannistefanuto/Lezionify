@@ -125,6 +125,7 @@ export interface CourseDefinition {
   startDate: string // YYYY-MM-DD (Inizio periodo lezioni del corso)
   endDate: string // YYYY-MM-DD (Fine periodo lezioni del corso)
   examDate?: string // YYYY-MM-DD (Data appello esame)
+  examReminder?: import('./examReminders').ExamReminderPreference
   schedule: CourseTimeSlot[] // Slot orari settimanali
   language?: 'it' | 'en' | 'auto' // Lingua prevalente delle lezioni
   laboratorySchedule?: {
@@ -702,7 +703,8 @@ export interface ArchiveApi extends StudyHistoryApi, CourseRagApi, RepetitionApi
     useFullContext: boolean,
     includeOtherQna?: boolean,
     responseLength?: 'brief' | 'medium' | 'long',
-    searchOnline?: boolean
+    searchOnline?: boolean,
+    thinkDeeper?: boolean
   ) => Promise<{ success: boolean; text?: string; error?: string }>
   saveStudySession: (session: StudySession) => Promise<void>
   getLectureStudySeconds: (lectureId: string, excludedSessionId: string) => Promise<number>
@@ -739,6 +741,8 @@ export interface ArchiveApi extends StudyHistoryApi, CourseRagApi, RepetitionApi
   getScratchpad: () => Promise<ScratchpadData>
   saveScratchpad: (data: ScratchpadData) => Promise<void>
   getReminders: () => Promise<Reminder[]>
+  getExamReminders: () => Promise<import('./examReminders').ExamReminderNotice[]>
+  dismissExamReminder: (id: string) => Promise<void>
   saveReminders: (reminders: Reminder[]) => Promise<void>
   getHighlights: (lectureId: string) => Promise<LectureHighlight[]>
   saveHighlights: (

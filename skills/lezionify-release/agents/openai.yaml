@@ -1,0 +1,4 @@
+interface:
+  display_name: "Release Lezionify"
+  short_description: "Prepara e pubblica release Windows verificate"
+  default_prompt: "Usa $lezionify-release per completare la release Windows di Lezionify e verificarne gli asset pubblici."

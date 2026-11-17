@@ -2262,11 +2262,13 @@ export class ArchiveService {
     useFullContext: unknown,
     includeOtherQna: unknown = false,
     responseLength: unknown = 'brief',
-    searchOnline: unknown = false
+    searchOnline: unknown = false,
+    thinkDeeper: unknown = false
   ): Promise<{ success: boolean; text?: string; error?: string }> {
     try {
       validateQnaThread(thread)
       if (typeof searchOnline !== 'boolean') throw new Error('Opzione ricerca online non valida.')
+      if (typeof thinkDeeper !== 'boolean') throw new Error('Opzione ragionamento Q&A non valida.')
       if (responseLength !== 'brief' && responseLength !== 'medium' && responseLength !== 'long') throw new Error('Lunghezza Q&A non valida.')
       if (typeof useFullContext !== 'boolean' || typeof includeOtherQna !== 'boolean') {
         throw new Error('Opzione del contesto Q&A non valida.')
@@ -2304,10 +2306,10 @@ export class ArchiveService {
         current: null
       }
 
-      const qnaPrimaryModel = getQnaModelFallbackChain(settings.model).preferred
+      const qnaPrimaryModel = getQnaModelFallbackChain(settings.model, thinkDeeper).preferred
       logger.info(
         'qna',
-        `Avvio richiesta QnA con modello ${qnaPrimaryModel}; ${images.length} slide allegate; ricerca online ${searchOnline ? 'richiesta' : 'disattivata'}.`
+        `Avvio richiesta QnA con modello ${qnaPrimaryModel}; ragionamento ${thinkDeeper ? 'HIGH' : 'standard'}; ${images.length} slide allegate; ricerca online ${searchOnline ? 'richiesta' : 'disattivata'}.`
       )
 
       if (Buffer.byteLength(JSON.stringify({ thread, fullLectureText, otherQnaContext, images }), 'utf8') > 18_000_000) throw new Error('Contesto troppo grande: riduci le slide o disattiva il contesto completo.')
@@ -2322,6 +2324,7 @@ export class ArchiveService {
         otherQnaContext,
         responseLength,
         searchOnline,
+        thinkDeeper,
         images,
         onAttempt: (info) => {
           const previous = attemptState.current

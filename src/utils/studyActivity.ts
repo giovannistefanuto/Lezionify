@@ -14,8 +14,9 @@ export function studySurfaceExclusions(): StudyExclusion[] {
   const reasons: StudyExclusion[] = []
   if (document.hidden || !document.hasFocus()) reasons.push('inactive-window')
   if (document.querySelector('.quick-capture-backdrop')) reasons.push('memo')
-  if (document.querySelector('[data-dictionary-overlay]')) reasons.push('translator')
   if (document.querySelector('.music-backdrop')) reasons.push('music')
-  if (!reasons.some(r=>r === 'memo' || r === 'translator' || r === 'music') && document.querySelector('.modal-overlay, [aria-modal="true"]')) reasons.push('modal')
+  if (document.querySelector('[data-study-exclusion="reminder-settings"]')) reasons.push('modal')
+  if (!reasons.some(r=>r === 'memo' || r === 'music' || r === 'modal') &&
+    [...document.querySelectorAll('.modal-overlay, [aria-modal="true"]')].some(element => !element.closest('[data-dictionary-overlay]'))) reasons.push('modal')
   return reasons
 }

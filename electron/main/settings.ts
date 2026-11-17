@@ -1,4 +1,5 @@
 import { validateLaboratorySchedule } from './laboratorySchedule'
+import { validExamReminderPreference } from '../../shared/examReminders'
 import { copyFile, readFile, rename, stat, writeFile } from 'node:fs/promises'
 import * as path from 'node:path'
 import { safeStorage } from 'electron'
@@ -118,6 +119,7 @@ function validateSettingsUpdate(
       }
       if (course.publishToGithub !== undefined && typeof course.publishToGithub !== 'boolean') throw new Error('Consenso GitHub del corso non valido.')
       validateLaboratorySchedule(course.laboratorySchedule)
+      if (course.examReminder !== undefined && !validExamReminderPreference(course.examReminder)) throw new Error('Frequenza promemoria esame non valida.')
     }
   }
   if (value.legacyPublishingCourseCodes !== undefined && (!Array.isArray(value.legacyPublishingCourseCodes) || value.legacyPublishingCourseCodes.length > 500 || value.legacyPublishingCourseCodes.some(code => typeof code !== 'string' || !code.trim() || code.length > 120))) throw new Error('Consensi dei corsi non validi.')

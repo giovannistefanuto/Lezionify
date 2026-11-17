@@ -73,23 +73,33 @@ export async function runStudyTimingScenarios(root: Root, api: any) {
     check(tracker.activeSeconds === 10 && state().seconds === 10, 'Memo contaminated clock or estimate')
     await render(<React.StrictMode><Harness /></React.StrictMode>)
     const overlay = document.createElement('div'); overlay.setAttribute('data-dictionary-overlay', ''); document.body.append(overlay)
+    const beforeTranslationDwell = JSON.stringify(state().dwell)
     await tick(10); estimate.persist()
-    check(tracker.activeSeconds === 10 && state().seconds === 10, 'Translator contaminated clock or estimate')
+    check(tracker.activeSeconds === 20 && state().seconds === 20, 'Translator must count equally in study clock and estimate')
+    check(JSON.stringify(state().dwell) === beforeTranslationDwell, 'Translation must not invent reading progress on the covered document')
+    for (const attributes of [{ class: 'music-backdrop' }, { 'data-study-exclusion': 'reminder-settings' }]) {
+      const settingsPanel = document.createElement('section')
+      for (const [name, value] of Object.entries(attributes)) settingsPanel.setAttribute(name, value)
+      document.body.append(settingsPanel)
+      await tick(5); estimate.persist()
+      check(tracker.activeSeconds === 20 && state().seconds === 20, 'Music or timer settings counted as study, including with translator open')
+      settingsPanel.remove()
+    }
     overlay.remove()
     await tick(1); estimate.persist()
-    check(tracker.activeSeconds === 11 && state().seconds === 11, 'Closing translator lost or added a second between clock and estimator')
+    check(tracker.activeSeconds === 21 && state().seconds === 21, 'Closing translator lost or added a second between clock and estimator')
     focused = false
     await act(async () => window.dispatchEvent(new Event('blur')))
     await tick(10); estimate.persist()
-    check(tracker.activeSeconds === 11 && state().seconds === 11, 'Other window contaminated clock or estimate')
+    check(tracker.activeSeconds === 21 && state().seconds === 21, 'Other window contaminated clock or estimate')
     focused = true
     await act(async () => window.dispatchEvent(new Event('focus')))
     const dwell = [...state().dwell]
     await act(async () => document.querySelector('.focus-qna-column')!.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true })))
     await tick(20); estimate.persist()
-    check(tracker.activeSeconds === 31 && state().seconds === 31 && JSON.stringify(state().dwell) === JSON.stringify(dwell), 'Q&A duplicated seconds or invented document progress')
+    check(tracker.activeSeconds === 41 && state().seconds === 41 && JSON.stringify(state().dwell) === JSON.stringify(dwell), 'Q&A duplicated seconds or invented document progress')
     const run = JSON.parse(localStorage.getItem(FORECAST_RUN_PREFIX + 'timing')!)
-    check(run.elapsed === 31, 'Forecast outcomes use a different active-time clock')
+    check(run.elapsed === 41, 'Forecast outcomes use a different active-time clock')
     await render(null)
     Date.now = originalNow; window.setInterval = originalInterval; window.clearInterval = originalClear
 

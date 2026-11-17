@@ -279,6 +279,7 @@ export function FocusReminders() {
         {isOpen && (
           <section
             className="focus-reminders-popover"
+            data-study-exclusion="reminder-settings"
             aria-label="Timer e sveglie"
           >
             <div

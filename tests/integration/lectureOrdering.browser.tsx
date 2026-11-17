@@ -50,7 +50,10 @@ export async function runLectureOrderingScenarios(root: Root) {
     })
     const before = output!.visibleLectures.map(lecture => lecture.id).join(',')
     await act(async () => new Promise(resolve => setTimeout(resolve, 200)))
-    check(output!.visibleLectures.map(lecture => lecture.id).join(',') === before, 'Search relevance changed chronological order')
+    const ranked = fixtures.filter(lecture => lecture.courseCode === 'A').reverse().map(lecture => lecture.id).join(',')
+    check(output!.visibleLectures.map(lecture => lecture.id).join(',') === ranked, 'Search must preserve the engine relevance order')
+    await act(async () => output.setSearchOrder('date'))
+    check(output!.visibleLectures.map(lecture => lecture.id).join(',') === before, 'Explicit date order must preserve chronology during search')
     await act(async () => output.setLectures(current => current.map(lecture =>
       lecture.id === 'A-da-studiare-0' ? { ...lecture, studyStatus: 'completata' } : lecture)))
     check(output!.visibleLectures.map(lecture => lecture.id).join(',') === before, 'Status change moved a lesson away from its date')

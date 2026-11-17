@@ -9,7 +9,8 @@ import { checkPackagedCourseRag } from './courseRagPackageCheck'
 import { completeCourseResponse } from './ai/courseRagCompletion'
 import { readdir } from 'node:fs/promises'
 import { QNA_IMAGE_LIMIT, QNA_IMAGE_MAX_BYTES, type QnaImageInput } from '../../shared/qnaImages'
-import { app, BrowserWindow, dialog, ipcMain, protocol, Menu, shell, safeStorage, nativeImage, powerMonitor, net } from 'electron'
+import { app, BrowserWindow, dialog, ipcMain, protocol, Menu, shell, safeStorage, nativeImage, powerMonitor, net, Notification } from 'electron'
+import { ExamReminderService } from './examReminders'
 import { configureGeminiConnectivity } from './ai/connectivity'
 import { SpotifyService } from './spotify'
 import { spotifyItemUrl } from '../../shared/spotify'
@@ -82,6 +83,14 @@ let appUpdates: AppUpdateService
 let updateStarted = false
 if (ragSelfCheck) app.setPath('userData', join(app.getPath('temp'), `Lezionify-rag-selfcheck-${Date.now()}-${process.pid}`))
 const archive = new ArchiveService()
+const examReminders = new ExamReminderService(join(app.getPath('userData'), 'library', 'exam-reminders.json'), () => archive.getSettings(), notice => {
+  if (Notification.isSupported()) {
+    const notification = new Notification({ title: notice.title, body: notice.message, silent: true })
+    notification.on('click', () => { mainWindow?.show(); mainWindow?.focus() })
+    notification.show()
+  }
+})
+let examReminderTimer: ReturnType<typeof setInterval> | undefined
 const dictionary = new LocalDictionaryService(join(app.getAppPath(), app.isPackaged ? 'out/renderer/dictionaries' : 'public/dictionaries'))
 let focusPdfs: FocusPdfService
 let offlineTranslation: OfflineTranslationService
@@ -521,8 +530,8 @@ function registerIpcHandlers(): void {
   )
   handle(
     'archive:generate-qna',
-    (_event, id: string, thread: unknown, useFullContext: unknown, includeOtherQna: unknown = false, responseLength: unknown = 'brief', searchOnline: unknown = false) =>
-      archive.generateQnaResponse(id, thread, useFullContext, includeOtherQna, responseLength, searchOnline)
+    (_event, id: string, thread: unknown, useFullContext: unknown, includeOtherQna: unknown = false, responseLength: unknown = 'brief', searchOnline: unknown = false, thinkDeeper: unknown = false) =>
+      archive.generateQnaResponse(id, thread, useFullContext, includeOtherQna, responseLength, searchOnline, thinkDeeper)
   )
   handle('archive:save-qna-image', (_event, lectureId: string, threadId: string, input: unknown) => archive.saveQnaImage(lectureId, threadId, input))
   handle('archive:list-qna-images', () => archive.qnaImages.list())
@@ -592,6 +601,14 @@ function registerIpcHandlers(): void {
     archive.saveScratchpad(data)
   )
   handle('archive:get-reminders', () => archive.getReminders())
+  handle('exam-reminders:get', event => {
+    if (event.sender !== mainWindow?.webContents || event.senderFrame !== mainWindow.webContents.mainFrame) throw new Error('Accesso non consentito.')
+    return examReminders.poll().catch(() => { throw new Error('Impossibile leggere i promemoria esami. Riprova fra un minuto.') })
+  })
+  handle('exam-reminders:dismiss', (event, id) => {
+    if (event.sender !== mainWindow?.webContents || event.senderFrame !== mainWindow.webContents.mainFrame) throw new Error('Accesso non consentito.')
+    return examReminders.dismiss(id).catch(() => { throw new Error('Impossibile salvare il promemoria. Il precedente resta conservato.') })
+  })
   handle('archive:save-reminders', (_event, reminders: unknown) =>
     archive.saveReminders(reminders)
   )
@@ -698,6 +715,11 @@ app.whenReady().then(async () => {
     ipcMain.handle('update:acknowledge', event => { assertUpdateSender(event); return appUpdates.acknowledge() })
     ipcMain.handle('update:releases', event => { assertUpdateSender(event); return shell.openExternal(APP_RELEASES_URL) })
     createWindow()
+    const checkExams = () => { void updateGate.run(() => examReminders.poll()).catch(() => logger.warn('exam-reminders', 'Controllo promemoria esami non completato.')) }
+    checkExams()
+    examReminderTimer = setInterval(checkExams, 60_000)
+    examReminderTimer.unref()
+    powerMonitor.on('resume', checkExams)
     void updateGate.run(() => courseRag.syncEnabled()).catch(() => {})
     courseRagTimer = setInterval(() => { void updateGate.run(() => courseRag.syncEnabled()).catch(() => {}) }, 5 * 60_000)
     courseRagTimer.unref()
@@ -729,6 +751,7 @@ app.whenReady().then(async () => {
 app.on('window-all-closed', () => {
   spotify?.dispose()
   clearInterval(courseRagTimer)
+  clearInterval(examReminderTimer)
   courseRag?.dispose()
   if (process.platform !== 'darwin') { archive.destroy(); void archive.collections.stop().finally(() => app.quit()) }
 })

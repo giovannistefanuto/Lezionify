@@ -23,6 +23,7 @@ import { useArchivePipeline } from './hooks/useArchivePipeline'
 import { useQuickCapture } from './hooks/useQuickCapture'
 import { AppUpdates } from './components/AppUpdates'
 import { useDictionaryShortcut } from './hooks/useDictionaryShortcut'
+import { ExamReminders } from './components/ExamReminders'
 import { useFinalLectureReturn } from './hooks/useFinalLectureReturn'
 
 const CourseChat = lazy(() => import('./components/CourseChat').then(module => ({ default: module.CourseChat })))
@@ -218,6 +219,8 @@ export default function App() {
     setSelectedStudyStatus,
     searchQuery,
     setSearchQuery,
+    searchOrder,
+    setSearchOrder,
     isLoading,
     isImporting,
     notice,
@@ -482,6 +485,8 @@ export default function App() {
         onRefreshStats={refreshCourseStats}
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
+        searchOrder={searchOrder}
+        setSearchOrder={setSearchOrder}
         isCollapsed={isSidebarCollapsed}
         onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
         searchInputRef={searchInputRef}
@@ -502,6 +507,7 @@ export default function App() {
         onOpenLecture={(id, kind) => { setMainView('archive'); const lecture = lectures.find(item => item.id === id); if (lecture?.courseCode) setSelectedCourse(lecture.courseCode); setSelectedLectureId(id); setActiveTab(kind === 'transcript' ? 'transcript' : 'markdown'); setCourseChatOpen(false) }} /></Suspense>}
 
       <div className="main-content-wrapper">
+        <ExamReminders onOpenCourses={() => setShowCourseModal(true)} />
         {mainView !== 'collections' && !dismissedSemesterReminder && (
           <SemesterReminderBanner
             onOpenCourseManagement={() => setShowCourseModal(true)}

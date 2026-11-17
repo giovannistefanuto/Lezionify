@@ -39,8 +39,8 @@ export async function runOctober28Scenarios(root: Root, api: any) {
     localStorage.setItem('lezionify:qna-length:v1', 'long')
     await render(questions())
     check(document.activeElement?.getAttribute('aria-label') === 'Domanda sulla lezione', 'Q&A opening did not focus the question')
-    const choices = [...document.querySelectorAll<HTMLInputElement>('.qna-context-toggle input')]
-    check(choices[0].checked && !choices[1].checked && !choices[2].checked, 'Q&A defaults must be full lesson, no others, web off')
+    const checkbox = (label: string) => [...document.querySelectorAll<HTMLLabelElement>('.qna-context-toggle')].find(element => element.textContent?.includes(label))!.querySelector<HTMLInputElement>('input')!
+    check(checkbox('Includi intera lezione').checked && !checkbox('Includi altri Q&A').checked && !checkbox('Cerca online').checked && !checkbox('Pensa di più').checked, 'Q&A defaults must be full lesson, no others, web and deep reasoning off')
     check(document.querySelector('.qna-length-toggle [aria-pressed="true"]')?.textContent === 'Breve', 'New Q&A must start brief')
     const input = document.querySelector<HTMLTextAreaElement>('textarea')!
     await type(input, 'Domanda sintetica')
@@ -48,11 +48,11 @@ export async function runOctober28Scenarios(root: Root, api: any) {
     check(sends.length === 0, 'Shift+Enter sent a question')
     await act(async () => input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', isComposing: true, bubbles: true })))
     check(sends.length === 0, 'IME sent a question')
-    await act(async () => choices[2].click())
+    await act(async () => checkbox('Cerca online').click())
     await act(async () => input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true })))
     await wait()
     check(sends.length === 1 && sends[0][2] === true && sends[0][3] === false && sends[0][4] === 'brief' && sends[0][5] === true, 'Question options lost before send')
-    check(!document.querySelectorAll<HTMLInputElement>('.qna-context-toggle input')[2].checked, 'Web consent persisted to another question')
+    check(!checkbox('Cerca online').checked, 'Web consent persisted to another question')
 
     thread = { ...thread, messages: [{ role: 'ai', text: String.raw`Politiche \(\epsilon\)-greedy e \(\epsilon\)-soft.
 

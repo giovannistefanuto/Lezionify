@@ -25,6 +25,8 @@ interface SidebarProps {
   hasConfiguredKey: boolean
   searchQuery: string
   setSearchQuery: (query: string) => void
+  searchOrder?: 'relevance' | 'date'
+  setSearchOrder?: (order: 'relevance' | 'date') => void
   onRefreshStats: () => void
   isCollapsed: boolean
   onToggleCollapse: () => void
@@ -60,6 +62,8 @@ export function Sidebar({
   hasConfiguredKey,
   searchQuery,
   setSearchQuery,
+  searchOrder = 'relevance',
+  setSearchOrder,
   onRefreshStats,
   isCollapsed,
   onToggleCollapse,
@@ -351,6 +355,9 @@ export function Sidebar({
               onChange={(e) => setSearchQuery(e.target.value)}
               aria-label="Cerca lezioni"
             />
+            {searchQuery.trim() && setSearchOrder && <label className="search-order">Ordina risultati
+              <select aria-label="Ordine risultati ricerca" value={searchOrder} onChange={event => setSearchOrder(event.target.value as 'relevance' | 'date')}><option value="relevance">Pertinenza</option><option value="date">Data più recente</option></select>
+            </label>}
           </div>
 
           <div className="view-toggle">
