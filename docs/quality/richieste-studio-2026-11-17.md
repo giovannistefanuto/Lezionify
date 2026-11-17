@@ -61,6 +61,10 @@ allineate ai requisiti: il traduttore ora accredita i cinque secondi osservati
 anche nel test pausa, e il consenso web viene individuato per etichetta anziché
 per posizione numerica dopo l'aggiunta della nuova spunta. Tutte le verifiche
 su pausa, sospensione, ripresa, salvataggio e consenso web restano attive.
+Durante il completamento della bozza è stato corretto il lookup GitHub per
+tag non ancora materializzato. Aggiunte quattro regressioni del solo helper;
+suite Python completa finale: **44 test**, di cui 20 del trasporto release.
+App, note, installer e commit sorgente dei binari rimangono invariati.
 
 Il contratto SDK viene provato con risposte sintetiche, senza nuove chiamate
 Gemini reali: disponibilità dei modelli, qualità e costo effettivo dipendono dal

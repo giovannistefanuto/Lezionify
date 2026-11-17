@@ -102,6 +102,10 @@ Setup 300212383 byte, SHA256
 `7ee6b5b9fbb6ffd8349c1f42bc994b6b90a53ce7d1bb9e08115a8b2a0cf1a000`.
 Installer NotSigned, non eseguito; limiti su installazione reale e notifiche
 Windows dichiarati nelle note. Nessun materiale personale nel pacchetto.
+Il lookup di una bozza senza tag materializzato è coperto dall'helper corretto:
+fallback all'elenco autenticato e recupero esplicito sul commit originale dei
+binari, con confronto dei soli cambiamenti documentali/test/strumento.
+Le quattro nuove regressioni portano la suite Python finale a 44 test passati.
 
 ### Pacchetto 0.2.2 del 17 novembre
 

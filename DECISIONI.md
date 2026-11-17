@@ -6063,3 +6063,14 @@ Non modificare manualmente la sezione `Registro`: aggiungi le nuove decisioni es
 - **Impatto:** Setup 300212383 byte, SHA256 7ee6b5b9fbb6ffd8349c1f42bc994b6b90a53ce7d1bb9e08115a8b2a0cf1a000. Verificati 382 file build, nove componenti NSIS, tre backup e asset updater. Runtime confezionato con fixture locale e PDF worker passati senza API. Installer non firmato; nessuna attestazione di installazione reale o presentazione personale delle notifiche Windows. Materiali privati esclusi da commit e pacchetto.
 - **Follow-up:** Verificare digest remoti e manifesto pubblico prima di dichiarare disponibile la release; non rigenerare binari dopo la pubblicazione.
 - **File coinvolti:** docs/publishing/aggiornamenti-windows.md, docs/releases/0.2.3.md, DECISIONI.md
+
+## D-0551 — Recupero bozze senza tag materializzato e sorgente binaria immutata
+
+- **Data:** 2026-11-17
+- **Stato:** accettata
+- **Area:** strumenti-release
+- **Decisione:** Correggere il lookup release: dopo 404 per tag consultare anche l elenco autenticato paginato. Consentire source-commit esplicito solo per resume e publish della stessa bozza dopo modifiche a helper, test o documentazione, verificando antenato sul ramo remoto e assenza di cambiamenti all app e alle note della versione.
+- **Motivazione:** Nella pubblicazione reale 0.2.3 la bozza caricata e verificata e presente nell elenco autenticato ma non esposta dall endpoint per tag prima della pubblicazione. Il test originario sostituiva il lookup e non copriva questo caso. La correzione dello strumento non richiede cambiare i binari gia verificati.
+- **Impatto:** Quattro nuove regressioni: 20 test helper e 44 Python complessivi passati. Skill locale aggiornata dopo confronto con la copia precedente. App, note, installer e asset rimangono identici; il tag della 0.2.3 deve restare sul commit sorgente c59a00ee7ffc730d5fa1a60d1c5e31f912759061. Nessun secondo upload o nuova build.
+- **Follow-up:** Completare la pubblicazione della bozza esistente con source-commit esplicito e verificare in pubblico tag, hash e manifesto.
+- **File coinvolti:** skills/lezionify-release/scripts/github_release.py, skills/lezionify-release/SKILL.md, skills/lezionify-release/references/incidenti-0.2.2.md, tests/python/test_release_skill.py, docs/quality/richieste-studio-2026-11-17.md, docs/publishing/aggiornamenti-windows.md, DECISIONI.md

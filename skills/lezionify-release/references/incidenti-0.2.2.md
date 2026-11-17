@@ -31,3 +31,20 @@ remoto. Sono dati storici: ricalcolare gli hash per la release successiva.
 La rete lenta non è una causa dimostrata del download fallito; neppure il timeout
 del test prova un bug dello storage. La skill conserva questa distinzione,
 non modifica timeout del prodotto e non avvia un'altra release per validarsi.
+
+## Correzione osservata durante la 0.2.3
+
+Il primo uso dell'helper parametrico ha caricato e verificato i tre asset, ma
+`GET /releases/tags/v0.2.3` ha risposto 404 prima della pubblicazione. La stessa
+bozza era presente nell'elenco autenticato con tag e asset corretti. I test
+offline originari sostituivano il metodo di ricerca e non coprivano questo ramo.
+L'helper ora cerca anche nell'elenco autenticato paginato e i test riproducono
+il 404 seguito dalla bozza esistente, evitando una seconda creazione.
+
+Il recupero mantiene immutati setup e commit sorgente già verificati. Per
+pubblicare la correzione del solo strumento prima di completare la stessa
+bozza è disponibile `--source-commit`: verifica antenato sul ramo pubblicato,
+assenza di cambiamenti all'app e alle note della versione e conserva il tag
+sul commit originario dei binari. Non permette di creare una nuova release
+da sorgenti vecchi o ignorare modifiche applicative. Venti test dell'helper
+coprono anche questi casi; non è stata necessaria una nuova build dell'app.

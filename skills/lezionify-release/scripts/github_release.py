@@ -96,7 +96,7 @@ class Release:
         return {name: {'size': (self.root / 'dist' / name).stat().st_size,
                        'digest': digest(self.root / 'dist' / name)} for name in self.names}
 
-    def pushed_head(self):
+    def pushed_head(self, source_commit=None):
         require(not self.command('git', 'status', '--porcelain'), 'Checkout non pulito: completare commit e revisione.')
         remote = self.command('git', 'remote', 'get-url', 'origin')
         match = re.fullmatch(r'(?:https://github\.com/|git@github\.com:)([\w.-]+/[\w.-]+?)(?:\.git)?/?', remote)
@@ -107,6 +107,15 @@ class Release:
         head = self.command('git', 'rev-parse', 'HEAD')
         rows = self.command('git', 'ls-remote', 'origin', 'refs/heads/' + branch).split()
         require(rows and rows[0] == head, 'HEAD non presente sul ramo remoto.')
+        if source_commit:
+            require(re.fullmatch('[0-9a-f]{40}', source_commit), 'SHA sorgente non valido.')
+            self.command('git', 'merge-base', '--is-ancestor', source_commit, head)
+            changed = self.command('git', 'diff', '--name-only', source_commit, head).splitlines()
+            allowed = {'AGENTS.md', 'DECISIONI.md', 'STRUTTURA_PROGETTO.md'}
+            require(all((name in allowed or name.startswith(('skills/lezionify-release/', 'tests/', 'docs/')))
+                        and name != f'docs/releases/{self.version}.md' for name in changed),
+                    'Applicazione o note differenti dal commit del setup: ricostruire e verificare la build.')
+            head = source_commit
         tags = self.command('git', 'ls-remote', 'origin', 'refs/tags/' + self.tag, 'refs/tags/' + self.tag + '^{}')
         if tags:
             references = dict((row.split()[1], row.split()[0]) for row in tags.splitlines())
@@ -119,7 +128,16 @@ class Release:
             return self.request(self.base + '/releases/tags/' + self.tag)
         except urllib.error.HTTPError as error:
             if error.code == 404:
-                return None
+                # Drafts may have no materialized tag yet. GitHub exposes them
+                # through the authenticated release list rather than /tags/.
+                for page in range(1, 11):
+                    releases = self.request(self.base + f'/releases?per_page=100&page={page}')
+                    match = next((release for release in releases if release['tag_name'] == self.tag), None)
+                    if match is not None:
+                        return match
+                    if len(releases) < 100:
+                        return None
+                raise ReleaseError('Elenco release troppo ampio: individuare la bozza prima di proseguire.')
             raise
 
     def validate(self, release, assets, complete=True, head=None):
@@ -137,7 +155,8 @@ class Release:
             require(asset['state'] == 'uploaded' and asset['size'] == expected['size']
                     and asset.get('digest') == expected['digest'], 'Asset remoto incompleto o differente: ' + asset['name'])
 
-    def run(self, action):
+    def run(self, action, source_commit=None):
+        require(not source_commit or action in ('resume', 'publish'), 'SHA sorgente esplicito ammesso solo per ripresa/pubblicazione della stessa bozza.')
         if action == 'status':
             self.authenticate()
             releases = self.request(self.base + '/releases?per_page=100')
@@ -159,7 +178,7 @@ class Release:
             content = self.request(manifest['browser_download_url'], public=True, raw=True)
             require(content == (self.root / 'dist/latest.yml').read_bytes(), 'Manifesto pubblico differente.')
             return {'url': release['html_url'], 'public': True, 'assetsVerified': self.names, 'publicManifestIdentical': True}
-        head = self.pushed_head()
+        head = self.pushed_head(source_commit) if source_commit else self.pushed_head()
         self.authenticate()
         release = self.find()
         if action == 'prepare':
@@ -196,9 +215,10 @@ def main():
     parser.add_argument('action', choices=['status', 'prepare', 'resume', 'publish', 'verify'])
     parser.add_argument('--root', type=Path, required=True)
     parser.add_argument('--repo', required=True)
+    parser.add_argument('--source-commit', help='SHA del setup già verificato, solo per resume/publish dopo modifiche a helper, test o documentazione.')
     args = parser.parse_args()
     try:
-        print(json.dumps(Release(args.root, args.repo).run(args.action), ensure_ascii=False))
+        print(json.dumps(Release(args.root, args.repo).run(args.action, args.source_commit), ensure_ascii=False))
         return 0
     except ReleaseError as error:
         print(str(error), file=sys.stderr)

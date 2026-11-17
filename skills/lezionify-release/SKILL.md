@@ -122,6 +122,15 @@ e carica solo setup, blockmap e `latest.yml`. Un upload lento va seguito fino
 all'esito. Dopo interruzione conserva i binari e usa `resume`: verifica gli asset
 presenti e carica i mancanti. Digest errato o stato incompleto richiedono diagnosi
 della bozza; l'helper si ferma invece di sostituire asset. Evita upload concorrenti.
+Le bozze possono non essere reperibili con l'endpoint per tag: l'helper consulta
+anche l'elenco autenticato, senza creare una seconda Release.
+
+Se dopo il packaging hai corretto solo helper, test o documentazione, conserva
+il commit originario della build e della bozza. Dopo aver verificato e pubblicato
+la correzione, usa `--source-commit <SHA-originario>` con `resume` o `publish`.
+Il controllo ammette solo un antenato del ramo pubblicato, con app e note della
+versione invariate; modifiche applicative richiedono nuova build e verifiche.
+Il tag continua a riferirsi al commit dei binari, non alla manutenzione del tool.
 
 **Esito:** bozza completa con note, SHA sorgente, stato uploaded, nomi, dimensioni
 e SHA256 degli asset uguali ai file locali.

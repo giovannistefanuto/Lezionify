@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 import tempfile
 import unittest
+import urllib.error
 from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -138,6 +139,45 @@ class ReleaseSkillTests(unittest.TestCase):
         self.tool.find = lambda: None
         self.tool.request = lambda *a,**kw: [{'tag_name':'v0.2.4','draft':False,'prerelease':False}]
         with self.assertRaises(MODULE.ReleaseError): self.tool.run('prepare')
+
+    def test_draft_is_found_in_authenticated_list_when_tag_endpoint_returns_404(self):
+        urls = []
+        def request(url):
+            urls.append(url)
+            if '/releases/tags/' in url:
+                raise urllib.error.HTTPError(url,404,'not found',{},None)
+            return [self.remote]
+        self.tool.request = request
+        self.assertEqual(MODULE.Release.find(self.tool)['id'],1)
+        self.assertEqual(len(urls),2)
+        self.assertIn('page=1',urls[1])
+
+    def test_missing_draft_after_tag_404_returns_none_without_creating_a_release(self):
+        def request(url):
+            if '/releases/tags/' in url:
+                raise urllib.error.HTTPError(url,404,'not found',{},None)
+            return []
+        self.tool.request = request
+        self.assertIsNone(MODULE.Release.find(self.tool))
+
+    def test_source_override_allows_only_ancestor_with_unchanged_application_and_release_notes(self):
+        source, head = 'a'*40, 'b'*40
+        answers = {('git','status','--porcelain'):'', ('git','remote','get-url','origin'):'https://github.com/example/app.git',
+                   ('git','symbolic-ref','--short','HEAD'):'main',('git','rev-parse','--abbrev-ref','@{upstream}'):'origin/main',
+                   ('git','rev-parse','HEAD'):head, ('git','ls-remote','origin','refs/heads/main'):head+'\trefs/heads/main',
+                   ('git','merge-base','--is-ancestor',source,head):'',
+                   ('git','diff','--name-only',source,head):'skills/lezionify-release/scripts/github_release.py\ntests/python/test_release_skill.py',
+                   ('git','ls-remote','origin','refs/tags/v0.2.3','refs/tags/v0.2.3^{}'):''}
+        self.tool.command = lambda *args: answers[args]
+        self.assertEqual(MODULE.Release.pushed_head(self.tool,source),source)
+        for path in ['src/App.tsx','package.json','electron/main/index.ts','docs/releases/0.2.3.md']:
+            answers[('git','diff','--name-only',source,head)] = path
+            with self.subTest(path=path), self.assertRaises(MODULE.ReleaseError):
+                MODULE.Release.pushed_head(self.tool,source)
+
+    def test_source_override_is_not_a_way_to_create_a_new_release_from_old_sources(self):
+        with self.assertRaises(MODULE.ReleaseError): self.tool.run('prepare','a'*40)
+        self.assertEqual(self.calls,[])
 
     def test_authenticated_transport_rejects_unknown_hosts_without_network(self):
         for url in ['http://api.github.com/path','https://attacker.invalid/path']:
