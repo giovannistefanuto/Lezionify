@@ -2,6 +2,11 @@
 
 ## Stato attuale
 
+Il 17 novembre la release 0.2.4 riduce le miniature delle slide attive nel Q&A
+per dare spazio alla risposta, mantenendo ingrandimento e rimozione (D-0553).
+Gate completo e asset pubblici verificati; note e limiti in
+`docs/releases/0.2.4.md` e `docs/publishing/aggiornamenti-windows.md`.
+
 Il 17 novembre viene pubblicata la 0.2.3 per le richieste 152–156:
 ricerca per pertinenza o data, ragionamento Q&A esplicito, traduzione accreditata
 come attività distinta e pannelli timer/musica esclusi dal tempo di studio.

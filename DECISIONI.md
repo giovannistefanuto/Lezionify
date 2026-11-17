@@ -6129,3 +6129,14 @@ Non modificare manualmente la sezione `Registro`: aggiungi le nuove decisioni es
 - **Impatto:** Setup 300212145 byte, SHA256 0d17443c228d45f5aea763c488c3e66dff1f63695d5a98e7e917cd9ed6d5b4b3; 382 file build, nove componenti NSIS e tre backup verificati. Materiali privati esclusi. Firma assente e upgrade reale non collaudato.
 - **Follow-up:** Verificare i digest remoti, pubblicare e confrontare il manifesto pubblico prima di dichiarare disponibile la release.
 - **File coinvolti:** docs/releases/0.2.4.md, DECISIONI.md
+
+## D-0557 — Release 0.2.4 pubblicata e verificata
+
+- **Data:** 2026-11-17
+- **Stato:** accettata
+- **Area:** release
+- **Decisione:** Confermare pubblica la release stabile 0.2.4 sul commit 0dd81e62aa192ca384e2a628d05130fcfca35c86 con i tre asset verificati.
+- **Motivazione:** Richiesta di release completata dopo gate, verifica del pacchetto e confronto degli asset remoti.
+- **Impatto:** Installer, blockmap e manifesto corrispondono ai file locali; manifesto pubblico identico. Setup non firmato e non eseguito; dati personali esclusi.
+- **Follow-up:** Aggiornamento disponibile tramite updater o installer pubblico; upgrade reale, UAC e SmartScreen non collaudati.
+- **File coinvolti:** docs/publishing/aggiornamenti-windows.md, STRUTTURA_PROGETTO.md, DECISIONI.md

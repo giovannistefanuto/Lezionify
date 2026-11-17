@@ -85,6 +85,24 @@ per installazioni amministrative. Non è previsto rollback automatico dei dati.
 
 ## Verifiche e limiti
 
+### Pacchetto 0.2.4 del 17 novembre
+
+Miniature delle slide attive nel Q&A ridotte per lasciare spazio alla risposta,
+con ingrandimento e rimozione mantenuti. Gate completo superato: 930 unit,
+44 Python, benchmark Node, ricerca locale, updater, Electron con riavvio,
+raccolte nell'app compilata e PDF. La regressione nel drawer riproduce la
+miniatura precedente di 270 × 180 pixel e verifica dimensioni e ingrandimento.
+
+Verificati 382 file build, nove componenti NSIS e tre backup della 0.2.3;
+materiali privati esclusi. Setup 300212145 byte, SHA256
+`0d17443c228d45f5aea763c488c3e66dff1f63695d5a98e7e917cd9ed6d5b4b3`.
+Installer non firmato e non eseguito; upgrade reale, UAC e SmartScreen restano
+non collaudati. Nessuna nuova prova del download modello semantico.
+
+[Release v0.2.4 pubblicata](https://github.com/giovannistefanuto/Lezionify/releases/tag/v0.2.4)
+sul commit `0dd81e62aa192ca384e2a628d05130fcfca35c86`. I tre asset remoti
+sono verificati e il manifesto pubblico coincide byte per byte con quello locale.
+
 ### Pacchetto 0.2.3 del 17 novembre
 
 Richieste 152–156: ricerca per pertinenza, ragionamento Q&A esplicito,
