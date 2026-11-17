@@ -2,6 +2,14 @@
 
 ## Stato attuale
 
+Setup locale 0.2.5 preparato per l'integrazione Android: gate completo con
+941 test unitari, 49 Python, 41 Node, updater, Electron, raccolte e PDF; build
+unica confrontata con 382 file e nove componenti NSIS. SHA256 setup
+`91f8e02b8998b6f6082c203ebffd558c6664924788697c4b4add3dcdf56acdd6`;
+tre backup verificati, nessun artefatto personale, firma assente. Installer
+non eseguito e nessuna Release binaria pubblicata. Il token GitHub personale
+e il collaudo con dati reali restano da completare.
+
 Avviata la base indipendente per il widget Android: `shared/mobileStatistics.ts`
 definisce lo snapshot minimo, `electron/main/mobileStatisticsCrypto.ts` cifra con
 AES-GCM e `android-companion/crypto/MobileCrypto.java` decifra lo stesso formato.
@@ -9,14 +17,17 @@ Test sintetici in `tests/unit/mobileStatistics.test.ts` e
 `tests/android/MobileCryptoInterop.java`. `android-companion/` contiene una
 prima app e widget Android di prova, compilati e avviati su Android 15: il widget
 usa cache e aggiornamenti periodici e l'abbinamento accetta un codice manuale.
-Generazione del codice sul desktop, pubblicazione GitHub e integrazione con i
-dati reali non sono ancora disponibili nell'app; il percorso completo non e' collaudato.
+Il percorso con dati reali non e' ancora collaudato.
 
-Predisposti inoltre i moduli autonomi `mobilePairing.ts`,
-`mobileSecureConfig.ts` e `mobileGithubPublisher.ts`: generazione codice,
-protezione credenziali tramite adapter, cifratura e gestione revisioni GitHub.
-Non sono ancora collegati all'interfaccia o al runtime desktop; nessuna
-pubblicazione reale. Prove sintetiche in `tests/unit/mobile*`.
+I moduli `mobilePairing.ts`,
+`mobileSecureConfig.ts` e `mobileGithubPublisher.ts` gestiscono generazione
+codice, protezione credenziali, cifratura e revisioni GitHub. Sono collegati
+tramite `mobileCompanion.ts` e IPC alla sezione Impostazioni;
+sincronizzazione esplicitamente attivabile e periodica solo con app in uso.
+Il repository dati `giovannistefanuto/lezionify-statistiche` e' stato creato;
+un riepilogo sintetico cifrato e' stato mostrato nell'app e nel widget Android.
+Nessun dato personale pubblicato. Desktop aggiornato e token limitato ancora
+da configurare; istruzioni in `docs/product/statistiche-android.md`.
 
 La preparazione locale delle release usa `tools/prepare_release.py` tramite
 `npm run release:local`: backup verificato, profilo completo o UI ristretto,

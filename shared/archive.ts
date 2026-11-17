@@ -610,6 +610,7 @@ export interface FocusPdfDocument {
 }
 
 export interface ArchiveApi extends StudyHistoryApi, CourseRagApi, RepetitionApi, SectionRevisionApi {
+  mobileCompanion: import('./mobileCompanion').MobileCompanionApi
   ipadExportStatus: (enabled?: boolean) => Promise<import('./ipadExport').IpadExportStatus>
   exportIpadDiagram: (request: import('./ipadExport').IpadExportRequest) => Promise<import('./ipadExport').IpadExportResult>
   languageShortcutDiagnosticsEnabled?: boolean

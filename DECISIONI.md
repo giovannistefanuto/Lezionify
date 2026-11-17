@@ -6195,3 +6195,36 @@ Non modificare manualmente la sezione `Registro`: aggiungi le nuove decisioni es
 - **Impatto:** Moduli non collegati al runtime desktop. Test sintetici verificano cifratura, conflitti, revisioni, repository, protezione configurazione e abbinamento. Nessuna nuova dipendenza, invio reale o modifica dei dati utente. Snapshot usa data e fuso coerenti.
 - **Follow-up:** Completare pull secondo AGENTS preservando le modifiche locali, collegare interfaccia e runtime, generare QR o scelta di copia sicura, provare end-to-end con repository dati dedicato e verificare widget.
 - **File coinvolti:** electron/main/mobileGithubPublisher.ts, electron/main/mobilePairing.ts, electron/main/mobileSecureConfig.ts, shared/mobileStatistics.ts, tests/unit/mobileGithubPublisher.test.ts, tests/unit/mobileSecureConfig.test.ts, docs/research/widget-android-sincronizzazione-2026-11-17.md, STRUTTURA_PROGETTO.md
+
+## D-0563 — Collegamento desktop e prova Android sintetica
+
+- **Data:** 2026-11-17
+- **Stato:** accettata
+- **Area:** android-statistiche
+- **Decisione:** Integrare nelle Impostazioni un collegamento esplicito a repository dati GitHub pubblico dedicato; salvare credenziali con safeStorage, abbinare tramite codice manuale e pubblicare riepiloghi cifrati solo dopo attivazione, con controllo periodico ogni cinque minuti e ripresa idempotente delle revisioni.
+- **Motivazione:** Permettere al widget Android di mostrare rapidamente i dati locali aggiornati senza condividere audio o trascrizioni e senza token condivisi tra utenti.
+- **Impatto:** Creato repository giovannistefanuto/lezionify-statistiche. Collaudo GitHub e Android 15 con dati sintetici riuscito: il widget sulla Home mostra 3 lezioni di prova. Nessuna statistica personale caricata. I dati di test cifrati e i metadati dei commit restano nel repository. Token limitato e configurazione personale ancora necessari; nessun QR.
+- **Follow-up:** Completare gate, installer locale e push previsti; configurare token limitato e provare dati personali solo dopo attivazione esplicita. Verificare conservazione chiave e invalidazione stato nei casi di errore e riavvio.
+- **File coinvolti:** electron/main/mobileCompanion.ts, electron/main/index.ts, electron/preload/index.ts, shared/mobileCompanion.ts, src/components/MobileCompanionSettings.tsx, android-companion/, tests/unit/mobileCompanion.test.ts, tests/integration/toolSettingsScenarios.browser.tsx, docs/product/statistiche-android.md, STRUTTURA_PROGETTO.md
+
+## D-0564 — Preparazione locale 0.2.5 per widget Android
+
+- **Data:** 2026-11-17
+- **Stato:** accettata
+- **Area:** release
+- **Decisione:** Preparare l installer locale Windows 0.2.5 per rendere disponibile la configurazione del widget, con gate completo e senza pubblicazione automatica di release GitHub.
+- **Motivazione:** L integrazione desktop deve essere installabile sulla versione Windows esistente prima dell abbinamento personale.
+- **Impatto:** Versione, lockfile e note aggiornati; nessuna migrazione dei dati. La sincronizzazione resta disattivata fino alla configurazione esplicita. Il push dei sorgenti segue la regola AGENTS dopo le verifiche del setup.
+- **Follow-up:** Eseguire release:local completo e verifiche, poi commit e push se riusciti; installazione e verifica personale restano esplicite.
+- **File coinvolti:** package.json, package-lock.json, electron-builder.yml, docs/releases/0.2.5.md, DECISIONI.md
+
+## D-0565 — Setup locale 0.2.5 verificato
+
+- **Data:** 2026-11-17
+- **Stato:** accettata
+- **Area:** release
+- **Decisione:** Conservare l installer locale 0.2.5 dopo gate completo e verifica del payload; eseguire commit e push dei sorgenti secondo AGENTS, senza pubblicare una Release binaria.
+- **Motivazione:** Rendere installabili le impostazioni del widget Android dopo collaudo sintetico end-to-end e verifiche complete.
+- **Impatto:** Gate: 941 unitari, 49 Python, 41 Node, updater, Electron, raccolte e PDF. Build unica, 382 file, nove componenti NSIS, tre backup e assenza di artefatti personali verificati. Setup 300217207 byte SHA256 91f8e02b8998b6f6082c203ebffd558c6664924788697c4b4add3dcdf56acdd6, non firmato e non eseguito. Repository dati contiene solo fixture sintetica cifrata.
+- **Follow-up:** Verificare push remoto, installare solo con app chiusa, configurare token limitato e collaudare statistiche personali; nessuna Release pubblica autorizzata.
+- **File coinvolti:** docs/releases/0.2.5.md, STRUTTURA_PROGETTO.md, DECISIONI.md

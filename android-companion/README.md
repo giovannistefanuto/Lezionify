@@ -1,15 +1,19 @@
 # Lezionify Android — anteprima
 
-App e widget di prova: non e' ancora presente l'integrazione desktop o GitHub.
+App e widget: integrazione desktop nel sorgente, versione installata Windows
+ancora da aggiornare. La [guida](../docs/product/statistiche-android.md)
+documenta configurazione GitHub, limiti e collaudo sintetico.
 L'APK di debug si puo' compilare con Gradle e l'Android SDK 35. In alternativa,
 su Windows `build-local.ps1` usa build-tools 35 e il JDK di Android Studio senza
 scaricare componenti. Produce un APK firmato con una chiave debug locale in
 `app/build/local-debug/`; la chiave non e' adatta alla distribuzione.
 
-La schermata accetta provvisoriamente un JSON di abbinamento con `url` (HTTPS
+La schermata accetta un codice base64url contenente un JSON di abbinamento con `url` (HTTPS
 su raw.githubusercontent.com), `streamId` (32 caratteri esadecimali minuscoli)
 e `key` (32 byte in base64). E' un segreto: non salvare esempi reali, loggarlo,
-condividerlo o caricarlo nel repository. Il generatore desktop e QR non esistono
-ancora. La chiave e' protetta dal Keystore del dispositivo. Il widget mostra
+condividerlo o caricarlo nel repository. Il codice viene mostrato dal desktop
+come testo; la scansione QR non e' ancora disponibile. La chiave e' protetta
+dal Keystore del dispositivo. Il widget mostra
 l'ultima copia valida e la data di generazione; Android puo' ritardare gli
-aggiornamenti periodici. La verifica di rete end-to-end resta da completare.
+aggiornamenti periodici. La verifica di rete end-to-end con dati sintetici e'
+riuscita sul telefono; quella con dati personali resta da completare.

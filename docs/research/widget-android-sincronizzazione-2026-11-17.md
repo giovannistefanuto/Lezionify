@@ -131,24 +131,22 @@ Avvio implementazione: `shared/mobileStatistics.ts` prepara gli aggregati minimi
 con identificativo del flusso e revisione; `electron/main/mobileStatisticsCrypto.ts`
 e `android-companion/crypto/MobileCrypto.java` implementano AES-256-GCM con
 intestazione autenticata. Tre test unitari e una prova sintetica Node/Java
-coprono conteggi, cambio mese, cifratura e manomissione. I moduli non sono ancora
-collegati al prodotto. Prima app e widget Android in `android-companion/`:
+coprono conteggi, cambio mese, cifratura e manomissione. App e widget Android in `android-companion/`:
 codice di abbinamento incollato manualmente (URL HTTPS raw.githubusercontent.com,
 streamId e chiave), chiave protetta da Android Keystore, cache e GET limitata,
 verifica versione/identita/revisione, widget e refresh periodico di 30 minuti.
-APK debug compilato localmente, installato e schermata aperta su Android 15;
-il widget e lo scambio effettivo non sono stati ancora collaudati. La generazione
-del codice nel desktop, il QR e la pubblicazione non sono ancora disponibili.
-Successivamente sono stati predisposti moduli desktop isolati per generazione
+APK debug compilato localmente e installato su Android 15; il percorso GitHub
+con dati sintetici e il widget sulla Home sono stati collaudati. QR non disponibile.
+Sono stati predisposti moduli desktop per generazione
 del codice, salvataggio cifrato con adapter di protezione del sistema e Contents
 API GitHub, verificati con risposte simulate. Il publisher richiede repository
 pubblico separato, controlla identita/revisione e usa SHA per evitare scritture
-in conflitto. Generazione e publisher non sono collegati all'app desktop e non
-e' stato caricato alcun dato; QR e scansione del codice non sono implementati.
+in conflitto. Generazione e publisher sono collegati all'app desktop; e' stato
+caricato un riepilogo sintetico cifrato, nessun dato personale.
 
 Verifica locale del 17 novembre: ADB vede un dispositivo autorizzato con
 Android 15 (API 35); sul PC sono presenti SDK 34/35/36 e build-tools 35/36.
-Questo riscontro non equivale a un APK compilato o installato.
+L'APK debug e' installato sul telefono; la versione desktop e' in preparazione.
 
 `shared/archive.ts` espone `StudyStatus`, `CourseStats` e `StudyAnalytics`;
 `electron/main/archive.ts:getStudyAnalytics` applica rettifiche ed esclusione
@@ -165,9 +163,9 @@ manuale disponibile. Non ricreare una commit a ogni tick del timer. PC spento
 significa nessun nuovo dato; il telefono conserva l'ultimo snapshot e ne mostra
 l'eta'. Definire al massimo un PC scrittore per flusso nella prima versione.
 
-Lettura Android proposta: repository dati pubblico con contenuto cifrato per
-evitare credenziali GitHub sul telefono. E' una proposta da configurare, non
-un repository gia' creato: attualmente nessuna statistica e' stata pubblicata.
+Lettura Android: repository dati pubblico con contenuto cifrato per evitare
+credenziali GitHub sul telefono. Creato `giovannistefanuto/lezionify-statistiche`;
+contiene un riepilogo sintetico cifrato, nessuna statistica personale.
 Usare GET del singolo oggetto con timeout finito, limite dimensione, verifica
 AES-GCM, schema e revisione prima della sostituzione atomica della cache.
 Mantenere l'ultima copia valida in caso di errore; distinguere generazione sul
@@ -175,10 +173,9 @@ PC e ultimo controllo riuscito sul telefono. Un 304 non rende piu' recente la
 generazione dei dati. Memorizzare solo aggregati giornalieri sufficienti per
 i periodi esposti, evitando la pubblicazione dello storico intero per default.
 
-La sincronizzazione iniziale Git ha eseguito fetch con successo, ma il pull
-resta da completare per modifiche locali preesistenti alla procedura release.
-HEAD e origin/main coincidono al controllo. La base isolata sopra descritta non
-viene ancora richiamata dal runtime desktop; nessuna pubblicazione di dati.
+La sincronizzazione iniziale Git e' stata completata dopo aver conservato le
+modifiche preesistenti nel commit locale 738b776. I moduli sono integrati nel
+runtime desktop; la configurazione personale e' ancora disattivata.
 
 Restano da confermare la definizione proposta di lezioni mancanti e l'eventuale
 necessita' futura di piu' PC.

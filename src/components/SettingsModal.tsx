@@ -1,6 +1,7 @@
 import { CopyGuardSettings } from './CopyGuard'
 import { AppUpdateSettings } from './AppUpdates'
 import { StudyEstimateSettings } from './StudyEstimateSettings'
+import { MobileCompanionSettings } from './MobileCompanionSettings'
 import React, { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import type { GeminiModel, PublishingStatus } from '../../shared/archive'
@@ -163,6 +164,7 @@ export function SettingsModal({
         </nav>
         <div className="settings-modal-body" hidden={section !== 'general'}>
           <AppUpdateSettings onClose={onClose} />
+          <MobileCompanionSettings />
           <section className="publishing-settings"><h4>La mia giornata</h4><label>Orario di separazione tra mattino e pomeriggio <input type="time" value={dayBoundary} onChange={event => { const value = event.target.value; if (!value) return; setDayBoundary(value); localStorage.setItem('study-day-boundary', value); window.dispatchEvent(new Event('study-day-boundary-change')) }} /></label><p>La modifica aggiorna anche le giornate precedenti.</p></section>
           <StudyEstimateSettings />
           <CopyGuardSettings />

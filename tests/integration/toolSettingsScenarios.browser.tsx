@@ -5,6 +5,7 @@ import { SettingsModal } from '../../src/components/SettingsModal'
 import { ToolSettingsContext, type ToolSettingsSection } from '../../src/components/ToolSettingsContext'
 import { useFocusModeController } from '../../src/hooks/useFocusModeController'
 import { OfflineTranslationSettings } from '../../src/components/OfflineTranslationSettings'
+import { MobileCompanionSettings } from '../../src/components/MobileCompanionSettings'
 
 declare const require: any
 
@@ -12,6 +13,7 @@ export async function runToolSettingsScenarios(root: Root, api: any) {
   const check = (value: unknown, message: string) => { if (!value) throw new Error(message) }
   const settle = () => act(async () => { await new Promise(resolve => setTimeout(resolve, 550)) })
   const oldStatus = api.offlineTranslationStatus, oldInstall = api.installOfflineTranslation, oldTranslate = api.translatePhrase
+  const oldMobile = api.mobileCompanion
   let installed = false, downloads = 0, translations = 0
   api.offlineTranslationStatus = async () => ({ installed, installing: false, downloadBytes: 53000000, diskBytes: 74000000 })
   api.installOfflineTranslation = async () => { installed = true; downloads++; return api.offlineTranslationStatus() }
@@ -70,8 +72,26 @@ export async function runToolSettingsScenarios(root: Root, api: any) {
     installing = false
     await settle(); await settle(); await settle()
     check(document.body.textContent?.includes('Modelli installati') && !document.querySelector<HTMLButtonElement>('.offline-translation-settings button')?.disabled, 'Returning to a running install must refresh its eventual result')
+    let configured = false, publishes = 0
+    api.mobileCompanion = {
+      state: async () => ({ enabled: configured, destination: configured ? 'student/data' : undefined }),
+      configure: async (input: { owner: string; repo: string; token: string }) => { check(input.owner === 'student' && input.repo === 'data' && input.token === 'synthetic', 'Mobile setup values must reach the service'); configured = true; return { enabled: true, destination: 'student/data' } },
+      publish: async () => { publishes++; return { enabled: true, destination: 'student/data' } },
+      pairing: async () => 'synthetic-pairing-code', disable: async () => ({ enabled: false })
+    }
+    await act(async () => root.render(<MobileCompanionSettings />)); await settle()
+    const fields = [...document.querySelectorAll<HTMLInputElement>('.publishing-settings input')]
+    for (const [i, value] of ['student', 'data', 'main', 'synthetic'].entries()) {
+      await act(async () => { Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(fields[i], value); fields[i].dispatchEvent(new Event('input', { bubbles: true })) })
+    }
+    check(publishes === 0, 'Mobile sync must not publish before explicit activation')
+    await click('Attiva e invia'); await settle()
+    check(publishes === 1 && document.body.textContent?.includes('student/data'), 'Mobile setup must activate and publish once')
+    await click('Mostra codice di abbinamento'); await settle()
+    check(document.querySelector<HTMLTextAreaElement>('textarea')?.value === 'synthetic-pairing-code', 'Pairing code must be explicitly revealed')
   } finally {
     await act(async () => root.render(null))
     api.offlineTranslationStatus = oldStatus; api.installOfflineTranslation = oldInstall; api.translatePhrase = oldTranslate
+    api.mobileCompanion = oldMobile
   }
 }

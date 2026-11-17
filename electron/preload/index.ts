@@ -29,6 +29,13 @@ import type {
 } from '../../shared/archive'
 
 const archiveApi: ArchiveApi = {
+  mobileCompanion: {
+    state: () => ipcRenderer.invoke('mobile:state'),
+    configure: input => ipcRenderer.invoke('mobile:configure', input),
+    pairing: () => ipcRenderer.invoke('mobile:pairing'),
+    publish: () => ipcRenderer.invoke('mobile:publish'),
+    disable: () => ipcRenderer.invoke('mobile:disable')
+  },
   ipadExportStatus: enabled => ipcRenderer.invoke('ipad:status', enabled),
   exportIpadDiagram: request => ipcRenderer.invoke('ipad:export', request),
   creditRepetitionReading: (id, courseCode) => ipcRenderer.invoke('repetition:credit-reading', id, courseCode),

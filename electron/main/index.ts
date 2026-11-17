@@ -13,6 +13,7 @@ import { app, BrowserWindow, dialog, ipcMain, protocol, Menu, shell, safeStorage
 import { ExamReminderService } from './examReminders'
 import { configureGeminiConnectivity } from './ai/connectivity'
 import { SpotifyService } from './spotify'
+import { MobileCompanionService } from './mobileCompanion'
 import { spotifyItemUrl } from '../../shared/spotify'
 import { compilationUrl } from '../../shared/music'
 import { join, extname } from 'node:path'
@@ -96,6 +97,8 @@ let focusPdfs: FocusPdfService
 let offlineTranslation: OfflineTranslationService
 let ambientSounds: AmbientSoundService
 let spotify: SpotifyService
+let mobileCompanion: MobileCompanionService
+let mobileTimer: ReturnType<typeof setInterval> | undefined
 let courseRag: CourseRagService
 let courseRagTimer: ReturnType<typeof setInterval> | undefined
 const pdfExport = new PdfExportService(archive, join(__dirname, '../renderer/index.html'), join(__dirname, '../preload/index.mjs'), process.env.ELECTRON_RENDERER_URL)
@@ -277,6 +280,15 @@ function registerIpcHandlers(): void {
   const handle = (channel: string, listener: Parameters<typeof ipcMain.handle>[1]) => {
     ipcMain.handle(channel, (event, ...args) => updateGate.run(() => listener(event, ...args)))
   }
+  const mobileHandle = (channel: string, action: Parameters<typeof ipcMain.handle>[1]) => handle(channel, (event, ...args) => {
+    if (!mainWindow || event.sender !== mainWindow.webContents || event.senderFrame !== mainWindow.webContents.mainFrame) throw new Error('Richiesta non autorizzata.')
+    return action(event, ...args)
+  })
+  mobileHandle('mobile:state', () => mobileCompanion.state())
+  mobileHandle('mobile:configure', (_event, input) => mobileCompanion.configure(input))
+  mobileHandle('mobile:pairing', () => mobileCompanion.pairing())
+  mobileHandle('mobile:publish', () => mobileCompanion.publish())
+  mobileHandle('mobile:disable', () => mobileCompanion.disable())
   const collectionHandle = (channel: string, listener: Parameters<typeof ipcMain.handle>[1]) => handle(channel, async (event, ...args) => {
     if (!mainWindow || event.sender !== mainWindow.webContents || event.senderFrame !== mainWindow.webContents.mainFrame) throw new Error('Accesso non consentito.')
     try { return await listener(event, ...args) } catch {
@@ -672,6 +684,18 @@ app.whenReady().then(async () => {
   }
   try {
     await archive.initialize()
+    mobileCompanion = new MobileCompanionService(join(app.getPath('userData'), 'mobile-companion.bin'), {
+      available: () => safeStorage.isEncryptionAvailable() && (process.platform !== 'linux' || safeStorage.getSelectedStorageBackend() !== 'basic_text'),
+      encrypt: value => safeStorage.encryptString(value), decrypt: value => safeStorage.decryptString(value)
+    }, async () => {
+      const [courses, lectures, analytics, archived] = await Promise.all([archive.getCourses(), archive.listLectures(), archive.getStudyAnalytics(), archive.getArchivedCourseCodes()])
+      if (!analytics.dailyHistory) throw new Error('Storico studio non disponibile.')
+      const codes = new Set([...courses.map(course => course.code), ...lectures.flatMap(lecture => lecture.courseCode ? [lecture.courseCode] : [])])
+      return { courses: [...codes].sort().map(code => ({ code, archived: archived.includes(code) })), lectures, dailyHistory: analytics.dailyHistory }
+    })
+    const updateMobile = async () => { if ((await mobileCompanion.state()).enabled) await mobileCompanion.publish() }
+    mobileTimer = setInterval(() => { void updateMobile().catch(() => {}) }, 5 * 60_000)
+    void updateMobile().catch(() => {})
     courseRag = new CourseRagService(join(app.getPath('userData'), 'course-rag'), {
       checkGrounding: true,
       archiveSources: course => archive.courseRagSources(course),
@@ -749,6 +773,7 @@ app.whenReady().then(async () => {
 })
 
 app.on('window-all-closed', () => {
+  clearInterval(mobileTimer)
   spotify?.dispose()
   clearInterval(courseRagTimer)
   clearInterval(examReminderTimer)

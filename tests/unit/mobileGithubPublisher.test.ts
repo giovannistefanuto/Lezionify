@@ -17,7 +17,7 @@ describe('Pubblicazione statistiche su GitHub', () => {
     expect(one.streamId).toMatch(/^[a-f0-9]{32}$/)
     expect(one.streamId).not.toBe(two.streamId)
     expect(one.key).toHaveLength(32)
-    const pairing = JSON.parse(mobilePairingCode(destination, one.streamId, one.key))
+    const pairing = JSON.parse(Buffer.from(mobilePairingCode(destination, one.streamId, one.key), 'base64url').toString('utf8'))
     expect(pairing).toEqual({ url: `https://raw.githubusercontent.com/student/personal-statistics/main/statistics/${one.streamId}.json`, streamId: one.streamId, key: one.key.toString('base64') })
     expect(pairing.token).toBeUndefined()
   })

@@ -1,6 +1,7 @@
 import { randomBytes } from 'node:crypto'
 import { readFile, rename, rm, writeFile } from 'node:fs/promises'
 import { mobileRawUrl, type MobileGithubDestination } from './mobileGithubPublisher'
+import type { MobileStatistics } from '../../shared/mobileStatistics'
 
 /** The caller supplies Electron safeStorage and must not permit insecure fallbacks. */
 export interface MobileSecretStorage {
@@ -14,6 +15,10 @@ export interface MobileSecureConfig {
   streamId: string
   key: string
   token: string
+  revision?: number
+  fingerprint?: string
+  pending?: { snapshot: MobileStatistics; fingerprint: string }
+  publishedAt?: string
 }
 
 function validate(value: MobileSecureConfig): MobileSecureConfig {

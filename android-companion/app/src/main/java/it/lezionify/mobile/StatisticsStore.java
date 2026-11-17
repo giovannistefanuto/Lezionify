@@ -40,7 +40,7 @@ final class StatisticsStore {
         return (SecretKey)store.getKey(ALIAS, null);
     }
     static synchronized void pair(Context c, String input) throws Exception {
-        JSONObject p = new JSONObject(input);
+        JSONObject p = new JSONObject(new String(Base64.decode(input.trim(), Base64.URL_SAFE | Base64.NO_WRAP), StandardCharsets.UTF_8));
         URL url = new URL(p.getString("url"));
         if (!"https".equals(url.getProtocol()) || !"raw.githubusercontent.com".equalsIgnoreCase(url.getHost()) || url.getUserInfo() != null || url.getPort() != -1 || url.getQuery() != null || url.getRef() != null) throw new IllegalArgumentException();
         String stream = p.getString("streamId");
