@@ -97,6 +97,13 @@ Installer non firmato; installazione reale, UAC e SmartScreen non collaudati.
 I materiali personali richiesti sono copiati e verificati solo nell'archivio
 locale, esclusi da sorgenti, installer e asset pubblici.
 
+[Release v0.2.2 pubblicata](https://github.com/giovannistefanuto/Lezionify/releases/tag/v0.2.2)
+il 17 novembre sul commit `9de8675`. Installer finale 300209742 byte, SHA256
+`a62984bafdb045e62aa19736899260da2d9e14cd201dacba855226785e44c3e9`.
+Confrontati 382 file build, nove componenti NSIS e tre backup. Installer,
+blockmap e `latest.yml` remoti hanno dimensioni e SHA256 coincidenti con i
+file locali; manifesto pubblico scaricato senza autenticazione e identico.
+
 ### Pacchetto 0.2.1 del 16 novembre
 
 Correzione dell'ordine delle lezioni e richiesta esplicita di pubblicazione:

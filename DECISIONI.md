@@ -5975,3 +5975,14 @@ Non modificare manualmente la sezione `Registro`: aggiungi le nuove decisioni es
 - **Impatto:** Installer finale 300209742 byte, SHA256 a62984bafdb045e62aa19736899260da2d9e14cd201dacba855226785e44c3e9. Verificati 382 file build, nove componenti NSIS, tre backup e metadati updater coerenti. ASAR invariato rispetto ai collaudi runtime; gate completo 914 unit, 24 Python e 41 Node oltre integrazioni e PDF. Nessun dato personale nei sorgenti o nel pacchetto.
 - **Follow-up:** Confrontare dimensioni e SHA256 degli asset GitHub e confermare release pubblica completa; non sostituire binari dopo pubblicazione.
 - **File coinvolti:** docs/releases/0.2.2.md, docs/publishing/aggiornamenti-windows.md, DECISIONI.md
+
+## D-0543 — Release 0.2.2 pubblicata e verificata
+
+- **Data:** 2026-11-17
+- **Stato:** accettata
+- **Area:** release
+- **Decisione:** Confermare pubblica e completa la release v0.2.2 sul commit 9de86755be231d834baa36556811273c1d6980e6, dopo caricamento dei soli installer, blockmap e latest.yml verificati.
+- **Motivazione:** Richiesta esplicita dell utente; la bozza e stata pubblicata solo dopo il confronto degli asset GitHub con i file locali.
+- **Impatto:** Dimensioni e SHA256 dei tre asset remoti coincidono. Manifesto pubblico scaricato senza autenticazione e identico byte per byte; release stabile latest. Audio, trascrizione e scheda personali sono presenti solo nell archivio locale e non sono inclusi in GitHub o installer. Nessuna nuova API AI durante importazione e pubblicazione.
+- **Follow-up:** Aggiornamento disponibile tramite updater o installer pubblico. Restano dichiarati firma assente, upgrade reale non collaudato e download pubblico del modello semantico non riuscito; accettazione qualitativa personale della scheda ancora aperta.
+- **File coinvolti:** docs/publishing/aggiornamenti-windows.md, DECISIONI.md
