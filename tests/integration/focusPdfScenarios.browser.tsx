@@ -377,6 +377,16 @@ async function runDrawerAttachmentScenario(root: Root, api: any, source: any,
     await act(async () => document.querySelector<HTMLInputElement>('[aria-label="Seleziona pagina 1 per Gemini"]')!.click())
     await act(async () => document.querySelector<HTMLButtonElement>('.pdf-attach-toolbar button')!.click())
     await until(() => Boolean(document.querySelector('.qna-active-images img')), 'Drawer did not show the locally saved slide preview')
+    const preview = document.querySelector<HTMLImageElement>('.qna-active-images img')!
+    const activeImages = document.querySelector<HTMLElement>('.qna-active-images')!
+    check(preview.getBoundingClientRect().width <= 100 && preview.getBoundingClientRect().height <= 64,
+      `Slide thumbnail occupies too much reading space: ${preview.getBoundingClientRect().width}x${preview.getBoundingClientRect().height}`)
+    check(activeImages.getBoundingClientRect().height <= 140, 'Active slides occupy too much vertical space above the answer')
+    const expand = Array.from(activeImages.querySelectorAll('button')).find(button => button.textContent === 'Ingrandisci anteprima')!
+    await act(async () => expand.click())
+    check(preview.getBoundingClientRect().width > 100, 'Slide preview cannot be enlarged on request')
+    await act(async () => expand.click())
+    check(preview.getBoundingClientRect().width <= 100, 'Slide preview did not return to the compact size')
     check(imageInput.page === 1 && imageInput.data.startsWith('iVBOR') && persisted[0].attachmentIds[0] === 'drawer-slide',
       'Drawer did not persist the selected page and its discussion reference')
     check(field.value === 'Spiega questa slide' && aiCalls === 0, 'Attaching lost the draft or sent an AI request')

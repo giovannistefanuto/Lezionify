@@ -6085,3 +6085,47 @@ Non modificare manualmente la sezione `Registro`: aggiungi le nuove decisioni es
 - **Impatto:** Tre asset GitHub uploaded con dimensioni e SHA256 coincidenti. Tag sul commit originale, release latest stabile e manifesto pubblico senza autenticazione identico. Verifiche: 930 unit, 44 Python finali, 41 Node, integrazioni Electron e riavvio, build, app compilata, runtime confezionato locale e PDF. Materiali personali esclusi da GitHub e installer; raccolta personale ancora leggibile senza API. Restano dichiarati notifica OS dipendente da Windows, app necessaria per gli avvisi, disponibilita dei modelli, firma assente e upgrade reale non collaudato.
 - **Follow-up:** Aggiornamento disponibile da app o installer pubblico. Nessuna voce diversa dalle 152-156 avviata o segnata conclusa.
 - **File coinvolti:** docs/publishing/aggiornamenti-windows.md, STRUTTURA_PROGETTO.md, DECISIONI.md
+
+## D-0553 — Miniature slide compatte nel Q&A
+
+- **Data:** 2026-11-17
+- **Stato:** accettata
+- **Area:** qna-interfaccia
+- **Decisione:** Limitare le anteprime delle slide attive nel Q&A a 96 per 64 pixel e il riquadro scorrevole a 140 pixel, mantenendo ingrandimento e rimozione.
+- **Motivazione:** Le miniature occupavano fino a 180 pixel di altezza sopra la conversazione e rendevano difficile leggere la risposta a Gemini.
+- **Impatto:** Piu spazio verticale per la risposta; immagini originali, allegati e invii restano invariati. Ingrandimento esplicito disponibile nel riquadro scorrevole.
+- **Follow-up:** Nessuno.
+- **File coinvolti:** src/styles.css, src/components/QnaImagePreview.tsx, tests/integration/focusPdfScenarios.browser.tsx, DECISIONI.md
+
+## D-0554 — Preparazione release 0.2.4
+
+- **Data:** 2026-11-17
+- **Stato:** accettata
+- **Area:** release
+- **Decisione:** Preparare e pubblicare la versione 0.2.4 con le miniature compatte delle slide Q&A, dopo gate e verifica degli asset.
+- **Motivazione:** Richiesta esplicita di release della correzione che restituisce spazio alla risposta Gemini.
+- **Impatto:** Versione, lockfile e note aggiornati; nessuna migrazione dei dati, dipendenza o modifica alle chiamate AI. Setup soggetto a verifica e push automatico.
+- **Follow-up:** Completare gate, verifica installer, commit e push; pubblicare solo dopo verifica di tutti gli asset.
+- **File coinvolti:** package.json, package-lock.json, electron-builder.yml, docs/releases/0.2.4.md, DECISIONI.md
+
+## D-0555 — Gate release 0.2.4 superato
+
+- **Data:** 2026-11-17
+- **Stato:** accettata
+- **Area:** qualita-release
+- **Decisione:** Procedere alla build della 0.2.4 dopo il gate completo e la regressione mirata della miniatura.
+- **Motivazione:** Il caso reale nel drawer riproduceva una miniatura di 270 per 180 pixel e ora verifica ingombro ridotto e ingrandimento.
+- **Impatto:** Gate passato con 930 test unitari, 44 Python, benchmark Node, ricerca locale, updater, Electron con riavvio, build, raccolte e PDF. Nessuna API AI reale aggiuntiva.
+- **Follow-up:** Verificare installer e asset della stessa build, poi pubblicare dopo commit e push.
+- **File coinvolti:** tests/integration/focusPdfScenarios.browser.tsx, docs/releases/0.2.4.md, DECISIONI.md
+
+## D-0556 — Installer 0.2.4 verificato
+
+- **Data:** 2026-11-17
+- **Stato:** accettata
+- **Area:** release
+- **Decisione:** Pubblicare la release 0.2.4 con installer, blockmap e manifesto della build verificata dopo commit e push dei sorgenti.
+- **Motivazione:** Gate completo e controlli del pacchetto superati per la richiesta di release delle miniature compatte.
+- **Impatto:** Setup 300212145 byte, SHA256 0d17443c228d45f5aea763c488c3e66dff1f63695d5a98e7e917cd9ed6d5b4b3; 382 file build, nove componenti NSIS e tre backup verificati. Materiali privati esclusi. Firma assente e upgrade reale non collaudato.
+- **Follow-up:** Verificare i digest remoti, pubblicare e confrontare il manifesto pubblico prima di dichiarare disponibile la release.
+- **File coinvolti:** docs/releases/0.2.4.md, DECISIONI.md

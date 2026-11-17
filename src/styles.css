@@ -4534,7 +4534,9 @@ h2 {
 .pdf-attach-toolbar { padding: 8px; display: flex; flex-wrap: wrap; gap: 6px; flex-shrink: 0; }
 .qna-image-preview { margin: 6px 0; }
 .qna-image-preview img { display: block; max-width: 100%; max-height: 180px; object-fit: contain; }
-.qna-active-images { max-height: 240px; overflow: auto; padding: 8px; border-bottom: 1px solid var(--border-subtle); }
+.qna-active-images { max-height: 140px; overflow: auto; padding: 8px; border-bottom: 1px solid var(--border-subtle); }
+.qna-active-images p { margin: 0 0 4px; }
+.qna-active-images .qna-image-preview img { max-width: 96px; max-height: 64px; }
 .qna-image-library { width: 100%; padding: 8px; }
 .qna-image-library ul { max-height: 320px; overflow: auto; padding: 12px; }
 .qna-image-library-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }

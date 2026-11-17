@@ -19,5 +19,5 @@ export function QnaImagePreview({ id }: { id: string }) {
   }, [id, revision])
   if (missing) return <span role="status">Slide cancellata o non disponibile. Rimuovila dagli allegati attivi o aggiungila nuovamente.</span>
   if (!value) return <span>Caricamento slide…</span>
-  return <figure className="qna-image-preview"><img style={expanded ? { maxHeight: 'none', width: '100%' } : undefined} src={`data:image/png;base64,${value.data}`} alt={`Slide allegata, pagina ${value.image.page}`} /><figcaption>Pagina {value.image.page} · {value.image.day} <button type="button" onClick={() => setExpanded(value => !value)}>{expanded ? 'Riduci anteprima' : 'Ingrandisci anteprima'}</button></figcaption></figure>
+  return <figure className="qna-image-preview"><img style={expanded ? { maxHeight: 'none', maxWidth: '100%', width: '100%' } : undefined} src={`data:image/png;base64,${value.data}`} alt={`Slide allegata, pagina ${value.image.page}`} /><figcaption>Pagina {value.image.page} · {value.image.day} <button type="button" onClick={() => setExpanded(value => !value)}>{expanded ? 'Riduci anteprima' : 'Ingrandisci anteprima'}</button></figcaption></figure>
 }
