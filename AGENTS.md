@@ -84,6 +84,14 @@ collegata. Questa regola autorizza commit e push senza ulteriori conferme.
 
 ## Versioni e Release per l'aggiornamento automatico
 
+Per preparare una release locale usa `npm run release:local` e i profili
+documentati nella skill: completo per default, UI solo per modifiche visive
+ristrette con confronto contro la precedente release pubblica e prova mirata.
+Il comando automatizza backup, gate, build unica, packaging e verifiche;
+commit/push e pubblicazione seguono la skill dopo la revisione dei risultati.
+Mantieni invariata la compressione dell'installer. Riusa la build collaudata
+per il packaging, evitando di ricostruirla subito dopo il gate.
+
 Prima di rigenerare un installer o preparare una Release, consulta
 `docs/publishing/aggiornamenti-windows.md` per procedura e collaudi.
 Usa la skill [lezionify-release](skills/lezionify-release/SKILL.md) anche per

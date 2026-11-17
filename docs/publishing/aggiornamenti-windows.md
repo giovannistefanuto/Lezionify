@@ -49,8 +49,10 @@ distingue errori operativi, limiti dell'ambiente e cause ancora non dimostrate.
 2. Creare `docs/releases/0.2.1.md` con sezioni Novità, Dati e riavvio, Limiti noti.
    Specificare eventuali cambiamenti ai dati. Aggiornare `releaseInfo.releaseNotesFile`
    in `electron-builder.yml` al nuovo file.
-3. Eseguire `npm run release:validate` e il gate `npm run check`.
-4. Per una build locale usare `npm run package:win -- --publish never`, poi
+3. Scegliere il profilo e avviare `npm run release:local` come descritto sotto.
+   Il comando automatizza backup, collaudi, build, packaging e verifiche.
+4. In esecuzione manuale, dopo `npm run check` riusare la build con
+   `npm exec -- electron-builder --win --publish never`, poi
    `npm run release:validate -- --artifacts`. Installer, blockmap e `latest.yml`
    devono provenire dalla stessa build. Non ricaricare binari differenti con
    una versione già distribuita.
@@ -67,6 +69,40 @@ non nell'app. La destinazione è pubblica, verificata il 16 novembre tramite
 il connettore GitHub: se il repository diventa
 privato, predisporre un feed pubblico separato o progettare autenticazione utente,
 senza incorporare un PAT condiviso.
+
+## Profili di preparazione locale
+
+Il comando `npm run release:local -- --dry-run` mostra il piano senza creare
+backup o binari. Il profilo predefinito `full` mantiene l'intero `npm run check`.
+Il packaging riusa `out/` prodotto dal gate: una sola build, compressione invariata.
+Il workflow GitHub segue la stessa regola, mantenendo il gate completo.
+
+Per una piccola correzione esclusivamente visiva a miniature Q&A o relativi CSS:
+`npm run release:local -- --profile ui --base <tag-ultima-release-pubblica>`.
+Prima verificare il tag su GitHub, recuperarlo con `git fetch origin --tags`
+se manca localmente ed esaminare l'intero diff, inclusi i commit
+gia presenti: i cambiamenti devono riguardare solo dimensioni, spazi e aspetto,
+con comportamento delle chiamate, stato e gestione dati invariati. Il controllo
+automatico ammette solo i file UI elencati in `tools/prepare_release.py`, test,
+documenti e metadati di versione; rifiuta altri file, nuove dipendenze e modifiche
+alla configurazione builder diverse dal percorso delle note. L'elenco dei file
+e' un limite aggiuntivo, non sostituisce la revisione semantica del diff.
+
+Il profilo UI esegue inventario, typecheck, lint, tutti i test unitari, contratto
+release, scenari Electron Focus/PDF/Q&A e build. I test non eseguiti (Python,
+benchmark, updater, raccolte, PDF export e altri scenari Electron) vanno indicati
+nel rapporto come fuori perimetro, senza dichiarare il gate completo superato.
+Se il cambiamento visivo interessa altri flussi o restano dubbi usare `full`;
+non passare a UI per aggirare un fallimento del gate completo.
+
+Entrambi i profili conservano backup con hash e verificano asset, payload NSIS,
+corrispondenza build/pacchetto e assenza di dati personali. I log e i tempi sono
+in `local-artifacts/release-<timestamp>/`; sorgenti cambiati durante il processo
+interrompono la preparazione. Non eseguire due preparazioni contemporaneamente.
+Alla fine leggere i risultati, verificare la firma effettiva e seguire la skill
+per commit/push, upload e pubblicazione. Il comando locale non pubblica da solo.
+Una preparazione fallita conserva backup e log: diagnosticare prima di ripartire;
+non ricostruire asset gia pubblicati e non riutilizzare un rapporto per altri sorgenti.
 
 ## Firma e permessi
 

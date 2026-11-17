@@ -2,6 +2,28 @@
 
 ## Stato attuale
 
+Avviata la base indipendente per il widget Android: `shared/mobileStatistics.ts`
+definisce lo snapshot minimo, `electron/main/mobileStatisticsCrypto.ts` cifra con
+AES-GCM e `android-companion/crypto/MobileCrypto.java` decifra lo stesso formato.
+Test sintetici in `tests/unit/mobileStatistics.test.ts` e
+`tests/android/MobileCryptoInterop.java`. `android-companion/` contiene una
+prima app e widget Android di prova, compilati e avviati su Android 15: il widget
+usa cache e aggiornamenti periodici e l'abbinamento accetta un codice manuale.
+Generazione del codice sul desktop, pubblicazione GitHub e integrazione con i
+dati reali non sono ancora disponibili nell'app; il percorso completo non e' collaudato.
+
+Predisposti inoltre i moduli autonomi `mobilePairing.ts`,
+`mobileSecureConfig.ts` e `mobileGithubPublisher.ts`: generazione codice,
+protezione credenziali tramite adapter, cifratura e gestione revisioni GitHub.
+Non sono ancora collegati all'interfaccia o al runtime desktop; nessuna
+pubblicazione reale. Prove sintetiche in `tests/unit/mobile*`.
+
+La preparazione locale delle release usa `tools/prepare_release.py` tramite
+`npm run release:local`: backup verificato, profilo completo o UI ristretto,
+build unica, packaging e verifica asset con log e tempi locali. Il workflow
+GitHub riusa anch'esso la build del gate. Compressione invariata; criteri nella
+procedura Windows e nella skill `skills/lezionify-release/`.
+
 Il 17 novembre la release 0.2.4 riduce le miniature delle slide attive nel Q&A
 per dare spazio alla risposta, mantenendo ingrandimento e rimozione (D-0553).
 Gate completo e asset pubblici verificati; note e limiti in

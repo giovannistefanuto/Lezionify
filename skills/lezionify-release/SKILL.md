@@ -36,7 +36,8 @@ indici, ID senza collisioni, hash e lettura tramite servizio reale. Conserva le
 fonti originali; nessuna chiamata AI implicita. Evita di sovrascrivere la libreria
 personale con un intero profilo di collaudo.
 
-Prima del packaging copia setup precedente, blockmap e manifesto in una nuova
+Il comando `npm run release:local` automatizza il backup seguente. Se prepari
+manualmente, prima del packaging copia setup precedente, blockmap e manifesto in una nuova
 directory sotto `local-artifacts/installer-backups/`; verifica gli hash e salva
 `backup.json` con `files: [{name, sha256}, ...]`. Passa questa directory esplicita
 a `tools/verify_installer.cjs`: il suo default è un backup storico.
@@ -56,8 +57,13 @@ timeout prima di ripetere la suite; mantieni asserzioni e controlli.
 Incrementa con `npm version <versione> --no-git-tag-version`. Scrivi
 `docs/releases/<versione>.md` (Novità, Dati e riavvio, Limiti noti) e aggiorna
 `releaseInfo.releaseNotesFile`. Completa le note prima del pacchetto finale.
-Poi esegui `npm run release:validate` e **`npm run check`**. Leggi riepilogo e
-codice finale. Conserva l'audit inventario test nel gate. Una regressione del
+Scegli il profilo secondo la sezione Profili di preparazione locale in
+`docs/publishing/aggiornamenti-windows.md` del checkout:
+`npm run release:local` usa il gate completo; per una piccola correzione visiva
+ammessa usa `npm run release:local -- --profile ui --base <tag-precedente>`.
+Il tag deve essere quello dell'ultima release pubblica, verificato con `status`.
+Esamina prima il piano con `--dry-run`. Leggi log, riepilogo e codice finale.
+Conserva l'audit inventario test nel gate. Una regressione del
 gate blocca la release; un limite esterno aggiuntivo va classificato e dichiarato,
 senza cambiare a posteriori i criteri per poter pubblicare. I numeri dei test
 si ricavano dai risultati attuali, non dalle release precedenti.
@@ -66,7 +72,13 @@ si ricavano dai risultati attuali, non dalle release precedenti.
 
 ## 4. Build e verifica degli asset
 
-Esegui `npm run package:win -- --publish never` e attendi l'uscita. Scansione
+`release:local` esegue gia build unica, packaging e le tre verifiche sotto,
+salvando tempi ed esiti in `local-artifacts/release-<timestamp>/report.json`.
+Mantieni i sorgenti fermi fino alla fine: il comando controlla la loro impronta.
+In esecuzione manuale, dopo un gate che ha prodotto la build, usa
+`npm exec -- electron-builder --win --publish never`; `package:win` resta
+disponibile quando occorre anche costruire l'app. Mantieni la compressione
+attuale: non aumentare l'installer per accelerare il packaging. Scansione
 dipendenze e NSIS possono richiedere minuti: verifica log e attività prima di
 diagnosticare un blocco. Quindi esegui e controlla ciascun risultato:
 

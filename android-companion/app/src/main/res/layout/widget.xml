@@ -1,0 +1,6 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:orientation="vertical"
+    android:padding="16dp" android:background="#17263B" android:layout_width="match_parent" android:layout_height="match_parent">
+    <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="LEZIONIFY  ·  STATISTICHE" android:textColor="#9FC7EF" android:textSize="13sp" android:textStyle="bold" />
+    <TextView android:id="@+id/widget_summary" android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:text="Apri Lezionify per iniziare" android:textColor="#FFFFFF" android:textSize="15sp" android:paddingTop="8dp" />
+    <TextView android:id="@+id/widget_refresh" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="↻  Aggiorna" android:textColor="#9FC7EF" android:textSize="13sp" />
+</LinearLayout>

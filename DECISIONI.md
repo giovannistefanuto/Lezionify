@@ -6140,3 +6140,58 @@ Non modificare manualmente la sezione `Registro`: aggiungi le nuove decisioni es
 - **Impatto:** Installer, blockmap e manifesto corrispondono ai file locali; manifesto pubblico identico. Setup non firmato e non eseguito; dati personali esclusi.
 - **Follow-up:** Aggiornamento disponibile tramite updater o installer pubblico; upgrade reale, UAC e SmartScreen non collaudati.
 - **File coinvolti:** docs/publishing/aggiornamenti-windows.md, STRUTTURA_PROGETTO.md, DECISIONI.md
+
+## D-0558 — Preparazione release con build unica e profilo UI ristretto
+
+- **Data:** 2026-11-17
+- **Stato:** accettata
+- **Area:** strumenti-release
+- **Decisione:** Aggiungere release:local per backup, gate, build unica, packaging invariato e verifiche con tempi e log. Conservare full come default e ammettere UI solo per modifiche visive ristrette, confrontate con la precedente release e revisionate semanticamente. Riutilizzare la build del gate anche in CI.
+- **Motivazione:** Richiesta di ridurre i tempi della release senza aumentare la dimensione installer. La 0.2.4 ricostruiva l app dopo il gate e verificava tutti i flussi per una miniatura.
+- **Impatto:** Compressione invariata, nessuna dipendenza o modifica runtime. Controllo dell intero delta, incluse modifiche non committate, rifiuto dipendenze/backend nel profilo UI, impronta dei sorgenti e stop al primo errore. Pubblicazione e push restano dopo revisione. AGENTS e skill aggiornati.
+- **Follow-up:** Misurare i tempi alla prossima release. Questa manutenzione verifica script e piano senza rigenerare installer o pubblicare nuovi binari; il risparmio complessivo non e ancora misurato.
+- **File coinvolti:** tools/prepare_release.py, tests/python/test_prepare_release.py, package.json, .github/workflows/release.yml, AGENTS.md, skills/lezionify-release/SKILL.md, docs/publishing/aggiornamenti-windows.md, STRUTTURA_PROGETTO.md
+
+## D-0559 — GitHub per la prima versione personale del widget Android
+
+- **Data:** 2026-11-17
+- **Stato:** accettata
+- **Area:** android-statistiche
+- **Decisione:** Recepire la scelta esplicita di usare solo GitHub per la prima versione personale e conservare una ricerca di fattibilita con proposta di repository dati dedicato, snapshot cifrato separato per flusso e widget con cache locale. Le modalita di abbinamento e pubblicazione sono proposte, non funzionalita implementate.
+- **Motivazione:** L utente richiede un riepilogo sul telefono senza strumenti di studio e preferisce GitHub a un nuovo servizio. La cache separa rapidita di visualizzazione e freschezza dei dati; oggetti separati evitano il download dei dati di tutti gli utenti.
+- **Impatto:** Documentate fonti Android e GitHub, limiti degli aggiornamenti periodici, protezione AES-GCM proposta e riuso delle statistiche desktop. Telefono Android 15 API 35 accessibile tramite ADB. Nessun APK, dato personale pubblicato, nuova dipendenza o modifica runtime. Fetch riuscito; pull ancora sospeso per modifiche locali preesistenti, con HEAD uguale a origin/main al controllo.
+- **Follow-up:** Completare sincronizzazione preservando il lavoro locale prima delle modifiche integrate al desktop; implementare esportatore, app e widget e misurare il percorso completo. Definizione proposta: residue fra lezioni importate non completate, settimana lunedi-domenica e mese di calendario.
+- **File coinvolti:** docs/research/widget-android-sincronizzazione-2026-11-17.md, DECISIONI.md
+
+## D-0560 — Base indipendente per snapshot cifrato Android
+
+- **Data:** 2026-11-17
+- **Stato:** accettata
+- **Area:** android-statistiche
+- **Decisione:** Definire snapshot minimo versionato con identita e revisione, aggregati giornalieri limitati, corsi attivi e lezioni importate non completate. Aggiungere cifratura AES-256-GCM Node e decifratura Java interoperabili con nonce casuale e intestazione autenticata.
+- **Motivazione:** Avviare le componenti indipendenti dalla sincronizzazione del checkout mantenendo la scelta GitHub e riducendo la quantita di dati trasmessi.
+- **Impatto:** Tre test sintetici superati e interoperabilita Node-Java con rilevazione manomissione verificata. I moduli non sono collegati al runtime; nessun APK, widget, abbinamento o caricamento dati. Nessuna dipendenza nuova.
+- **Follow-up:** Completare il pull dopo risoluzione delle modifiche locali preesistenti, poi integrare desktop, sincronizzazione GitHub, abbinamento e app Android; collaudare sul dispositivo con dati sintetici e personali autorizzati.
+- **File coinvolti:** shared/mobileStatistics.ts, electron/main/mobileStatisticsCrypto.ts, android-companion/crypto/MobileCrypto.java, tests/unit/mobileStatistics.test.ts, tests/android/MobileCryptoInterop.java, docs/research/widget-android-sincronizzazione-2026-11-17.md, STRUTTURA_PROGETTO.md
+
+## D-0561 — Anteprima Android con widget e cache locale
+
+- **Data:** 2026-11-17
+- **Stato:** accettata
+- **Area:** android-statistiche
+- **Decisione:** Aggiungere app Android di prova con immissione manuale del codice, chiave protetta tramite Android Keystore, download HTTPS limitato a raw.githubusercontent.com, verifica dello snapshot cifrato e widget con copia locale e aggiornamento periodico. Fornire build di debug locale con SDK senza dipendenze runtime aggiuntive.
+- **Motivazione:** Sviluppare e verificare la componente Android indipendente mentre il pull del checkout rimane sospeso per modifiche locali preesistenti.
+- **Impatto:** APK debug compilato e installato su Android 15; schermata aperta. La generazione del codice, la pubblicazione GitHub e l integrazione desktop non sono implementate e il flusso completo e il widget non sono ancora collaudati. Gradle offline privo di plugin; build locale usa build-tools SDK 35 e firma debug. Nessun dato personale inviato.
+- **Follow-up:** Conservare le modifiche locali, completare il pull richiesto e integrare generazione codice, esportazione e GitHub; verificare widget, rete, cache, cambi periodo e dati sintetici e personali autorizzati sul telefono.
+- **File coinvolti:** android-companion/, docs/research/widget-android-sincronizzazione-2026-11-17.md, STRUTTURA_PROGETTO.md
+
+## D-0562 — Componenti autonomi per abbinamento e invio GitHub
+
+- **Data:** 2026-11-17
+- **Stato:** accettata
+- **Area:** android-statistiche
+- **Decisione:** Aggiungere generazione casuale dell identita e del codice di abbinamento, archivio credenziali con adapter di cifratura obbligatoria e publisher Contents API per file cifrato per flusso. Consentire soltanto repository pubblici dedicati, controllo revisioni e SHA, nessuna sovrascrittura automatica su conflitto e nessun token nel codice destinato al telefono.
+- **Motivazione:** Completare parti indipendenti della sincronizzazione e rendere sicuri i ritentativi senza inviare dati a GitHub prima dell integrazione e attivazione esplicita.
+- **Impatto:** Moduli non collegati al runtime desktop. Test sintetici verificano cifratura, conflitti, revisioni, repository, protezione configurazione e abbinamento. Nessuna nuova dipendenza, invio reale o modifica dei dati utente. Snapshot usa data e fuso coerenti.
+- **Follow-up:** Completare pull secondo AGENTS preservando le modifiche locali, collegare interfaccia e runtime, generare QR o scelta di copia sicura, provare end-to-end con repository dati dedicato e verificare widget.
+- **File coinvolti:** electron/main/mobileGithubPublisher.ts, electron/main/mobilePairing.ts, electron/main/mobileSecureConfig.ts, shared/mobileStatistics.ts, tests/unit/mobileGithubPublisher.test.ts, tests/unit/mobileSecureConfig.test.ts, docs/research/widget-android-sincronizzazione-2026-11-17.md, STRUTTURA_PROGETTO.md

@@ -48,6 +48,7 @@
     "audit:styles": "node tools/audit_styles.mjs",
     "check": "npm run test:inventory && npm run typecheck && npm run lint && npm test && npm run test:rag-retrieval && npm run test:benchmark && npm run test:qna-benchmark && npm run test:app-update && npm run test:hooks && npm run release:validate && npm run build && npm run test:collections && npm run test:pdf-export",
     "release:validate": "node tools/validate_release.cjs",
+    "release:local": "python tools/prepare_release.py",
     "test:app-update": "node tools/run_app_update_regressions.cjs"
   },
   "dependencies": {
