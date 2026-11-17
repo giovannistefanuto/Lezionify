@@ -95,6 +95,17 @@ describe('Audio Gemini: proprietà dei file durante la rotazione', () => {
     expect(b.files.delete).toHaveBeenCalledWith(expect.objectContaining({ name: b.file.name }))
   })
 
+  it('il fallback raccolte accetta pensieri brevi senza imporre lingua inglese o contesto universitario', async () => {
+    const { a, service } = setup()
+    a.interactions.create.mockResolvedValue({ output_text: '' })
+    a.models.generateContent.mockResolvedValue({ text: 'Un pensiero.' })
+    await expect(service.transcribeAudioFile({ keys, audioFilePath: audio, context: 'collection', language: 'auto' })).resolves.toBe('Un pensiero.')
+    const contents = a.models.generateContent.mock.calls[0][0].contents
+    expect(contents[1]).toContain('conversazione, conferenza, podcast')
+    expect(contents[1]).not.toContain('advanced university')
+    expect(contents[1]).toContain('lingua originale')
+  })
+
   it('la rotazione ASR usa il file della chiave realmente tentata', async () => {
     const { a, b, service } = setup()
     a.interactions.create.mockRejectedValue(Object.assign(new Error('503 UNAVAILABLE'), { status: 503 }))

@@ -2,6 +2,32 @@
 
 ## Stato attuale
 
+Il 16 novembre viene implementata la prima versione della voce 134:
+**Altro** ospita raccolte separate dai corsi con cinque modalità, istruzioni
+ereditate o sostitutive, importazione locale e schede versionate.
+`shared/collections.ts` definisce i contratti; `electron/main/collections/`
+possiede repository, lavori riprendibili, profili e adapter FFmpeg/Gemini.
+I dati restano in `library/collections/` e non entrano in lezioni, statistiche,
+RAG o pubblicazione dei corsi. `CollectionNavigation` e `CollectionsWorkspace`
+forniscono archiviate, ricerca, impostazioni, fonti e lettura senza tracker.
+Main/preload validano i comandi; updater e chiusura rispettano i lavori attivi.
+Il [piano e stato dei collaudi](docs/product/raccolte-altro-piano-2026-11-16.md)
+documenta verifiche tecniche e prova qualitativa personale ancora aperta.
+`npm run test:collections`, dopo la build, verifica il percorso completo,
+due processi Electron e l'app compilata in profili temporanei senza chiavi AI.
+`tools/audit_test_inventory.cjs`, incluso nel gate e in CI, controlla marcatori
+di esclusione, rimozioni e registrazione degli scenari. Il gate comprende
+anche RAG offline, contratto Release e prove delle raccolte dopo la build.
+La [verifica dei casi limite](docs/quality/raccolte-casi-limite-2026-11-16.md)
+documenta le correzioni e la prova locale sul primo audio reale.
+La prova Gemini autorizzata è completata con 18 sezioni e 55 citazioni verificate.
+Il validatore gestisce citazioni letterali tra estratti contigui; gli errori
+di contratto espongono solo motivi fissi e la ripresa esplicita usa feedback.
+L'interfaccia separa modello della prossima scheda e provenienza storica.
+Gate aggiornato: 914 unit, 24 Python, 41 Node e controlli Electron/build/PDF;
+resta la valutazione qualitativa finale dell'utente, con limiti nel rapporto.
+Nessuna dipendenza, migrazione dei corsi, versione o installer modificati.
+
 La versione 0.2.1 uniforma la lista delle lezioni per data decrescente in
 Tutti i corsi, singoli corsi e filtri di studio (D-0531). `useLectures`
 ordina solo il risultato filtrato, con fallback alla data di importazione,

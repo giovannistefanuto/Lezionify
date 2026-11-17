@@ -268,6 +268,31 @@ function registerIpcHandlers(): void {
   const handle = (channel: string, listener: Parameters<typeof ipcMain.handle>[1]) => {
     ipcMain.handle(channel, (event, ...args) => updateGate.run(() => listener(event, ...args)))
   }
+  const collectionHandle = (channel: string, listener: Parameters<typeof ipcMain.handle>[1]) => handle(channel, async (event, ...args) => {
+    if (!mainWindow || event.sender !== mainWindow.webContents || event.senderFrame !== mainWindow.webContents.mainFrame) throw new Error('Accesso non consentito.')
+    try { return await listener(event, ...args) } catch {
+      throw new Error('Operazione in Altro non completata. Controlla i campi, lo spazio disponibile e le fonti selezionate; riprova. I dati precedenti sono conservati.')
+    }
+  })
+  collectionHandle('collections:state', () => archive.collections.state())
+  collectionHandle('collections:save', (_e, value) => archive.collections.repository.saveCollection(value))
+  collectionHandle('collections:update', (_e, id, value) => archive.collections.repository.updateItem(id, value))
+  collectionHandle('collections:select', async () => {
+    const selection = await dialog.showOpenDialog({ title: 'Aggiungi contenuti ad Altro', properties: ['openFile', 'multiSelections'], filters: [{ name: 'Audio, video e trascrizioni', extensions: ['mp3', 'wav', 'm4a', 'aac', 'ogg', 'opus', 'flac', 'mp4', 'm4v', 'mkv', 'mov', 'avi', 'webm', 'wmv', 'mpeg', 'mpg', 'mts', 'm2ts', 'ts', '3gp', 'ogv', 'vob', 'flv', 'txt', 'md'] }] })
+    return selection.canceled ? null : archive.collections.repository.selectFiles(selection.filePaths)
+  })
+  collectionHandle('collections:release', (_e, token) => archive.collections.repository.releaseSelection(token))
+  collectionHandle('collections:import', (_e, request) => archive.collections.repository.importFiles(request))
+  collectionHandle('collections:read', (_e, id, generation) => archive.collections.read(id, generation))
+  collectionHandle('collections:process', (_e, ids, notes, resume) => archive.collections.process(ids, notes, resume))
+  collectionHandle('collections:stop', () => archive.collections.stop())
+  collectionHandle('collections:activate', (_e, id, generation) => archive.collections.repository.activateGeneration(id, generation))
+  collectionHandle('collections:search', (_e, query, collection, archived) => archive.collections.search(query, collection, archived))
+  collectionHandle('collections:source', async (_e, id, sourceId) => {
+    const item = await archive.collections.repository.item(id)
+    const result = await shell.openPath(archive.collections.repository.sourcePath(item, sourceId))
+    if (result) throw new Error('Impossibile aprire la fonte.')
+  })
   handle('repetition:answer', (_event, id: string, answer: string) => repetitionIpc(() => archive.repetition.answer(id, answer)))
   handle('repetition:state', () => repetitionIpc(() => archive.repetition.state()))
   handle('repetition:reference', () => repetitionIpc(async () => {
@@ -705,5 +730,12 @@ app.on('window-all-closed', () => {
   spotify?.dispose()
   clearInterval(courseRagTimer)
   courseRag?.dispose()
-  if (process.platform !== 'darwin') { archive.destroy(); app.quit() }
+  if (process.platform !== 'darwin') { archive.destroy(); void archive.collections.stop().finally(() => app.quit()) }
+})
+
+app.on('before-quit', event => {
+  if (archive.collections.isBusy()) {
+    event.preventDefault()
+    void archive.collections.stop().finally(() => app.quit())
+  }
 })

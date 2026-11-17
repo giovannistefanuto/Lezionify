@@ -40,6 +40,7 @@ import { StudySetTab } from '../../src/components/StudySetTab'
 import { runVideoImportScenarios } from './videoImportScenarios.browser'
 import { runLectureListScenarios } from './lectureListScenarios.browser'
 import { runLectureOrderingScenarios } from './lectureOrdering.browser'
+import { runCollectionsScenarios, runCollectionsRestart } from './collections.browser'
 import { runFocusPdfScenarios } from './focusPdfScenarios.browser'
 import { runDiscussionDiagnosticsScenarios } from './discussionDiagnosticsScenarios.browser'
 import { runDictionaryScenarios } from './dictionaryScenarios.browser'
@@ -377,6 +378,16 @@ async function runFinalLectureScenario() {
 }
 
 async function run() {
+  if (new URLSearchParams(location.search).has('collectionsResume')) {
+    await runCollectionsRestart(root)
+    require('electron').ipcRenderer.send('done', 'PASS: collections persisted across two real Electron processes')
+    return
+  }
+  if (new URLSearchParams(location.search).has('collectionsOnly')) {
+    await runCollectionsScenarios(root)
+    require('electron').ipcRenderer.send('done', 'PASS: collections real storage, media conversion, pipeline, history, archive, restart and responsive reader')
+    return
+  }
   if (new URLSearchParams(location.search).has('sidebarMenuOnly')) {
     await runSidebarMenuScenario(root)
     require('electron').ipcRenderer.send('done', 'PASS: archived course context menu retains focus without scrolling')
@@ -1956,6 +1967,7 @@ flowchart TD
   require('electron').ipcRenderer.send('test-checkpoint', 'runMathRenderingScenario')
   await runMathRenderingScenario()
   require('electron').ipcRenderer.send('test-checkpoint', 'runLectureListScenarios')
+  await runCollectionsScenarios(root)
   await runLectureOrderingScenarios(root)
   await runLectureListScenarios(root)
   require('electron').ipcRenderer.send('test-checkpoint', 'runFocusPdfScenarios')

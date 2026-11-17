@@ -5876,3 +5876,102 @@ Non modificare manualmente la sezione `Registro`: aggiungi le nuove decisioni es
 - **Impatto:** Release pubblica su https://github.com/giovannistefanuto/Lezionify/releases/tag/v0.2.1; tag sul commit ec8e3f458c114ff67dd40bfae8826fb096139d48. Installer, blockmap e latest.yml hanno dimensioni e SHA256 remoti coerenti con i file locali. Manifesto pubblico scaricato senza autenticazione e identico byte per byte. Nessuna modifica ai dati. Restano i limiti del setup non firmato e delle installazioni reali non collaudate dichiarati nelle note.
 - **Follow-up:** Nessuno per la pubblicazione; firma, UAC e upgrade tra installazioni reali restano collaudi futuri e non sono attestati da questo rilascio.
 - **File coinvolti:** STRUTTURA_PROGETTO.md, docs/publishing/aggiornamenti-windows.md, DECISIONI.md, docs/releases/0.2.1.md
+
+## D-0534 — Requisiti e piano per raccolte Altro con cinque modalita
+
+- **Data:** 2026-11-16
+- **Stato:** accettata
+- **Area:** raccolte-contenuti
+- **Decisione:** Registrare i requisiti confermati e il piano della voce 134: Altro chiuso all avvio, raccolte separate dai corsi, cinque modalita con istruzioni ereditate o sostitutive, importazione locale ed elaborazione esplicita, schede fedeli anche lunghe e versioni precedenti conservate. Pianificare archivio additivo e riuso dei moduli tecnici senza automatismi universitari; acquisizione da link, assistente testo o voce e tag espressivi restano sviluppi futuri.
+- **Motivazione:** L utente ha confermato le scelte emerse dall intervista grilling e richiesto un piano implementativo concreto prima dello sviluppo.
+- **Impatto:** Aggiunta specifica con fasi, contratti proposti, compatibilita, isolamento da statistiche e pubblicazione, checkpoint e collaudi tecnici e personali; aggiornata la descrizione della voce 134 senza chiuderla o cambiarne l ordine. Nessun codice runtime, dipendenza, chiamata AI, installer o Release modificati.
+- **Follow-up:** Avviare lo sviluppo solo su richiesta pertinente partendo dai contratti e dalla persistenza additiva; completare le prove tecniche e la valutazione personale del podcast prima di chiudere la voce 134.
+- **File coinvolti:** docs/product/raccolte-altro-piano-2026-11-16.md, docs/product/idee-future-2026-10-13.md, STRUTTURA_PROGETTO.md, DECISIONI.md
+
+## D-0535 — Prima versione Altro con archivio isolato e schede versionate
+
+- **Data:** 2026-11-16
+- **Stato:** accettata
+- **Area:** raccolte-contenuti
+- **Decisione:** Implementare la voce 134 autorizzata dall utente con archivio additivo library/collections, ID stabili, cinque profili, istruzioni ereditate o sostitutive, importazioni native di audio video e testi, parti ordinate e originali verificati SHA256. Riutilizzare FFmpeg, ASR e gestore Gemini esistenti tramite adapter; lavori espliciti con snapshot, checkpoint, annullamento e ripresa. Salvare schede in versioni distinte e confrontare fonte, versione corrente e fingerprint del Markdown prima della sostituzione; controllare riferimenti e citazioni. Collegare navigazione, ricerca, lettore e cronologia senza tracker o pubblicazione dei corsi.
+- **Motivazione:** Soddisfare la richiesta di implementare la prima versione concordata mantenendo la fedelta alla fonte, la recuperabilita e la separazione dai corsi universitari.
+- **Impatto:** Nuovi contratti shared e moduli collections, main e preload validati, UI Altro inizialmente chiusa con archiviate e impostazioni, fallback ASR neutro anche per pensieri brevi e barriera updater/chiusura integrata. Nessuna nuova dipendenza o migrazione dei corsi. Gate finale passato: 901 unit, 24 Python, 41 Node, updater, Electron con riavvio, build e PDF reali. Collaudi dedicati con FFmpeg reale, due processi Electron e app compilata su profili sintetici senza chiavi AI. Nuovo comando test:collections. Nessun installer o Release rigenerati.
+- **Follow-up:** Mantenere aperta la voce 134 finche l utente non fornisce un podcast lungo, avvia esplicitamente l elaborazione reale e valuta fedelta e utilita della scheda. Le prove AI automatiche usano adapter deterministici e non attestano qualita semantica reale. Acquisizione da link, assistente alle istruzioni testo o voce e tag espressivi restano sviluppi futuri.
+- **File coinvolti:** shared/collections.ts, electron/main/collections/, electron/main/archive.ts, electron/main/gemini.ts, electron/main/index.ts, electron/preload/index.ts, src/App.tsx, src/vite-env.d.ts, src/components/CollectionNavigation.tsx, src/components/CollectionsWorkspace.tsx, src/components/collections.css, src/components/Sidebar.tsx, tests/unit/collections.test.ts, tests/unit/archive.test.ts, tests/unit/geminiAudioOwnership.test.ts, tests/integration/collections.browser.tsx, tests/integration/hookRegression.browser.tsx, tools/run_hook_regressions.cjs, tools/run_collections_smoke.cjs, package.json, docs/product/raccolte-altro-piano-2026-11-16.md, docs/product/idee-future-2026-10-13.md, STRUTTURA_PROGETTO.md, DECISIONI.md
+
+## D-0536 — Attesa e chiusura anche durante la preparazione dei lavori Altro
+
+- **Data:** 2026-11-16
+- **Stato:** accettata
+- **Area:** raccolte-ripresa
+- **Decisione:** Sincronizzare attesa e interruzione con la coda di avvio dei lavori raccolte e includere la preparazione nello stato busy. Una richiesta gia accettata non puo essere ignorata da wait, stop, chiusura o barriera updater mentre si sta ancora preparando lo snapshot.
+- **Motivazione:** La ripetizione finale Electron ha rilevato un attesa che poteva osservare il lavoro precedente e verificare la cronologia prima dell avvio effettivo della nuova generazione. Due regressioni concorrenti coprono attesa e annullamento nella fase di preparazione.
+- **Impatto:** Gate finale npm run check superato: 903 unit, 24 Python, 41 Node, updater, Electron con riavvio, build e PDF reali. npm run test:collections superato con conservazione fra due processi Electron e smoke dell app compilata con preload e IPC reali. I test del modulo raccolte sono 21. Nessuna chiamata AI reale, dipendenza, migrazione dei corsi, installer o Release.
+- **Follow-up:** Resta soltanto l accettazione qualitativa personale prevista dalla voce 134 su un podcast lungo fornito dall utente; mantenere aperta la casella fino alla prova e al suo giudizio.
+- **File coinvolti:** electron/main/collections/service.ts, shared/collections.ts, tests/unit/collections.test.ts, docs/product/raccolte-altro-piano-2026-11-16.md, DECISIONI.md
+
+## D-0537 — Casi limite, cancellazione prima dell AI e guardia anti-esclusione test
+
+- **Data:** 2026-11-16
+- **Stato:** accettata
+- **Area:** qualita-raccolte
+- **Decisione:** Correggere sei casi limite con regressioni riprodotte prima dei fix: retry dopo inizializzazione fallita, decodifica UTF8 rigorosa, duplicati nello stesso lotto, confini Unicode integri, trascrizione salvata mancante senza nuovo ASR e annullamento durante copia senza successivo avvio AI. Integrare audit AST dei test e confronto con HEAD in npm run check e CI; mantenere tutti i comandi e scenari precedenti e includere RAG offline, contratto Release e collaudo raccolte dopo la build.
+- **Motivazione:** L utente richiede verifica completa dei casi limite e prova che nessun test sia stato disabilitato involontariamente. Le regressioni hanno mostrato difetti reali non coperti dal primo collaudo, compreso un invio AI potenziale dopo annullamento.
+- **Impatto:** Gate completo passato: 912 unit in 74 file, 24 Python, 41 Node, RAG offline, updater, Electron con riavvio, contratto Release, build, raccolte su due processi e app compilata, PDF reali. Rapporto JSON: 0 fallimenti, 0 skip/pending, 0 TODO. Audit negativo con fixture it.skip rilevato correttamente; fixture rimossa. Nessun test precedente eliminato, escluso o indebolito. Il file reale indicato dall utente supera importazione, hash, conversione e cinque blocchi locali senza rete o lettura di chiavi; originale invariato. Nessuna nuova dipendenza o installer.
+- **Follow-up:** La prova Gemini resta non avviata: auto-review richiede consenso esplicito per inviare audio e trascrizione alle API Google. Richiesta presentata all utente; nessun aggiramento. Conservarne gli artefatti solo in local-artifacts ignorato e mantenere aperta la voce 134 fino alla valutazione personale della scheda reale.
+- **File coinvolti:** electron/main/collections/repository.ts, electron/main/collections/service.ts, electron/main/collections/profiles.ts, src/components/CollectionsWorkspace.tsx, tests/unit/collections.test.ts, tests/unit/collectionAdapters.test.ts, tests/integration/collections.browser.tsx, tools/audit_test_inventory.cjs, package.json, .github/workflows/ci.yml, docs/quality/raccolte-casi-limite-2026-11-16.md, docs/product/raccolte-altro-piano-2026-11-16.md, docs/product/idee-future-2026-10-13.md, STRUTTURA_PROGETTO.md, DECISIONI.md
+
+## D-0538 — Prova reale autorizzata e chiusura del collaudo tecnico Altro
+
+- **Data:** 2026-11-17
+- **Stato:** accettata
+- **Area:** qualita-raccolte
+- **Decisione:** Completare la prova Gemini autorizzata in archivio locale isolato. Validare citazioni letterali anche attraverso passaggi contigui, mantenendo obbligatorio il riferimento al passaggio iniziale. Salvare errori di contratto sicuri e fornire feedback correttivo soltanto alla ripresa esplicita. Distinguere nella UI il modello della prossima scheda dai modelli storici effettivi.
+- **Motivazione:** La prova reale ha rilevato un falso rifiuto di citazioni a cavallo dei passaggi e un riferimento iniziale errato correttamente rifiutato. Timeout, 503 e quota del modello principale hanno richiesto una continuazione diagnostica privata con Gemini 3.5 Flash, senza modificare configurazione personale o ripetere ASR gia completato.
+- **Impatto:** Collaudo completo superato: 914 unit in 74 file, 24 Python, 41 Node, RAG offline, updater, Electron con riavvio, contratto Release, build, app compilata e PDF. Zero test falliti, skip/pending o TODO; audit anti-esclusione attivo. Prova reale: 18 sezioni e 55 citazioni letterali verificate. Audio, impostazioni e libreria personale invariati. Output AI originale conservato; copia riletta privata con una precisazione non sostenuta rimossa. Nessuna dipendenza, installer o Release nuovi.
+- **Follow-up:** Mantenere aperta la voce 134 fino al giudizio qualitativo dell utente. La prova non certifica ogni parola dell audio e non attesta completamento autonomo del modello principale: conservare nel rapporto il ricorso diagnostico al fallback e tutti gli artefatti privati solo nella directory ignorata local-artifacts.
+- **File coinvolti:** electron/main/collections/profiles.ts, electron/main/collections/service.ts, src/components/CollectionsWorkspace.tsx, src/App.tsx, tests/unit/collections.test.ts, tests/integration/collections.browser.tsx, docs/quality/raccolte-casi-limite-2026-11-16.md, docs/product/raccolte-altro-piano-2026-11-16.md, DECISIONI.md
+
+## D-0539 — Preparazione release 0.2.2 e materiale solo locale
+
+- **Data:** 2026-11-17
+- **Stato:** accettata
+- **Area:** release
+- **Decisione:** Preparare e pubblicare la versione 0.2.2 con tutte le modifiche pubblicabili delle raccolte Altro. Installare il materiale personale gia elaborato solo nell archivio locale dell utente, escludendolo da sorgenti, installer e asset GitHub.
+- **Motivazione:** Richiesta esplicita dell utente di pubblicare la release e trovare il materiale personale direttamente nell app senza pubblicarlo su GitHub.
+- **Impatto:** Versione e lockfile aggiornati, note e metadati release coerenti. Nuovo installer generale soggetto a verifica, commit e push automatici. Importazione privata additiva con backup e verifica hash, senza nuove chiamate AI.
+- **Follow-up:** Pubblicare soltanto dopo gate e verifica degli asset; dichiarare firma Windows e upgrade reali non collaudati.
+- **File coinvolti:** package.json, package-lock.json, electron-builder.yml, docs/releases/0.2.2.md, DECISIONI.md
+
+## D-0540 — Concorrenza unit limitata per il gate Windows
+
+- **Data:** 2026-11-17
+- **Stato:** accettata
+- **Area:** test
+- **Decisione:** Limitare Vitest a due worker nel comando npm test, mantenendo tutti i test, le asserzioni e i timeout originali.
+- **Motivazione:** Durante il gate release il test di calibrazione con molte scritture atomiche supera 20 secondi nella suite concorrente, mentre il file isolato passa tutti i 12 test in circa otto secondi. FFmpeg e loopback richiedono inoltre esecuzione fuori dal sandbox ristretto.
+- **Impatto:** Minore contesa I/O nella suite completa; nessuna esclusione o retry automatico e nessuna modifica del codice prodotto.
+- **Follow-up:** Ripetere il gate completo prima della build e pubblicazione.
+- **File coinvolti:** package.json, DECISIONI.md
+
+## D-0541 — Collaudo 0.2.2 e limite esplicito del download modello
+
+- **Data:** 2026-11-17
+- **Stato:** accettata
+- **Area:** release
+- **Decisione:** Distribuire raccolte Altro con gate completo verde e materiale personale importato solo localmente. Dichiarare nelle note il mancato completamento del download pubblico del modello semantico in due tentativi aggiuntivi, senza mascherarlo o riutilizzare rapporti precedenti.
+- **Motivazione:** Il runtime confezionato con modello presente e il rifiuto del modello corrotto passano; il trasferimento pubblico si interrompe durante il download. Il limite riguarda il download del modello locale, distinto da trascrizione e schede Gemini.
+- **Impatto:** 914 unit, 24 Python, 41 Node, RAG offline, updater, Electron con riavvio, app compilata e PDF passati. Verificati 382 file build, nove componenti NSIS e tre backup; nessun artefatto privato confezionato. Archivio personale leggibile tramite servizio reale senza nuove API. Rigenerare manifest e installer dalle stesse risorse verificate per includere note aggiornate. Firma Windows assente e upgrade reale non collaudato dichiarati.
+- **Follow-up:** Verificare nuovamente asset e payload finali, eseguire commit e push, caricare bozza con hash remoti coincidenti e pubblicare. Non dichiarare superato il download pubblico del modello.
+- **File coinvolti:** docs/releases/0.2.2.md, docs/publishing/aggiornamenti-windows.md, DECISIONI.md
+
+## D-0542 — Installer 0.2.2 finale verificato per pubblicazione
+
+- **Data:** 2026-11-17
+- **Stato:** accettata
+- **Area:** release
+- **Decisione:** Pubblicare i tre asset della medesima build finale 0.2.2 dopo commit e push dei sorgenti pubblicabili. Escludere tutti i materiali privati, gia importati e verificati nell archivio personale.
+- **Motivazione:** Richiesta esplicita dell utente e verifiche completate; note aggiornate includono firma assente, upgrade reale non collaudato e download pubblico del modello non riuscito.
+- **Impatto:** Installer finale 300209742 byte, SHA256 a62984bafdb045e62aa19736899260da2d9e14cd201dacba855226785e44c3e9. Verificati 382 file build, nove componenti NSIS, tre backup e metadati updater coerenti. ASAR invariato rispetto ai collaudi runtime; gate completo 914 unit, 24 Python e 41 Node oltre integrazioni e PDF. Nessun dato personale nei sorgenti o nel pacchetto.
+- **Follow-up:** Confrontare dimensioni e SHA256 degli asset GitHub e confermare release pubblica completa; non sostituire binari dopo pubblicazione.
+- **File coinvolti:** docs/releases/0.2.2.md, docs/publishing/aggiornamenti-windows.md, DECISIONI.md

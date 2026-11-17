@@ -1,12 +1,15 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { MusicButton } from './MusicButton'
+import { CollectionNavigation } from './CollectionNavigation'
 import type { CourseDefinition } from '../../shared/archive'
 import { formatCourseDisplayName } from '../utils/courseFormat'
 
 interface SidebarProps {
-  mainView: 'archive' | 'dashboard'
-  setMainView: (view: 'archive' | 'dashboard') => void
+  mainView: 'archive' | 'dashboard' | 'collections'
+  setMainView: (view: 'archive' | 'dashboard' | 'collections') => void
+  onOpenCollections?: (id?: string, archived?: boolean) => void
+  selectedCollectionId?: string
   selectedCourse: string
   setSelectedCourse: (course: string) => void
   selectedStudyStatus: string
@@ -38,6 +41,8 @@ interface SidebarProps {
 }
 
 export function Sidebar({
+  onOpenCollections,
+  selectedCollectionId,
   mainView,
   setMainView,
   selectedCourse,
@@ -424,6 +429,7 @@ export function Sidebar({
                 <p className="empty-courses">Nessun corso archiviato.</p> :
                 courseTree.archived.map(course => renderCourse(course))
               )}
+              {onOpenCollections && <CollectionNavigation onOpen={onOpenCollections} selected={selectedCollectionId} active={mainView === 'collections'} />}
             </nav>
           </div>
         </>
@@ -432,6 +438,7 @@ export function Sidebar({
       {/* Collapsed sidebar: show icon-only nav */}
       {isCollapsed && (
         <div className="sidebar-collapsed-nav">
+          {onOpenCollections && <button className={`sidebar-icon-btn ${mainView === 'collections' ? 'is-active' : ''}`} onClick={() => onOpenCollections()} title="Altro" aria-label="Altro">📁</button>}
           <MusicButton compact />
           <button
             className={`sidebar-icon-btn ${mainView === 'archive' ? 'is-active' : ''}`}

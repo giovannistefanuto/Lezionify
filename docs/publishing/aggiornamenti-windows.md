@@ -80,6 +80,23 @@ per installazioni amministrative. Non è previsto rollback automatico dei dati.
 
 ## Verifiche e limiti
 
+### Pacchetto 0.2.2 del 17 novembre
+
+Raccolte Altro e richiesta esplicita di pubblicazione: D-0534–D-0540.
+Gate completo passato con 914 unit, 24 Python e 41 Node, RAG offline,
+updater, Electron con riavvio, raccolte nell'app compilata, build e PDF reali.
+Nessun test escluso. Due worker Vitest evitano contesa I/O senza cambiare
+asserzioni o timeout. Il primo gate ristretto aveva impedito FFmpeg e loopback;
+la ripetizione autorizzata fuori dal sandbox risolve questi errori.
+
+Runtime confezionato con modello presente e rifiuto del modello corrotto
+passati. Il download pubblico aggiuntivo si interrompe durante il trasferimento
+in due tentativi: non viene dichiarato riuscito né riutilizzato il rapporto
+di una versione precedente. Limite esplicitato nelle note 0.2.2.
+Installer non firmato; installazione reale, UAC e SmartScreen non collaudati.
+I materiali personali richiesti sono copiati e verificati solo nell'archivio
+locale, esclusi da sorgenti, installer e asset pubblici.
+
 ### Pacchetto 0.2.1 del 16 novembre
 
 Correzione dell'ordine delle lezioni e richiesta esplicita di pubblicazione:

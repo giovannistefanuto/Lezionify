@@ -1337,7 +1337,7 @@ ${sectionOutputs.join('\n\n---\n\n')}`
   }
 
   async transcribeAudioFile(params: {
-    context?: 'repetition'
+    context?: 'repetition' | 'collection'
     apiKey?: string
     keys?: KeyConfig[]
     audioFilePath: string
@@ -1713,6 +1713,8 @@ ${sectionOutputs.join('\n\n---\n\n')}`
 La persona legge, ragiona, sbaglia, ripete e si corregge. Conserva tentativi, esitazioni, domande, ripetizioni e autocorrezioni: non migliorare né correggere ciò che dice.
 Non è una lezione del docente. Non riassumere e non aggiungere spiegazioni. Anche poche parole sono una trascrizione valida.
 Se non c'è parlato comprensibile rispondi esattamente [NESSUN_PARLATO]. Restituisci solo la trascrizione.`
+              : params.context === 'collection'
+              ? `Trascrivi integralmente e letteralmente l'audio nella lingua originale, senza tradurre. Può essere una conversazione, conferenza, podcast, riunione o pensiero personale. Conserva esempi, esitazioni, ripetizioni, dubbi e autocorrezioni; non migliorare, riassumere o aggiungere spiegazioni. Non inventare identità degli interlocutori, emozioni o toni. Anche poche parole sono valide. Se il parlato non è comprensibile, segnala l'incertezza. Se non c'è parlato rispondi esattamente [NESSUN_PARLATO]. Restituisci solo la trascrizione.`
               : isItalian
               ? `Sei un trascrittore fedele e scrupoloso. Trascrivi integralmente parola per parola l'audio allegato.
 È una lezione universitaria.
@@ -1751,7 +1753,7 @@ Return ONLY the verbatim transcript:`
             })
 
             const fallbackWords = fallbackRaw.split(/\s+/).filter(Boolean).length
-            if (fallbackRaw && !fallbackRaw.includes('[NESSUN_PARLATO]') && fallbackWords >= (params.context === 'repetition' ? 1 : 10)) {
+            if (fallbackRaw && !fallbackRaw.includes('[NESSUN_PARLATO]') && fallbackWords >= (params.context ? 1 : 10)) {
               chunkText = cleanMarkdownOutput(fallbackRaw)
               transcribeErrorObj = null
               wasFallback = true

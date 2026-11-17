@@ -32,7 +32,7 @@ soltanto dopo implementazione e verifiche pertinenti.
 | 74. [ ] | Revisione complessiva dell'interfaccia | 128 | Medio/alta e ampia: inventario dei flussi, verifica visiva e correzioni con regressioni. |
 | 75. [ ] | Controllo aggiornamenti GitHub all'avvio e pulsante Aggiorna | 129 | Alta: versionamento, distribuzione e aggiornamento recuperabile. |
 | 77. [ ] | Intervallo statistico del tempo restante calibrato sullo storico | 131 | D-0482: raccolta prospettica e intervalli implementati/collaudati; resta la calibrazione personale su almeno 20 lezioni confrontabili per fase, lingua e metodo. |
-| 80. [ ] | Sezione Altre cose per materiali fuori dagli esami | 134 | Ampia: organizzazione e riuso dei flussi audio, video e dispense da definire. |
+| 80. [ ] | Sezione Altre cose per materiali fuori dagli esami | 134 | Implementata e collaudata anche sul podcast reale; attesa la valutazione finale dell'utente sulla scheda. |
 | 83. [ ] | Notifica Bluetooth animata in Focus per connessione cuffiette | 137 | Da verificare: eventi reali Windows e animazione non invasiva di 5 secondi. |
 
 | 91. [ ] | Valutare chiavi API e modelli di altri provider | 145 | Da definire: operazioni supportate, credenziali, costi e compatibilità. |
@@ -297,12 +297,30 @@ fatto certo dalla sola posizione.
 
 ### 134. Sezione Altre cose
 
-- [ ] Valutare una sezione accanto agli esami attuali e archiviati per
-  materiali che non appartengono a quegli esami: audio da trascrivere,
-  lezioni di corsi seguiti per curiosità e lavori fatti per altre persone.
-- Consentire i flussi utili per ottenere trascrizioni e dispense da audio,
-  video o trascrizioni esistenti; definire organizzazione e dettaglio del
-  flusso rispettando la conservazione delle fonti e il modello local-first.
+- [ ] Implementare e collaudare **Altro**, chiuso all'avvio, con raccolte a un
+  livello e raccolte archiviate, separate da corsi e statistiche universitarie.
+- Requisiti confermati il 16 novembre dopo intervista: modalità Lezione,
+  Conferenza, Podcast e testimonianze, Riunione di lavoro e Pensieri personali;
+  istruzioni della raccolta modificabili per contenuto; audio, video locali
+  e trascrizioni, con raggruppamento esplicito e ordinamento delle parti.
+- Elaborazione esplicita Solo trascrizione o Trascrizione e scheda; schede
+  anche lunghe e fedeli alla fonte, senza aggiunte, con racconti ed esempi,
+  attribuzioni supportate e incertezze visibili. Originali e testo grezzo
+  conservati, rigenerazione senza ritrascrizione e versioni precedenti leggibili.
+- Pubblicazione esclusa per default. Collaudo tecnico e valutazione personale
+  di un podcast lungo prima del completamento. Prima versione implementata;
+  collaudi automatici su dati sintetici, FFmpeg, Electron e app compilata
+  superati. La casella resta aperta per la prova qualitativa personale.
+- [Verifica dei casi limite e audit dei test](../quality/raccolte-casi-limite-2026-11-16.md):
+  casi limite riprodotti e corretti, 914 unit passati senza skip o TODO;
+  primo audio reale verificato localmente fino ai cinque blocchi ASR.
+  Prova Gemini reale completata dopo il consenso esplicito: 18 sezioni e
+  55 citazioni verificate, con correzione del falso positivo sulle citazioni
+  tra estratti. Risultati personali nell'archivio di prova ignorato;
+  resta aperta l'accettazione personale della scheda.
+- [Piano implementativo, architettura, fasi e criteri di collaudo](raccolte-altro-piano-2026-11-16.md).
+  Sviluppi futuri richiesti: acquisizione da link, assistente Gemini per le
+  istruzioni da testo/voce e valutazione di tag espressivi derivati dall'audio.
 
 ### 137. Notifica Bluetooth animata per le cuffiette in Focus
 

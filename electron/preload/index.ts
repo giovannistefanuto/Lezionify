@@ -1,4 +1,21 @@
 import { contextBridge, ipcRenderer } from 'electron'
+import type { CollectionsApi } from '../../shared/collections'
+
+const collectionsApi: CollectionsApi = {
+  state: () => ipcRenderer.invoke('collections:state'),
+  saveCollection: value => ipcRenderer.invoke('collections:save', value),
+  selectFiles: () => ipcRenderer.invoke('collections:select'),
+  releaseSelection: token => ipcRenderer.invoke('collections:release', token),
+  importFiles: request => ipcRenderer.invoke('collections:import', request),
+  updateItem: (id, value) => ipcRenderer.invoke('collections:update', id, value),
+  read: (id, generation) => ipcRenderer.invoke('collections:read', id, generation),
+  process: (ids, notes, resume) => ipcRenderer.invoke('collections:process', ids, notes, resume),
+  stop: () => ipcRenderer.invoke('collections:stop'),
+  activateGeneration: (id, generation) => ipcRenderer.invoke('collections:activate', id, generation),
+  openSource: (id, source) => ipcRenderer.invoke('collections:source', id, source),
+  search: (query, collection, archived) => ipcRenderer.invoke('collections:search', query, collection, archived)
+}
+contextBridge.exposeInMainWorld('collections', collectionsApi)
 import type {
   AppSettings,
   ArchiveApi,

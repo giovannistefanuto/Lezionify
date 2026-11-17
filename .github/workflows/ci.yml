@@ -40,6 +40,9 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
+      - name: Test inventory and accidental suppression guard
+        run: npm run test:inventory
+
       - name: Lint
         run: npm run lint
 
@@ -66,6 +69,9 @@ jobs:
 
       - name: Production build
         run: npm run build
+
+      - name: Collection restart and compiled application regression tests
+        run: npm run test:collections
 
       - name: PDF export regression tests
         run: npm run test:pdf-export

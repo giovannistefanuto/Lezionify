@@ -26,6 +26,7 @@ import { useDictionaryShortcut } from './hooks/useDictionaryShortcut'
 import { useFinalLectureReturn } from './hooks/useFinalLectureReturn'
 
 const CourseChat = lazy(() => import('./components/CourseChat').then(module => ({ default: module.CourseChat })))
+const CollectionsWorkspace = lazy(() => import('./components/CollectionsWorkspace').then(module => ({ default: module.CollectionsWorkspace })))
 import { DictionaryOverlay } from './components/DictionaryOverlay'
 
 const LectureDrawer = lazy(() =>
@@ -113,7 +114,9 @@ export default function App() {
   const [courseChatLoaded, setCourseChatLoaded] = useState(false)
   const dictionary = useDictionaryShortcut()
   const [toolSettingsSection, setToolSettingsSection] = useState<ToolSettingsSection | undefined>()
-  const [mainView, setMainView] = useState<'archive' | 'dashboard'>('archive')
+  const [mainView, setMainView] = useState<'archive' | 'dashboard' | 'collections'>('archive')
+  const [selectedCollectionId, setSelectedCollectionId] = useState<string>()
+  const [collectionsArchived, setCollectionsArchived] = useState(false)
   const [showMemoPage, setShowMemoPage] = useState(false)
   const [selectedLectureId, setSelectedLectureId] = useState<string | null>(
     null
@@ -441,6 +444,8 @@ export default function App() {
     <AmbientSoundProvider>
     <main className={`app-shell ${theme === 'dark' ? 'dark-theme' : ''}`}>
       <Sidebar
+        selectedCollectionId={selectedCollectionId}
+        onOpenCollections={(id, archived = false) => { setSelectedCollectionId(id); setCollectionsArchived(archived); setSelectedLectureId(null); setShowMemoPage(false); setMainView('collections') }}
         mainView={mainView}
         setMainView={(view) => {
           setShowMemoPage(false)
@@ -497,7 +502,7 @@ export default function App() {
         onOpenLecture={(id, kind) => { setMainView('archive'); const lecture = lectures.find(item => item.id === id); if (lecture?.courseCode) setSelectedCourse(lecture.courseCode); setSelectedLectureId(id); setActiveTab(kind === 'transcript' ? 'transcript' : 'markdown'); setCourseChatOpen(false) }} /></Suspense>}
 
       <div className="main-content-wrapper">
-        {!dismissedSemesterReminder && (
+        {mainView !== 'collections' && !dismissedSemesterReminder && (
           <SemesterReminderBanner
             onOpenCourseManagement={() => setShowCourseModal(true)}
             onDismiss={() => setDismissedSemesterReminder(true)}
@@ -505,6 +510,7 @@ export default function App() {
         )}
 
         {showMemoPage && <Suspense fallback={<LazyFallback />}><QuickCaptureOverlay capture={quickCapture} page onClosePage={() => setShowMemoPage(false)} /></Suspense>}
+        {!showMemoPage && mainView === 'collections' && <Suspense fallback={<LazyFallback />}><ErrorBoundary fallbackTitle="Errore nelle raccolte"><CollectionsWorkspace configuredModel={settings.model} collectionId={selectedCollectionId} archived={collectionsArchived} onSelectCollection={(id, archived = false) => { setSelectedCollectionId(id); setCollectionsArchived(archived) }} /></ErrorBoundary></Suspense>}
         {!showMemoPage && mainView === 'archive' && (
           <ErrorBoundary fallbackTitle="Errore nel caricamento dell'archivio lezioni">
             <LectureList

@@ -337,6 +337,23 @@ describe('ArchiveService — Ciclo di vita, CRUD, Batch & Trascrizione Audio', (
     await rm(testArchiveDir, { recursive: true, force: true }).catch(() => {})
   })
 
+  it('isola le raccolte da lezioni, statistiche, RAG e pubblicazione anche con impostazioni legacy', async () => {
+    const before = await readFile(join(testArchiveDir, 'library.json'), 'utf8')
+    const definitions = await service.getSettings()
+    const c = await service.collections.repository.saveCollection({ name: 'RL', mode: 'podcast', instructions: '', archived: false })
+    const file = join(testArchiveDir, 'podcast.txt')
+    await writeFile(file, 'Esperienza personale sintetica da non pubblicare con il corso omonimo.')
+    const chosen = await service.collections.repository.selectFiles([file])
+    await service.collections.repository.importFiles({ token: chosen.token, fileIds: chosen.files.map(f => f.id), collectionId: c.id, grouped: false, title: 'Podcast sintetico', recordedAt: null, sourceUrl: '', mode: null, instructions: null })
+    expect(await service.listLectures()).toEqual([])
+    expect(await service.getCourseStats()).toEqual([])
+    expect((await service.courseRagSources('RL')).sources).toEqual([])
+    expect((await service.getPublishingStatus()).unpublishedCount).toBe(0)
+    expect(await readFile(join(testArchiveDir, 'library.json'), 'utf8')).toBe(before)
+    expect((await service.getSettings()).courses).toEqual(definitions.courses)
+    expect(mockGeminiService.extractCourseLogistics).not.toHaveBeenCalled()
+  })
+
   it('accredita lettura RIPETERE una volta con richieste concorrenti e ignora sessioni storiche', async () => {
     const info = vi.spyOn(service.repetition, 'studyInfo').mockResolvedValue({ eligible: true, completed: true })
     const id = 'a'.repeat(64)

@@ -1,4 +1,6 @@
 import { StudyHistory } from './studyHistory'
+import { CollectionsService } from './collections/service'
+import { collectionAdapters } from './collections/adapters'
 import { contentFingerprint } from '../../shared/contentFingerprint'
 import { splitStudyInterval, type StudyBatch, type StudyPredictionRequest, type StudyDayFilter } from '../../shared/studyHistory'
 import { repetitionRecordingCredits } from '../../shared/repetitionStudy'
@@ -140,10 +142,11 @@ export function isRetryableApiError(errorText: string): boolean {
 }
 
 export class ArchiveService {
+  readonly collections: CollectionsService
   private updating = false
   setUpdating(value: boolean) { this.updating = value }
   isBusyForUpdate() {
-    return Boolean(this.archivePipeline.isProcessing() || this.autoPipelineLaunch || this.repetition.isBusy() || this.publishService.isBusy())
+    return Boolean(this.collections.isBusy() || this.archivePipeline.isProcessing() || this.autoPipelineLaunch || this.repetition.isBusy() || this.publishService.isBusy())
   }
   readonly sectionRevisions: SectionRevisionService
   public readonly repetition: RepetitionService
@@ -264,6 +267,9 @@ export class ArchiveService {
     this.enableAutoProcessOnImport =
       enableAutoProcessOnImport ??
       (process.env.NODE_ENV !== 'test' && !process.env.VITEST)
+    this.collections = new CollectionsService(this.rootDirectory, collectionAdapters({
+      settings: () => this.getSettings(), keys: () => this.getManagedKeys(), gemini: this.geminiService, manager: this.requestManager
+    }))
   }
 
   private getCourseLogisticsMutex(courseCode: string): AsyncMutex {
@@ -346,6 +352,7 @@ export class ArchiveService {
   }
 
   destroy(): void {
+    void this.collections.stop()
     this.automaticPublisher.stop()
     this.videoImporter.abortAll()
     void this.archivePipeline.requestStop()
