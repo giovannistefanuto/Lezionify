@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { getSessionWeekRows, getSessionWindow, shiftSessionMonth } from '../../src/components/sessione/sessionCalendar'
+import { getSessionWeekRows, getSessionWindow, shiftSessionMonth } from '../../src/components/sessione/sessionCalendarDates'
 
 describe('Sessione calendar', () => {
   it('builds Monday-first rows and leap days', () => {

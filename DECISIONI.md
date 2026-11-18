@@ -6272,3 +6272,14 @@ Non modificare manualmente la sezione `Registro`: aggiungi le nuove decisioni es
 - **Impatto:** IPC riservato alla finestra principale, backup validato, retry recenti idempotenti e risolutore compatibile con examDate.
 - **Follow-up:** Collegare editor, Dashboard e promemoria al servizio.
 - **File coinvolti:** shared/sessione.ts, electron/main/sessioneStore.ts, electron/main/sessioneValidation.ts, electron/main/atomicFile.ts, electron/main/index.ts, electron/preload/index.ts, shared/archive.ts, tests/unit/sessioneStore.test.ts
+
+## D-0573 — Configurazione appelli e piani
+
+- **Data:** 2026-11-18
+- **Stato:** accettata
+- **Area:** sessione
+- **Decisione:** Collegare il calendario all editor di corsi, percorsi e appelli, con menu contestuali, gestione piani e anteprima di conferma.
+- **Motivazione:** Consentire la pianificazione locale a partire da piu percorsi e date storiche, preservando le alternative.
+- **Impatto:** Il collaudo Electron sul servizio reale verifica configurazione, scelta, conferma, duplicazione e riapertura dei dati.
+- **Follow-up:** Montare la vista dai flussi ordinari e collegare notifiche e studio.
+- **File coinvolti:** src/components/sessione, tools/run_sessione_smoke.cjs, tests/integration/sessione.browser.tsx

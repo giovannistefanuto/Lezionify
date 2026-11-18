@@ -1,6 +1,6 @@
 import { useId, useMemo, useState, type ReactNode } from 'react'
 import { calendarDayDifference, parseLocalCalendarDate } from '../../../shared/calendarDate'
-import { getSessionWeekRows, getSessionWindow, shiftSessionMonth } from './sessionCalendar'
+import { getSessionWeekRows, getSessionWindow, shiftSessionMonth } from './sessionCalendarDates'
 import './sessione.css'
 
 export interface CalendarExam {
