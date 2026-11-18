@@ -11,6 +11,7 @@ import { readdir } from 'node:fs/promises'
 import { QNA_IMAGE_LIMIT, QNA_IMAGE_MAX_BYTES, type QnaImageInput } from '../../shared/qnaImages'
 import { app, BrowserWindow, dialog, ipcMain, protocol, Menu, shell, safeStorage, nativeImage, powerMonitor, net, Notification } from 'electron'
 import { ExamReminderService } from './examReminders'
+import { SessionStore } from './sessioneStore'
 import { configureGeminiConnectivity } from './ai/connectivity'
 import { SpotifyService } from './spotify'
 import { MobileCompanionService } from './mobileCompanion'
@@ -84,6 +85,7 @@ let appUpdates: AppUpdateService
 let updateStarted = false
 if (ragSelfCheck) app.setPath('userData', join(app.getPath('temp'), `Lezionify-rag-selfcheck-${Date.now()}-${process.pid}`))
 const archive = new ArchiveService()
+const sessione = new SessionStore(join(app.getPath('userData'), 'library', 'sessione.json'))
 const examReminders = new ExamReminderService(join(app.getPath('userData'), 'library', 'exam-reminders.json'), () => archive.getSettings(), notice => {
   if (Notification.isSupported()) {
     const notification = new Notification({ title: notice.title, body: notice.message, silent: true })
@@ -613,6 +615,14 @@ function registerIpcHandlers(): void {
     archive.saveScratchpad(data)
   )
   handle('archive:get-reminders', () => archive.getReminders())
+  handle('sessione:state', event => {
+    if (event.sender !== mainWindow?.webContents || event.senderFrame !== mainWindow.webContents.mainFrame) throw new Error('Accesso non consentito.')
+    return sessione.state()
+  })
+  handle('sessione:apply', (event, command: unknown) => {
+    if (event.sender !== mainWindow?.webContents || event.senderFrame !== mainWindow.webContents.mainFrame) throw new Error('Accesso non consentito.')
+    return sessione.apply(command)
+  })
   handle('exam-reminders:get', event => {
     if (event.sender !== mainWindow?.webContents || event.senderFrame !== mainWindow.webContents.mainFrame) throw new Error('Accesso non consentito.')
     return examReminders.poll().catch(() => { throw new Error('Impossibile leggere i promemoria esami. Riprova fra un minuto.') })

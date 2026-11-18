@@ -6261,3 +6261,14 @@ Non modificare manualmente la sezione `Registro`: aggiungi le nuove decisioni es
 - **Impatto:** Tre mesi base, quarto condizionale, navigazione a date fuori finestra e tre stati visivi. I dati saranno collegati nelle fasi successive.
 - **Follow-up:** Verificare il layout nella finestra Electron integrata.
 - **File coinvolti:** src/components/sessione, tests/unit/sessionCalendar.test.ts
+
+## D-0572 — Archivio locale e conferme atomiche
+
+- **Data:** 2026-11-18
+- **Stato:** accettata
+- **Area:** sessione
+- **Decisione:** Usare library/sessione.json versione 1 con mutazioni main serializzate, revisione di partenza e istantanea confermata.
+- **Motivazione:** Conservare bozze e alternative senza cambiare le date effettive prima di una conferma riuscita.
+- **Impatto:** IPC riservato alla finestra principale, backup validato, retry recenti idempotenti e risolutore compatibile con examDate.
+- **Follow-up:** Collegare editor, Dashboard e promemoria al servizio.
+- **File coinvolti:** shared/sessione.ts, electron/main/sessioneStore.ts, electron/main/sessioneValidation.ts, electron/main/atomicFile.ts, electron/main/index.ts, electron/preload/index.ts, shared/archive.ts, tests/unit/sessioneStore.test.ts

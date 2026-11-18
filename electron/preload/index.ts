@@ -29,6 +29,10 @@ import type {
 } from '../../shared/archive'
 
 const archiveApi: ArchiveApi = {
+  sessione: {
+    state: () => ipcRenderer.invoke('sessione:state'),
+    apply: command => ipcRenderer.invoke('sessione:apply', command)
+  },
   mobileCompanion: {
     state: () => ipcRenderer.invoke('mobile:state'),
     configure: input => ipcRenderer.invoke('mobile:configure', input),

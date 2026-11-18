@@ -8,7 +8,8 @@ const queues = new Map<string, Promise<void>>()
 export function atomicWrite(
   file: string,
   content: string,
-  _encoding?: string
+  _encoding?: string,
+  validBackup?: (value: unknown) => boolean
 ): Promise<void> {
   const key = resolve(file)
   const pending = (queues.get(key) ?? Promise.resolve())
@@ -24,7 +25,10 @@ export function atomicWrite(
           await handle.close()
         }
         try {
-          if (key.endsWith('.json')) JSON.parse(await readFile(key, 'utf8'))
+          if (key.endsWith('.json')) {
+            const previous: unknown = JSON.parse(await readFile(key, 'utf8'))
+            if (validBackup && !validBackup(previous)) throw new SyntaxError('Backup JSON non valido.')
+          }
           await copyFile(key, `${temporary}.bak`)
           await rename(`${temporary}.bak`, `${key}.bak`)
         } catch (error) {
