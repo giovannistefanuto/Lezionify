@@ -6239,3 +6239,14 @@ Non modificare manualmente la sezione `Registro`: aggiungi le nuove decisioni es
 - **Impatto:** Installer terminato con codice 0; Windows rileva versione 0.2.5. Schermata desktop mostrava ultimo invio riuscito; Android segnala aggiornamento completato e non mostra il corso sintetico, widget associato alla Home. Il repository dati pubblico contiene riepilogo personale cifrato autorizzato. Nessun token o valore personale registrato qui.
 - **Follow-up:** Valutare uso quotidiano, ritardi Android e confronto dei valori; nessuna Release binaria pubblica. L ultimo controllo non ha visto il widget nella pagina Home corrente; l utente ha confermato le statistiche reali.
 - **File coinvolti:** docs/product/statistiche-android.md, android-companion/README.md, STRUTTURA_PROGETTO.md, DECISIONI.md
+
+## D-0570 — Compatibilita e design di Sessione
+
+- **Data:** 2026-11-18
+- **Stato:** accettata
+- **Area:** sessione
+- **Decisione:** Adottare il piano locale e il calendario da muro approvato, con countdown in un post-it, menu e appelli scelti e bloccati visivamente uguali.
+- **Motivazione:** Rendere leggibile la sessione con molte date e conservare la compatibilita con le date esistenti.
+- **Impatto:** Mappati consumatori date, persistenza, notifiche, identita corsi e sospensione studio. Google Calendar resta futuro.
+- **Follow-up:** Realizzare e verificare fasi 1-7 in sequenza.
+- **File coinvolti:** docs/product/piano-sessione.md, docs/product/sessione-verifica-tecnica.md
