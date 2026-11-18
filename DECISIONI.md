@@ -6250,3 +6250,14 @@ Non modificare manualmente la sezione `Registro`: aggiungi le nuove decisioni es
 - **Impatto:** Mappati consumatori date, persistenza, notifiche, identita corsi e sospensione studio. Google Calendar resta futuro.
 - **Follow-up:** Realizzare e verificare fasi 1-7 in sequenza.
 - **File coinvolti:** docs/product/piano-sessione.md, docs/product/sessione-verifica-tecnica.md
+
+## D-0571 — Calendario da muro e post-it
+
+- **Data:** 2026-11-18
+- **Stato:** accettata
+- **Area:** sessione
+- **Decisione:** Realizzare una vista riusabile per il calendario compatto e il post-it dei countdown, seguendo il mockup approvato.
+- **Motivazione:** Separare la lettura delle date dalle azioni di configurazione e mantenere tutti gli appelli accessibili.
+- **Impatto:** Tre mesi base, quarto condizionale, navigazione a date fuori finestra e tre stati visivi. I dati saranno collegati nelle fasi successive.
+- **Follow-up:** Verificare il layout nella finestra Electron integrata.
+- **File coinvolti:** src/components/sessione, tests/unit/sessionCalendar.test.ts
