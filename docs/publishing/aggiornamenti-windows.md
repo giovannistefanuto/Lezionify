@@ -121,6 +121,32 @@ per installazioni amministrative. Non è previsto rollback automatico dei dati.
 
 ## Verifiche e limiti
 
+### Pacchetto 0.3.0 del 18 novembre
+
+Sessione riunisce gli appelli, le bozze e il piano confermato, con esiti,
+promemoria e proposta di spaziatura. La versione include il collegamento Android
+facoltativo introdotto nel setup locale 0.2.5. Il profilo completo è passato con
+954 test unitari, 49 Python, 41 Node, ricerca locale, updater, Electron,
+Sessione con riavvio, raccolte e PDF reali.
+
+Il packaging ha riusato la build del gate. Verificati 383 file, nove componenti
+NSIS e tutti e tre gli asset del backup 0.2.5. Materiali privati esclusi.
+
+| Asset | Byte | SHA256 |
+|---|---:|---|
+| `Lezionify-Setup-0.3.0.exe` | 300226781 | `1f753c73038ccc2f35ebb1a290ef000702fc0e56402a9e694bbb334daef3090f` |
+| `Lezionify-Setup-0.3.0.exe.blockmap` | 304930 | `a014790d8d86e7b50c6ccf6e2336ccbfd379349f5b82598c6c06986c8cce2939` |
+| `latest.yml` | 2022 | `9ed93b227458e497383913e9d96b265fdf77c005ce922c86b86267d28c7a24eb` |
+
+Release stabile pubblicata sul commit `9955c8cfe9c7618cd3c5baa00736b43d0329949a`.
+Gli asset pubblici corrispondono ai digest locali e `latest.yml` scaricato
+senza credenziali coincide byte per byte con il file locale.
+[Release v0.3.0](https://github.com/giovannistefanuto/Lezionify/releases/tag/v0.3.0)
+
+Authenticode ha restituito `NotSigned`. Setup verificato tramite estrazione,
+senza eseguirlo sul PC personale. Il collaudo di upgrade tra installazioni
+reali, UAC e SmartScreen resta aperto. Google Calendar è una fase successiva.
+
 ### Pacchetto 0.2.4 del 17 novembre
 
 Miniature delle slide attive nel Q&A ridotte per lasciare spazio alla risposta,

@@ -11,6 +11,9 @@ proiezione. La proposta usa un worker locale e il tracciamento dello studio
 registra l'esclusione dedicata. I collaudi `npm run test:sessione` fanno
 parte del gate dopo la build. Per comportamento e verifiche, vedi
 [Sessione locale](docs/product/sessione-verifica-tecnica.md).
+Distribuita il 18 novembre come Lezionify 0.3.0. Il feed pubblico coincide con
+la build collaudata e comprende installer, blockmap e manifesto. Hash e limiti
+sono nella [procedura aggiornamenti Windows](docs/publishing/aggiornamenti-windows.md).
 
 Setup locale 0.2.5 preparato per l'integrazione Android: gate completo con
 941 test unitari, 49 Python, 41 Node, updater, Electron, raccolte e PDF; build

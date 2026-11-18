@@ -6338,3 +6338,14 @@ Non modificare manualmente la sezione `Registro`: aggiungi le nuove decisioni es
 - **Impatto:** Versione, lockfile e note allineati. Archivio personali e artefatti di prova esclusi. Copia verificata del setup precedente prima del packaging.
 - **Follow-up:** Verificare payload, firma e manifesto, pubblicare commit e tre asset immutabili, verificare il feed pubblico. Google Calendar rimane futuro.
 - **File coinvolti:** package.json, package-lock.json, electron-builder.yml, docs/releases/0.3.0.md, DECISIONI.md
+
+## D-0579 — Release stabile Windows 0.3.0 pubblicata e verificata
+
+- **Data:** 2026-11-18
+- **Stato:** accettata
+- **Area:** release
+- **Decisione:** Pubblicare Lezionify 0.3.0 sul commit dei binari 9955c8cfe9c7618cd3c5baa00736b43d0329949a, con setup, blockmap e latest.yml verificati.
+- **Motivazione:** Rendere disponibile Sessione tramite il feed stabile di GitHub dopo il gate completo richiesto.
+- **Impatto:** 954 unitari, 49 Python, 41 Node e scenari Electron completi superati. Verificati 383 file, nove componenti NSIS e tre backup. Manifesto pubblico identico al locale, payload senza dati privati.
+- **Follow-up:** Il setup e NotSigned e non e stato eseguito su un profilo personale. Upgrade Windows reale, UAC, SmartScreen e Google Calendar restano fuori dal collaudo.
+- **File coinvolti:** docs/publishing/aggiornamenti-windows.md, STRUTTURA_PROGETTO.md, docs/releases/0.3.0.md, DECISIONI.md
