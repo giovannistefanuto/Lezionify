@@ -73,5 +73,8 @@ jobs:
       - name: Collection restart and compiled application regression tests
         run: npm run test:collections
 
+      - name: Test Sessione in Electron
+        run: npm run test:sessione
+
       - name: PDF export regression tests
         run: npm run test:pdf-export

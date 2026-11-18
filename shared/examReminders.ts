@@ -35,14 +35,23 @@ export function planExamReminders(settings: Settings, previous: ExamReminderStat
     const daysLeft = calendarDayDifference(today, examDate)
     if (!validExamReminderPreference(preference) || !preference.enabled || daysLeft === null || daysLeft < 0) continue
     const appointmentId = target.id === 'legacy' ? undefined : target.id
-    const configuration = JSON.stringify([examDate, preference.every, preference.unit, ...(appointmentId ? [appointmentId] : [])])
+    const legacyConfiguration = [examDate, preference.every, preference.unit]
+    const configuration = JSON.stringify([...legacyConfiguration, ...(appointmentId ? [appointmentId] : [])])
     const key = JSON.stringify([courseCode, configuration])
     active.add(key)
-    const index = receipts.findIndex(row => row.courseCode === courseCode &&
-      (appointmentId ? row.configuration === configuration : !row.appointmentId))
+    let index = receipts.findIndex(row => appointmentId
+      ? row.appointmentId === appointmentId && row.configuration === configuration
+      : row.courseCode === courseCode && !row.appointmentId)
+    if (appointmentId && index < 0) index = receipts.findIndex(row =>
+      !row.appointmentId && row.courseCode === courseCode && row.configuration === JSON.stringify(legacyConfiguration))
     const last = receipts[index]
     const elapsed = last ? calendarDayDifference(last.day, today) : null
-    if (last?.configuration === configuration && (elapsed === null || elapsed < preference.every * (preference.unit === 'weeks' ? 7 : 1))) continue
+    if (last && (appointmentId || last.configuration === configuration) &&
+        (elapsed === null || elapsed < preference.every * (preference.unit === 'weeks' ? 7 : 1))) {
+      if (last.configuration !== configuration || last.courseCode !== courseCode)
+        receipts[index] = { ...last, courseCode, configuration, appointmentId }
+      continue
+    }
     const receipt = { courseCode, configuration, day: today, appointmentId }
     if (index >= 0) receipts.splice(index, 1)
     receipts.push(receipt)

@@ -28,7 +28,8 @@ export class SessionStore {
       return await this.read(this.file)
     } catch (primary) {
       const missing = (primary as NodeJS.ErrnoException).code === 'ENOENT'
-      if (!missing && !(primary instanceof SyntaxError)) throw primary
+      if (!missing && !(primary instanceof SyntaxError))
+        throw new Error('Impossibile leggere l’archivio Sessione.', { cause: primary })
       try {
         return await this.read(`${this.file}.bak`)
       } catch (backup) {
@@ -89,8 +90,7 @@ export class SessionStore {
       archive.revision = revision
       archive.commands = [...archive.commands.slice(-124), input.commandId]
       if (!validSessionArchive(archive)) throw new Error('Limite dell’archivio Sessione superato.')
-      await mkdir(dirname(this.file), { recursive: true })
-      await this.write(this.file, JSON.stringify(archive))
+      await this.save(archive)
       return { status: 'saved', archive }
     })
   }
@@ -116,8 +116,17 @@ export class SessionStore {
       }
       archive.revision++
       if (!validSessionArchive(archive)) throw new Error('Dati Sessione non validi dopo la rinomina.')
-      await this.write(this.file, JSON.stringify(archive))
+      await this.save(archive)
     })
+  }
+
+  private async save(archive: SessionArchive) {
+    try {
+      await mkdir(dirname(this.file), { recursive: true })
+      await this.write(this.file, JSON.stringify(archive))
+    } catch (cause) {
+      throw new Error('Dati non scrivibili. La versione precedente resta disponibile.', { cause })
+    }
   }
 }
 

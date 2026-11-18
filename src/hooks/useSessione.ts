@@ -17,6 +17,7 @@ export function useSessione() {
   const [externalCourse, setExternalCourse] = useState<string>()
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+  const [reloadKey, setReloadKey] = useState(0)
   const [today, setToday] = useState(formatLocalCalendarDate)
   const request = useRef(0)
   const saving = useRef(false)
@@ -58,6 +59,7 @@ export function useSessione() {
       const result = await api.apply({ ...action, commandId: crypto.randomUUID(), baseRevision: archive.revision })
       setArchive(result.archive)
       const ok = result.status === 'saved'
+      if (!ok) setReloadKey(key => key + 1)
       setError(ok ? '' : 'I dati sono cambiati in un’altra schermata. Controlla la versione aggiornata prima di riprovare.')
       return ok
     } catch (failure) {
@@ -105,5 +107,5 @@ export function useSessione() {
     return () => window.removeEventListener('keydown', onKey, true)
   }, [close, open, show])
 
-  return { archive, open, externalCourse, busy, error, today, show, close, refresh, apply }
+  return { archive, open, externalCourse, busy, error, today, reloadKey, show, close, refresh, apply }
 }

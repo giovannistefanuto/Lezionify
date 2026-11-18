@@ -12,6 +12,8 @@ export interface CalendarExam {
   color?: string
   status: 'chosen' | 'alternative' | 'taken'
   pending?: boolean
+  draggable?: boolean
+  stepId?: string
 }
 
 const examStatuses = { chosen: 'Scelto', alternative: 'Alternativa', taken: 'Sostenuto' }
@@ -24,16 +26,24 @@ function format(date: string, formatter: Intl.DateTimeFormat) {
   return formatter.format(parseLocalCalendarDate(date)!)
 }
 
+function compactCourseCode(code: string) {
+  if (code.length <= 6) return code
+  const words = code.trim().split(/\s+/)
+  return (words.length === 1 ? Array.from(code) : words.map(word => Array.from(word)[0])).slice(0, 6).join('')
+}
+
 interface Props {
   today: string
   initialMonth: string
   exams: readonly CalendarExam[]
   onExam: (id: string) => void
+  onMove: (from: string, to: string) => void
   header: ReactNode
 }
 
-export function SessionCalendar({ today, initialMonth, exams, onExam, header }: Props) {
+export function SessionCalendar({ today, initialMonth, exams, onExam, onMove, header }: Props) {
   const [anchor, setAnchor] = useState(initialMonth)
+  const [dragged, setDragged] = useState<CalendarExam>()
   const noteTitle = useId()
   const { months, earlier, later } = getSessionWindow(anchor, exams.map(exam => exam.date))
   const byDay = useMemo(() => {
@@ -47,6 +57,8 @@ export function SessionCalendar({ today, initialMonth, exams, onExam, header }: 
   }, [exams])
   const countdown = exams.filter(exam => exam.pending || (exam.status === 'chosen' && exam.date >= today))
     .sort((left, right) => left.date.localeCompare(right.date))
+  const isDropTarget = (exam: CalendarExam) => Boolean(dragged?.stepId &&
+    dragged.stepId === exam.stepId && exam.status === 'alternative' && exam.date >= today)
 
   return <div className="session-layout">
     <div className="session-main">
@@ -72,11 +84,30 @@ export function SessionCalendar({ today, initialMonth, exams, onExam, header }: 
                 <time dateTime={date} aria-current={date === today ? 'date' : undefined}>{Number(date.slice(-2))}</time>
                 {byDay.get(date)?.map(exam => <button className="session-exam" data-status={exam.status} key={exam.id}
                   type="button" onClick={() => onExam(exam.id)}
+                  draggable={Boolean(exam.draggable)}
+                  data-drop-target={isDropTarget(exam) || undefined}
+                  onDragStart={event => {
+                    if (!exam.draggable) return
+                    event.dataTransfer.effectAllowed = 'move'
+                    event.dataTransfer.setData('application/x-lezionify-appointment', exam.id)
+                    setDragged(exam)
+                  }}
+                  onDragEnd={() => setDragged(undefined)}
+                  onDragOver={event => {
+                    if (!isDropTarget(exam)) return
+                    event.preventDefault()
+                    event.dataTransfer.dropEffect = 'move'
+                  }}
+                  onDrop={event => {
+                    event.preventDefault()
+                    if (dragged && isDropTarget(exam)) onMove(dragged.id, exam.id)
+                    setDragged(undefined)
+                  }}
                   aria-label={`${exam.course}, ${exam.label}, ${format(date, fullDate)}, ${examStatuses[exam.status]}`}>
                   {exam.status === 'alternative' && <span aria-hidden="true">○ </span>}
                   {exam.status === 'taken' && <span aria-hidden="true">✓ </span>}
                   {exam.color && <i className="session-course-dot" style={{ backgroundColor: exam.color }} aria-hidden="true" />}
-                  {exam.code}
+                  {compactCourseCode(exam.code)}
                 </button>)}
               </>}
             </td>

@@ -37,6 +37,7 @@ interface SidebarProps {
   onOpenCourseChat?: () => void
   onOpenQuickCapture?: () => void
   onOpenSessione?: () => void
+  sessioneOpen?: boolean
   onOpenLogViewer?: () => void
   onOpenUsbRecorder?: () => void
   onOpenRepetitions?: () => void
@@ -75,6 +76,7 @@ export function Sidebar({
   onOpenCourseChat,
   onOpenQuickCapture,
   onOpenSessione,
+  sessioneOpen,
   onOpenLogViewer,
   onOpenUsbRecorder,
   onOpenRepetitions,
@@ -266,7 +268,7 @@ export function Sidebar({
                 </button>
               )}
 
-              {onOpenSessione && <button type="button" className="settings-gear-btn" onClick={onOpenSessione}
+              {onOpenSessione && <button type="button" className="settings-gear-btn session-sidebar-button" onClick={onOpenSessione} aria-pressed={Boolean(sessioneOpen)}
                 title="Sessione (Ctrl+Alt+S)" aria-label="Apri Sessione">▦<span className="sidebar-action-label">Sessione</span></button>}
               {onOpenLogViewer && (
                 <button
@@ -470,7 +472,7 @@ export function Sidebar({
           >
             📊
           </button>
-          {onOpenSessione && <button type="button" className="sidebar-icon-btn" onClick={onOpenSessione}
+          {onOpenSessione && <button type="button" className="sidebar-icon-btn session-sidebar-button" onClick={onOpenSessione} aria-pressed={Boolean(sessioneOpen)}
             title="Sessione (Ctrl+Alt+S)" aria-label="Apri Sessione">▦</button>}
           {onOpenQuickCapture && (
             <button

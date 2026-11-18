@@ -511,6 +511,7 @@ export default function App() {
         onOpenCourseChat={() => { setCourseChatLoaded(true); setCourseChatOpen(true) }}
         onOpenQuickCapture={() => setShowMemoPage(true)}
         onOpenSessione={window.archive?.sessione ? () => sessione.show() : undefined}
+        sessioneOpen={sessione.open && !sessione.externalCourse}
         onOpenLogViewer={() => setShowLogModal(true)}
         onOpenUsbRecorder={() => setShowUsbModal(true)}
         onOpenRepetitions={() => setShowRepetitions(true)}
@@ -776,7 +777,8 @@ export default function App() {
         />}
       </Suspense>
       {sessione.open && <SessionDialog title={sessione.externalCourse ? `Appelli · ${sessione.externalCourse}` : 'Sessione'}
-        onClose={sessione.close} workspace={!sessione.externalCourse}>
+        onClose={sessione.close} workspace={!sessione.externalCourse}
+        alignSidebar={!sessione.externalCourse && !selectedLecture && !quickCapture.isOpen && !courseChatOpen}>
         <ErrorBoundary fallbackTitle="Errore in Sessione">
           <Suspense fallback={<LazyFallback />}>
             {sessione.archive ? sessione.externalCourse
@@ -786,7 +788,8 @@ export default function App() {
                   today={sessione.today} busy={sessione.busy} apply={sessione.apply}
                   onOpenWorkspace={() => sessione.show()} onDone={sessione.close} />
               </>
-              : <SessionWorkspace archive={sessione.archive} settings={settings} today={sessione.today}
+              : <SessionWorkspace key={sessione.reloadKey} archive={sessione.archive} settings={settings} today={sessione.today}
+                  availableCourses={existingCourses}
                   busy={sessione.busy} error={sessione.error} onApply={sessione.apply} />
               : sessione.error
                 ? <><p role="alert">{sessione.error}</p><button type="button" onClick={() => void sessione.refresh()}>Riprova</button></>

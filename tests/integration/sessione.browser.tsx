@@ -62,8 +62,9 @@ function topDialog() {
   return [...document.querySelectorAll<HTMLDialogElement>('dialog[open]')].at(-1) ?? document.body
 }
 
-async function click(text: string) {
-  const button = [...topDialog().querySelectorAll<HTMLElement>('button, summary')].find(item => item.textContent?.trim() === text)
+async function click(text: string, last = false) {
+  const matches = [...topDialog().querySelectorAll<HTMLElement>('button, summary')].filter(item => item.textContent?.trim() === text)
+  const button = last ? matches.at(-1) : matches[0]
   assert(button, `Comando assente: ${text}; schermata: ${topDialog().textContent?.slice(0, 240)}`)
   await act(async () => {
     pending = undefined
@@ -94,14 +95,26 @@ async function run() {
   await click('RL')
   await click('Importa 2027-01-20 da Dashboard')
   await click('Aggiungi percorso a parziali')
-  await click('Aggiungi data')
+  await click('Aggiungi data', true)
   await field('.session-appointment-row input[type="date"]', '2027-01-29')
+  await click('Aggiungi data', true)
+  await field('.session-appointment-row input[type="date"]', '2027-02-05')
   await click('Salva appelli')
   const alternatives = topDialog().querySelectorAll<HTMLButtonElement>('.session-exam[data-status="alternative"]')
-  assert(alternatives.length === 2, 'Le due date non sono nel calendario')
+  assert(alternatives.length === 3, 'Le tre date non sono nel calendario')
   await act(async () => alternatives[1].click())
   await click('Azioni')
   await click('Scegli appello')
+  const transfer = new DataTransfer()
+  const chosen = document.querySelector<HTMLButtonElement>('.session-exam[data-status="chosen"]')
+  assert(chosen?.draggable, 'L’appello modificabile non offre il trascinamento')
+  await act(async () => chosen.dispatchEvent(new DragEvent('dragstart', { dataTransfer: transfer, bubbles: true })))
+  const destinations = document.querySelectorAll<HTMLButtonElement>('[data-drop-target]')
+  assert(destinations.length === 1, `Trascinamento: ${chosen.getAttribute('aria-label')} → ${Array.from(destinations, item => item.getAttribute('aria-label')).join(' | ')}`)
+  await act(async () => {
+    destinations[0].dispatchEvent(new DragEvent('drop', { dataTransfer: transfer, bubbles: true, cancelable: true }))
+    await pending
+  })
   await click('Conferma piano')
   await click('Conferma e aggiorna')
   await click('Piano')
@@ -117,7 +130,7 @@ async function run() {
   assert(topDialog().querySelectorAll('.session-note tbody tr').length === 1, 'Countdown non univoco')
   const actual = await ipcRenderer.invoke('test:sessione', 'restart') as SessionArchive
   assert(actual.sessions[0].draft.plans.length === 2, 'Copia non persistita')
-  assert(resolveExamTargets(actual, settings)[0]?.date === '2027-01-29', 'Data confermata incoerente')
+  assert(resolveExamTargets(actual, settings)[0]?.date === '2027-02-05', 'Data confermata incoerente')
   assert(actual.sessions[0].draft.courses[0].paths.length === 2, 'Alternativa importata persa')
   await act(async () => root.render(<ShortcutFixture />))
   const shortcut = (repeat = false) => new KeyboardEvent('keydown', { key: 's', code: 'KeyS',

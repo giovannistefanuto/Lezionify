@@ -175,7 +175,7 @@ export function CourseManagementModal({
       setFormError('La data di inizio semestre deve precedere la data di fine.')
       return
     }
-    if (!managedExam && !formExamDate) {
+    if (!managedExam && !onOpenSessione && !formExamDate) {
       setFormError('La data prevista dell’esame è obbligatoria.')
       return
     }
@@ -615,12 +615,12 @@ export function CourseManagementModal({
                 {managedExam && editingCourseCode && onOpenSessione
                   ? <button type="button" onClick={() => onOpenSessione(editingCourseCode)}>Modifica appelli in Sessione</button>
                   : <label>
-                  <strong>Data Appello Esame *</strong>
+                  <strong>{onOpenSessione ? 'Data appello precedente' : 'Data Appello Esame *'}</strong>
                   <input
                     type="date"
                     value={formExamDate}
                     onChange={(e) => setFormExamDate(e.target.value)}
-                    required
+                    required={!onOpenSessione}
                     style={{ width: '100%', marginTop: '4px' }}
                   />
                 </label>}

@@ -6316,3 +6316,14 @@ Non modificare manualmente la sezione `Registro`: aggiungi le nuove decisioni es
 - **Impatto:** Anteprima con confronto date e giorni, applicazione a bozza o nuovo piano e blocco dei risultati obsoleti. Verifica con enumerazione indipendente.
 - **Follow-up:** Provare il worker nella build di produzione e integrare lo smoke nel gate.
 - **File coinvolti:** shared/sessionSpacing.ts, src/components/sessione, tests/unit/sessionSpacing.test.ts, tests/integration/sessione.browser.tsx
+
+## D-0577 — Collaudo integrato della versione locale
+
+- **Data:** 2026-11-18
+- **Stato:** accettata
+- **Area:** sessione
+- **Decisione:** Integrare nel gate il percorso Sessione in Electron, con profilo sintetico, preload reale, riavvio e verifica di Full Focus. Rifinire il calendario dopo ispezione in tema chiaro e scuro.
+- **Motivazione:** Verificare che salvataggi, notifiche e consultazione del calendario funzionino dai normali ingressi dell app.
+- **Impatto:** Trascinamento fra appelli ufficiali della stessa prova, legenda discreta, post-it leggibile ai diversi zoom e regressione a orologio controllato. Nessun installer o invio di dati.
+- **Follow-up:** Google Calendar rimane separato. Il collaudo tecnico usa dati sintetici; resta la prova d uso con un profilo personale.
+- **File coinvolti:** tools/run_sessione_smoke.cjs, tools/run_sessione_compiled.cjs, tests/integration, src/components/sessione, docs/product/sessione-verifica-tecnica.md, STRUTTURA_PROGETTO.md, package.json, .github/workflows/ci.yml

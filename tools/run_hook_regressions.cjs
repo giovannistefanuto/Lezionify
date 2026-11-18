@@ -3,7 +3,8 @@ const { mkdtempSync, writeFileSync, readFileSync, rmSync, mkdirSync, cpSync } = 
 const { tmpdir } = require('node:os')
 const { join } = require('node:path')
 const { spawnSync } = require('node:child_process')
-const { buildSync } = require('esbuild')
+const { build, buildSync } = require('esbuild')
+const sessioneTestWorker = require('./sessione_test_worker.cjs')
 const directory = mkdtempSync(join(tmpdir(), 'lezionify-hooks-'))
 const screenshotDirectory = process.env.LEZIONIFY_VIDEO_SCREENSHOT_DIR || null
 const hookTimeoutMs = Math.max(30000, Math.min(300000, Number(process.env.LEZIONIFY_HOOK_TIMEOUT_MS) || 180000))
@@ -27,6 +28,7 @@ const collectionsOnly = process.argv.includes('--collections-only')
 const sidebarMenuOnly = process.argv.includes('--sidebar-menu-only')
 const languageShortcutOnly = process.argv.includes('--language-shortcut-only')
 if (screenshotDirectory) mkdirSync(screenshotDirectory, { recursive: true })
+async function run() {
 try {
   buildSync({ entryPoints: ['./electron/main/studyHistory.ts'], bundle: true, platform: 'node', format: 'cjs', outfile: join(directory, 'study-history.cjs') })
   buildSync({ entryPoints: ['./electron/main/collections/service.ts'], bundle: true, platform: 'node', format: 'cjs', outfile: join(directory, 'collections.cjs') })
@@ -35,7 +37,7 @@ try {
   writeFileSync(join(directory, 'katex.css'), readFileSync('node_modules/katex/dist/katex.min.css'))
   writeFileSync(join(directory, 'pdf.worker.mjs'), readFileSync('node_modules/pdfjs-dist/build/pdf.worker.min.mjs'))
   writeFileSync(join(directory, 'pdf-worker-url.js'), 'export default "./pdf.worker.mjs"')
-  buildSync({
+  await build({
     entryPoints: ['./tests/integration/hookRegression.browser.tsx'],
     bundle: true,
     outfile: join(directory, 'test.js'),
@@ -43,6 +45,7 @@ try {
     jsx: 'automatic',
     external: ['electron'],
     define: { 'process.env.NODE_ENV': '"development"' },
+    plugins: [sessioneTestWorker(directory)],
     alias: { 'pdfjs-dist/build/pdf.worker.min.mjs?url': join(directory, 'pdf-worker-url.js') }
   })
   writeFileSync(
@@ -213,3 +216,5 @@ try {
 } finally {
   rmSync(directory, { recursive: true, force: true })
 }
+}
+void run().catch(error => { console.error(error); process.exitCode = 1 })

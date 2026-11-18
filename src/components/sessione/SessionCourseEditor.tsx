@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { AppSettings } from '../../../shared/archive'
-import { legacyExamDates, type ExamAppointment, type ExamPath, type ExamSessionDraft, type ExamStep } from '../../../shared/sessione'
+import { legacyExamDates, type ConfirmedExamPlan, type ExamAppointment, type ExamPath, type ExamSessionDraft, type ExamStep } from '../../../shared/sessione'
 import { replaceSessionCourse, sessionId } from './editSessionDraft'
 
 export function AppointmentFields({ item, onChange }: { item: ExamAppointment; onChange: (next: ExamAppointment) => void }) {
@@ -19,9 +19,10 @@ interface Props {
   settings: AppSettings
   onSave: (draft: ExamSessionDraft) => Promise<boolean>
   busy: boolean
+  confirmed?: ConfirmedExamPlan
 }
 
-export function SessionCourseEditor({ draft, courseCode, settings, onSave, busy }: Props) {
+export function SessionCourseEditor({ draft, courseCode, settings, onSave, busy, confirmed }: Props) {
   const [course, setCourse] = useState(() => draft.courses.find(row => row.code === courseCode) ?? { code: courseCode, paths: [] })
   const [allowRemoval, setAllowRemoval] = useState(false)
   const updatePath = (updated: ExamPath) => setCourse(previous => ({ ...previous, paths: previous.paths.map(path => path.id === updated.id ? updated : path) }))
@@ -30,6 +31,11 @@ export function SessionCourseEditor({ draft, courseCode, settings, onSave, busy 
   const affected = draft.plans.filter((plan, index) => JSON.stringify(plan.choices) !== JSON.stringify(next.plans[index].choices))
   const sources = legacyExamDates(settings, courseCode)
   const allAppointments = course.paths.flatMap(path => path.steps.flatMap(step => step.appointments))
+  const priorIds = new Set(draft.courses.find(row => row.code === courseCode)?.paths
+    .flatMap(path => path.steps.flatMap(step => step.appointments.map(row => row.id))))
+  const affectedConfirmed = confirmed?.exams.some(exam => exam.course === courseCode &&
+    priorIds.has(exam.id) && !allAppointments.some(appointment => appointment.id === exam.id))
+  const requiresConsent = affected.length > 0 || affectedConfirmed
   const imported = new Set(allAppointments.map(row => row.original?.date))
   const conflict = new Set(sources.map(source => source.date)).size > 1
   const sameDate = course.paths.some(path => path.steps.some(step => {
@@ -101,11 +107,12 @@ export function SessionCourseEditor({ draft, courseCode, settings, onSave, busy 
         <button type="button" onClick={() => addPath('partial')}>Aggiungi percorso a parziali</button>
       </div>
       {sameDate && <p role="alert">Rimuovi le date duplicate per la stessa prova.</p>}
-      {affected.length > 0 && <label>
+      {requiresConsent && <label>
         <input type="checkbox" checked={allowRemoval} onChange={event => setAllowRemoval(event.target.checked)} />
-        Rimuovi i riferimenti nelle bozze dei piani {affected.map(plan => plan.name).join(', ')}. Le date confermate restano valide fino alla prossima conferma.
+        {affected.length > 0 ? `Rimuovi i riferimenti nelle bozze: ${affected.map(plan => plan.name).join(', ')}. ` : ''}
+        {affectedConfirmed ? `Il piano confermato «${confirmed?.name}» conserva queste date fino alla prossima conferma.` : ''}
       </label>}
-      <button className="session-primary" disabled={sameDate || (affected.length > 0 && !allowRemoval)}>Salva appelli</button>
+      <button className="session-primary" disabled={sameDate || Boolean(requiresConsent && !allowRemoval)}>Salva appelli</button>
     </fieldset>
   </form>
 }

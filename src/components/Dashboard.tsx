@@ -358,7 +358,7 @@ export function Dashboard({
             {onOpenCourseManagement && (
               <button
                 className="secondary-button small"
-                onClick={() => onOpenSessione ? onOpenSessione() : onOpenCourseManagement()}
+                onClick={() => managed.length && onOpenSessione ? onOpenSessione() : onOpenCourseManagement()}
                 title="Gestisci date appelli e CFU"
               >
                 ⚙️ Date Appelli

@@ -77,9 +77,10 @@ interface WorkspaceProps {
   busy: boolean
   error: string
   onApply: (action: SessionAction) => Promise<boolean>
+  availableCourses?: readonly string[]
 }
 
-export function SessionWorkspace({ archive, settings, today, busy, error, onApply }: WorkspaceProps) {
+export function SessionWorkspace({ archive, settings, today, busy, error, onApply, availableCourses = [] }: WorkspaceProps) {
   const [selectedSessionId, setSelectedSessionId] = useState('')
   const [selectedPlanId, setSelectedPlanId] = useState('')
   const [panel, setPanel] = useState<Panel>()
@@ -90,7 +91,8 @@ export function SessionWorkspace({ archive, settings, today, busy, error, onAppl
   const plan = draft?.plans.find(row => row.id === (selectedPlanId || session?.confirmed?.planId)) ?? draft?.plans[0]
   const archivedCodes = new Set(settings.archivedCourseCodes ?? [])
   const courseOptions = [...new Set([...Object.keys(settings.courses ?? {}), ...Object.keys(settings.courseConfigs ?? {}),
-    ...(draft?.courses.map(course => course.code) ?? [])])].sort((a, b) => a.localeCompare(b, 'it'))
+    ...availableCourses, ...(draft?.courses.map(course => course.code) ?? [])])]
+    .filter(code => code !== 'Senza corso').sort((a, b) => a.localeCompare(b, 'it'))
   const courseName = (code: string) => settings.courses?.[code]?.name || code
   const closePanel = () => setPanel(undefined)
   const save = async (next: ExamSessionDraft, close = true) => {
@@ -116,6 +118,7 @@ export function SessionWorkspace({ archive, settings, today, busy, error, onAppl
   </>
 
   const selected = new Set(plan.choices.flatMap(choice => choice.appointments))
+  const lockedDates = new Set(plan.choices.flatMap(choice => choice.locks))
   const passed = passedExamSteps(session)
   const choices = collectPlanExams(draft, plan, passed)
   const problems = planProblems(draft, plan, passed, session?.attempts, today)
@@ -131,9 +134,12 @@ export function SessionWorkspace({ archive, settings, today, busy, error, onAppl
     const taken = attempt?.status === 'passed' || attempt?.status === 'failed' || attempt?.status === 'pending'
     return {
       id: appointment.id, date: appointment.date, course: courseName(course.code), code: course.code,
+      stepId: step.id,
+      draggable: !busy && selected.has(appointment.id) && !lockedDates.has(appointment.id) &&
+        appointment.date >= today && !attempt?.status && !step.completed && !passed.has(step.id),
       color: settings.courses?.[course.code]?.color,
       label: step.label + (appointment.number ? ` · Appello ${appointment.number}` : ''),
-      status: taken ? 'taken' : selected.has(appointment.id) ? 'chosen' : 'alternative',
+      status: taken ? 'taken' : selected.has(appointment.id) && attempt?.status !== 'skipped' ? 'chosen' : 'alternative',
       pending: selected.has(appointment.id) && (attempt?.status === 'pending' || Boolean(attempt && !attempt.status && appointment.date < today))
     }
   })
@@ -171,7 +177,7 @@ export function SessionWorkspace({ archive, settings, today, busy, error, onAppl
   } else if (panel?.kind === 'course') {
     title = 'Date e prove'
     dialog = <SessionCourseEditor key={panel.code} draft={draft} settings={settings} courseCode={panel.code}
-      onSave={next => save(next)} busy={busy} />
+      onSave={next => save(next)} busy={busy} confirmed={session?.confirmed} />
   } else if (panel?.kind === 'included') {
     title = 'Corsi nel piano'
     dialog = <div className="session-form">
@@ -189,11 +195,13 @@ export function SessionWorkspace({ archive, settings, today, busy, error, onAppl
     title = 'Conferma piano'
     const additions = choices.filter(exam => !oldExams.some(old => old.id === exam.id && old.date === exam.date && old.time === exam.time))
     const removals = oldExams.filter(exam => !choices.some(next => next.id === exam.id && next.date === exam.date && next.time === exam.time))
+    const postponed = draft.courses.filter(course => !plan.choices.find(choice => choice.course === course.code)?.pathId)
     dialog = <div className="session-form">
       <p>Dashboard e promemoria useranno le date del piano {plan.name}.</p>
       {!choices.length && <p>Il piano non contiene prove da sostenere.</p>}
-      {removals.map(row => <p key={row.id}>Rimuovi — {courseName(row.course)} · {row.date}</p>)}
-      {additions.map(row => <p key={row.id}>Aggiungi — {courseName(row.course)} · {row.label} · {row.date}</p>)}
+      {postponed.length > 0 && <p>Corsi rimandati: {postponed.map(course => courseName(course.code)).join(', ')}.</p>}
+      {removals.map(row => <p key={`remove-${row.id}`}>Rimuovi {courseName(row.course)} · {row.date}</p>)}
+      {additions.map(row => <p key={`add-${row.id}`}>Aggiungi {courseName(row.course)} · {row.label} · {row.date}</p>)}
       {problems.length > 0 && <ul>{problems.map(problem => <li key={problem}>{problem}</li>)}</ul>}
       <button type="button" className="session-primary" disabled={busy || problems.length > 0} onClick={() => {
         void onApply({ type: 'confirm', sessionId: draft.id, planId: plan.id }).then(success => { if (success) closePanel() })
@@ -283,6 +291,12 @@ export function SessionWorkspace({ archive, settings, today, busy, error, onAppl
   return <>
     <SessionCalendar key={draft.id} today={today} initialMonth={initialMonth} exams={exams}
       onExam={id => setPanel({ kind: 'exam', id })}
+      onMove={(from, to) => {
+        const previous = exams.find(exam => exam.id === from)
+        const next = exams.find(exam => exam.id === to)
+        if (previous?.draggable && next && next.stepId === previous.stepId && next.status === 'alternative' && next.date >= today)
+          void updatePlan(chooseAppointment(draft, plan, to))
+      }}
       header={<>
         <h3 className="session-name">{draft.name}</h3>
         <div className="session-actions">

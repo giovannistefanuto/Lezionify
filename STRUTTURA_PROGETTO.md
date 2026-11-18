@@ -2,6 +2,16 @@
 
 ## Stato attuale
 
+Sessione locale integra calendario da muro, bozze e piani confermati,
+esiti e proposta deterministica di spaziatura. `shared/sessione.ts`
+definisce contratti e proiezione degli appelli, `electron/main/sessioneStore.ts`
+possiede mutazioni e archivio `library/sessione.json`, e la vista vive in
+`src/components/sessione/`. Dashboard e promemoria leggono la stessa
+proiezione. La proposta usa un worker locale e il tracciamento dello studio
+registra l'esclusione dedicata. I collaudi `npm run test:sessione` fanno
+parte del gate dopo la build. Per comportamento e verifiche, vedi
+[Sessione locale](docs/product/sessione-verifica-tecnica.md).
+
 Setup locale 0.2.5 preparato per l'integrazione Android: gate completo con
 941 test unitari, 49 Python, 41 Node, updater, Electron, raccolte e PDF; build
 unica confrontata con 382 file e nove componenti NSIS. SHA256 setup

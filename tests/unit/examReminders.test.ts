@@ -28,6 +28,22 @@ describe('exam reminder calendar policy', () => {
     confirmed.exams = exams
     expect(planExamReminders(settings(), excluded.state, now('2026-11-17'), session).due).toHaveLength(0)
   })
+  it('keeps the original receipt when a date is imported or its course is renamed', () => {
+    const date = '2026-12-20'
+    const first = planExamReminders(settings(), emptyExamReminderState(), now('2026-11-17'))
+    const draft = { id: 'winter', name: 'Invernale', start: '2026-11-01', end: '2027-02-28', courses: [], plans: [], unavailable: [] }
+    const exam = { id: 'appointment', stepId: 'step', course: 'TEST', label: 'Totale', date }
+    const confirmed = { planId: 'main', name: 'Principale', revision: 1, courses: ['TEST'], exams: [exam] }
+    const archive: SessionArchive = { version: 1, revision: 1, commands: [], activeSessionId: 'winter', sessions: [{ draft, confirmed }] }
+    const imported = planExamReminders(settings(), first.state, now('2026-11-17'), archive)
+    expect(imported.due).toEqual([])
+    expect(imported.state.receipts[0].appointmentId).toBe('appointment')
+    exam.course = 'UPDATED'
+    confirmed.courses = ['UPDATED']
+    const renamed = planExamReminders(settings([course({ code: 'UPDATED' })]), imported.state, now('2026-11-18'), archive)
+    expect(renamed.due).toEqual([])
+    expect(renamed.state.receipts[0].courseCode).toBe('UPDATED')
+  })
   it('opts in per course and does not activate legacy courses', () => {
     expect(planExamReminders(settings([course({ examReminder: undefined })]), emptyExamReminderState(), now('2026-11-17')).due).toEqual([])
     const result = planExamReminders(settings(), emptyExamReminderState(), now('2026-11-17'))
