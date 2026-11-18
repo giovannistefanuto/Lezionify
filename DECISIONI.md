@@ -6327,3 +6327,14 @@ Non modificare manualmente la sezione `Registro`: aggiungi le nuove decisioni es
 - **Impatto:** Trascinamento fra appelli ufficiali della stessa prova, legenda discreta, post-it leggibile ai diversi zoom e regressione a orologio controllato. Nessun installer o invio di dati.
 - **Follow-up:** Google Calendar rimane separato. Il collaudo tecnico usa dati sintetici; resta la prova d uso con un profilo personale.
 - **File coinvolti:** tools/run_sessione_smoke.cjs, tools/run_sessione_compiled.cjs, tests/integration, src/components/sessione, docs/product/sessione-verifica-tecnica.md, STRUTTURA_PROGETTO.md, package.json, .github/workflows/ci.yml
+
+## D-0578 — Preparazione Windows 0.3.0 con Sessione
+
+- **Data:** 2026-11-18
+- **Stato:** accettata
+- **Area:** release
+- **Decisione:** Distribuire Sessione e il collegamento facoltativo Android come Lezionify 0.3.0 con il profilo Windows completo.
+- **Motivazione:** La 0.2.4 e l ultima versione pubblica e la 0.2.5 e stata installata localmente. La nuova funzione richiede una versione crescente e un gate completo.
+- **Impatto:** Versione, lockfile e note allineati. Archivio personali e artefatti di prova esclusi. Copia verificata del setup precedente prima del packaging.
+- **Follow-up:** Verificare payload, firma e manifesto, pubblicare commit e tre asset immutabili, verificare il feed pubblico. Google Calendar rimane futuro.
+- **File coinvolti:** package.json, package-lock.json, electron-builder.yml, docs/releases/0.3.0.md, DECISIONI.md
