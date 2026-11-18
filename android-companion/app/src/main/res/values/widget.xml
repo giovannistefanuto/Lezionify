@@ -1,0 +1,54 @@
+<resources>
+    <color name="widget_surface">#F9FBF9</color>
+    <color name="widget_text">#18211F</color>
+    <color name="widget_muted">#556C60</color>
+    <color name="widget_accent">#226649</color>
+    <color name="widget_rule">#DFE9E2</color>
+    <color name="widget_secondary">#E5F0E8</color>
+    <color name="widget_hero">#226649</color>
+    <color name="widget_hero_text">#FFFFFF</color>
+    <color name="widget_hero_muted">#DFF5E6</color>
+
+    <string name="widget_brand">Lezionify</string>
+    <string name="widget_today">Studio di oggi</string>
+    <string name="widget_week">Settimana</string>
+    <string name="widget_month">Mese</string>
+    <string name="widget_courses">Lezioni rimanenti</string>
+    <string name="widget_total">%1$d totali</string>
+    <plurals name="widget_more_courses">
+        <item quantity="one">+%1$d corso nell’app</item>
+        <item quantity="other">+%1$d corsi nell’app</item>
+    </plurals>
+    <string name="widget_no_data">Statistiche non disponibili</string>
+    <string name="widget_open">Apri Lezionify</string>
+    <string name="widget_refresh">Aggiorna statistiche</string>
+    <string name="widget_snapshot_date">Dati del %1$s</string>
+    <plurals name="widget_course_description">
+        <item quantity="one">%1$s, %2$d lezione rimanente</item>
+        <item quantity="other">%1$s, %2$d lezioni rimanenti</item>
+    </plurals>
+
+    <style name="WidgetMetricLabel">
+        <item name="android:textColor">@color/widget_muted</item>
+        <item name="android:includeFontPadding">false</item>
+        <item name="android:maxLines">1</item>
+        <item name="android:ellipsize">end</item>
+        <item name="android:gravity">center_vertical</item>
+        <item name="android:autoSizeTextType">uniform</item>
+        <item name="android:autoSizeMinTextSize">9sp</item>
+        <item name="android:autoSizeMaxTextSize">12sp</item>
+        <item name="android:autoSizeStepGranularity">1sp</item>
+    </style>
+    <style name="WidgetMetricValue">
+        <item name="android:textColor">@color/widget_text</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:includeFontPadding">false</item>
+        <item name="android:maxLines">1</item>
+        <item name="android:ellipsize">end</item>
+        <item name="android:gravity">center_vertical</item>
+        <item name="android:autoSizeTextType">uniform</item>
+        <item name="android:autoSizeMinTextSize">10sp</item>
+        <item name="android:autoSizeMaxTextSize">15sp</item>
+        <item name="android:autoSizeStepGranularity">1sp</item>
+    </style>
+</resources>

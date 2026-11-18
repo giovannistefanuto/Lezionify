@@ -16,9 +16,11 @@ import java.security.KeyStore;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.time.temporal.TemporalAdjusters;
 import java.time.DayOfWeek;
 import java.util.HashSet;
+import java.util.Map;
 import javax.crypto.Cipher;
 import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
@@ -94,21 +96,76 @@ final class StatisticsStore {
         for (int i=0;i<courses.length();i++) { JSONObject course=courses.getJSONObject(i); String code=course.getString("code"); if (code.isEmpty() || code.length()>200 || !codes.add(code) || course.getInt("remaining")<0 || course.getInt("remaining")>100000) throw new Exception(); }
         return data;
     }
-    static String summary(Context c) {
-        String raw = prefs(c).getString("snapshot", "");
-        if (raw.isEmpty()) return "Apri Lezionify e abbina il PC.";
-        try {
-            JSONObject data = validate(raw, prefs(c).getString("stream", ""));
-            ZoneId zone=ZoneId.of(data.getString("timeZone")); Instant generated=Instant.parse(data.getString("generatedAt"));
-            LocalDate date=generated.atZone(zone).toLocalDate(), monday=date.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
-            long today=0, week=0, month=0; JSONArray days=data.getJSONArray("days");
-            for(int i=0;i<days.length();i++) { JSONObject item=days.getJSONObject(i); LocalDate d=LocalDate.parse(item.getString("date")); long s=item.getLong("seconds"); if(d.equals(date)) today+=s; if(!d.isBefore(monday)&&!d.isAfter(date)) week+=s; if(d.getYear()==date.getYear()&&d.getMonth()==date.getMonth()&&!d.isAfter(date)) month+=s; }
-            StringBuilder out=new StringBuilder("Al ").append(date).append("\nOggi  ").append(duration(today)).append("   ·   Settimana  ").append(duration(week)).append("\nMese  ").append(duration(month));
-            JSONArray courses=data.getJSONArray("courses");
-            for(int i=0;i<courses.length();i++) { JSONObject course=courses.getJSONObject(i); out.append("\n").append(course.getString("code")).append("  ·  ").append(course.getInt("remaining")).append(" da completare"); }
-            out.append("\nDati generati: ").append(generated.atZone(zone).toLocalDateTime().toString().replace('T', ' '));
-            return out.toString();
-        } catch(Exception e) { return "Dati non disponibili. Apri Lezionify."; }
+    static final class Snapshot {
+        final ZonedDateTime generated;
+        final long today, week, month;
+        final JSONArray courses;
+        final int remaining;
+
+        Snapshot(ZonedDateTime generated, long today, long week, long month, JSONArray courses) {
+            this.generated = generated;
+            this.today = today;
+            this.week = week;
+            this.month = month;
+            this.courses = courses;
+            int total = 0;
+            for (int i = 0; i < courses.length(); i++) {
+                total += courses.optJSONObject(i).optInt("remaining");
+            }
+            this.remaining = total;
+        }
     }
-    private static String duration(long seconds) { return (seconds / 3600) + " h " + ((seconds % 3600) / 60) + " min"; }
+
+    static Snapshot readSnapshot(Context c) {
+        return readSnapshot(prefs(c).getAll());
+    }
+
+    private static Snapshot readSnapshot(Map<String, ?> cached) {
+        try {
+            String raw = (String) cached.get("snapshot");
+            if (raw == null || raw.isEmpty()) return null;
+            JSONObject data = validate(raw, (String) cached.get("stream"));
+            ZonedDateTime generated = Instant.parse(data.getString("generatedAt"))
+                .atZone(ZoneId.of(data.getString("timeZone")));
+            LocalDate date = generated.toLocalDate();
+            LocalDate monday = date.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+            long today = 0, week = 0, month = 0;
+            JSONArray days = data.getJSONArray("days");
+            for (int i = 0; i < days.length(); i++) {
+                JSONObject day = days.getJSONObject(i);
+                LocalDate dayDate = LocalDate.parse(day.getString("date"));
+                if (dayDate.isAfter(date)) continue;
+                long seconds = day.getLong("seconds");
+                if (dayDate.equals(date)) today += seconds;
+                if (!dayDate.isBefore(monday)) week += seconds;
+                if (dayDate.getYear() == date.getYear() && dayDate.getMonth() == date.getMonth()) month += seconds;
+            }
+            return new Snapshot(generated, today, week, month, data.getJSONArray("courses"));
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    static String summary(Context c) {
+        Map<String, ?> cached = prefs(c).getAll();
+        Object raw = cached.get("snapshot");
+        if (raw == null || "".equals(raw)) return "Apri Lezionify e abbina il PC.";
+        Snapshot snapshot = readSnapshot(cached);
+        if (snapshot == null) return "Dati non disponibili. Apri Lezionify.";
+        StringBuilder out = new StringBuilder("Al ").append(snapshot.generated.toLocalDate())
+            .append("\nOggi  ").append(duration(snapshot.today))
+            .append("   ·   Settimana  ").append(duration(snapshot.week))
+            .append("\nMese  ").append(duration(snapshot.month));
+        for (int i = 0; i < snapshot.courses.length(); i++) {
+            JSONObject course = snapshot.courses.optJSONObject(i);
+            out.append("\n").append(course.optString("code"))
+                .append("  ·  ").append(course.optInt("remaining")).append(" da completare");
+        }
+        out.append("\nDati generati: ").append(snapshot.generated.toLocalDateTime().toString().replace('T', ' '));
+        return out.toString();
+    }
+
+    static String duration(long seconds) {
+        return (seconds / 3600) + " h " + ((seconds % 3600) / 60) + " min";
+    }
 }

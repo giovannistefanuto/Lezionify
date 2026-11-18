@@ -3,6 +3,7 @@
 Lista ripulita e aggiornata il 13 novembre 2026: restano **14 attività aperte operative**
 e **7 sospese**, con numeri delle voci e posizioni originali invariati.
 La prima attività operativa resta la **voce 7**, posizione 22.
+Il 17 novembre viene aggiunta la voce 157, completata il 18 novembre.
 
 Le attività concluse, i precedenti ordini, le due voci ritirate (114 e 115)
 e tutti gli aggiornamenti storici sono conservati nel
@@ -47,6 +48,7 @@ soltanto dopo implementazione e verifiche pertinenti.
 | 100. [x] | Traduttore incluso e Memo esclusi dal tempo di studio | 154 | Timer, stima e storico verificati; traduzione distinta dalla lettura. |
 | 101. [x] | Escludere configurazione timer, sveglie e musica dallo studio | 155 | Pannelli, sovrapposizioni, ripresa e conservazione della pausa verificati. |
 | 102. [x] | Promemoria esame periodico per corso | 156 | Frequenza e registro locale implementati; limiti delle notifiche Windows dichiarati. |
+| 103. [x] | Migliorare l'estetica del widget Android | 157 | Marea approvata e installata sul telefono. Totale in Home e sincronizzazione verificati. |
 
 **Aggiunte del 13 novembre dopo la pulizia:** sette richieste, voci 145–151,
 posizioni 91–97, nell’ordine ricevuto. La prima voce operativa resta la 7.
@@ -510,6 +512,22 @@ corso alla riapertura, senza installare servizi di sistema aggiuntivi.
 Prove e criteri delle cinque voci:
 [resoconto del 17 novembre](../quality/richieste-studio-2026-11-17.md).
 Questa richiesta autonoma comprende la release; le altre voci restano fuori ambito.
+
+### 157. Migliorare l'estetica del widget Android
+
+- [x] Rivedere l'aspetto del widget delle statistiche Android: gerarchia delle
+  informazioni, tipografia, spaziatura, colori e leggibilità sulla schermata Home.
+- [x] Verificare l'adattamento alle dimensioni disponibili e alle dimensioni del
+  testo, mantenendo comprensibili ultimo aggiornamento e azione di aggiornamento.
+- [x] Collaudare il risultato sul telefono, preservando le statistiche, la cache
+  locale e la sincronizzazione cifrata esistenti.
+
+Richiesta aggiunta il 17 novembre 2026 e ripresa il 18 novembre. Sulla Home
+dell'emulatore Android sono stati verificati il formato compatto e quello esteso.
+Tra le proposte è stata approvata Marea, con la palette di Lezionify, il totale
+delle lezioni rimanenti e il dettaglio per corso. La versione Android 0.1.1 è
+stata installata sul telefono, con il totale visibile e la sincronizzazione
+riuscita dall'abbinamento esistente. Decisione D-0569.
 
 ## Descrizioni delle attività sospese
 

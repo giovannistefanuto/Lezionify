@@ -6349,3 +6349,36 @@ Non modificare manualmente la sezione `Registro`: aggiungi le nuove decisioni es
 - **Impatto:** 954 unitari, 49 Python, 41 Node e scenari Electron completi superati. Verificati 383 file, nove componenti NSIS e tre backup. Manifesto pubblico identico al locale, payload senza dati privati.
 - **Follow-up:** Il setup e NotSigned e non e stato eseguito su un profilo personale. Upgrade Windows reale, UAC, SmartScreen e Google Calendar restano fuori dal collaudo.
 - **File coinvolti:** docs/publishing/aggiornamenti-windows.md, STRUTTURA_PROGETTO.md, docs/releases/0.3.0.md, DECISIONI.md
+
+## D-0567 — Sospensione del lavoro Android e miglioramento estetico in coda
+
+- **Data:** 2026-11-17
+- **Stato:** accettata
+- **Area:** pianificazione
+- **Decisione:** Interrompere il lavoro attivo dopo il collaudo e registrare in coda LISTA_ORDINE la voce 157, posizione 103, per migliorare successivamente l estetica del widget Android.
+- **Motivazione:** Richiesta esplicita dell utente di staccare subito e conservare il prossimo intervento senza avviarlo ora.
+- **Impatto:** La documentazione del lavoro completato e nelle decisioni D-0559 a D-0566, nella guida delle statistiche e nei commit 738b776, f86c017 e 62af280. Windows 0.2.5 installato, app Android e widget collegati; utente conferma dati reali. Setup locale verificato, sorgenti gia inviati, nessuna Release binaria pubblicata. Nessun processo installer o compressione risulta attivo.
+- **Follow-up:** Non avviare altre modifiche. Quando autorizzata, definire e collaudare l estetica della voce 157 mantenendo sincronizzazione, cache e dati. Con LISTA_ORDINE rispettare la posizione 103 e le voci aperte precedenti.
+- **File coinvolti:** docs/product/idee-future-2026-10-13.md, docs/product/statistiche-android.md, STRUTTURA_PROGETTO.md, DECISIONI.md
+
+## D-0568 — Ridisegno del widget delle statistiche Android
+
+- **Data:** 2026-11-18
+- **Stato:** accettata
+- **Area:** android
+- **Decisione:** Adottare una scheda verde scuro con il tempo di oggi in risalto, settimana e mese a lato, e le lezioni rimanenti per due corsi nel formato esteso. Mostrare la data dello snapshot, offrire un pulsante di aggiornamento e aprire l app toccando la scheda.
+- **Motivazione:** Rendere le statistiche leggibili a colpo d occhio sulla Home e adattare il dettaglio allo spazio disponibile.
+- **Impatto:** Layout Android nativo con due formati, testo ridimensionabile e azioni accessibili. App e widget condividono il calcolo dalla stessa cache. Abbinamento, formato dei dati e trasporto cifrato invariati. Nessuna nuova dipendenza.
+- **Follow-up:** APK compilato e verificato sulla Home dell emulatore con snapshot sintetico, testo al 150 per cento, resize e refresh fallito. Resta la verifica sul telefono fisico con il collegamento reale.
+- **File coinvolti:** android-companion/app/src/main/java/it/lezionify/mobile/StatisticsWidget.java, android-companion/app/src/main/java/it/lezionify/mobile/StatisticsStore.java, android-companion/app/src/main/res/, docs/product/statistiche-android.md, docs/product/idee-future-2026-10-13.md
+
+## D-0569 — Marea con palette Lezionify e lezioni rimanenti
+
+- **Data:** 2026-11-18
+- **Stato:** accettata
+- **Area:** android
+- **Decisione:** Adottare il design Marea approvato per Android 0.1.1. Usare i colori di Lezionify in tema chiaro e scuro seguendo Android, evidenziare lo studio di oggi e mostrare il totale delle lezioni in entrambi i formati. Nel formato esteso mostrare fino a tre corsi e indicare quelli aggiuntivi.
+- **Motivazione:** L utente ha scelto la disposizione Marea e ha richiesto colori coerenti con Lezionify e il conteggio delle lezioni mancanti.
+- **Impatto:** Widget aggiornato sul posto sul telefono. Il totale somma tutti i corsi dello snapshot e l app continua a mostrare il riepilogo completo. Versione APK allineata in Gradle e nella build locale.
+- **Follow-up:** Verificati firma APK, formati e temi in emulatore con dati sintetici, cache e sincronizzazione sul telefono e totale visibile sulla Home.
+- **File coinvolti:** android-companion/app/src/main/res/, android-companion/app/src/main/java/it/lezionify/mobile/, android-companion/app/build.gradle, android-companion/build-local.ps1, docs/product/statistiche-android.md, docs/product/idee-future-2026-10-13.md

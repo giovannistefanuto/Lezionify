@@ -13,7 +13,7 @@ New-Item -ItemType Directory -Force -Path $build, "$build/gen", "$build/classes"
 if ($LASTEXITCODE) { exit $LASTEXITCODE }
 $manifest = [IO.File]::ReadAllText("$root/app/src/main/AndroidManifest.xml").Replace('<manifest ', '<manifest package="it.lezionify.mobile" ')
 [IO.File]::WriteAllText("$build/AndroidManifest.xml", $manifest, [Text.UTF8Encoding]::new($false))
-& "$tools/aapt2.exe" link -I $platform --manifest "$build/AndroidManifest.xml" --java "$build/gen" --min-sdk-version 26 --target-sdk-version 35 --version-code 1 --version-name '0.1.0' -o "$build/unsigned.apk" "$build/resources.zip"
+& "$tools/aapt2.exe" link -I $platform --manifest "$build/AndroidManifest.xml" --java "$build/gen" --min-sdk-version 26 --target-sdk-version 35 --version-code 2 --version-name '0.1.1' -o "$build/unsigned.apk" "$build/resources.zip"
 if ($LASTEXITCODE) { exit $LASTEXITCODE }
 $sources = @(Get-ChildItem "$root/app/src/main/java", "$root/crypto", "$build/gen" -Filter '*.java' -Recurse | ForEach-Object { $_.FullName })
 & "$JavaHome/bin/javac.exe" -source 8 -target 8 -classpath $platform -d "$build/classes" $sources

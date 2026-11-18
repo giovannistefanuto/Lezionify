@@ -6,6 +6,17 @@ importate non completate per corso. Le lezioni in corso sono comprese nel
 numero residuo. Quando non puo' collegarsi resta visibile l'ultima copia,
 con la data di generazione: Android puo' ritardare gli aggiornamenti periodici.
 
+Il widget Marea segue il tema chiaro o scuro di Android. Il formato compatto
+mostra lo studio di oggi, settimana e mese, più il totale delle lezioni
+rimanenti. Allungando la scheda sulla Home compaiono i conteggi dei primi tre
+corsi e il numero dei corsi aggiuntivi. Tocca la scheda per vedere tutti i corsi
+nell'app oppure usa il pulsante in alto a destra per aggiornare dalla Home.
+
+L'APK Android 0.1.1 è stato installato sul telefono il 18 novembre con un
+aggiornamento sul posto. La Home mostra il totale e l'app conferma la
+sincronizzazione riuscita con l'abbinamento esistente. I due temi e il
+dettaglio esteso sono stati verificati anche con dati sintetici in emulatore.
+
 ## Preparazione GitHub
 
 1. Usa un repository GitHub pubblico dedicato alle statistiche. Per il primo

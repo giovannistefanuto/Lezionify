@@ -1,0 +1,11 @@
+<resources>
+    <color name="widget_surface">#152722</color>
+    <color name="widget_text">#E6F1EC</color>
+    <color name="widget_muted">#B4CBBF</color>
+    <color name="widget_accent">#6EE7B7</color>
+    <color name="widget_rule">#355047</color>
+    <color name="widget_secondary">#234136</color>
+    <color name="widget_hero">#1D4A38</color>
+    <color name="widget_hero_text">#EFFFF6</color>
+    <color name="widget_hero_muted">#C6E7D5</color>
+</resources>

@@ -15,6 +15,13 @@ Distribuita il 18 novembre come Lezionify 0.3.0. Il feed pubblico coincide con
 la build collaudata e comprende installer, blockmap e manifesto. Hash e limiti
 sono nella [procedura aggiornamenti Windows](docs/publishing/aggiornamenti-windows.md).
 
+Il widget Android 0.1.1 adotta il design Marea (D-0569). Le risorse in
+`android-companion/app/src/main/res/` definiscono la palette chiara e scura
+e il layout ridimensionabile. `StatisticsStore` calcola tempi e lezioni
+rimanenti dalla cache condivisa. `StatisticsWidget` mostra il totale nei due
+formati e il dettaglio di fino a tre corsi nel formato esteso. Uso e collaudi
+sono nella [guida Android](docs/product/statistiche-android.md).
+
 Setup locale 0.2.5 preparato per l'integrazione Android: gate completo con
 941 test unitari, 49 Python, 41 Node, updater, Electron, raccolte e PDF; build
 unica confrontata con 382 file e nove componenti NSIS. SHA256 setup
