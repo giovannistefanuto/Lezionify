@@ -93,7 +93,8 @@ export interface SessionArchive {
 
 export type SessionCommand = { commandId: string; baseRevision: number } & (
   { type: 'save'; draft: ExamSessionDraft } |
-  { type: 'confirm'; sessionId: string; planId: string }
+  { type: 'confirm'; sessionId: string; planId: string } |
+  { type: 'switch-appointment'; sessionId: string; previousId: string; appointmentId: string }
 )
 export type SessionResult = { status: 'saved' | 'conflict'; archive: SessionArchive }
 export interface SessionApi {
@@ -106,6 +107,10 @@ export const emptySessionArchive = (): SessionArchive => ({
 })
 
 type ExamSettings = Pick<AppSettings, 'courses' | 'courseConfigs' | 'archivedCourseCodes'>
+
+export function activeExamSession(archive?: SessionArchive) {
+  return archive?.sessions.find(item => item.draft.id === archive.activeSessionId)
+}
 
 export function legacyExamDates(settings: ExamSettings, code: string): NonNullable<ExamAppointment['original']>[] {
   const candidates = [
@@ -134,7 +139,7 @@ export function collectPlanExams(draft: ExamSessionDraft, plan: ExamPlan): Plann
 
 /** Identify the exact definition that reached the consumer. Archived courses are hidden in active views. */
 export function resolveExamTargets(archive: SessionArchive | undefined, settings: ExamSettings): PlannedExam[] {
-  const confirmation = archive?.sessions.find(item => item.draft.id === archive.activeSessionId)?.confirmed
+  const confirmation = activeExamSession(archive)?.confirmed
   const managed = new Set(confirmation?.courses ?? [])
   const hidden = new Set(settings.archivedCourseCodes ?? [])
   const codes = new Set([...Object.keys(settings.courses ?? {}), ...Object.keys(settings.courseConfigs ?? {})])

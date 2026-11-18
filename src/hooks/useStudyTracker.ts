@@ -80,7 +80,7 @@ export function useStudyTracker({
   const reasonsRef = useRef<() => StudyExclusion[]>(() => [])
   reasonsRef.current = () => {
     const reasons = studySurfaceExclusions()
-    if (suspendedRef.current && !reasons.includes('memo')) reasons.push('memo')
+    if (suspendedRef.current && !reasons.includes('memo') && !reasons.includes('sessione')) reasons.push('memo')
     if (pauseTimerActiveRef.current) reasons.push('pause')
     if (showFocusLockRef.current) reasons.push('focus-lock')
     if (isPaused && !reasons.length) reasons.push('inactivity')

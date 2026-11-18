@@ -1,11 +1,12 @@
 import type { AppSettings } from './archive'
 import { calendarDayDifference, formatLocalCalendarDate } from './calendarDate'
+import { resolveExamTargets, type SessionArchive } from './sessione'
 
 export interface ExamReminderPreference { enabled: boolean; every: number; unit: 'days' | 'weeks' }
 export interface ExamReminderNotice { id: string; courseCode: string; examDate: string; daysLeft: number; title: string; message: string; day: string; configuration: string }
 export interface ExamReminderState {
   version: 1
-  receipts: { courseCode: string; configuration: string; day: string }[]
+  receipts: { courseCode: string; configuration: string; day: string; appointmentId?: string }[]
   notices: ExamReminderNotice[]
 }
 export const emptyExamReminderState = (): ExamReminderState => ({ version: 1, receipts: [], notices: [] })
@@ -23,31 +24,42 @@ function content(courseCode: string, daysLeft: number) {
   }
 }
 /** Calendar days rather than elapsed milliseconds keep the cadence stable across DST. */
-export function planExamReminders(settings: Settings, previous: ExamReminderState, now = new Date()) {
+export function planExamReminders(settings: Settings, previous: ExamReminderState, now = new Date(), archive?: SessionArchive) {
   const today = formatLocalCalendarDate(now)
-  const archived = new Set(settings.archivedCourseCodes ?? [])
-  const active = new Map<string, string>()
+  const active = new Set<string>()
   const receipts = [...previous.receipts]
   const due: ExamReminderNotice[] = []
-  for (const course of Object.values(settings.courses ?? {})) {
-    const preference = course.examReminder
-    const examDate = course.examDate || settings.courseConfigs?.[course.code]?.examDate
-    const daysLeft = examDate ? calendarDayDifference(today, examDate) : null
-    if (archived.has(course.code) || !validExamReminderPreference(preference) || !preference.enabled || daysLeft === null || daysLeft < 0 || !examDate) continue
-    const configuration = JSON.stringify([examDate, preference.every, preference.unit])
-    active.set(course.code, configuration)
-    const index = receipts.findIndex(row => row.courseCode === course.code)
+  for (const target of resolveExamTargets(archive, settings)) {
+    const { course: courseCode, date: examDate } = target
+    const preference = settings.courses?.[courseCode]?.examReminder
+    const daysLeft = calendarDayDifference(today, examDate)
+    if (!validExamReminderPreference(preference) || !preference.enabled || daysLeft === null || daysLeft < 0) continue
+    const appointmentId = target.id === 'legacy' ? undefined : target.id
+    const configuration = JSON.stringify([examDate, preference.every, preference.unit, ...(appointmentId ? [appointmentId] : [])])
+    const key = JSON.stringify([courseCode, configuration])
+    active.add(key)
+    const index = receipts.findIndex(row => row.courseCode === courseCode &&
+      (appointmentId ? row.configuration === configuration : !row.appointmentId))
     const last = receipts[index]
     const elapsed = last ? calendarDayDifference(last.day, today) : null
     if (last?.configuration === configuration && (elapsed === null || elapsed < preference.every * (preference.unit === 'weeks' ? 7 : 1))) continue
-    const receipt = { courseCode: course.code, configuration, day: today }
-    if (index < 0) receipts.push(receipt); else receipts[index] = receipt
-    due.push({ ...receipt, examDate, daysLeft, id: JSON.stringify([course.code, examDate, today]), ...content(course.code, daysLeft) })
+    const receipt = { courseCode, configuration, day: today, appointmentId }
+    if (index >= 0) receipts.splice(index, 1)
+    receipts.push(receipt)
+    due.push({ courseCode, configuration, day: today, examDate, daysLeft,
+      id: JSON.stringify([courseCode, examDate, today, ...(appointmentId ? [appointmentId] : [])]),
+      ...content(appointmentId ? `${courseCode} · ${target.label}` : courseCode, daysLeft) })
   }
-  const replaced = new Set(due.map(notice => notice.courseCode))
-  const notices = previous.notices.filter(notice => active.get(notice.courseCode) === notice.configuration && !replaced.has(notice.courseCode)).concat(due).map(notice => {
+  const noticeKey = (notice: { courseCode: string; configuration: string }) => JSON.stringify([notice.courseCode, notice.configuration])
+  const targets = new Map(resolveExamTargets(archive, settings).filter(row => row.id !== 'legacy').map(row => [row.id, row.label]))
+  const replaced = new Set(due.map(noticeKey))
+  const notices = previous.notices.filter(notice => active.has(noticeKey(notice)) && !replaced.has(noticeKey(notice))).concat(due).map(notice => {
     const daysLeft = calendarDayDifference(today, notice.examDate)!
-    return { ...notice, daysLeft, ...content(notice.courseCode, daysLeft) }
+    const receipt = receipts.find(receipt => noticeKey(receipt) === noticeKey(notice))
+    const label = receipt?.appointmentId ? targets.get(receipt.appointmentId) : undefined
+    return { ...notice, daysLeft, ...content(label ? `${notice.courseCode} · ${label}` : notice.courseCode, daysLeft) }
   })
-  return { state: { version: 1 as const, receipts: receipts.filter(row => active.has(row.courseCode)), notices }, due }
+  return { state: { version: 1 as const,
+    receipts: receipts.filter(row => row.appointmentId || active.has(noticeKey(row))).slice(-500),
+    notices: notices.sort((a, b) => a.examDate.localeCompare(b.examDate)).slice(0, 500) }, due }
 }

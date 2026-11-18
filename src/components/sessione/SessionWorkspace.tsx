@@ -3,7 +3,7 @@ import type { AppSettings } from '../../../shared/archive'
 import { formatLocalCalendarDate } from '../../../shared/calendarDate'
 import {
   collectPlanExams, listSessionAppointments, planProblems,
-  type ExamAppointment, type ExamPlan, type ExamSessionDraft, type SessionArchive, type SessionCommand
+  type ExamAppointment, type ExamPlan, type ExamSessionDraft, type SessionArchive
 } from '../../../shared/sessione'
 import { AppointmentFields, SessionCourseEditor } from './SessionCourseEditor'
 import { SessionSettingsForm } from './SessionSettingsForm'
@@ -12,8 +12,7 @@ import { SessionDialog } from './SessionDialog'
 import { shiftSessionMonth } from './sessionCalendarDates'
 import { chooseAppointment, sessionId, setExamAppointment } from './editSessionDraft'
 
-export type SessionAction = Omit<Extract<SessionCommand, { type: 'save' }>, 'commandId' | 'baseRevision'> |
-  Omit<Extract<SessionCommand, { type: 'confirm' }>, 'commandId' | 'baseRevision'>
+import type { SessionAction } from '../../hooks/useSessione'
 
 type Panel =
   | { kind: 'setup' | 'newSession' | 'courses' | 'included' | 'confirm' | 'newPlan' | 'copy' | 'rename' | 'delete' }

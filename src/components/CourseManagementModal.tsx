@@ -14,6 +14,8 @@ interface CourseManagementModalProps {
   lectures: Lecture[]
   onRefreshLibrary: () => Promise<void>
   onNotice: (msg: string) => void
+  managedExamCourses?: string[]
+  onOpenSessione?: (course: string) => void
 }
 
 const DAY_LABELS: Record<DayOfWeek, string> = {
@@ -42,12 +44,15 @@ export function CourseManagementModal({
   onClose,
   lectures,
   onRefreshLibrary,
-  onNotice
+  onNotice,
+  managedExamCourses,
+  onOpenSessione
 }: CourseManagementModalProps) {
   const [activeTab, setActiveTab] = useState<'list' | 'edit' | 'auto-assign'>('list')
   const [courses, setCourses] = useState<CourseDefinition[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [editingCourseCode, setEditingCourseCode] = useState<string | null>(null)
+  const managedExam = editingCourseCode !== null && managedExamCourses?.includes(editingCourseCode)
 
   const [formCode, setFormCode] = useState('')
   const [formPublishing, setFormPublishing] = useState<boolean | null>(null)
@@ -170,7 +175,7 @@ export function CourseManagementModal({
       setFormError('La data di inizio semestre deve precedere la data di fine.')
       return
     }
-    if (!formExamDate) {
+    if (!managedExam && !formExamDate) {
       setFormError('La data prevista dell’esame è obbligatoria.')
       return
     }
@@ -211,7 +216,7 @@ export function CourseManagementModal({
       color: formColor,
       startDate: formStartDate,
       endDate: formEndDate,
-      examDate: formExamDate,
+      examDate: formExamDate || undefined,
       examReminder: { enabled: examReminderEnabled, every: examReminderEvery, unit: examReminderUnit },
       schedule: formSchedule,
       laboratorySchedule: courses.find(course => course.code === editingCourseCode)?.laboratorySchedule
@@ -465,7 +470,9 @@ export function CourseManagementModal({
                             📅 <strong>Semestre:</strong> {course.startDate} ➔ {course.endDate}
                           </div>
                         )}
-                        {course.examDate && (
+                        {managedExamCourses?.includes(course.code) && onOpenSessione
+                          ? <button type="button" onClick={() => onOpenSessione(course.code)}>Appelli in Sessione</button>
+                          : course.examDate && (
                           <div>
                             🎯 <strong>Esame:</strong> {course.examDate}
                           </div>
@@ -605,7 +612,9 @@ export function CourseManagementModal({
               </div>
 
               <div>
-                <label>
+                {managedExam && editingCourseCode && onOpenSessione
+                  ? <button type="button" onClick={() => onOpenSessione(editingCourseCode)}>Modifica appelli in Sessione</button>
+                  : <label>
                   <strong>Data Appello Esame *</strong>
                   <input
                     type="date"
@@ -614,7 +623,7 @@ export function CourseManagementModal({
                     required
                     style={{ width: '100%', marginTop: '4px' }}
                   />
-                </label>
+                </label>}
               </div>
             </div>
 

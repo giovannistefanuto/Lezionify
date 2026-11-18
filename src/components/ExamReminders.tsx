@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import type { ExamReminderNotice } from '../../shared/examReminders'
 import './examReminders.css'
 
-export function ExamReminders({ onOpenCourses }: { onOpenCourses: () => void }) {
+export function ExamReminders({ onOpenCourses, refreshKey }: { onOpenCourses: () => void; refreshKey?: number }) {
   const [notices, setNotices] = useState<ExamReminderNotice[]>([])
   const [error, setError] = useState(false)
   useEffect(() => {
@@ -19,7 +19,7 @@ export function ExamReminders({ onOpenCourses }: { onOpenCourses: () => void }) 
     const timer = window.setInterval(() => void refresh(), 60_000)
     window.addEventListener('focus', refresh)
     return () => { active = false; window.clearInterval(timer); window.removeEventListener('focus', refresh) }
-  }, [])
+  }, [refreshKey])
   const notice = [...notices].sort((a, b) => a.examDate.localeCompare(b.examDate))[0]
   if (!notice) return error ? <p className="exam-reminder-error" role="status">Promemoria esami temporaneamente non disponibili. Nuovo controllo automatico fra un minuto.</p> : null
   const dismiss = async () => {

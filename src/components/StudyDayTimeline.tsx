@@ -7,7 +7,7 @@ import './studyDay.css'
 const sources: Record<StudyProvenance, string> = { 'focus-observed': 'Focus osservato', 'repetition-audio': 'RIPETERE · audio',
   'repetition-reading-estimated': 'RIPETERE · lettura stimata', manual: 'Studio manuale', 'legacy-unlocated': 'Storico senza dettaglio' }
 const activities = { reading: 'Lettura', qna: 'Q&A', slides: 'Slide', translation: 'Traduttore', unknown: 'Non osservato' }
-const reasons: Record<string, string> = { memo: 'Memo / RIPETERE aperto', translator: 'Traduttore', modal: 'Strumento aperto', music: 'Musica',
+const reasons: Record<string, string> = { memo: 'Memo / RIPETERE aperto', sessione: 'Sessione aperta', translator: 'Traduttore', modal: 'Strumento aperto', music: 'Musica',
   pause: 'Pausa programmata', 'focus-lock': 'Attesa di conferma', 'inactive-window': 'Altra finestra', inactivity: 'Inattività rilevata', suspended: 'PC sospeso', locked: 'Schermo bloccato', unknown: 'Dati mancanti' }
 const duration = (seconds: number) => seconds < 60 ? `${Math.round(seconds)} s` : `${Math.floor(seconds / 3600) ? Math.floor(seconds / 3600) + ' h ' : ''}${Math.floor(seconds % 3600 / 60)} min`
 const exclusionLabel = (segment: StudySegment) => segment.exclusions.map(r => reasons[r]).join(' · ')

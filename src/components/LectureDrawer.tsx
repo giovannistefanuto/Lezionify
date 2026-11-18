@@ -56,6 +56,7 @@ function formatStudyTimer(totalSeconds: number): string {
 
 interface LectureDrawerProps {
   memoOpen?: boolean
+  sessioneOpen?: boolean
   isReturningToList?: boolean
   selectedLecture: Lecture | null
   allLectures?: Lecture[]
@@ -113,6 +114,7 @@ interface LectureDrawerProps {
 
 export function LectureDrawer({
   memoOpen = false,
+  sessioneOpen = false,
   isReturningToList = false,
   selectedLecture,
   allLectures,
@@ -348,7 +350,7 @@ export function LectureDrawer({
     isFocusMode: isFullScreen,
     activeTab,
     isEnabled: isFullScreen && !isReturningToList,
-    suspended: memoOpen || isLoadingContent
+    suspended: memoOpen || sessioneOpen || isLoadingContent
   })
 
   const {

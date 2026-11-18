@@ -172,6 +172,7 @@ export class ArchiveService {
   private autoPipelineLaunch: Promise<void> | null = null
   private restoringPipeline = false
   private readonly enableAutoProcessOnImport: boolean
+  readonly examSessions: SessionStore
 
   constructor(
     customRootDirectory?: string,
@@ -186,6 +187,7 @@ export class ArchiveService {
         ? path.join(app.getPath('userData'), 'library')
         : path.join(process.cwd(), '.library-data'))
     this.storage = new FileStorageService(this.rootDirectory)
+    this.examSessions = new SessionStore(path.join(this.rootDirectory, 'sessione.json'))
     this.sectionRevisions = new SectionRevisionService(path.join(this.rootDirectory, 'section_revisions'), {
       read: id => this.readMarkdown(id),
       transcript: id => this.readTranscript(id),
@@ -2866,6 +2868,7 @@ export class ArchiveService {
         await this.storage.renameOrMergeCourseInfo(trimmedOld, trimmedNew)
         await this.settingsService.saveSettings({ courses, courseConfigs, archivedCourseCodes, legacyPublishingCourseCodes: settings.legacyPublishingCourseCodes?.map(code => code === trimmedOld ? trimmedNew : code) })
         await this.storage.writeStudySessions(updatedSessions)
+        await this.examSessions.renameCourse(trimmedOld, trimmedNew)
       } catch (error) {
         const rollbackErrors: unknown[] = []
         for (const rollback of [
@@ -3446,3 +3449,4 @@ export class ArchiveService {
 }
 
 class PipelineSourceChangedError extends Error {}
+import { SessionStore } from './sessioneStore'

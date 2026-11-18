@@ -11,7 +11,6 @@ import { readdir } from 'node:fs/promises'
 import { QNA_IMAGE_LIMIT, QNA_IMAGE_MAX_BYTES, type QnaImageInput } from '../../shared/qnaImages'
 import { app, BrowserWindow, dialog, ipcMain, protocol, Menu, shell, safeStorage, nativeImage, powerMonitor, net, Notification } from 'electron'
 import { ExamReminderService } from './examReminders'
-import { SessionStore } from './sessioneStore'
 import { configureGeminiConnectivity } from './ai/connectivity'
 import { SpotifyService } from './spotify'
 import { MobileCompanionService } from './mobileCompanion'
@@ -85,14 +84,14 @@ let appUpdates: AppUpdateService
 let updateStarted = false
 if (ragSelfCheck) app.setPath('userData', join(app.getPath('temp'), `Lezionify-rag-selfcheck-${Date.now()}-${process.pid}`))
 const archive = new ArchiveService()
-const sessione = new SessionStore(join(app.getPath('userData'), 'library', 'sessione.json'))
+const sessione = archive.examSessions
 const examReminders = new ExamReminderService(join(app.getPath('userData'), 'library', 'exam-reminders.json'), () => archive.getSettings(), notice => {
   if (Notification.isSupported()) {
     const notification = new Notification({ title: notice.title, body: notice.message, silent: true })
     notification.on('click', () => { mainWindow?.show(); mainWindow?.focus() })
     notification.show()
   }
-})
+}, undefined, () => sessione.state())
 let examReminderTimer: ReturnType<typeof setInterval> | undefined
 const dictionary = new LocalDictionaryService(join(app.getAppPath(), app.isPackaged ? 'out/renderer/dictionaries' : 'public/dictionaries'))
 let focusPdfs: FocusPdfService

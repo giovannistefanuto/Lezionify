@@ -10,6 +10,7 @@ import type {
   ScratchpadData
 } from '../../shared/archive'
 import { MarkdownViewer } from './MarkdownViewer'
+import { activeExamSession, resolveExamTargets, type SessionArchive } from '../../shared/sessione'
 import {
   calendarDayDifference,
   formatLocalCalendarDate
@@ -25,6 +26,9 @@ interface DashboardProps {
   onOpenCourseInfo: (courseCode: string) => void
   formatDuration: (seconds: number) => string
   settings: AppSettings
+  sessionArchive?: SessionArchive
+  examToday?: string
+  onOpenSessione?: (course?: string) => void
   saveCourseConfig: (
     courseCode: string,
     config: { examDate?: string; expectedHours?: number }
@@ -102,6 +106,9 @@ export function Dashboard({
   onOpenCourseInfo,
   formatDuration,
   settings,
+  sessionArchive,
+  examToday = formatLocalCalendarDate(),
+  onOpenSessione,
   saveCourseConfig,
   onOpenCourseManagement,
 }: DashboardProps) {
@@ -161,10 +168,15 @@ export function Dashboard({
     return invalidateAnalytics
   }, [loadAnalytics, invalidateAnalytics, courseStats])
 
+  const targets = useMemo(() => resolveExamTargets(sessionArchive, settings), [sessionArchive, settings])
+  const managed = activeExamSession(sessionArchive)?.confirmed?.courses ?? []
+  const statsByCourse = useMemo(() => new Map(courseStats.map(stats => [stats.courseCode, stats])), [courseStats])
   // Calcolo countdown per tutti gli esami configurati
   const examCountdowns = useMemo(() => {
     const list: {
       courseCode: string
+      examId: string
+      label: string
       examDate: string
       daysLeft: number
       color?: string
@@ -176,19 +188,19 @@ export function Dashboard({
       pacingMessage: string
     }[] = []
 
-    for (const stats of courseStats) {
-      const courseDef = settings.courses?.[stats.courseCode]
-      const config = settings.courseConfigs?.[stats.courseCode]
-      const targetExamDate = courseDef?.examDate || config?.examDate
-      if (!targetExamDate) continue
+    for (const target of targets) {
+      const stats = statsByCourse.get(target.course)
+      if (!stats && target.id === 'legacy') continue
+      const courseDef = settings.courses?.[target.course]
+      const targetExamDate = target.date
 
       const daysLeft = calendarDayDifference(
-        formatLocalCalendarDate(),
+        examToday,
         targetExamDate
       )
       if (daysLeft === null) continue
       const lecturesLeft = Math.max(
-        stats.totalLectures - stats.completedLectures,
+        (stats?.totalLectures ?? 0) - (stats?.completedLectures ?? 0),
         0
       )
       const pace = (lecturesLeft / Math.max(daysLeft, 1)).toFixed(1)
@@ -209,13 +221,15 @@ export function Dashboard({
       }
 
       list.push({
-        courseCode: stats.courseCode,
+        courseCode: target.course,
+        examId: target.id,
+        label: target.label,
         examDate: targetExamDate,
         daysLeft,
         color: courseDef?.color,
         cfu: courseDef?.cfu,
-        completedLectures: stats.completedLectures,
-        totalLectures: stats.totalLectures,
+        completedLectures: stats?.completedLectures ?? 0,
+        totalLectures: stats?.totalLectures ?? 0,
         pace,
         pacingColor,
         pacingMessage
@@ -228,7 +242,7 @@ export function Dashboard({
       if (a.daysLeft < 0 && b.daysLeft >= 0) return 1
       return b.daysLeft - a.daysLeft
     })
-  }, [courseStats, settings.courses, settings.courseConfigs])
+  }, [targets, statsByCourse, settings.courses, examToday])
 
   // Aggregate global stats for the hero overview
   const totalAudioSeconds = courseStats.reduce(
@@ -342,7 +356,7 @@ export function Dashboard({
             {onOpenCourseManagement && (
               <button
                 className="secondary-button small"
-                onClick={onOpenCourseManagement}
+                onClick={() => onOpenSessione ? onOpenSessione() : onOpenCourseManagement()}
                 title="Gestisci date appelli e CFU"
               >
                 ⚙️ Date Appelli
@@ -354,7 +368,7 @@ export function Dashboard({
             <div className="exam-countdown-grid">
               {examCountdowns.map((item) => (
                 <div
-                  key={item.courseCode}
+                  key={`${item.courseCode}-${item.examId}`}
                   className="exam-countdown-card"
                   onClick={() => onOpenCourseInfo(item.courseCode)}
                   onKeyDown={(event) =>
@@ -395,11 +409,14 @@ export function Dashboard({
                   </div>
 
                   <div className="exam-date-row">
-                    <span>📅 Appello:</span>
+                    <span>{item.examId === 'legacy' ? '📅 Appello:' : item.label}</span>
                     <strong>
                       {item.examDate.split('-').reverse().join('/')}
                     </strong>
                   </div>
+                  {item.examId !== 'legacy' && onOpenSessione && <button type="button" className="secondary-button small"
+                    onClick={event => { event.stopPropagation(); onOpenSessione(item.courseCode) }}
+                    onKeyDown={event => event.stopPropagation()}>Cambia appello</button>}
 
                   <div className="exam-progress-row">
                     <span>Lezioni completate:</span>
@@ -633,14 +650,15 @@ export function Dashboard({
             const progressPct = Math.round(
               (stats.completedLectures / total) * 100
             )
-            const targetExamDate = courseDef?.examDate || config?.examDate
+            const courseTargets = targets.filter(target => target.course === stats.courseCode)
+            const targetExamDate = (courseTargets.find(target => target.date >= examToday) ?? courseTargets.at(-1))?.date
 
             let pacingMessage = ''
             let pacingColor = '#607069'
 
             if (targetExamDate) {
               const daysLeft = calendarDayDifference(
-                formatLocalCalendarDate(),
+                examToday,
                 targetExamDate
               )
               if (daysLeft === null) return null
@@ -726,14 +744,15 @@ export function Dashboard({
                     className="config-editor"
                     onClick={(e) => e.stopPropagation()}
                   >
-                    <label>
+                    {managed.includes(stats.courseCode) && onOpenSessione
+                      ? <button type="button" onClick={() => onOpenSessione(stats.courseCode)}>Appelli in Sessione</button> : <label>
                       Data Esame:
                       <input
                         type="date"
                         value={draftExamDate}
                         onChange={(e) => setDraftExamDate(e.target.value)}
                       />
-                    </label>
+                    </label>}
                     <label>
                       Ore totali previste (es. 45 per 9 CFU):
                       <input

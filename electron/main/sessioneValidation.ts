@@ -104,5 +104,6 @@ export function validSessionArchive(value: unknown): value is SessionArchive {
 export function validSessionCommand(value: unknown): value is SessionCommand {
   return object(value) && id(value.commandId) && integer(value.baseRevision) &&
     (value.type === 'save' ? validSessionDraft(value.draft) :
-      value.type === 'confirm' && id(value.sessionId) && id(value.planId))
+      value.type === 'confirm' ? id(value.sessionId) && id(value.planId) :
+      value.type === 'switch-appointment' && id(value.sessionId) && id(value.previousId) && id(value.appointmentId))
 }

@@ -2,7 +2,8 @@ import { mkdir, readFile } from 'node:fs/promises'
 import { dirname } from 'node:path'
 import { atomicWrite } from './atomicFile'
 import { AsyncMutex } from './asyncMutex'
-import { collectPlanExams, emptySessionArchive, planProblems, type SessionArchive, type SessionResult } from '../../shared/sessione'
+import { formatLocalCalendarDate } from '../../shared/calendarDate'
+import { activeExamSession, collectPlanExams, emptySessionArchive, listSessionAppointments, planProblems, type SessionArchive, type SessionCommand, type SessionResult } from '../../shared/sessione'
 import { validSessionArchive, validSessionCommand } from './sessioneValidation'
 
 export class SessionStore {
@@ -56,7 +57,7 @@ export class SessionStore {
         } else {
           archive.sessions.push({ draft: input.draft })
         }
-      } else {
+      } else if (input.type === 'confirm') {
         const session = archive.sessions.find(item => item.draft.id === input.sessionId)
         const plan = session?.draft.plans.find(item => item.id === input.planId)
         if (!session || !plan) throw new Error('Piano Sessione non trovato.')
@@ -68,6 +69,8 @@ export class SessionStore {
           exams: collectPlanExams(session.draft, plan)
         }
         archive.activeSessionId = session.draft.id
+      } else {
+        switchConfirmedAppointment(archive, input, revision)
       }
 
       archive.revision = revision
@@ -77,5 +80,67 @@ export class SessionStore {
       await this.write(this.file, JSON.stringify(archive))
       return { status: 'saved', archive }
     })
+  }
+
+  async renameCourse(before: string, after: string): Promise<void> {
+    await this.mutex.runExclusive(async () => {
+      const archive = await this.load()
+      const affected = archive.sessions.filter(session =>
+        session.draft.courses.some(course => course.code === before) || session.confirmed?.courses.includes(before))
+      if (!affected.length) return
+      for (const { draft, confirmed } of affected) {
+        if (draft.courses.some(course => course.code === before) && draft.courses.some(course => course.code === after))
+          throw new Error('La sessione contiene entrambi i corsi. Risolvi i relativi appelli prima di unire i corsi.')
+        for (const course of draft.courses) if (course.code === before) course.code = after
+        for (const plan of draft.plans) for (const choice of plan.choices) if (choice.course === before) choice.course = after
+        if (confirmed) {
+          confirmed.courses = [...new Set(confirmed.courses.map(course => course === before ? after : course))]
+          for (const exam of confirmed.exams) if (exam.course === before) exam.course = after
+        }
+      }
+      archive.revision++
+      if (!validSessionArchive(archive)) throw new Error('Dati Sessione non validi dopo la rinomina.')
+      await this.write(this.file, JSON.stringify(archive))
+    })
+  }
+}
+
+function switchConfirmedAppointment(
+  archive: SessionArchive,
+  input: Extract<SessionCommand, { type: 'switch-appointment' }>,
+  revision: number
+) {
+  const session = activeExamSession(archive)
+  const confirmed = session?.confirmed
+  if (!session || !confirmed || session.draft.id !== input.sessionId) throw new Error('Il piano attivo è cambiato.')
+  const previous = confirmed.exams.find(exam => exam.id === input.previousId)
+  const next = listSessionAppointments(session.draft).find(row => row.appointment.id === input.appointmentId)
+  const today = formatLocalCalendarDate()
+  if (!previous || !next || previous.course !== next.course.code || previous.stepId !== next.step.id ||
+      next.step.completed || next.appointment.date < today ||
+      next.appointment.date < session.draft.start || next.appointment.date > session.draft.end ||
+      session.draft.unavailable.some(block => block.blocking && next.appointment.date >= block.start && next.appointment.date <= block.end))
+    throw new Error('L’appello non è disponibile per questa prova.')
+
+  const order = next.path.steps.map(step => step.id)
+  const index = order.indexOf(next.step.id)
+  const date = next.appointment.date
+  const time = next.appointment.time
+  if (confirmed.exams.some(exam => {
+    if (exam.course !== previous.course || exam.stepId === previous.stepId) return false
+    const other = order.indexOf(exam.stepId)
+    const compare = date.localeCompare(exam.date) || (time && exam.time ? time.localeCompare(exam.time) : 0)
+    return other >= 0 && ((other < index && compare < 0) || (other > index && compare > 0))
+  })) throw new Error('Il nuovo appello non rispetta l’ordine delle prove del piano.')
+
+  confirmed.exams = confirmed.exams.map(exam => exam.id === previous.id
+    ? { ...exam, id: next.appointment.id, label: next.step.label, date, time }
+    : exam)
+  confirmed.revision = revision
+  const plan = session.draft.plans.find(plan => plan.id === confirmed.planId)
+  const choice = plan?.choices.find(row => row.course === previous.course && row.pathId === next.path.id)
+  if (choice?.appointments.includes(previous.id)) {
+    choice.appointments = choice.appointments.map(id => id === previous.id ? next.appointment.id : id)
+    choice.locks = choice.locks.map(id => id === previous.id ? next.appointment.id : id)
   }
 }

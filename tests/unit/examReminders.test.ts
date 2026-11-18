@@ -5,6 +5,7 @@ import { join } from 'node:path'
 import type { AppSettings, CourseDefinition } from '../../shared/archive'
 import { emptyExamReminderState, planExamReminders, validExamReminderPreference } from '../../shared/examReminders'
 import { ExamReminderService } from '../../electron/main/examReminders'
+import type { SessionArchive } from '../../shared/sessione'
 
 const course = (overrides: Partial<CourseDefinition> = {}): CourseDefinition => ({ code: 'TEST', cfu: 6, lectureHours: 42, individualStudyHours: 108, totalHours: 150, startDate: '2026-09-01', endDate: '2026-12-31', schedule: [], examDate: '2026-12-20', examReminder: { enabled: true, every: 1, unit: 'weeks' }, ...overrides })
 const settings = (courses = [course()]): AppSettings => ({ courses: Object.fromEntries(courses.map(c => [c.code, c])), archivedCourseCodes: [] }) as unknown as AppSettings
@@ -13,6 +14,20 @@ const directories: string[] = []
 afterEach(async () => { await Promise.all(directories.splice(0).map(path => rm(path, { recursive: true, force: true }))) })
 
 describe('exam reminder calendar policy', () => {
+  it('tracks multiple confirmed exams independently and retains receipts on a plan switch', () => {
+    const draft = { id: 'winter', name: 'Invernale', start: '2026-11-01', end: '2027-02-28', courses: [], plans: [], unavailable: [] }
+    const exams = ['2026-12-22', '2027-01-15'].map((date, index) => ({ id: `a${index}`, stepId: `s${index}`, course: 'TEST', label: `Parziale ${index + 1}`, date }))
+    const confirmed = { planId: 'main', name: 'Principale', revision: 1, courses: ['TEST'], exams }
+    const session: SessionArchive = { version: 1, revision: 1, commands: [], activeSessionId: 'winter', sessions: [{ draft, confirmed }] }
+    const first = planExamReminders(settings(), emptyExamReminderState(), now('2026-11-17'), session)
+    expect(first.due.map(notice => notice.examDate)).toEqual(exams.map(exam => exam.date))
+    confirmed.exams = []
+    const excluded = planExamReminders(settings(), first.state, now('2026-11-17'), session)
+    expect(excluded.state.notices).toHaveLength(0)
+    expect(excluded.state.receipts).toHaveLength(2)
+    confirmed.exams = exams
+    expect(planExamReminders(settings(), excluded.state, now('2026-11-17'), session).due).toHaveLength(0)
+  })
   it('opts in per course and does not activate legacy courses', () => {
     expect(planExamReminders(settings([course({ examReminder: undefined })]), emptyExamReminderState(), now('2026-11-17')).due).toEqual([])
     const result = planExamReminders(settings(), emptyExamReminderState(), now('2026-11-17'))

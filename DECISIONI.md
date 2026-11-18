@@ -6283,3 +6283,14 @@ Non modificare manualmente la sezione `Registro`: aggiungi le nuove decisioni es
 - **Impatto:** Il collaudo Electron sul servizio reale verifica configurazione, scelta, conferma, duplicazione e riapertura dei dati.
 - **Follow-up:** Montare la vista dai flussi ordinari e collegare notifiche e studio.
 - **File coinvolti:** src/components/sessione, tools/run_sessione_smoke.cjs, tests/integration/sessione.browser.tsx
+
+## D-0574 — Accesso rapido e proiezioni del piano attivo
+
+- **Data:** 2026-11-18
+- **Stato:** accettata
+- **Area:** sessione
+- **Decisione:** Aprire Sessione come dialogo nativo dalla sidebar e da Ctrl+Alt+S, sospendere lo studio e usare la stessa proiezione per Dashboard e promemoria.
+- **Motivazione:** Consentire accesso rapido senza perdere il punto di studio e mantenere coerenti le date confermate.
+- **Impatto:** Le modifiche esterne confermano un solo cambio appello, le ricevute Sessione restano disponibili e la rinomina del corso aggiorna le sigle collegate.
+- **Follow-up:** Aggiungere esiti e collaudare Full Focus nell app compilata.
+- **File coinvolti:** src/App.tsx, src/hooks/useSessione.ts, src/hooks/useStudyTracker.ts, src/components/sessione, electron/main/archive.ts, shared/examReminders.ts, tests/integration/sessione.browser.tsx

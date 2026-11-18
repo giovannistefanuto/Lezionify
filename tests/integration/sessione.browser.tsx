@@ -1,10 +1,12 @@
 import { act, useState } from 'react'
 import { createRoot } from 'react-dom/client'
-import { SessionWorkspace, type SessionAction } from '../../src/components/sessione/SessionWorkspace'
+import { SessionWorkspace } from '../../src/components/sessione/SessionWorkspace'
+import { useSessione, type SessionAction } from '../../src/hooks/useSessione'
 import { SessionDialog } from '../../src/components/sessione/SessionDialog'
 import type { AppSettings } from '../../shared/archive'
 import type { SessionArchive, SessionResult } from '../../shared/sessione'
 import { resolveExamTargets } from '../../shared/sessione'
+import { studySurfaceExclusions } from '../../src/utils/studyActivity'
 
 declare const require: (name: string) => {
   ipcRenderer: { invoke: (name: string, ...args: unknown[]) => Promise<unknown>; send: (name: string, result: string) => void }
@@ -40,6 +42,16 @@ function Fixture({ initial }: { initial: SessionArchive }) {
     <SessionWorkspace archive={archive} settings={settings} today="2027-01-12" busy={busy} error={error}
       onApply={action => { pending = apply(action); return pending }} />
   </SessionDialog>
+}
+
+function ShortcutFixture() {
+  const sessione = useSessione()
+  const [lock, setLock] = useState(true)
+  return <>
+    <button type="button" id="reading-point">Posizione nella lezione</button>
+    {lock && <button type="button" className="focus-lock-overlay" onClick={() => setLock(false)}>Rimuovi Focus Lock di prova</button>}
+    {sessione.open && <SessionDialog title="Sessione" workspace onClose={sessione.close}>Calendario</SessionDialog>}
+  </>
 }
 
 function assert(condition: unknown, message: string): asserts condition {
@@ -100,8 +112,23 @@ async function run() {
   assert(actual.sessions[0].draft.plans.length === 2, 'Copia non persistita')
   assert(resolveExamTargets(actual, settings)[0]?.date === '2027-01-29', 'Data confermata incoerente')
   assert(actual.sessions[0].draft.courses[0].paths.length === 2, 'Alternativa importata persa')
+  await act(async () => root.render(<ShortcutFixture />))
+  const shortcut = (repeat = false) => new KeyboardEvent('keydown', { key: 's', code: 'KeyS',
+    ctrlKey: true, altKey: true, repeat, cancelable: true, bubbles: true })
+  await act(async () => window.dispatchEvent(shortcut()))
+  assert(!document.querySelector('.session-overlay'), 'Sessione ha scavalcato Focus Lock')
+  await click('Rimuovi Focus Lock di prova')
+  const readingPoint = document.getElementById('reading-point')
+  readingPoint?.focus()
+  await act(async () => window.dispatchEvent(shortcut(true)))
+  assert(!document.querySelector('.session-overlay'), 'Sessione ha risposto all’autoripetizione')
+  await act(async () => window.dispatchEvent(shortcut()))
+  assert(document.querySelector('.session-overlay[open]'), 'Scorciatoia Sessione assente')
+  assert(studySurfaceExclusions().includes('sessione') && !studySurfaceExclusions().includes('memo'), 'Esclusione di studio errata')
+  await act(async () => document.activeElement?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })))
+  assert(document.activeElement === readingPoint && !studySurfaceExclusions().includes('sessione'), 'Ripristino focus o esclusione non riuscito')
   await act(async () => root.unmount())
-  ipcRenderer.send('done', 'PASS Sessione: configurazione, appelli multipli, scelta, conferma, copia e riavvio')
+  ipcRenderer.send('done', 'PASS Sessione: configurazione, scelta, conferma, riavvio, scorciatoia, Focus Lock, esclusione e ripristino focus')
 }
 
 void run().catch(error => ipcRenderer.send('done', `FAIL ${String(error)}`))

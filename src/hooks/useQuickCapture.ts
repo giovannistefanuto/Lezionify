@@ -150,6 +150,7 @@ export function useQuickCapture() {
   // Gestione scorciatoie da tastiera globali (Ctrl+M, Ctrl+P, Esc)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (document.querySelector('[data-study-exclusion="sessione"]')) return
       const isCtrlOrCmd = e.ctrlKey || e.metaKey
       const key = e.key.toLowerCase()
 

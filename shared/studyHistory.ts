@@ -4,7 +4,7 @@ import type { ForecastBand, ForecastMethod } from './studyForecast'
 
 export const STUDY_ACTIVITIES = ['reading', 'qna', 'slides', 'translation', 'unknown'] as const
 export type StudyActivity = typeof STUDY_ACTIVITIES[number]
-export const STUDY_EXCLUSIONS = ['memo', 'translator', 'modal', 'music', 'pause', 'focus-lock', 'inactive-window', 'inactivity', 'suspended', 'locked', 'unknown'] as const
+export const STUDY_EXCLUSIONS = ['memo', 'sessione', 'translator', 'modal', 'music', 'pause', 'focus-lock', 'inactive-window', 'inactivity', 'suspended', 'locked', 'unknown'] as const
 export type StudyExclusion = typeof STUDY_EXCLUSIONS[number]
 export type StudyProvenance = 'focus-observed' | 'repetition-audio' | 'repetition-reading-estimated' | 'manual' | 'legacy-unlocated'
 export interface StudyObservation {

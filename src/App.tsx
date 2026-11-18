@@ -25,9 +25,14 @@ import { AppUpdates } from './components/AppUpdates'
 import { useDictionaryShortcut } from './hooks/useDictionaryShortcut'
 import { ExamReminders } from './components/ExamReminders'
 import { useFinalLectureReturn } from './hooks/useFinalLectureReturn'
+import { useSessione } from './hooks/useSessione'
+import { activeExamSession } from '../shared/sessione'
+import { SessionDialog } from './components/sessione/SessionDialog'
 
 const CourseChat = lazy(() => import('./components/CourseChat').then(module => ({ default: module.CourseChat })))
 const CollectionsWorkspace = lazy(() => import('./components/CollectionsWorkspace').then(module => ({ default: module.CollectionsWorkspace })))
+const SessionWorkspace = lazy(() => import('./components/sessione/SessionWorkspace').then(module => ({ default: module.SessionWorkspace })))
+const ExternalSessionEdit = lazy(() => import('./components/sessione/ExternalSessionEdit').then(module => ({ default: module.ExternalSessionEdit })))
 import { DictionaryOverlay } from './components/DictionaryOverlay'
 
 const LectureDrawer = lazy(() =>
@@ -440,9 +445,11 @@ export default function App() {
 
   // 5. Quick capture (Brain Dump / Post-it overlay) hook
   const quickCapture = useQuickCapture()
+  const sessione = useSessione()
+  const managedCourses = activeExamSession(sessione.archive)?.confirmed?.courses
 
   return (
-    <AppUpdates canRestart={!selectedLectureId && !courseChatOpen && !showRepetitions && !videoSelection}>
+    <AppUpdates canRestart={!selectedLectureId && !courseChatOpen && !showRepetitions && !videoSelection && !sessione.open && !sessione.busy}>
     <ToolSettingsContext.Provider value={{ isOpen: showSettingsModal, open: section => { setToolSettingsSection(section); openSettingsModal() } }}>
     <AmbientSoundProvider>
     <main className={`app-shell ${theme === 'dark' ? 'dark-theme' : ''}`}>
@@ -495,6 +502,7 @@ export default function App() {
         onOpenCourseManagement={() => setShowCourseModal(true)}
         onOpenCourseChat={() => { setCourseChatLoaded(true); setCourseChatOpen(true) }}
         onOpenQuickCapture={() => setShowMemoPage(true)}
+        onOpenSessione={window.archive?.sessione ? () => sessione.show() : undefined}
         onOpenLogViewer={() => setShowLogModal(true)}
         onOpenUsbRecorder={() => setShowUsbModal(true)}
         onOpenRepetitions={() => setShowRepetitions(true)}
@@ -507,7 +515,7 @@ export default function App() {
         onOpenLecture={(id, kind) => { setMainView('archive'); const lecture = lectures.find(item => item.id === id); if (lecture?.courseCode) setSelectedCourse(lecture.courseCode); setSelectedLectureId(id); setActiveTab(kind === 'transcript' ? 'transcript' : 'markdown'); setCourseChatOpen(false) }} /></Suspense>}
 
       <div className="main-content-wrapper">
-        <ExamReminders onOpenCourses={() => setShowCourseModal(true)} />
+        <ExamReminders onOpenCourses={() => setShowCourseModal(true)} refreshKey={sessione.archive?.revision} />
         {mainView !== 'collections' && !dismissedSemesterReminder && (
           <SemesterReminderBanner
             onOpenCourseManagement={() => setShowCourseModal(true)}
@@ -595,6 +603,9 @@ export default function App() {
                 onOpenCourseInfo={(code) => void handleOpenCourseInfo(code)}
                 formatDuration={formatDuration}
                 settings={settings}
+                sessionArchive={sessione.archive}
+                examToday={sessione.today}
+                onOpenSessione={window.archive?.sessione ? sessione.show : undefined}
                 saveCourseConfig={saveCourseConfig}
                 onOpenCourseManagement={() => setShowCourseModal(true)}
                 onOpenQuickCapture={quickCapture.toggleOpen}
@@ -610,6 +621,7 @@ export default function App() {
           <ErrorBoundary fallbackTitle="Errore nel pannello della lezione">
             <LectureDrawer
               memoOpen={quickCapture.isOpen || showRepetitions}
+              sessioneOpen={sessione.open}
               selectedLecture={selectedLecture}
               isReturningToList={finalLecture.isReturning}
               allLectures={lectures}
@@ -678,8 +690,11 @@ export default function App() {
             onRefreshLibrary={async () => {
               await refreshLibrary()
               await loadSettings()
+              await sessione.refresh()
             }}
             onNotice={setNotice}
+            managedExamCourses={managedCourses}
+            onOpenSessione={sessione.show}
           />
         )}
 
@@ -752,6 +767,25 @@ export default function App() {
           }}
         />}
       </Suspense>
+      {sessione.open && <SessionDialog title={sessione.externalCourse ? `Appelli · ${sessione.externalCourse}` : 'Sessione'}
+        onClose={sessione.close} workspace={!sessione.externalCourse}>
+        <ErrorBoundary fallbackTitle="Errore in Sessione">
+          <Suspense fallback={<LazyFallback />}>
+            {sessione.archive ? sessione.externalCourse
+              ? <>
+                {sessione.error && <p role="alert">{sessione.error}</p>}
+                <ExternalSessionEdit key={sessione.externalCourse} archive={sessione.archive} course={sessione.externalCourse}
+                  today={sessione.today} busy={sessione.busy} apply={sessione.apply}
+                  onOpenWorkspace={() => sessione.show()} onDone={sessione.close} />
+              </>
+              : <SessionWorkspace archive={sessione.archive} settings={settings} today={sessione.today}
+                  busy={sessione.busy} error={sessione.error} onApply={sessione.apply} />
+              : sessione.error
+                ? <><p role="alert">{sessione.error}</p><button type="button" onClick={() => void sessione.refresh()}>Riprova</button></>
+                : <LazyFallback />}
+          </Suspense>
+        </ErrorBoundary>
+      </SessionDialog>}
       <BatteryIndicator />
     </main>
     </AmbientSoundProvider>

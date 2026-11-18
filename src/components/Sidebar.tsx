@@ -36,6 +36,7 @@ interface SidebarProps {
   onOpenCourseManagement: () => void
   onOpenCourseChat?: () => void
   onOpenQuickCapture?: () => void
+  onOpenSessione?: () => void
   onOpenLogViewer?: () => void
   onOpenUsbRecorder?: () => void
   onOpenRepetitions?: () => void
@@ -73,6 +74,7 @@ export function Sidebar({
   onOpenCourseManagement,
   onOpenCourseChat,
   onOpenQuickCapture,
+  onOpenSessione,
   onOpenLogViewer,
   onOpenUsbRecorder,
   onOpenRepetitions,
@@ -264,6 +266,8 @@ export function Sidebar({
                 </button>
               )}
 
+              {onOpenSessione && <button type="button" className="settings-gear-btn" onClick={onOpenSessione}
+                title="Sessione (Ctrl+Alt+S)" aria-label="Apri Sessione">▦<span className="sidebar-action-label">Sessione</span></button>}
               {onOpenLogViewer && (
                 <button
                   className="settings-gear-btn"
@@ -466,6 +470,8 @@ export function Sidebar({
           >
             📊
           </button>
+          {onOpenSessione && <button type="button" className="sidebar-icon-btn" onClick={onOpenSessione}
+            title="Sessione (Ctrl+Alt+S)" aria-label="Apri Sessione">▦</button>}
           {onOpenQuickCapture && (
             <button
               className="sidebar-icon-btn"

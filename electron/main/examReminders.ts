@@ -4,11 +4,13 @@ import { atomicWrite, readRecoverable } from './atomicFile'
 import { AsyncMutex } from './asyncMutex'
 import { parseLocalCalendarDate } from '../../shared/calendarDate'
 import type { AppSettings } from '../../shared/archive'
+import type { SessionArchive } from '../../shared/sessione'
 import { emptyExamReminderState, planExamReminders, type ExamReminderNotice, type ExamReminderState } from '../../shared/examReminders'
 
 export class ExamReminderService {
   private mutex = new AsyncMutex()
-  constructor(private file: string, private settings: () => Promise<AppSettings>, private notify: (notice: ExamReminderNotice) => void, private now = () => new Date()) {}
+  constructor(private file: string, private settings: () => Promise<AppSettings>, private notify: (notice: ExamReminderNotice) => void,
+    private now = () => new Date(), private sessione?: () => Promise<SessionArchive>) {}
   private async read(): Promise<ExamReminderState> {
     try {
       const state = JSON.parse(await readRecoverable(this.file)) as ExamReminderState
@@ -24,7 +26,8 @@ export class ExamReminderService {
   async poll() {
     return this.mutex.runExclusive(async () => {
       const previous = await this.read()
-      const result = planExamReminders(await this.settings(), previous, this.now())
+      const [settings, sessione] = await Promise.all([this.settings(), this.sessione?.()])
+      const result = planExamReminders(settings, previous, this.now(), sessione)
       if (JSON.stringify(previous) !== JSON.stringify(result.state)) {
         await mkdir(dirname(this.file), { recursive: true })
         // Persist before delivery: restart cannot produce a storm of duplicate notifications.
