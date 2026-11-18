@@ -2,7 +2,7 @@ import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { legacyExamDates, resolveExamTargets, type ExamSessionDraft } from '../../shared/sessione'
+import { dueExamAttempts, legacyExamDates, passedExamSteps, resolveExamTargets, type ExamSessionDraft } from '../../shared/sessione'
 import { SessionStore } from '../../electron/main/sessioneStore'
 
 function makeDraft(): ExamSessionDraft {
@@ -81,5 +81,36 @@ describe('Sessione archive', () => {
     expect(legacyExamDates({ courseConfigs: { RL: { examDate: '2028-02-29' } } }, 'RL')).toEqual([
       { source: 'dashboard', date: '2028-02-29' }
     ])
+  })
+
+  it('retains a past exam after a plan change, schedules deferrals, and allows outcome correction', async () => {
+    let today = '2027-01-22'
+    const repository = () => new SessionStore(file, undefined, () => today)
+    const service = repository()
+    const draft = makeDraft()
+    draft.courses[0].paths[0].steps[1].appointments.push({ id: 'later', date: '2027-02-07', number: 4 })
+    draft.plans.push({ id: 'later', name: 'Alternate', choices: [{ course: 'RL', pathId: 'partial', appointments: ['later'], locks: [] }] })
+    await service.apply(save(draft))
+    await service.apply(confirm)
+    today = '2027-02-03'
+    expect(dueExamAttempts((await service.state()).sessions[0], today)).toHaveLength(0)
+    today = '2027-02-04'
+    await service.apply({ ...confirm, commandId: 'publish-later', baseRevision: 2, planId: 'later' })
+    const result = await repository().state()
+    expect(dueExamAttempts(result.sessions[0], today).map(row => row.exam.id)).toEqual(['appointment'])
+    const request = { sessionId: 'winter', examId: 'appointment', examDate: '2027-02-03' }
+    await service.apply({ ...request, commandId: 'defer', baseRevision: 3, type: 'defer-outcomes' })
+    expect(dueExamAttempts((await repository().state()).sessions[0], today)).toHaveLength(0)
+    today = '2027-02-05'
+    expect(dueExamAttempts((await repository().state()).sessions[0], today)).toHaveLength(1)
+    await service.apply({ ...request, commandId: 'pending', baseRevision: 4, type: 'set-outcome', outcome: 'pending' })
+    expect((await repository().state()).sessions[0].attempts?.[0].reviewOn).toBe('2027-02-08')
+    await service.apply({ ...request, commandId: 'failed', baseRevision: 5, type: 'set-outcome', outcome: 'failed' })
+    expect(passedExamSteps((await service.state()).sessions[0]).size).toBe(0)
+    await service.apply({ ...request, commandId: 'skipped', baseRevision: 6, type: 'set-outcome', outcome: 'skipped' })
+    expect((await repository().state()).sessions[0].attempts?.[0].status).toBe('skipped')
+    await service.apply({ ...request, commandId: 'passed', baseRevision: 7, type: 'set-outcome', outcome: 'passed' })
+    expect(passedExamSteps((await repository().state()).sessions[0])).toEqual(new Set(['second']))
+    expect(resolveExamTargets(await repository().state(), {}, today)).toEqual([])
   })
 })

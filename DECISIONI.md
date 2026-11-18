@@ -6294,3 +6294,14 @@ Non modificare manualmente la sezione `Registro`: aggiungi le nuove decisioni es
 - **Impatto:** Le modifiche esterne confermano un solo cambio appello, le ricevute Sessione restano disponibili e la rinomina del corso aggiorna le sigle collegate.
 - **Follow-up:** Aggiungere esiti e collaudare Full Focus nell app compilata.
 - **File coinvolti:** src/App.tsx, src/hooks/useSessione.ts, src/hooks/useStudyTracker.ts, src/components/sessione, electron/main/archive.ts, shared/examReminders.ts, tests/integration/sessione.browser.tsx
+
+## D-0575 — Esiti e storico degli appelli
+
+- **Data:** 2026-11-18
+- **Stato:** accettata
+- **Area:** sessione
+- **Decisione:** Conservare le prove arrivate a data nel piano confermato, raccogliere esiti, proporre domani o tre giorni configurabili per i rinvii e consentire correzioni.
+- **Motivazione:** Mantenere i tentativi reali indipendenti dalle bozze e dai successivi cambi di piano.
+- **Impatto:** La proiezione distingue esiti in attesa e prove superate. I superamenti valgono per la singola prova. Testati anche esito negativo, saltato e riavvio.
+- **Follow-up:** Includere gli esiti nel calcolo delle proposte di spaziatura.
+- **File coinvolti:** shared/sessione.ts, electron/main/sessioneStore.ts, src/App.tsx, src/components/sessione/SessionOutcomes.tsx, tests/unit/sessioneStore.test.ts

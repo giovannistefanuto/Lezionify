@@ -168,7 +168,7 @@ export function Dashboard({
     return invalidateAnalytics
   }, [loadAnalytics, invalidateAnalytics, courseStats])
 
-  const targets = useMemo(() => resolveExamTargets(sessionArchive, settings), [sessionArchive, settings])
+  const targets = useMemo(() => resolveExamTargets(sessionArchive, settings, examToday), [sessionArchive, settings, examToday])
   const managed = activeExamSession(sessionArchive)?.confirmed?.courses ?? []
   const statsByCourse = useMemo(() => new Map(courseStats.map(stats => [stats.courseCode, stats])), [courseStats])
   // Calcolo countdown per tutti gli esami configurati
@@ -177,6 +177,7 @@ export function Dashboard({
       courseCode: string
       examId: string
       label: string
+      pending?: boolean
       examDate: string
       daysLeft: number
       color?: string
@@ -224,6 +225,7 @@ export function Dashboard({
         courseCode: target.course,
         examId: target.id,
         label: target.label,
+        pending: target.pending,
         examDate: targetExamDate,
         daysLeft,
         color: courseDef?.color,
@@ -400,7 +402,7 @@ export function Dashboard({
                         borderColor: item.pacingColor
                       }}
                     >
-                      {item.daysLeft === 0
+                      {item.pending ? 'In attesa di esito' : item.daysLeft === 0
                         ? 'Oggi!'
                         : item.daysLeft < 0
                           ? 'Passato'

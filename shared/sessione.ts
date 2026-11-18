@@ -1,5 +1,5 @@
 import type { AppSettings } from './archive'
-import { parseLocalCalendarDate } from './calendarDate'
+import { formatLocalCalendarDate, parseLocalCalendarDate } from './calendarDate'
 
 export interface ExamAppointment {
   id: string
@@ -68,6 +68,7 @@ export interface PlannedExam {
   label: string
   date: string
   time?: string
+  pending?: boolean
 }
 
 export interface ConfirmedExamPlan {
@@ -81,6 +82,16 @@ export interface ConfirmedExamPlan {
 export interface ExamSession {
   draft: ExamSessionDraft
   confirmed?: ConfirmedExamPlan
+  attempts?: ExamAttempt[]
+}
+
+export type ExamOutcome = 'passed' | 'failed' | 'skipped' | 'pending'
+
+export interface ExamAttempt {
+  exam: PlannedExam
+  status?: ExamOutcome
+  updated?: string
+  reviewOn?: string
 }
 
 export interface SessionArchive {
@@ -94,7 +105,9 @@ export interface SessionArchive {
 export type SessionCommand = { commandId: string; baseRevision: number } & (
   { type: 'save'; draft: ExamSessionDraft } |
   { type: 'confirm'; sessionId: string; planId: string } |
-  { type: 'switch-appointment'; sessionId: string; previousId: string; appointmentId: string }
+  { type: 'switch-appointment'; sessionId: string; previousId: string; appointmentId: string } |
+  { type: 'set-outcome'; sessionId: string; examId: string; examDate: string; outcome: ExamOutcome; retryDays?: number } |
+  { type: 'defer-outcomes'; sessionId: string; examId?: string; examDate?: string }
 )
 export type SessionResult = { status: 'saved' | 'conflict'; archive: SessionArchive }
 export interface SessionApi {
@@ -126,11 +139,22 @@ export function listSessionAppointments(draft: ExamSessionDraft) {
   )))
 }
 
-export function collectPlanExams(draft: ExamSessionDraft, plan: ExamPlan): PlannedExam[] {
+export function passedExamSteps(session?: ExamSession): Set<string> {
+  return new Set(session?.attempts?.filter(attempt => attempt.status === 'passed').map(attempt => attempt.exam.stepId))
+}
+
+export function dueExamAttempts(session: ExamSession | undefined, today: string): ExamAttempt[] {
+  return (session?.attempts ?? []).filter(attempt =>
+    attempt.exam.date < today && (!attempt.status || attempt.status === 'pending') &&
+    (!attempt.reviewOn || attempt.reviewOn <= today))
+    .sort((a, b) => a.exam.date.localeCompare(b.exam.date) || a.exam.id.localeCompare(b.exam.id))
+}
+
+export function collectPlanExams(draft: ExamSessionDraft, plan: ExamPlan, passed: ReadonlySet<string> = new Set()): PlannedExam[] {
   const choices = new Map(plan.choices.map(choice => [choice.course, choice]))
   return listSessionAppointments(draft).flatMap(({ course, path, step, appointment }) => {
     const choice = choices.get(course.code)
-    return choice?.pathId === path.id && choice.appointments.includes(appointment.id)
+    return choice?.pathId === path.id && choice.appointments.includes(appointment.id) && !step.completed && !passed.has(step.id)
       ? [{ id: appointment.id, course: course.code, stepId: step.id, label: step.label,
         date: appointment.date, time: appointment.time }]
       : []
@@ -138,8 +162,9 @@ export function collectPlanExams(draft: ExamSessionDraft, plan: ExamPlan): Plann
 }
 
 /** Identify the exact definition that reached the consumer. Archived courses are hidden in active views. */
-export function resolveExamTargets(archive: SessionArchive | undefined, settings: ExamSettings): PlannedExam[] {
-  const confirmation = activeExamSession(archive)?.confirmed
+export function resolveExamTargets(archive: SessionArchive | undefined, settings: ExamSettings, today = formatLocalCalendarDate()): PlannedExam[] {
+  const session = activeExamSession(archive)
+  const confirmation = session?.confirmed
   const managed = new Set(confirmation?.courses ?? [])
   const hidden = new Set(settings.archivedCourseCodes ?? [])
   const codes = new Set([...Object.keys(settings.courses ?? {}), ...Object.keys(settings.courseConfigs ?? {})])
@@ -148,11 +173,19 @@ export function resolveExamTargets(archive: SessionArchive | undefined, settings
     const date = legacyExamDates(settings, course)[0]?.date
     return date ? [{ id: 'legacy', course, stepId: 'legacy', label: 'Esame', date }] : []
   })
-  return [...legacy, ...(confirmation?.exams ?? []).filter(exam => !hidden.has(exam.course))]
+  const passed = passedExamSteps(session)
+  const projected = (confirmation?.exams ?? []).flatMap(exam => {
+    if (hidden.has(exam.course) || passed.has(exam.stepId)) return []
+    const attempt = session?.attempts?.find(row => row.exam.id === exam.id && row.exam.date === exam.date)
+    if (attempt?.status === 'failed' || attempt?.status === 'skipped') return []
+    return [attempt && (attempt.status === 'pending' || exam.date < today) ? { ...exam, pending: true } : exam]
+  })
+  return [...legacy, ...projected]
     .sort((a, b) => a.date.localeCompare(b.date) || a.course.localeCompare(b.course))
 }
 
-export function planProblems(draft: ExamSessionDraft, plan: ExamPlan, passed: ReadonlySet<string> = new Set()): string[] {
+export function planProblems(draft: ExamSessionDraft, plan: ExamPlan, passed: ReadonlySet<string> = new Set(),
+  attempts: readonly ExamAttempt[] = [], today?: string): string[] {
   const choices = new Map(plan.choices.map(choice => [choice.course, choice]))
   const problems: string[] = []
   for (const course of draft.courses) {
@@ -172,6 +205,9 @@ export function planProblems(draft: ExamSessionDraft, plan: ExamPlan, passed: Re
         continue
       }
       const current = matches[0]
+      const attempt = attempts.find(row => row.exam.id === current.id && row.exam.date === current.date)
+      if (attempt?.status === 'failed' || attempt?.status === 'skipped' || (today && current.date < today && !attempt))
+        problems.push(`${course.code}: scegli un nuovo appello per ${step.label}.`)
       if (current.date < draft.start || current.date > draft.end) {
         problems.push(`${course.code}: ${step.label} è fuori dal periodo della sessione.`)
       }

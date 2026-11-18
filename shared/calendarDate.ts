@@ -50,3 +50,10 @@ export function calendarDayDifference(from: string, to: string): number | null {
       86_400_000
   )
 }
+
+export function addCalendarDays(date: string, days: number): string {
+  const value = parseLocalCalendarDate(date)
+  if (!value) throw new Error('Data non valida.')
+  value.setDate(value.getDate() + days)
+  return formatLocalCalendarDate(value)
+}

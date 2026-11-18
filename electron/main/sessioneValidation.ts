@@ -90,10 +90,26 @@ function validConfirmed(value: unknown): value is ConfirmedExamPlan {
       (value.courses as string[]).includes(exam.course) && str(exam.label, 120) && day(exam.date) && time(exam.time))
 }
 
+function validAttempts(value: unknown): boolean {
+  return value === undefined || (rows(value, 8000) &&
+    value.every(attempt => {
+      const exam = attempt.exam
+      return object(exam) && id(exam.id) && id(exam.stepId) && str(exam.course, 200) && str(exam.label, 120) &&
+        day(exam.date) && time(exam.time) && (attempt.updated === undefined || day(attempt.updated)) &&
+        (attempt.reviewOn === undefined || day(attempt.reviewOn)) &&
+        (attempt.status === undefined || typeof attempt.status === 'string' &&
+          ['passed', 'failed', 'skipped', 'pending'].includes(attempt.status))
+    }) &&
+    unique(value.map(attempt => {
+      const exam = attempt.exam as { id: string; date: string }
+      return `${exam.id}:${exam.date}`
+    })))
+}
+
 export function validSessionArchive(value: unknown): value is SessionArchive {
   return object(value) && value.version === 1 && integer(value.revision) && array(value.commands, 125, id) &&
     unique(value.commands) && rows(value.sessions, 100) &&
-    value.sessions.every(session => validSessionDraft(session.draft) &&
+    value.sessions.every(session => validSessionDraft(session.draft) && validAttempts(session.attempts) &&
       (session.confirmed === undefined || (validConfirmed(session.confirmed) &&
         session.draft.plans.some(plan => plan.id === (session.confirmed as ConfirmedExamPlan).planId)))) &&
     unique(value.sessions.map(session => (session.draft as ExamSessionDraft).id)) &&
@@ -102,8 +118,14 @@ export function validSessionArchive(value: unknown): value is SessionArchive {
 }
 
 export function validSessionCommand(value: unknown): value is SessionCommand {
-  return object(value) && id(value.commandId) && integer(value.baseRevision) &&
-    (value.type === 'save' ? validSessionDraft(value.draft) :
-      value.type === 'confirm' ? id(value.sessionId) && id(value.planId) :
-      value.type === 'switch-appointment' && id(value.sessionId) && id(value.previousId) && id(value.appointmentId))
+  if (!object(value) || !id(value.commandId) || !integer(value.baseRevision)) return false
+  if (value.type === 'save') return validSessionDraft(value.draft)
+  if (!id(value.sessionId)) return false
+  if (value.type === 'confirm') return id(value.planId)
+  if (value.type === 'switch-appointment') return id(value.previousId) && id(value.appointmentId)
+  if (value.type === 'defer-outcomes') return value.examId === undefined && value.examDate === undefined ||
+    id(value.examId) && day(value.examDate)
+  return value.type === 'set-outcome' && id(value.examId) && day(value.examDate) &&
+    typeof value.outcome === 'string' && ['passed', 'failed', 'skipped', 'pending'].includes(value.outcome) &&
+    (value.retryDays === undefined || (value.outcome === 'pending' && integer(value.retryDays, 1, 90)))
 }

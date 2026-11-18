@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react'
 import type { AppSettings } from '../../../shared/archive'
 import { formatLocalCalendarDate } from '../../../shared/calendarDate'
 import {
-  collectPlanExams, listSessionAppointments, planProblems,
+  collectPlanExams, listSessionAppointments, passedExamSteps, planProblems,
   type ExamAppointment, type ExamPlan, type ExamSessionDraft, type SessionArchive
 } from '../../../shared/sessione'
 import { AppointmentFields, SessionCourseEditor } from './SessionCourseEditor'
@@ -11,6 +11,7 @@ import { SessionCalendar, type CalendarExam } from './SessionCalendar'
 import { SessionDialog } from './SessionDialog'
 import { shiftSessionMonth } from './sessionCalendarDates'
 import { chooseAppointment, sessionId, setExamAppointment } from './editSessionDraft'
+import { SessionOutcomes } from './SessionOutcomes'
 
 import type { SessionAction } from '../../hooks/useSessione'
 
@@ -19,6 +20,7 @@ type Panel =
   | { kind: 'course'; code: string }
   | { kind: 'exam'; id: string }
   | { kind: 'date'; appointment: ExamAppointment }
+  | { kind: 'outcomes'; examId?: string }
 
 function SessionMenu({ title, children }: { title: string; children: ReactNode }) {
   const ref = useRef<HTMLDetailsElement>(null)
@@ -111,20 +113,27 @@ export function SessionWorkspace({ archive, settings, today, busy, error, onAppl
   </>
 
   const selected = new Set(plan.choices.flatMap(choice => choice.appointments))
-  const choices = collectPlanExams(draft, plan)
-  const problems = planProblems(draft, plan)
-  const oldExams = session?.confirmed?.exams ?? []
+  const passed = passedExamSteps(session)
+  const choices = collectPlanExams(draft, plan, passed)
+  const problems = planProblems(draft, plan, passed, session?.attempts, today)
+  const oldExams = (session?.confirmed?.exams ?? []).filter(exam => !passed.has(exam.stepId))
   const isConfirmed = archive.activeSessionId === draft.id && session?.confirmed?.planId === plan.id
   const changed = JSON.stringify(choices) !== JSON.stringify(oldExams) ||
     JSON.stringify(draft.courses.map(course => course.code)) !== JSON.stringify(session?.confirmed?.courses)
   const canConfirm = !isConfirmed || changed || session?.confirmed?.name !== plan.name
   const rows = listSessionAppointments(draft)
-  const exams: CalendarExam[] = rows.map(({ course, step, appointment }) => ({
-    id: appointment.id, date: appointment.date, course: courseName(course.code), code: course.code,
-    color: settings.courses?.[course.code]?.color,
-    label: step.label + (appointment.number ? ` · Appello ${appointment.number}` : ''),
-    status: step.completed && appointment.date < today ? 'taken' : selected.has(appointment.id) ? 'chosen' : 'alternative'
-  }))
+  const attempts = session?.attempts ?? []
+  const exams: CalendarExam[] = rows.map(({ course, step, appointment }) => {
+    const attempt = attempts.find(row => row.exam.id === appointment.id && row.exam.date === appointment.date)
+    const taken = attempt?.status === 'passed' || attempt?.status === 'failed' || attempt?.status === 'pending'
+    return {
+      id: appointment.id, date: appointment.date, course: courseName(course.code), code: course.code,
+      color: settings.courses?.[course.code]?.color,
+      label: step.label + (appointment.number ? ` · Appello ${appointment.number}` : ''),
+      status: taken ? 'taken' : selected.has(appointment.id) ? 'chosen' : 'alternative',
+      pending: selected.has(appointment.id) && (attempt?.status === 'pending' || Boolean(attempt && !attempt.status && appointment.date < today))
+    }
+  })
   const updatePlan = (next: ExamPlan, close = false) => save({ ...draft,
     plans: draft.plans.map(row => row.id === plan.id ? next : row) }, close)
   const selectPath = (code: string, pathId: string | null) => {
@@ -225,7 +234,7 @@ export function SessionWorkspace({ archive, settings, today, busy, error, onAppl
         {locked && <p>Data mantenuta fissa nella proposta di spaziatura.</p>}
         <div className="session-actions">
           <SessionMenu title="Azioni">
-            {!selected.has(exam.id) && !row.step.completed && exam.date >= today && <button type="button" disabled={busy}
+            {!selected.has(exam.id) && !row.step.completed && !passed.has(row.step.id) && exam.date >= today && <button type="button" disabled={busy}
               onClick={() => void updatePlan(chooseAppointment(draft, plan, exam.id), true)}>Scegli appello</button>}
             {choice && selected.has(exam.id) && <>
               <button type="button" disabled={busy} onClick={() => void updatePlan({ ...plan, choices: plan.choices.map(item =>
@@ -236,6 +245,8 @@ export function SessionWorkspace({ archive, settings, today, busy, error, onAppl
                 item === choice ? { ...item, appointments: item.appointments.filter(id => id !== exam.id), locks: item.locks.filter(id => id !== exam.id) } : item) }, true)}>Togli dal piano</button>
             </>}
             <button type="button" onClick={() => setPanel({ kind: 'date', appointment: row.appointment })}>Modifica data ufficiale</button>
+            {attempts.some(attempt => attempt.exam.id === exam.id) &&
+              <button type="button" onClick={() => setPanel({ kind: 'outcomes', examId: exam.id })}>Aggiorna esito</button>}
           </SessionMenu>
         </div>
       </div>
@@ -243,6 +254,9 @@ export function SessionWorkspace({ archive, settings, today, busy, error, onAppl
   } else if (panel?.kind === 'date') {
     title = 'Modifica data ufficiale'
     dialog = <DateEditor initial={panel.appointment} busy={busy} onSave={next => save(setExamAppointment(draft, next))} />
+  } else if (panel?.kind === 'outcomes' && session) {
+    title = 'Esiti degli esami'
+    dialog = <SessionOutcomes session={session} today={today} busy={busy} apply={onApply} examId={panel.examId} onDone={closePanel} />
   }
 
   const initialMonth = draft.end < today ? shiftSessionMonth(draft.start, 0) : shiftSessionMonth(today, 0)
@@ -264,6 +278,7 @@ export function SessionWorkspace({ archive, settings, today, busy, error, onAppl
           <SessionMenu title="Esami">
             <button type="button" onClick={() => setPanel({ kind: 'courses' })}>Aggiungi o modifica appelli</button>
             <button type="button" onClick={() => setPanel({ kind: 'included' })}>Gestisci corsi nel piano</button>
+            <button type="button" onClick={() => setPanel({ kind: 'outcomes' })}>Aggiorna esiti</button>
           </SessionMenu>
           <SessionMenu title="Piano">
             <button type="button" onClick={() => startPlan('newPlan')}>Nuovo piano</button>

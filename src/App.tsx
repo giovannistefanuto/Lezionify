@@ -26,13 +26,14 @@ import { useDictionaryShortcut } from './hooks/useDictionaryShortcut'
 import { ExamReminders } from './components/ExamReminders'
 import { useFinalLectureReturn } from './hooks/useFinalLectureReturn'
 import { useSessione } from './hooks/useSessione'
-import { activeExamSession } from '../shared/sessione'
+import { activeExamSession, dueExamAttempts } from '../shared/sessione'
 import { SessionDialog } from './components/sessione/SessionDialog'
 
 const CourseChat = lazy(() => import('./components/CourseChat').then(module => ({ default: module.CourseChat })))
 const CollectionsWorkspace = lazy(() => import('./components/CollectionsWorkspace').then(module => ({ default: module.CollectionsWorkspace })))
 const SessionWorkspace = lazy(() => import('./components/sessione/SessionWorkspace').then(module => ({ default: module.SessionWorkspace })))
 const ExternalSessionEdit = lazy(() => import('./components/sessione/ExternalSessionEdit').then(module => ({ default: module.ExternalSessionEdit })))
+const SessionOutcomes = lazy(() => import('./components/sessione/SessionOutcomes').then(module => ({ default: module.SessionOutcomes })))
 import { DictionaryOverlay } from './components/DictionaryOverlay'
 
 const LectureDrawer = lazy(() =>
@@ -447,6 +448,13 @@ export default function App() {
   const quickCapture = useQuickCapture()
   const sessione = useSessione()
   const managedCourses = activeExamSession(sessione.archive)?.confirmed?.courses
+  const [reviewAtStartup, setReviewAtStartup] = useState(true)
+  const review = reviewAtStartup ? sessione.archive?.sessions
+    .flatMap(session => dueExamAttempts(session, sessione.today).slice(0, 1).map(attempt => ({ session, date: attempt.exam.date })))
+    .sort((a, b) => a.date.localeCompare(b.date))[0]?.session : undefined
+  useEffect(() => {
+    if (sessione.archive && !review) setReviewAtStartup(false)
+  }, [sessione.archive, review])
 
   return (
     <AppUpdates canRestart={!selectedLectureId && !courseChatOpen && !showRepetitions && !videoSelection && !sessione.open && !sessione.busy}>
@@ -621,7 +629,7 @@ export default function App() {
           <ErrorBoundary fallbackTitle="Errore nel pannello della lezione">
             <LectureDrawer
               memoOpen={quickCapture.isOpen || showRepetitions}
-              sessioneOpen={sessione.open}
+              sessioneOpen={sessione.open || Boolean(review)}
               selectedLecture={selectedLecture}
               isReturningToList={finalLecture.isReturning}
               allLectures={lectures}
@@ -785,6 +793,14 @@ export default function App() {
                 : <LazyFallback />}
           </Suspense>
         </ErrorBoundary>
+      </SessionDialog>}
+      {review && !sessione.open && <SessionDialog title="Esiti degli esami"
+        onClose={() => { if (!sessione.busy) void sessione.apply({ type: 'defer-outcomes', sessionId: review.draft.id }) }}>
+        {sessione.error && <p role="alert">{sessione.error}</p>}
+        <Suspense fallback={<LazyFallback />}>
+          <SessionOutcomes key={review.draft.id} session={review} today={sessione.today}
+            busy={sessione.busy} apply={sessione.apply} automatic onDone={() => {}} />
+        </Suspense>
       </SessionDialog>}
       <BatteryIndicator />
     </main>

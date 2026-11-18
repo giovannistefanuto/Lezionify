@@ -33,7 +33,6 @@ export function useSessione() {
     }
   }, [])
 
-  useEffect(() => { void refresh() }, [refresh])
   useEffect(() => {
     const update = () => setToday(formatLocalCalendarDate())
     const next = new Date()
@@ -47,6 +46,7 @@ export function useSessione() {
       document.removeEventListener('visibilitychange', update)
     }
   }, [today])
+  useEffect(() => { void refresh() }, [refresh, today])
 
   const apply = async (action: SessionAction) => {
     const api = window.archive?.sessione
