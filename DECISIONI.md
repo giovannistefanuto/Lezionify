@@ -6305,3 +6305,14 @@ Non modificare manualmente la sezione `Registro`: aggiungi le nuove decisioni es
 - **Impatto:** La proiezione distingue esiti in attesa e prove superate. I superamenti valgono per la singola prova. Testati anche esito negativo, saltato e riavvio.
 - **Follow-up:** Includere gli esiti nel calcolo delle proposte di spaziatura.
 - **File coinvolti:** shared/sessione.ts, electron/main/sessioneStore.ts, src/App.tsx, src/components/sessione/SessionOutcomes.tsx, tests/unit/sessioneStore.test.ts
+
+## D-0576 — Spaziatura locale calcolata in un worker
+
+- **Data:** 2026-11-18
+- **Stato:** accettata
+- **Area:** sessione
+- **Decisione:** Cercare una combinazione deterministica con potatura, in un worker annullabile e con limite di 150000 stati. Massimizzare il minimo, poi ridurre dispersione e modifiche.
+- **Motivazione:** Aumentare il tempo tra gli appelli mantenendo percorsi, vincoli e responsivita della finestra.
+- **Impatto:** Anteprima con confronto date e giorni, applicazione a bozza o nuovo piano e blocco dei risultati obsoleti. Verifica con enumerazione indipendente.
+- **Follow-up:** Provare il worker nella build di produzione e integrare lo smoke nel gate.
+- **File coinvolti:** shared/sessionSpacing.ts, src/components/sessione, tests/unit/sessionSpacing.test.ts, tests/integration/sessione.browser.tsx

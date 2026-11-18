@@ -105,6 +105,13 @@ async function run() {
   await click('Conferma piano')
   await click('Conferma e aggiorna')
   await click('Piano')
+  await click('Distanza gli esami')
+  await act(async () => {
+    for (let i = 0; i < 8; i++) await new Promise(resolve => setTimeout(resolve, 25))
+  })
+  assert(topDialog().textContent?.includes('Migliore combinazione disponibile'), 'Worker di spaziatura senza risultato')
+  await click('Annulla')
+  await click('Piano')
   await click('Duplica piano')
   await click('Salva piano')
   assert(topDialog().querySelectorAll('.session-note tbody tr').length === 1, 'Countdown non univoco')

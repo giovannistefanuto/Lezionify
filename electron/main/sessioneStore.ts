@@ -33,7 +33,7 @@ export class SessionStore {
         return await this.read(`${this.file}.bak`)
       } catch (backup) {
         if (missing && (backup as NodeJS.ErrnoException).code === 'ENOENT') return emptySessionArchive()
-        throw new Error('Archivio Sessione illeggibile. Ripristina una copia valida.')
+        throw new Error('Archivio Sessione illeggibile. Ripristina una copia valida.', { cause: backup })
       }
     }
   }

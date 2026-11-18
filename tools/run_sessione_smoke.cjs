@@ -2,14 +2,23 @@ const { mkdtempSync, writeFileSync, rmSync } = require('node:fs')
 const { tmpdir } = require('node:os')
 const { join } = require('node:path')
 const { spawnSync } = require('node:child_process')
-const { buildSync } = require('esbuild')
+const { build, buildSync } = require('esbuild')
 
-const scratch = mkdtempSync(join(tmpdir(), 'lezionify-sessione-ui-'))
-try {
+async function run() {
+  const scratch = mkdtempSync(join(tmpdir(), 'lezionify-sessione-ui-'))
+  try {
   const file = name => join(scratch, name)
-  buildSync({ entryPoints: ['tests/integration/sessione.browser.tsx'], bundle: true, platform: 'browser',
+  await build({ entryPoints: ['tests/integration/sessione.browser.tsx'], bundle: true, platform: 'browser',
     jsx: 'automatic', external: ['electron'], outfile: file('browser.js'),
-    define: { 'process.env.NODE_ENV': '"development"' } })
+    define: { 'process.env.NODE_ENV': '"development"' },
+    plugins: [{ name: 'sessione-worker-fixture', setup(build) {
+      build.onResolve({ filter: /sessionSpacing\.worker\?worker&inline$/ }, () => ({ path: 'spacing-worker', namespace: 'sessione-test' }))
+      build.onLoad({ filter: /^spacing-worker$/, namespace: 'sessione-test' }, () => ({
+        contents: 'export default function() { return new Worker(new URL("spacing-worker.js", document.baseURI)) }'
+      }))
+    } }] })
+  buildSync({ entryPoints: ['src/components/sessione/sessionSpacing.worker.ts'], bundle: true, platform: 'browser',
+    outfile: file('spacing-worker.js') })
   buildSync({ entryPoints: ['electron/main/sessioneStore.ts'], bundle: true, platform: 'node',
     format: 'cjs', outfile: file('store.cjs') })
   writeFileSync(file('index.html'), '<!doctype html><meta charset="utf-8"><link rel="stylesheet" href="browser.css"><div id="root"></div><script src="browser.js"></script>')
@@ -43,6 +52,8 @@ try {
   process.stderr.write(result.stderr || '')
   if (result.error) console.error(result.error.message)
   process.exitCode = result.status ?? 1
-} finally {
-  rmSync(scratch, { force: true, recursive: true })
+  } finally {
+    rmSync(scratch, { force: true, recursive: true })
+  }
 }
+void run().catch(error => { console.error(error); process.exitCode = 1 })

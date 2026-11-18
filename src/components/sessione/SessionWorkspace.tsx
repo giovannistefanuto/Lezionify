@@ -12,6 +12,8 @@ import { SessionDialog } from './SessionDialog'
 import { shiftSessionMonth } from './sessionCalendarDates'
 import { chooseAppointment, sessionId, setExamAppointment } from './editSessionDraft'
 import { SessionOutcomes } from './SessionOutcomes'
+import { SessionSpacing } from './SessionSpacing'
+import type { SpacingRequest } from '../../../shared/sessionSpacing'
 
 import type { SessionAction } from '../../hooks/useSessione'
 
@@ -21,6 +23,7 @@ type Panel =
   | { kind: 'exam'; id: string }
   | { kind: 'date'; appointment: ExamAppointment }
   | { kind: 'outcomes'; examId?: string }
+  | { kind: 'spacing'; request: SpacingRequest; revision: number }
 
 function SessionMenu({ title, children }: { title: string; children: ReactNode }) {
   const ref = useRef<HTMLDetailsElement>(null)
@@ -257,6 +260,23 @@ export function SessionWorkspace({ archive, settings, today, busy, error, onAppl
   } else if (panel?.kind === 'outcomes' && session) {
     title = 'Esiti degli esami'
     dialog = <SessionOutcomes session={session} today={today} busy={busy} apply={onApply} examId={panel.examId} onDone={closePanel} />
+  } else if (panel?.kind === 'spacing' && session) {
+    title = 'Distanza gli esami'
+    const fresh = panel.revision === archive.revision && panel.request.today === today
+    dialog = fresh ? <SessionSpacing request={panel.request} nameOf={courseName} onCancel={closePanel}
+      busy={busy} onApply={(proposal, copy) => {
+        if (!fresh) return
+        if (copy) {
+          const next = { id: sessionId(), name: `Proposta · ${plan.name}`.slice(0, 100), choices: proposal.choices }
+          void save({ ...draft, plans: [...draft.plans, next] }).then(success => {
+            if (success) setSelectedPlanId(next.id)
+          })
+        } else void updatePlan({ ...plan, choices: proposal.choices }, true)
+      }} /> : <div className="session-form">
+        <p role="alert">Le date, gli esiti o il piano sono cambiati. Calcola una nuova proposta.</p>
+        <button type="button" onClick={() => setPanel({ kind: 'spacing', request: { session, plan, today }, revision: archive.revision })}>Ricalcola</button>
+        <button type="button" onClick={closePanel}>Annulla</button>
+      </div>
   }
 
   const initialMonth = draft.end < today ? shiftSessionMonth(draft.start, 0) : shiftSessionMonth(today, 0)
@@ -281,6 +301,8 @@ export function SessionWorkspace({ archive, settings, today, busy, error, onAppl
             <button type="button" onClick={() => setPanel({ kind: 'outcomes' })}>Aggiorna esiti</button>
           </SessionMenu>
           <SessionMenu title="Piano">
+            {session && <button type="button" disabled={busy} onClick={() =>
+              setPanel({ kind: 'spacing', request: { session, plan, today }, revision: archive.revision })}>Distanza gli esami</button>}
             <button type="button" onClick={() => startPlan('newPlan')}>Nuovo piano</button>
             <button type="button" onClick={() => startPlan('copy')}>Duplica piano</button>
             <button type="button" onClick={() => startPlan('rename')}>Rinomina piano</button>
