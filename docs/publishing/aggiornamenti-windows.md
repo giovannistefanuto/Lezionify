@@ -40,6 +40,25 @@ il codice per cercare aggiornamenti.
 
 ## Preparare ogni nuova versione
 
+La verifica dell'identita Windows fa parte del packaging: metadati e icona EXE,
+icona BrowserWindow presente nell'ASAR e identita distinta fra sviluppo e NSIS.
+Sul PC installato controllare anche Start dopo i test. Diagnosi e recupero del
+caso "Electron" sono nella [skill](../../skills/lezionify-release/references/identita-windows.md).
+
+### Correzione Windows 0.3.2, 19 novembre
+
+Gate completo passato: 957 unitari, 49 Python, 41 Node, updater, regressioni
+React/Electron con riavvio, raccolte, Sessione e PDF reali. Verificati 385 file,
+nove componenti NSIS, tre backup e assenza di dati personali. Metadati e icona
+EXE corretti, icona ASAR confrontata con la sorgente e caricata in una finestra
+Windows nascosta. Recuperata la ricerca Start e verificato l'isolamento dello
+sviluppo con una notifica reale. [Rapporto completo](../quality/identita-windows-2026-11-19.md).
+
+Setup SHA256 `39d3e41cbb89af8abe64c35b786435e29bd28a9639c2423428e0ae9c29596f19`;
+300542486 byte, NotSigned. Nessuna installazione sul profilo personale e nessuna
+prova di upgrade su Windows temporaneo, UAC o SmartScreen. Release preparata,
+pubblicazione e verifica del feed ancora da completare.
+
 La skill [lezionify-release](../../skills/lezionify-release/SKILL.md) guida
 l'esecuzione completa, incluse ripresa degli upload e verifica pubblica.
 La [diagnosi della 0.2.2](../../skills/lezionify-release/references/incidenti-0.2.2.md)

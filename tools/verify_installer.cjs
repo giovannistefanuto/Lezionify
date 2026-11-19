@@ -20,6 +20,9 @@ function files(directory) {
   return fs.readdirSync(directory, { withFileTypes: true }).flatMap(item => item.isDirectory() ? files(path.join(directory, item.name)) : [path.join(directory, item.name)])
 }
 async function main() {
+  const branding = require('node:child_process').spawnSync('powershell.exe', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', path.join(root, 'tools/verify_windows_identity.ps1'), '-Mode', 'Package'], { windowsHide: true, encoding: 'utf8' })
+  assert(branding.status === 0, 'Windows branding verification failed: ' + branding.stdout + branding.stderr)
+  assert(asar.extractFile(archive, path.normalize('out/main/app-icon.png')).equals(fs.readFileSync(path.join(root, 'resources/icon.png'))), 'Window icon missing or changed in ASAR')
   const entries = asar.listPackage(archive).map(item => item.replaceAll('\\', '/').replace(/^\//, ''))
   assert(entries.every(item => item === 'package.json' || item === 'node_modules' || item.startsWith('node_modules/') || item === 'out' || item.startsWith('out/')), 'Unexpected top-level package content')
   assert(!entries.some(item => /(^|\/)(local-artifacts|\.library-data|settings\.json|library\.json|app\.log|scratchpad\.json)(\/|$)/.test(item)), 'Private artifact packaged')

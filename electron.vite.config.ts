@@ -56,7 +56,12 @@ function pdfAssets(): Plugin {
 
 export default defineConfig({
   main: {
-    plugins: [externalizeDepsPlugin(), translationAssets(), courseRagAssets()],
+    plugins: [externalizeDepsPlugin(), translationAssets(), courseRagAssets(), {
+      name: 'window-icon',
+      generateBundle() {
+        this.emitFile({ type: 'asset', fileName: 'app-icon.png', source: readFileSync(resolve('resources/icon.png')) })
+      }
+    }],
     build: {
       lib: {
         entry: resolve('electron/main/index.ts')

@@ -6426,3 +6426,25 @@ Non modificare manualmente la sezione `Registro`: aggiungi le nuove decisioni es
 - **Impatto:** Release pubblica stabile latest; tre asset con digest e dimensioni coincidenti ai locali; manifesto scaricato senza credenziali identico byte per byte. Le cinque voci sono completate e rimangono 16 attivita operative aperte, inclusa 131 per dati insufficienti.
 - **Follow-up:** Aggiornamento disponibile, non installato automaticamente sul PC. Firma e upgrade Windows reale restano nei limiti dichiarati. Pubblicare anche la documentazione finale e verificarne il commit remoto.
 - **File coinvolti:** docs/publishing/aggiornamenti-windows.md, docs/quality/lettura-qna-2026-11-19.md, STRUTTURA_PROGETTO.md, DECISIONI.md
+
+## D-0584 — Identita Windows separata fra sviluppo e installazione
+
+- **Data:** 2026-11-19
+- **Stato:** accettata
+- **Area:** windows
+- **Decisione:** Usare AppUserModelID com.lezionify.app solo nei binari confezionati e com.lezionify.app.development nello sviluppo, prima di finestre e notifiche. Includere app-icon.png nella build main e verificarne la presenza nel pacchetto. Preparare 0.3.2.
+- **Motivazione:** Riprodotto Start che restituisce Electron per identita NSIS: Electron.lnk verso il runtime del checkout e Lezionify.lnk verso app installata 0.3.1 condividono lo stesso ID. Il percorso precedente della icona finestra non esiste nel pacchetto.
+- **Impatto:** Identita NSIS e dati conservati. Test prima rossi su identita dev e icona, poi verdi; controllo EXE nel gate e CI; recupero selettivo del collegamento con backup e verifica target. Skill aggiornata senza nuove dipendenze.
+- **Follow-up:** Gate completo, recupero Start sul profilo reale, verifica payload e pubblicazione 0.3.2. Non attribuire il problema a cancellazione NSIS: EXE installato corretto e presente.
+- **File coinvolti:** electron/main/windowsIdentity.ts, electron/main/index.ts, electron.vite.config.ts, tools/verify_windows_identity.ps1, tools/verify_installer.cjs, tests/unit/windowsIdentity.test.ts, .github/workflows/release.yml, skills/lezionify-release/, docs/publishing/aggiornamenti-windows.md, docs/releases/0.3.2.md, package.json, package-lock.json, electron-builder.yml
+
+## D-0585 — Gate completo e recupero identita Windows verificati per 0.3.2
+
+- **Data:** 2026-11-19
+- **Stato:** accettata
+- **Area:** release
+- **Decisione:** Distribuire la correzione 0.3.2 dopo il gate completo e le verifiche native della identita e icona Windows. Recuperare il solo collegamento di sviluppo in conflitto dopo backup verificato.
+- **Motivazione:** Audit Start inizialmente fallito e poi passato. Prova reale Electron 44.3.0 con notifica sintetica registra ID sviluppo separato e non altera la ricerca Lezionify. BrowserWindow decodifica icona ASAR finale.
+- **Impatto:** 957 unitari, 49 Python, 41 Node e scenari completi passati. Verificati 385 file build, nove componenti NSIS e tre backup. Setup SHA256 39d3e41cbb89af8abe64c35b786435e29bd28a9639c2423428e0ae9c29596f19, 300542486 byte, NotSigned. Skill versionata e installata aggiornate.
+- **Follow-up:** Commit e push, pubblicare e verificare i tre asset immutabili. Installazione personale non eseguita; upgrade Windows temporaneo, UAC e SmartScreen non collaudati.
+- **File coinvolti:** docs/quality/identita-windows-2026-11-19.md, docs/publishing/aggiornamenti-windows.md, STRUTTURA_PROGETTO.md, DECISIONI.md

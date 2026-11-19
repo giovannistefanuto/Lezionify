@@ -35,6 +35,10 @@ jobs:
           CSC_KEY_PASSWORD: ${{ secrets.WINDOWS_CSC_KEY_PASSWORD }}
       - name: Verify matching assets and metadata
         run: npm run release:validate -- --artifacts
+      - name: Verify Windows executable branding and embedded window icon
+        run: |
+          ./tools/verify_windows_identity.ps1 -Mode Package
+          node -e "const fs=require('node:fs'),asar=require('@electron/asar'),assert=require('node:assert/strict');assert(asar.extractFile('dist/win-unpacked/resources/app.asar','out/main/app-icon.png').equals(fs.readFileSync('resources/icon.png')))"
       - name: Prepare complete draft release
         shell: pwsh
         env:

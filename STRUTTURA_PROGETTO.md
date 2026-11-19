@@ -2,6 +2,13 @@
 
 ## Stato attuale
 
+La correzione Windows 0.3.2 separa l'identita di sviluppo da quella NSIS in
+`electron/main/windowsIdentity.ts`. Vite include l'icona BrowserWindow nella
+build main. `tools/verify_windows_identity.ps1` controlla metadati e icona EXE,
+verifica Start e permette il recupero selettivo dei collegamenti in conflitto.
+Gate, verifica installer e CI controllano le risorse; diagnosi e collaudi in
+[identita Windows](docs/quality/identita-windows-2026-11-19.md) e nella skill release.
+
 La 0.3.1, pubblicata e verificata il 19 novembre, migliora la lettura delle dispense e del Q&A.
 `src/hooks/useStudyPreview.ts` consulta il modello dei paragrafi senza
 accreditare tempo fuori Full Focus; `InlineMathTitle.tsx` rende le formule

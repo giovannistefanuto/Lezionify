@@ -1,4 +1,5 @@
 import { readBatteryStatus } from './battery'
+import { configureWindowsIdentity, windowIconPath } from './windowsIdentity'
 import electronUpdater from 'electron-updater'
 import { AppUpdateService } from './appUpdater'
 import { UpdateShutdownGate } from './updateShutdownGate'
@@ -36,6 +37,7 @@ import type {
 } from '../../shared/archive'
 
 configureGeminiConnectivity(() => net.isOnline())
+configureWindowsIdentity(app, process.platform)
 
 // Global handlers per catturare eccezioni non gestite nel processo Electron
 process.on('uncaughtException', (err) => {
@@ -106,7 +108,7 @@ const pdfExport = new PdfExportService(archive, join(__dirname, '../renderer/ind
 
 function createWindow(): void {
   Menu.setApplicationMenu(null)
-  const iconPath = join(__dirname, '../../resources/icon.png')
+  const iconPath = windowIconPath(__dirname)
   mainWindow = new BrowserWindow({
     title: 'Lezionify',
     icon: iconPath,
@@ -688,9 +690,6 @@ app.whenReady().then(async () => {
     const result = mainWindow ? await dialog.showOpenDialog(mainWindow, options) : await dialog.showOpenDialog(options)
     return result.canceled ? null : result.filePaths[0] ?? null
   }, process.env.ELECTRON_RENDERER_URL ? new URL(process.env.ELECTRON_RENDERER_URL).origin : 'null')
-  if (process.platform === 'win32') {
-    app.setAppUserModelId('com.lezionify.app')
-  }
   try {
     await archive.initialize()
     mobileCompanion = new MobileCompanionService(join(app.getPath('userData'), 'mobile-companion.bin'), {

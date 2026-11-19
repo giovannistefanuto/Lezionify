@@ -89,6 +89,12 @@ node tools/verify_installer.cjs <directory-backup> --app-update
 ```
 
 Controlla nuove funzioni e assenza dei materiali privati nel pacchetto.
+Verifica anche l'identita Windows: `verify_installer.cjs` controlla metadati
+e icona dell'EXE e confronta l'icona della finestra nell'ASAR con la sorgente.
+Sul PC con app installata esegui `tools/verify_windows_identity.ps1 -Mode AuditShell`
+nel profilo Windows reale, anche dopo i collaudi di sviluppo. Se compare Electron,
+leggi [identita-windows](references/identita-windows.md): sviluppo e NSIS devono
+avere AppUserModelID distinti; ricostruire il setup da solo non elimina la collisione.
 `Get-AuthenticodeSignature` determina la firma effettiva: il messaggio builder
 «signing with signtool» non ne prova la presenza. Conserva hash SHA256, dimensioni
 e provenienza della build in rapporti locali ignorati.
