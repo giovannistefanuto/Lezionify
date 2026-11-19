@@ -2,7 +2,7 @@
 
 ## Stato attuale
 
-La correzione Windows 0.3.2 separa l'identita di sviluppo da quella NSIS in
+La correzione Windows 0.3.2, pubblicata e verificata il 19 novembre, separa l'identita di sviluppo da quella NSIS in
 `electron/main/windowsIdentity.ts`. Vite include l'icona BrowserWindow nella
 build main. `tools/verify_windows_identity.ps1` controlla metadati e icona EXE,
 verifica Start e permette il recupero selettivo dei collegamenti in conflitto.

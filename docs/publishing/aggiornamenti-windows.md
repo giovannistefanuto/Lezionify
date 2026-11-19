@@ -38,14 +38,7 @@ automatici NSIS. La portable conserva l'accesso alla pagina dei rilasci.
 La prima installazione di 0.2.0 resta manuale: le copie 0.1.0 non contengono
 il codice per cercare aggiornamenti.
 
-## Preparare ogni nuova versione
-
-La verifica dell'identita Windows fa parte del packaging: metadati e icona EXE,
-icona BrowserWindow presente nell'ASAR e identita distinta fra sviluppo e NSIS.
-Sul PC installato controllare anche Start dopo i test. Diagnosi e recupero del
-caso "Electron" sono nella [skill](../../skills/lezionify-release/references/identita-windows.md).
-
-### Correzione Windows 0.3.2, 19 novembre
+## Correzione Windows 0.3.2, 19 novembre
 
 Gate completo passato: 957 unitari, 49 Python, 41 Node, updater, regressioni
 React/Electron con riavvio, raccolte, Sessione e PDF reali. Verificati 385 file,
@@ -56,8 +49,19 @@ sviluppo con una notifica reale. [Rapporto completo](../quality/identita-windows
 
 Setup SHA256 `39d3e41cbb89af8abe64c35b786435e29bd28a9639c2423428e0ae9c29596f19`;
 300542486 byte, NotSigned. Nessuna installazione sul profilo personale e nessuna
-prova di upgrade su Windows temporaneo, UAC o SmartScreen. Release preparata,
-pubblicazione e verifica del feed ancora da completare.
+prova di upgrade su Windows temporaneo, UAC o SmartScreen.
+[Release 0.3.2](https://github.com/giovannistefanuto/Lezionify/releases/tag/v0.3.2)
+pubblicata e verificata sul commit dei binari
+`bb07f7ebfef750826aa0815ca0ad0fcfa1c6f08c`: tre asset con dimensioni e digest
+corrispondenti, tag sul commit atteso e manifesto pubblico identico byte per byte.
+Aggiornamento disponibile, installazione personale non eseguita.
+
+## Preparare ogni nuova versione
+
+La verifica dell'identita Windows fa parte del packaging: metadati e icona EXE,
+icona BrowserWindow presente nell'ASAR e identita distinta fra sviluppo e NSIS.
+Sul PC installato controllare anche Start dopo i test. Diagnosi e recupero del
+caso "Electron" sono nella [skill](../../skills/lezionify-release/references/identita-windows.md).
 
 La skill [lezionify-release](../../skills/lezionify-release/SKILL.md) guida
 l'esecuzione completa, incluse ripresa degli upload e verifica pubblica.

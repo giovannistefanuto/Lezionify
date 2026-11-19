@@ -6448,3 +6448,14 @@ Non modificare manualmente la sezione `Registro`: aggiungi le nuove decisioni es
 - **Impatto:** 957 unitari, 49 Python, 41 Node e scenari completi passati. Verificati 385 file build, nove componenti NSIS e tre backup. Setup SHA256 39d3e41cbb89af8abe64c35b786435e29bd28a9639c2423428e0ae9c29596f19, 300542486 byte, NotSigned. Skill versionata e installata aggiornate.
 - **Follow-up:** Commit e push, pubblicare e verificare i tre asset immutabili. Installazione personale non eseguita; upgrade Windows temporaneo, UAC e SmartScreen non collaudati.
 - **File coinvolti:** docs/quality/identita-windows-2026-11-19.md, docs/publishing/aggiornamenti-windows.md, STRUTTURA_PROGETTO.md, DECISIONI.md
+
+## D-0586 — Release Windows 0.3.2 pubblicata e verificata
+
+- **Data:** 2026-11-19
+- **Stato:** accettata
+- **Area:** release
+- **Decisione:** Pubblicare Lezionify 0.3.2 sul commit bb07f7ebfef750826aa0815ca0ad0fcfa1c6f08c con installer, blockmap e latest.yml collaudati e immutati.
+- **Motivazione:** Correggere la collisione Windows riprodotta e la risorsa icona mancante, rendendo disponibile aggiornamento stabile dopo gate completo e prove native.
+- **Impatto:** Release stabile latest pubblica; tag sul commit atteso; digest e dimensioni dei tre asset coincidenti; manifesto pubblico scaricato senza credenziali identico al locale. Sorgenti sul remoto. Skill release aggiornata, validata e copia installata allineata.
+- **Follow-up:** Installazione personale non eseguita; upgrade Windows temporaneo, UAC e SmartScreen non collaudati. Checkout esterni richiedono aggiornamento separato. Pubblicare documentazione finale e verificarne commit remoto.
+- **File coinvolti:** docs/publishing/aggiornamenti-windows.md, STRUTTURA_PROGETTO.md, DECISIONI.md
