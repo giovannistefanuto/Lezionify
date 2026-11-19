@@ -208,6 +208,8 @@ export interface PublishingStatus {
 }
 
 export interface QnaMessage {
+  model?: string
+  thinking?: 'HIGH' | 'predefinito'
   attachmentIds?: string[]
   role: 'user' | 'ai'
   text: string
@@ -707,7 +709,7 @@ export interface ArchiveApi extends StudyHistoryApi, CourseRagApi, RepetitionApi
     responseLength?: 'brief' | 'medium' | 'long',
     searchOnline?: boolean,
     thinkDeeper?: boolean
-  ) => Promise<{ success: boolean; text?: string; error?: string }>
+  ) => Promise<{ success: boolean; text?: string; error?: string; model?: string; thinking?: 'HIGH' | 'predefinito' }>
   saveStudySession: (session: StudySession) => Promise<void>
   getLectureStudySeconds: (lectureId: string, excludedSessionId: string) => Promise<number>
   getStudyAnalytics: () => Promise<StudyAnalytics>

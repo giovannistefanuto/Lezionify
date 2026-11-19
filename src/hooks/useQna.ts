@@ -182,6 +182,8 @@ export function useQna(lectureId: string | null) {
                 {
                   role: 'ai' as const,
                   text: res.text!,
+                  model: res.model,
+                  thinking: res.thinking,
                   timestamp: new Date().toISOString()
                 }
               ]

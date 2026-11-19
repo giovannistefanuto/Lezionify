@@ -1,3 +1,4 @@
+import { InlineMathTitle } from './InlineMathTitle'
 import React, { useState, useCallback, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import type {
@@ -492,7 +493,7 @@ export function LectureList({
                     <div className="lecture-row-info">
                       {/* Primary descriptive topic title */}
                       <div className="lecture-row-heading">
-                        <h3 className="lecture-row-title" title={mainHeading}>{mainHeading}</h3>
+                        <h3 className="lecture-row-title" title={mainHeading}><InlineMathTitle text={mainHeading} /></h3>
                         {lecture.isLaboratory && <strong className="lecture-laboratory-label"> - Laboratorio</strong>}
                       </div>
                       <div className="lecture-row-meta">

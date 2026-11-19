@@ -97,6 +97,8 @@ export function validateQnaThread(value: unknown): asserts value is QnaThread {
       !isRecord(message) ||
       (message.role !== 'user' && message.role !== 'ai') ||
       !validText(message.text, 200_000) ||
+      (message.model !== undefined && !validText(message.model, 120)) ||
+      (message.thinking !== undefined && !['HIGH', 'predefinito'].includes(message.thinking as string)) ||
       (message.timestamp !== '' && !isValidIsoDateTime(message.timestamp))
     ) {
       throw new Error('Messaggio Q&A non valido.')

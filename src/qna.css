@@ -341,3 +341,20 @@
 .qna-thread-summary[aria-current="true"] { border-color: var(--primary-accent); }
 .qna-slide-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-bottom: 8px; }
 .qna-slide-actions small { color: var(--text-muted); }
+
+/* Reading takes priority; composition settings open only on request. */
+.qna-input-container { flex: 0 0 auto; padding: 10px 12px; max-height: 45%; overflow-y: auto; }
+.qna-options { margin-bottom: 8px; }
+.qna-options summary { cursor: pointer; color: var(--text-secondary); font-size: 12px; padding: 5px 0; }
+.qna-options[open] summary { margin-bottom: 8px; }
+.qna-options .qna-context-toggle { margin-bottom: 8px; }
+.qna-slide-actions { margin-bottom: 4px; }
+.qna-message.ai { max-width: 100%; }
+.qna-model-info { display: block; font-size: 11px; overflow-wrap: anywhere; color: var(--text-secondary); margin-bottom: 6px; }
+.qna-message-slides { display: flex; flex-wrap: wrap; gap: 8px; }
+.qna-message-slides .qna-image-preview img { max-width: 96px; max-height: 64px; }
+.qna-message-slides .qna-image-preview img.is-expanded { max-width: 100%; max-height: none; }
+.qna-messages-container > .qna-anchor-context, .qna-messages-container > .qna-active-images { flex: 0 0 auto; }
+
+.slide-selection-back { position: absolute; bottom: 12px; left: 12px; z-index: 5; }
+.focus-workspace { position: relative; }

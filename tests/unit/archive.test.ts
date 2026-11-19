@@ -1362,6 +1362,8 @@ describe('ArchiveService — QnA Key Rotation & Diagnostic Status', () => {
       false
     )
     expect(res.success).toBe(true)
+    expect(res.model).toBe('gemini-3.7-flash')
+    expect(res.thinking).toBe('predefinito')
     expect(res.text).toBe('Spiegazione del criterio.')
     expect(logicalRequests).toBe(1)
 
@@ -1414,7 +1416,7 @@ describe('ArchiveService — QnA Key Rotation & Diagnostic Status', () => {
       },
       false
     )
-    expect(result).toEqual({ success: true, text: 'ok' })
+    expect(result).toEqual({ success: true, text: 'ok', model: 'gemini-3.6-flash', thinking: 'predefinito' })
     expect(spy).toHaveBeenCalledTimes(1)
     await rm(root, { recursive: true, force: true })
   })

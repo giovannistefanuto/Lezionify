@@ -191,6 +191,10 @@ Fine spiegazione.` }] }
     check(observed[0].boldWords === 3 && observed[0].note === true && observed[0].position === 0, 'Paragraph style features not measured or persisted')
     check(observed[1].position > observed[0].position, 'Document position must increase independently of scrolling')
     check(observed.length === 2 && observed.every((sample: any) => sample.seconds === 30 && !('text' in sample)), 'Viewport exposure duplicated time, skipped blocks or persisted text')
+    const beforePreview = JSON.stringify({ ...localStorage })
+    const readOnly = observeParagraphs('synthetic-observations', 'it')
+    for (let index = 0; index < 10; index++) check(readOnly.tick(paragraphRoot, 0, 'reading', '', true)?.includes('Studio restante:'), 'Read-only estimate is missing')
+    check(JSON.stringify({ ...localStorage }) === beforePreview, 'Preview wrote study samples or reading progress')
     check(observeParagraphs('synthetic-observations', 'it').tick(paragraphRoot, 1)?.includes('Paragrafo:'), 'Paragraph model not restored after reopening')
     await render(null)
 

@@ -1,3 +1,5 @@
+import { InlineMathTitle } from './InlineMathTitle'
+import { useStudyPreview } from '../hooks/useStudyPreview'
 import { useStudyEstimate } from '../hooks/useStudyEstimate'
 import { useIpadAnticipation } from '../hooks/useIpadAnticipation'
 import { IpadExportNotice } from './IpadExportSettings'
@@ -249,6 +251,7 @@ export function LectureDrawer({
 
   // Reset dello stato full screen e search al cambio di lezione (tranne quando si avanza in Focus Mode)
   useEffect(() => {
+    setSlideSelectionRequest(0)
     if (keepFocusOnNextLectureRef.current) {
       keepFocusOnNextLectureRef.current = false
       setShowRegenerateConfirm(false)
@@ -312,6 +315,7 @@ export function LectureDrawer({
     setIsQnaSidebarOpen(true)
   }
   const [isQnaComposing, setIsQnaComposing] = useState(false)
+  const [slideSelectionRequest, setSlideSelectionRequest] = useState(0)
 
   const {
     threads,
@@ -433,6 +437,8 @@ export function LectureDrawer({
   useIpadAnticipation({ lectureId: selectedLectureId ?? null, markdown: currentMarkdown, language: effectiveLanguage,
     enabled: isFullScreen && !isLoadingContent && !isReturningToList && !isGenerating && !isTranslating,
     paused: trackingPaused || showFocusLock || pauseTimerActive, rootRef: contentRef })
+  const studyPreview = useStudyPreview({ lectureId: selectedLectureId ?? null, markdown: markdownText, english: markdownEnText,
+    language: effectiveLanguage, enabled: !isFullScreen && activeTab === 'markdown' && !isLoadingContent && studyEstimate.preference, rootRef: standardContentRef, fallbackRef: detailBodyRef })
   persistEstimate.current = studyEstimate.persist
 
   const readingKey = selectedLecture ? `notes:${selectedLecture.id}:${effectiveLanguage}` : null
@@ -678,7 +684,7 @@ export function LectureDrawer({
                 {selectedLecture.courseCode ?? 'Nessun corso'}
               </span>
               <span className="focus-title">
-                {lectureTitle(selectedLecture, effectiveLanguage, currentMarkdown) || selectedLecture.sourceAudioFileName}
+                <InlineMathTitle text={lectureTitle(selectedLecture, effectiveLanguage, currentMarkdown) || selectedLecture.sourceAudioFileName} />
               </span>
               <span
                 ref={zoomLabelRef}
@@ -753,6 +759,7 @@ export function LectureDrawer({
           </div>
           <FocusWorkspace lectureId={selectedLecture.id} onTextZoom={changeTextZoom} textZoom={textZoom}
             qnaButton={<button type="button" className="secondary-button small" onClick={reopenQna} aria-label="Apri domande Q&A">Q&amp;A · {threads.length}</button>}
+            slideSelectionRequest={slideSelectionRequest}
             canSelectSlides={isQnaSidebarOpen && isQnaComposing}
             exportRequest={{ kind: 'lecture', lectureId: selectedLecture.id, language: effectiveLanguage }}
             onCloseQna={() => setIsQnaSidebarOpen(false)}
@@ -765,7 +772,8 @@ export function LectureDrawer({
               <React.Suspense fallback={<p className="loading">Caricamento Q&amp;A…</p>}>
                 <QnaSidebar threads={threads} activeThreadId={activeThreadId} setActiveThreadId={setActiveThreadId}
                   onCompositionChange={setIsQnaComposing}
-                  onSelectSlides={() => setIsQnaComposing(true)}
+                  configuredModel={settingsModel}
+                  onSelectSlides={() => { setIsQnaComposing(true); setSlideSelectionRequest(value => value + 1) }}
                   isGenerating={isGeneratingQna || isAttachingImages} qnaStatus={activeThreadId ? (qnaStatuses[activeThreadId] ?? null) : null}
                   error={qnaError} onSendMessage={sendMessage} onDeleteThread={deleteThread}
                   onClose={() => setIsQnaSidebarOpen(false)} onRemoveImage={removeImage} />
@@ -915,8 +923,7 @@ export function LectureDrawer({
           </div>
 
           <h2>
-            {lectureTitle(selectedLecture, effectiveLanguage, currentMarkdown) ||
-              selectedLecture.sourceAudioFileName}
+            <InlineMathTitle text={lectureTitle(selectedLecture, effectiveLanguage, currentMarkdown) || selectedLecture.sourceAudioFileName} />
           </h2>
           <p className="detail-date">
             <span className="detail-audio-filename">
@@ -1055,6 +1062,8 @@ export function LectureDrawer({
                     {markdownText && (
                       <>
                         {renderLanguageToggle()}
+                        {studyEstimate.preference && <StudyEstimateDetails label={studyPreview} uncertainty={null} paused={false}
+                          readOnly onRecalculate={() => {}} />}
                         {highlightError && <small role="alert">{highlightError}</small>}
                         <SectionRegenerator key={selectedLecture.id} lectureId={selectedLecture.id} markdown={markdownText} english={effectiveLanguage === 'en'} disabled={isGenerating || isTranscribing || isTranslating} />
                         {selectedLecture.markdownEnNeedsUpdate && <small>ENG da aggiornare</small>}
@@ -1335,6 +1344,7 @@ export function LectureDrawer({
                         >
                           <QnaSidebar
                             onCompositionChange={setIsQnaComposing}
+                            configuredModel={settingsModel}
                             threads={threads}
                             activeThreadId={activeThreadId}
                             setActiveThreadId={setActiveThreadId}

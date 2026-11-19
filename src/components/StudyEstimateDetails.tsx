@@ -1,8 +1,8 @@
 import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react'
 import { studySurfaceBlocked } from '../utils/studyActivity'
 
-export function StudyEstimateDetails({ label, uncertainty, paused, onRecalculate, error }: {
-  label: string | null; uncertainty: string | null; paused: boolean; onRecalculate: () => void; error?: string | null
+export function StudyEstimateDetails({ label, uncertainty, paused, onRecalculate, error, readOnly = false }: {
+  readOnly?: boolean; label: string | null; uncertainty: string | null; paused: boolean; onRecalculate: () => void; error?: string | null
 }) {
   const [open, setOpen] = useState(false)
   const [pinned, setPinned] = useState(false)
@@ -60,13 +60,14 @@ export function StudyEstimateDetails({ label, uncertainty, paused, onRecalculate
       top: `clamp(12px, ${position.top}px, calc(100dvh - 92px))`,
       maxHeight: `calc(100dvh - clamp(12px, ${position.top}px, calc(100dvh - 92px)) - 12px)`
     }}>
-      <h3>Tempo di studio</h3>
+      <h3>Tempo rimanente della dispensa</h3>
       {error && <p role="alert">{error}</p>}
-      <p>{paused ? 'Stima sospesa' : label ?? 'Raccolta dei primi campioni di studio…'}</p>
+      <p>{paused ? 'Stima sospesa' : label ?? 'Dati di studio ancora insufficienti per stimare il tempo rimanente.'}</p>
       {!paused && label && uncertainty && <p className="study-estimate-uncertainty">{uncertainty}</p>}
-      <p className="study-estimate-help">Il margine usa gli errori delle lezioni completate nella stessa fase: inizio, metà o fine. Non misura la comprensione.</p>
-      <button type="button" className="secondary-button small" onClick={onRecalculate}>Ricalcola da qui</button>
-      <small>Riparte dalla posizione attuale; scarta le previsioni in corso, conserva lo storico concluso.</small>
+      {!readOnly && <p className="study-estimate-help">Il margine usa gli errori delle lezioni completate nella stessa fase: inizio, metà o fine. Non misura la comprensione.</p>}
+      {!readOnly && <><button type="button" className="secondary-button small" onClick={onRecalculate}>Ricalcola da qui</button>
+      <small>Riparte dalla posizione attuale; scarta le previsioni in corso, conserva lo storico concluso.</small></>}
+      {readOnly && <small>Stima dalla posizione attuale e dal ritmo già osservato. La lettura fuori Full Focus non aggiunge tempo allo storico.</small>}
     </section>}
   </div>
 }

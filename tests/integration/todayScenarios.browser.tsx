@@ -86,6 +86,7 @@ export async function runTodayScenarios(root: Root, api: any) {
     let sent: unknown[] = []
     const qna = (
       <QnaSidebar
+        configuredModel="gemini-4-hydrogen"
         threads={[thread]}
         activeThreadId={thread.id}
         setActiveThreadId={() => {}}
@@ -158,6 +159,14 @@ export async function runTodayScenarios(root: Root, api: any) {
     check(pane.clientWidth > initialWidth, 'Q&A separator did not widen pane')
     check(Math.abs(pane.getBoundingClientRect().right - document.querySelector('.qna-sidebar')!.getBoundingClientRect().right) < 2, 'Resized Q&A leaves empty space on right')
     check(document.querySelector('.qna-length-toggle [aria-pressed="true"]')?.textContent === 'Breve', 'Q&A must default to Breve')
+    const options = document.querySelector<HTMLDetailsElement>('.qna-options')!
+    check(!options.open, 'Answer settings must leave space for reading by default')
+    await act(async () => { options.open = true; options.dispatchEvent(new Event('toggle')) })
+    check(options.textContent?.includes('Modello: gemini-4-hydrogen, Think: predefinito'), 'Planned Q&A model is static')
+    const thinking = Array.from(options.querySelectorAll<HTMLInputElement>('input')).find(input => input.parentElement?.textContent?.includes('Pensa di più'))!
+    await act(async () => thinking.click())
+    check(options.textContent?.includes('Modello: gemini-3.5-flash-lite, Think: HIGH'), 'Deep thinking did not update the model label using the real policy')
+    await act(async () => thinking.click())
     await act(async () => Array.from(document.querySelectorAll<HTMLButtonElement>('.qna-length-toggle button')).find(button => button.textContent === 'Lunga')!.click())
     const savedWidth = localStorage.getItem(keys[1])
     const checks = document.querySelectorAll<HTMLInputElement>(
@@ -176,6 +185,7 @@ export async function runTodayScenarios(root: Root, api: any) {
       sent[2] === true && sent[3] === true && sent[4] === 'long',
       'Other Q&A opt-in changed full lesson consent'
     )
+    check(!document.querySelector<HTMLDetailsElement>('.qna-options')!.open, 'Sending must close answer settings')
     check(document.querySelector<HTMLTextAreaElement>('.qna-input-row textarea')?.value === 'Seconda domanda', 'Failed Q&A request lost the editable draft')
     await require('electron').ipcRenderer.invoke(
       'capture-video-import',

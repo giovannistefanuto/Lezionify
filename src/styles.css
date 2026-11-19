@@ -9243,3 +9243,6 @@ mark {
 .dashboard-header { display: flex; justify-content: space-between; align-items: center; gap: 20px; }
 .dashboard-header > div { min-width: 0; }
 .course-exam-box-heading > button { max-width: 100%; white-space: normal; }
+
+.title-math { display: inline; }
+.title-math .katex { font-size: 1em; }

@@ -121,6 +121,26 @@ per installazioni amministrative. Non è previsto rollback automatico dei dati.
 
 ## Verifiche e limiti
 
+### Pacchetto 0.3.1 del 19 novembre
+
+Lettura e Q&A: voci 158, 159, 161, 162 e 164 completate; 131 ancora aperta
+per campioni insufficienti. Il profilo completo ha superato 954 test unitari,
+49 Python, 41 Node, updater, React/Electron con riavvio, raccolte, Sessione
+e PDF reali. [Dettagli e limiti](../quality/lettura-qna-2026-11-19.md).
+
+Riutilizzata la build del gate. Verificati 384 file build, nove componenti NSIS
+e tre asset del backup 0.2.5. Nessun artefatto personale nel pacchetto.
+
+| Asset | Byte | SHA256 |
+|---|---:|---|
+| `Lezionify-Setup-0.3.1.exe` | 300328855 | `edc67ff703b2daa7fee73abdd64c12f63815fcd796de5c4f42fbe82250fdec09` |
+| `Lezionify-Setup-0.3.1.exe.blockmap` | 305607 | `7d8a2cffd38a83a01bdfa679f4658eca07cb7c886e40c90dacc3b35f05fc393e` |
+| `latest.yml` | 2784 | `c16a16f8e0932e17e0fd099d9b41edc7a33826cc997aa09173bf7bf04c8622b4` |
+
+Authenticode: `NotSigned`. Installer estratto e verificato, non eseguito sul
+profilo personale. Upgrade Windows reale, UAC e SmartScreen non collaudati.
+Preparazione locale completata; pubblicazione ancora da completare.
+
 ### Pacchetto 0.3.0 del 18 novembre
 
 Sessione riunisce gli appelli, le bozze e il piano confermato, con esiti,

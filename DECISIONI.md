@@ -6382,3 +6382,36 @@ Non modificare manualmente la sezione `Registro`: aggiungi le nuove decisioni es
 - **Impatto:** Widget aggiornato sul posto sul telefono. Il totale somma tutti i corsi dello snapshot e l app continua a mostrare il riepilogo completo. Versione APK allineata in Gradle e nella build locale.
 - **Follow-up:** Verificati firma APK, formati e temi in emulatore con dati sintetici, cache e sincronizzazione sul telefono e totale visibile sulla Home.
 - **File coinvolti:** android-companion/app/src/main/res/, android-companion/app/src/main/java/it/lezionify/mobile/, android-companion/app/build.gradle, android-companion/build-local.ps1, docs/product/statistiche-android.md, docs/product/idee-future-2026-10-13.md
+
+## D-0580 — Sette richieste di usabilita aggiunte alle attivita future
+
+- **Data:** 2026-11-19
+- **Stato:** accettata
+- **Area:** pianificazione
+- **Decisione:** Aggiungere le voci 158-164 nelle posizioni 104-110 della coda: indicazione dinamica modello e Think, formule nei titoli, invio manuale statistiche Android, tempo di studio fuori Full Focus, spazio Q&A e allegati slide, flusso Sessione, zoom dispensa a passi del 5 per cento.
+- **Motivazione:** Conservare le sette segnalazioni del 19 novembre con requisiti verificabili e rimandi al lavoro esistente, evitando duplicati e distinguendo nuovi difetti da attivita storiche concluse.
+- **Impatto:** Solo pianificazione documentale: 21 attivita operative aperte, sette sospese, ordine precedente invariato. Nessuna implementazione avviata. La frase Flash-Lite risulta statica nel Q&A e Aggiorna ora sul PC appartiene alla sincronizzazione Android.
+- **Follow-up:** Implementare quando autorizzato, riproducendo i sintomi senza anticiparne la causa; con LISTA_ORDINE resta prioritaria la voce 7.
+- **File coinvolti:** docs/product/idee-future-2026-10-13.md, DECISIONI.md
+
+## D-0581 — Lettura Q&A, stima ordinaria e zoom preciso per 0.3.1
+
+- **Data:** 2026-11-19
+- **Stato:** accettata
+- **Area:** lettura
+- **Decisione:** Implementare 158, 159, 161, 162 e 164: modello e Think previsti dalla policy condivisa e metadati effettivi nelle nuove risposte, formule nei titoli, previsione in sola lettura fuori Full Focus, opzioni Q&A richiudibili e allegati nel flusso, ripristino PDF e selezione su finestra stretta, zoom dispensa al 5 per cento. Per 161 il requisito confermato e il tempo rimanente della dispensa.
+- **Motivazione:** Ridurre lo spazio sottratto alle risposte e correggere le segnalazioni mantenendo fonti locali, bozze e politiche AI esistenti.
+- **Impatto:** Nessuna dipendenza nuova. Campi modello e thinking facoltativi sui messaggi Q&A. La previsione ordinaria non accredita tempo o campioni. Test mirati Q&A, fallback, stima e PDF in Electron; riprodotto il difetto dei titoli prima della correzione.
+- **Follow-up:** Gate completo e pubblicazione 0.3.1 tramite lezionify-release. La voce 131 resta aperta: 29 casi prospettici ma soltanto 4-6 lezioni distinte nei gruppi lingua, metodo e fase, sotto la soglia 20.
+- **File coinvolti:** src/components, src/hooks/useStudyPreview.ts, src/hooks/usePaneZoom.ts, src/hooks/useQna.ts, src/utils/paragraphObservation.ts, shared/archive.ts, shared/qnaModelPolicy.ts, electron/main/archive.ts, electron/main/archiveValidation.ts, tests/integration, tests/unit/archive.test.ts, docs/releases/0.3.1.md
+
+## D-0582 — Gate completo e installer Windows 0.3.1 verificati
+
+- **Data:** 2026-11-19
+- **Stato:** accettata
+- **Area:** release
+- **Decisione:** Completare le voci 158, 159, 161, 162 e 164 e distribuire la 0.3.1 con il profilo completo. La voce 131 rimane aperta per insufficienza di lezioni prospettiche confrontabili.
+- **Motivazione:** Il gate definitivo e verde e la stessa build e stata riusata per il pacchetto, con sorgenti invariati durante la preparazione.
+- **Impatto:** 954 unitari, 49 Python, 41 Node, updater, React/Electron, raccolte, Sessione e PDF reali passati. Verificati 384 file build, nove componenti NSIS e tre backup. Setup SHA256 edc67ff703b2daa7fee73abdd64c12f63815fcd796de5c4f42fbe82250fdec09; artefatti privati esclusi; firma NotSigned.
+- **Follow-up:** Commit e push delle modifiche pubblicabili; creare, caricare e pubblicare la release con i tre asset verificati, poi confrontare il manifesto pubblico. Installer non eseguito sul profilo personale; upgrade reale, UAC e SmartScreen non collaudati.
+- **File coinvolti:** docs/product/idee-future-2026-10-13.md, docs/quality/lettura-qna-2026-11-19.md, docs/releases/0.3.1.md, docs/publishing/aggiornamenti-windows.md, STRUTTURA_PROGETTO.md, package.json, package-lock.json, electron-builder.yml, DECISIONI.md

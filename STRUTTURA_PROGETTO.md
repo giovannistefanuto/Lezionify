@@ -2,6 +2,14 @@
 
 ## Stato attuale
 
+La preparazione 0.3.1 migliora la lettura delle dispense e del Q&A.
+`src/hooks/useStudyPreview.ts` consulta il modello dei paragrafi senza
+accreditare tempo fuori Full Focus; `InlineMathTitle.tsx` rende le formule
+nei titoli. `shared/qnaModelPolicy.ts` alimenta modello/Think previsti e i
+metadati effettivi delle nuove risposte. Le regressioni in Electron coprono
+opzioni richiudibili, ripristino delle slide, zoom al 5% e previsione ordinaria.
+La calibrazione statistica personale resta aperta per dati insufficienti.
+
 Sessione locale integra calendario da muro, bozze e piani confermati,
 esiti e proposta deterministica di spaziatura. `shared/sessione.ts`
 definisce contratti e proiezione degli appelli, `electron/main/sessioneStore.ts`

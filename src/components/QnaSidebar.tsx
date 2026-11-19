@@ -3,7 +3,8 @@ import ReactMarkdown from 'react-markdown'
 import remarkMath from 'remark-math'
 import rehypeKatex from 'rehype-katex'
 import remarkGfm from 'remark-gfm'
-import type { QnaThread, QnaStatusUpdate } from '../../shared/archive'
+import { getQnaModelFallbackChain, qnaThinkingLabel } from '../../shared/qnaModelPolicy'
+import type { GeminiModel, QnaThread, QnaStatusUpdate } from '../../shared/archive'
 import '../qna.css'
 import { useNumericPreference } from '../hooks/useNumericPreference'
 import { QnaImagePreview } from './QnaImagePreview'
@@ -11,6 +12,7 @@ import { normalizeDisplayMath } from '../utils/markdownMath'
 import { copyRenderedMath } from '../utils/copyMath'
 
 interface QnaSidebarProps {
+  configuredModel?: string
   threads: QnaThread[]
   activeThreadId: string | null
   setActiveThreadId: (id: string | null) => void
@@ -63,6 +65,7 @@ function AnchorContext({ thread }: { thread: QnaThread }) {
 }
 
 export function QnaSidebar({
+  configuredModel,
   threads,
   activeThreadId,
   setActiveThreadId,
@@ -81,6 +84,8 @@ export function QnaSidebar({
   const [includeOtherQna, setIncludeOtherQna] = React.useState(false)
   const [searchOnline, setSearchOnline] = React.useState(false)
   const [thinkDeeper, setThinkDeeper] = React.useState(false)
+  const [optionsOpen, setOptionsOpen] = React.useState(false)
+  const plannedModel = getQnaModelFallbackChain(configuredModel as GeminiModel | undefined, thinkDeeper).preferred
   const activeThreadRef = React.useRef(activeThreadId)
   activeThreadRef.current = activeThreadId
   const [responseLength, setResponseLength] = React.useState<'brief' | 'medium' | 'long'>('brief')
@@ -199,6 +204,7 @@ export function QnaSidebar({
 
   const handleSend = async () => {
     if (!inputText.trim() || isGenerating) return
+    setOptionsOpen(false)
     const draft = inputText
     const threadId = activeThread.id
     setInputText('')
@@ -229,17 +235,15 @@ export function QnaSidebar({
         <button aria-label="Ripristina testo Q&A" onClick={() => setTextZoom(1)}>{Math.round(textZoom * 100)}%</button>
         <button aria-label="Ingrandisci testo Q&A" disabled={textZoom >= 2} onClick={() => setTextZoom(textZoom + 0.1)}>+</button>
       </div>
+      <div ref={messagesRef} className="qna-messages-container" onScroll={() => {
+        if (!anchor.current || anchor.current.width === messagesRef.current?.clientWidth) rememberPosition()
+      }}>
       <AnchorContext key={activeThread.id} thread={activeThread} />
       {Boolean(activeThread.attachmentIds?.length) && <section className="qna-active-images" aria-label="Slide che saranno inviate a Gemini">
         <p>Queste slide saranno inviate a Gemini con ogni nuova domanda finché restano attive.</p>
         {activeThread.attachmentIds!.map(id => <div key={id}><QnaImagePreview id={id} /><button type="button" disabled={isGenerating} onClick={() => onRemoveImage?.(activeThread.id, id)}>Rimuovi dagli invii successivi</button></div>)}
       </section>}
 
-      <div ref={messagesRef} className="qna-messages-container" onScroll={() => {
-        // A width change can clamp scrollTop before ResizeObserver runs. Keep
-        // the old anchor until that observer has restored the reading point.
-        if (!anchor.current || anchor.current.width === messagesRef.current?.clientWidth) rememberPosition()
-      }}>
         {activeThread.messages.length === 0 && (
           <div className="qna-empty-state">
             Cosa vuoi chiedere a Gemini riguardo a questo testo?
@@ -252,7 +256,8 @@ export function QnaSidebar({
           return (
             <div key={idx} className={`qna-message ${m.role}`}>
               <div className="qna-message-role">{m.role === 'user' ? 'Tu' : 'Gemini'}</div>
-              {Boolean(m.attachmentIds?.length) && <small>{m.attachmentIds!.length} slide allegate a questa domanda</small>}
+              {m.role === 'ai' && m.model && <small className="qna-model-info">Modello: {m.model}, Think: {m.thinking ?? 'non registrato'}</small>}
+              {Boolean(m.attachmentIds?.length) && <div className="qna-message-slides" aria-label="Slide allegate a questa domanda">{m.attachmentIds!.map(id => <QnaImagePreview key={id} id={id} />)}</div>}
               <div className="qna-message-content" onCopy={copyRenderedMath}>
                 {m.role === 'ai' && !m.text && isGenerating && idx === activeThread.messages.length - 1 ? (
                   <div className="qna-typing-log" role="status" aria-live="polite">
@@ -297,8 +302,9 @@ export function QnaSidebar({
         {onSelectSlides && <div className="qna-slide-actions">
           <button type="button" className="secondary-button small" aria-label="Allega slide dal PDF"
             disabled={isGenerating} onClick={onSelectSlides}>Allega slide</button>
-          <small>Seleziona le pagine nella colonna PDF, poi premi Allega.</small>
         </div>}
+        <details className="qna-options" open={optionsOpen} onToggle={event => setOptionsOpen(event.currentTarget.open)}>
+          <summary>Opzioni risposta · {responseLength === 'brief' ? 'Breve' : responseLength === 'medium' ? 'Media' : 'Lunga'}{thinkDeeper ? ' · Think HIGH' : ''}</summary>
         <div role="group" aria-label="Lunghezza risposta Q&A" className="qna-length-toggle">
           {(['brief', 'medium', 'long'] as const).map(value => <button key={value} type="button" aria-pressed={responseLength === value} disabled={isGenerating} onClick={() => setResponseLength(value)}>{value === 'brief' ? 'Breve' : value === 'medium' ? 'Media' : 'Lunga'}</button>)}
         </div>
@@ -317,9 +323,11 @@ export function QnaSidebar({
         </label>
         {includeOtherQna && <small>Invia anche estratti di altre discussioni pertinenti (massimo 5). Le risposte AI non sono fonti originali.</small>}
         <label className="qna-context-toggle"><input type="checkbox" checked={thinkDeeper} disabled={isGenerating} onChange={event => setThinkDeeper(event.target.checked)} />Pensa di più</label>
-        {thinkDeeper && <small>Richiede un ragionamento più approfondito a Gemini Flash-Lite. Può usare più tempo e credito API. La lunghezza resta quella scelta.</small>}
+        <small className="qna-model-info">Previsto · Modello: {plannedModel}, Think: {qnaThinkingLabel(plannedModel, thinkDeeper)}</small>
+        {thinkDeeper && <small>Può richiedere più tempo e credito API. La lunghezza resta quella scelta.</small>}
         <label className="qna-context-toggle"><input type="checkbox" checked={searchOnline} disabled={isGenerating} onChange={event => setSearchOnline(event.target.checked)} />Cerca online per questa domanda</label>
         {searchOnline && <small>Gemini può inviare query derivate dalla domanda e dal contesto a Google Search. Possono applicarsi costi aggiuntivi secondo il tuo piano. Le fonti web saranno separate dalla lezione.</small>}
+        </details>
         <div className="qna-input-row">
           <textarea aria-label="Domanda sulla lezione"
             ref={questionRef}

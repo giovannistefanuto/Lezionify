@@ -4,6 +4,10 @@ Lista ripulita e aggiornata il 13 novembre 2026: restano **14 attività aperte o
 e **7 sospese**, con numeri delle voci e posizioni originali invariati.
 La prima attività operativa resta la **voce 7**, posizione 22.
 Il 17 novembre viene aggiunta la voce 157, completata il 18 novembre.
+Il 19 novembre vengono aggiunte sette richieste, voci 158–164 e posizioni
+104–110: le attività aperte operative diventano **21**, le sospese restano 7.
+Successivamente completate 158, 159, 161, 162 e 164: restano **16 attività
+aperte operative** e **7 sospese**. La 131 resta aperta per dati insufficienti.
 
 Le attività concluse, i precedenti ordini, le due voci ritirate (114 e 115)
 e tutti gli aggiornamenti storici sono conservati nel
@@ -49,6 +53,17 @@ soltanto dopo implementazione e verifiche pertinenti.
 | 101. [x] | Escludere configurazione timer, sveglie e musica dallo studio | 155 | Pannelli, sovrapposizioni, ripresa e conservazione della pausa verificati. |
 | 102. [x] | Promemoria esame periodico per corso | 156 | Frequenza e registro locale implementati; limiti delle notifiche Windows dichiarati. |
 | 103. [x] | Migliorare l'estetica del widget Android | 157 | Marea approvata e installata sul telefono. Totale in Home e sincronizzazione verificati. |
+| 104. [x] | Q&A: indicazione dinamica di modello e ragionamento | 158 | Media: distinguere configurazione richiesta e modello effettivamente usato, anche con fallback. |
+| 105. [x] | Formule LaTeX nei titoli delle lezioni | 159 | Media: riprodurre il titolo con TD(lambda) e verificare le diverse intestazioni. |
+| 106. [ ] | Invio immediato con Aggiorna ora sul PC | 160 | Media/incerta: seguire pubblicazione dello snapshot e successivo aggiornamento Android. |
+| 107. [x] | Tempo rimanente della dispensa anche fuori Full Focus | 161 | Media: rendere consultabile la previsione nella vista ordinaria senza accreditare nuovo tempo di studio. |
+| 108. [x] | Q&A più leggibile e Allega slide funzionante | 162 | Medio/alta: spazio per la risposta, opzioni richiudibili e confronto dei due ingressi alle slide. |
+| 109. [ ] | Ripensare inserimento e modifica degli esami in Sessione | 163 | Alta: flusso completo, terminologia, piani, parziali ed esclusioni da rendere comprensibili. |
+| 110. [x] | Zoom della dispensa Full Focus con rotella a passi del 5% | 164 | Bassa/media: riprodurre i salti del 50% e preservare scorrimento e altri controlli di zoom. |
+
+**Aggiunte del 19 novembre:** richieste registrate per lavoro futuro, senza
+avviarne l'implementazione. L'ordine precedente e gli stati storici restano
+invariati; i collegamenti alle funzioni esistenti sono nelle descrizioni.
 
 **Aggiunte del 13 novembre dopo la pulizia:** sette richieste, voci 145–151,
 posizioni 91–97, nell’ordine ricevuto. La prima voce operativa resta la 7.
@@ -307,6 +322,11 @@ fatto certo dalla sola posizione.
   di ricostruire le previsioni originarie: **restano da raccogliere gli esiti
   personali e verificarne la copertura**. Nessuna percentuale inventata.
 
+Verifica del 19 novembre (D-0581): lo storico prospettico locale non raggiunge
+le 20 lezioni distinte in nessuno dei gruppi per lingua, metodo e fase.
+La calibrazione personale resta aperta; non cambiano soglia, livello nominale
+o criteri di validità. Non vengono ricostruiti esiti mancanti dai soli totali.
+
 ### 134. Sezione Altre cose
 
 - [ ] Implementare e collaudare **Altro**, chiuso all'avvio, con raccolte a un
@@ -528,6 +548,137 @@ Tra le proposte è stata approvata Marea, con la palette di Lezionify, il totale
 delle lezioni rimanenti e il dettaglio per corso. La versione Android 0.1.1 è
 stata installata sul telefono, con il totale visibile e la sincronizzazione
 riuscita dall'abbinamento esistente. Decisione D-0569.
+
+### 158. Q&A: indicazione dinamica del modello e del ragionamento
+
+- [x] Sostituire il riferimento fisso a Gemini Flash-Lite nella spiegazione di
+  «Pensa di più» con un'indicazione derivata dalla configurazione effettiva,
+  preferibilmente compatta: «Modello: <nome>, Think: <livello>».
+- [x] Distinguere il modello previsto prima dell'invio da quello realmente
+  utilizzato per la risposta, compresi eventuali fallback; mostrare lo stato
+  effettivo del ragionamento senza dedurlo dalla lunghezza della risposta.
+- [x] Verificare aggiornamento dell'indicazione al cambio di modello o opzione;
+  conservare la lunghezza scelta e comunicare eventuali maggiori tempi/costi
+  in modo coerente con il modello, senza promesse non verificate.
+
+Segnalazione del 19 novembre. In `src/components/QnaSidebar.tsx` la frase
+«Richiede un ragionamento più approfondito a Gemini Flash-Lite» è statica.
+La voce 153 ha già introdotto il ragionamento esplicito: qui si completa la
+trasparenza dell'interfaccia, senza ricreare la funzione o scegliere nuovi modelli.
+
+Completata il 19 novembre nella 0.3.1: D-0581 e D-0582.
+[Implementazione, prove e limiti](../quality/lettura-qna-2026-11-19.md).
+
+### 159. Rendering delle formule nei titoli delle lezioni
+
+- [x] Riprodurre la mancata resa di `$TD(\lambda)$` nel titolo
+  «Approssimazione della Funzione di Valore, Estrazione delle Caratteristiche
+  e Notazione Vettoriale per $TD(\lambda)$» nella schermata della lezione.
+- [x] Rendere correttamente le formule inline nel titolo visualizzato,
+  verificando vista ordinaria e Full Focus, troncamento e accessibilità.
+  Controllare gli altri punti che mostrano lo stesso titolo senza alterare
+  il testo originale salvato o trasformare il problema in una rigenerazione AI.
+
+Segnalazione del 19 novembre: il supporto alle formule nel corpo della dispensa
+non dimostra che siano renderizzate anche nelle intestazioni dell'interfaccia.
+
+Completata il 19 novembre nella 0.3.1: D-0581 e D-0582.
+[Implementazione, prove e limiti](../quality/lettura-qna-2026-11-19.md).
+
+### 160. Aggiorna ora sul PC: pubblicazione immediata delle statistiche
+
+- [ ] Indagare perché «Aggiorna ora» nelle impostazioni Lezionify PC non sembra
+  inviare subito le statistiche al collegamento Android; riprodurre il caso
+  distinguendo clic, preparazione, pubblicazione e ricezione sul telefono/widget.
+- [ ] Fare partire l'aggiornamento manuale senza attendere il prossimo ciclo
+  periodico, oppure mostrare chiaramente l'operazione già in corso e il suo esito.
+  Verificare errori, assenza di rete e aggiornamento invariato, preservando
+  cifratura e attivazione esplicita della sincronizzazione.
+
+Segnalazione del 19 novembre. Il pulsante è presente in
+`src/components/MobileCompanionSettings.tsx`; riusare il collegamento descritto
+in [Statistiche Android](statistiche-android.md). La causa del ritardo resta da
+accertare. Questa voce riguarda l'invio delle statistiche, distinto dall'updater
+Windows della voce 129 e dall'estetica del widget della voce 157.
+
+### 161. Tempo rimanente della dispensa anche fuori Full Focus
+
+- [x] Rendere consultabile nella vista ordinaria il **tempo rimanente per studiare
+  la dispensa**, riutilizzando la stima già disponibile in Full Focus.
+- [x] Aggiornare la previsione rispetto alla posizione di lettura e al ritmo
+  osservato; dichiarare quando mancano campioni sufficienti. Verificare entrata
+  e uscita da Full Focus, cambio lingua e scorrimento nella colonna del testo.
+- [x] La sola consultazione della stima fuori Full Focus non deve aggiungere
+  tempo, osservazioni o previsioni allo storico dello studio.
+
+Chiarimento esplicito del 19 novembre: la richiesta riguarda il **tempo restante**,
+non il timer del tempo trascorso. Coordinare con le voci 124 e 131, preservando
+il tracker e le esclusioni delle voci 154 e 155.
+
+Completata il 19 novembre nella 0.3.1: D-0581 e D-0582.
+[Implementazione, prove e limiti](../quality/lettura-qna-2026-11-19.md).
+
+### 162. Q&A: più spazio durante la lettura e correzione di Allega slide
+
+- [x] Riorganizzare il pannello per dare più spazio alla risposta mentre viene
+  letta, riducendo l'ingombro dei controlli di composizione. Valutare un gruppo
+  richiudibile per lunghezza e altre opzioni, che si richiuda automaticamente
+  quando si passa alla lettura e resti facilmente riapribile.
+- [x] Valutare slide allegate accanto alla domanda, nel flusso della conversazione,
+  anziché in sovraimpressione sulla risposta; mantenere anteprima ingrandibile,
+  riconoscibilità degli allegati e rimozione durante la composizione.
+- [x] Riprodurre e correggere la differenza segnalata: «Allega slide» sopra il
+  PDF funziona, il pulsante nel Q&A no. Confrontare selezione, allegato preparato,
+  associazione alla domanda e anteprima, in vista ordinaria e Full Focus.
+- [x] Collaudare lettura di risposte lunghe, finestre strette, testo ingrandito
+  e ritorno alla composizione, preservando bozza e opzioni scelte. Allegare una
+  slide non deve inviare automaticamente una domanda all'AI.
+
+Segnalazione del 19 novembre. Le soluzioni di disposizione sono proposte da
+confrontare prima della scelta finale. Riusare ridimensionamento/zoom del Q&A
+(voce storica 44), allegati Focus (D-0433) e miniature ridotte della 0.2.4
+(D-0553). La vecchia voce 114, ritirata perché il pulsante era presente, riguarda
+la reperibilità: questa nuova segnalazione riguarda il funzionamento.
+
+Completata il 19 novembre nella 0.3.1: D-0581 e D-0582.
+[Implementazione, prove e limiti](../quality/lettura-qna-2026-11-19.md).
+
+### 163. Sessione: ripensare il flusso di inserimento e modifica degli esami
+
+- [ ] Riesaminare l'intero percorso dal primo esame al calendario utilizzabile:
+  l'utente riferisce circa dieci minuti per capire come inserire gli esami.
+  Individuare passaggi ambigui, azioni poco visibili e dati richiesti prematuramente.
+- [ ] Rendere comprensibili piano, bozza, appello, prova intera e parziale nel
+  momento in cui vengono usati; chiarire dove e con quali effetti si indica
+  che un esame non verrà sostenuto, distinguendo rinuncia, esclusione dal piano
+  ed eventuale esito di un tentativo già previsto.
+- [ ] Progettare un inserimento e una modifica più scorrevoli, con gerarchia
+  visiva, istruzioni contestuali e riscontro chiaro dopo il salvataggio.
+  Valutare una revisione del processo completo, oltre alla sola grafica.
+- [ ] Verificare il percorso con casi di esame intero e parziali, modifica dei
+  dati e scelta di non sostenere un esame, preservando piani, esiti e dati locali.
+
+Segnalazione del 19 novembre successiva alla 0.3.0. Riusare il modello esistente
+e i collaudi di [Sessione](sessione-verifica-tecnica.md), senza assumere che
+il collaudo tecnico abbia già validato la facilità d'uso. Intervento mirato
+collegato alla revisione generale della voce 128.
+
+### 164. Full Focus: zoom della dispensa con rotella a passi del 5%
+
+- [x] Riprodurre il salto segnalato di 50 punti percentuali con la rotella
+  (100% → 150% → 200%) e individuare il controllo responsabile, distinguendo
+  zoom della dispensa, zoom generale dell'app e scorrimento della pagina.
+- [x] Portare l'incremento e il decremento dello zoom della dispensa a **5 punti
+  percentuali** per passo (100% → 105% → 110% e viceversa), verificando mouse
+  e trackpad, limiti e percentuale mostrata.
+- [x] Conservare posizione di lettura e normale scorrimento; verificare che
+  pulsanti e scorciatoie restino coerenti e che lo zoom del Q&A sia indipendente.
+
+Segnalazione del 19 novembre. L'obiettivo riguarda la granularità dello zoom
+della dispensa in Full Focus, non una nuova funzione di ingrandimento.
+
+Completata il 19 novembre nella 0.3.1: D-0581 e D-0582.
+[Implementazione, prove e limiti](../quality/lettura-qna-2026-11-19.md).
 
 ## Descrizioni delle attività sospese
 

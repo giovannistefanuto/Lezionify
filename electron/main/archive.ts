@@ -63,7 +63,7 @@ import type {
 import { getLectureDurationSeconds } from '../../shared/archive'
 import { countLectureWords } from '../../shared/lectureLength'
 import { extractLectureTitle, replaceLectureTitle, validateLectureTitles } from '../../shared/lectureTitles'
-import { getQnaModelFallbackChain } from '../../shared/qnaModelPolicy'
+import { getQnaModelFallbackChain, qnaThinkingLabel } from '../../shared/qnaModelPolicy'
 import { notesProgressMessage } from './ai/progressDiagnostics'
 import {
   formatLocalCalendarDate,
@@ -2266,7 +2266,7 @@ export class ArchiveService {
     responseLength: unknown = 'brief',
     searchOnline: unknown = false,
     thinkDeeper: unknown = false
-  ): Promise<{ success: boolean; text?: string; error?: string }> {
+  ): Promise<{ success: boolean; text?: string; error?: string; model?: string; thinking?: 'HIGH' | 'predefinito' }> {
     try {
       validateQnaThread(thread)
       if (typeof searchOnline !== 'boolean') throw new Error('Opzione ricerca online non valida.')
@@ -2410,7 +2410,8 @@ export class ArchiveService {
         keyIndex: successfulKeyIndex,
         totalKeys: totalKeysCount
       })
-      return { success: true, text: fullResponse }
+      const usedModel = completedAttempt?.model || qnaPrimaryModel
+      return { success: true, text: fullResponse, model: usedModel, thinking: qnaThinkingLabel(usedModel, thinkDeeper) }
     } catch (err: unknown) {
       const message = errorMessage(err, 'Errore imprevisto')
       logger.error(

@@ -41,8 +41,8 @@ export function observeParagraphs(documentId: string, language: string) {
     save,
     reset: () => { observations.clear(); prediction = null; lastReadingKey = null; save() },
     prediction: () => prediction,
-    tick(root: HTMLElement, seconds: number, mode: 'reading' | 'qna' = 'reading', anchor = ''): string | null {
-      if (seconds <= 0 || seconds > 3) return null
+    tick(root: HTMLElement, seconds: number, mode: 'reading' | 'qna' = 'reading', anchor = '', preview = false): string | null {
+      if ((!preview && seconds <= 0) || seconds > 3) return null
       const day = formatLocalCalendarDate(new Date())
       const top = root.getBoundingClientRect().top + root.clientTop
       const bottom = top + root.clientHeight
@@ -70,7 +70,7 @@ export function observeParagraphs(documentId: string, language: string) {
       const anchored = normalizedAnchor ? blocks.filter(item => (item.node.textContent ?? '').replace(/\s+/g, ' ').includes(normalizedAnchor)) : []
       const qnaBlock = anchored.length === 1 ? anchored[0] : blocks.find(item => item.key === lastReadingKey) ?? visible[0]
       const totalWeight = visible.reduce((sum, item) => sum + item.features.words * (item.end - item.start), 0)
-      for (const block of mode === 'qna' ? (qnaBlock ? [qnaBlock] : []) : visible) {
+      for (const block of preview ? [] : mode === 'qna' ? (qnaBlock ? [qnaBlock] : []) : visible) {
         const saved = observations.get(block.key)
         const observation: Observation = saved?.day === day ? saved : { seconds: 0, coverage: Array(20).fill(0), recorded: false, day }
         observation.seconds += mode === 'qna' ? seconds : seconds * block.features.words * (block.end - block.start) / Math.max(1, totalWeight)
@@ -87,7 +87,7 @@ export function observeParagraphs(documentId: string, language: string) {
       }
       for (const block of blocks) {
         const observation = observations.get(block.key)
-        if (mode === 'reading' && observation && observation.day === day && !observation.recorded && block.bounds.bottom <= top && observation.seconds >= 15 && observation.coverage.reduce((a, b) => a + b, 0) >= 18) {
+        if (!preview && mode === 'reading' && observation && observation.day === day && !observation.recorded && block.bounds.bottom <= top && observation.seconds >= 15 && observation.coverage.reduce((a, b) => a + b, 0) >= 18) {
           observation.sampleKey = `${documentId}:${language}:${day}:${block.key}`
           const sample = { ...block.features, seconds: observation.seconds, document: `${documentId}:${language}`, day, key: observation.sampleKey }
           const previous = samples.findIndex(item => item.key === observation.sampleKey)

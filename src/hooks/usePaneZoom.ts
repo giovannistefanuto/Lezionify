@@ -1,7 +1,7 @@
 import { useEffect, type RefObject } from 'react'
 
 /** Trackpad pinch, Ctrl+wheel, touch pinch and keyboard zoom are scoped to one pane. */
-export function usePaneZoom(ref: RefObject<HTMLElement | null>, change: (delta: number) => void, enabled = true) {
+export function usePaneZoom(ref: RefObject<HTMLElement | null>, change: (delta: number) => void, enabled = true, wheelStep?: number) {
   useEffect(() => {
     const pane = ref.current
     if (!pane || !enabled) return
@@ -9,13 +9,14 @@ export function usePaneZoom(ref: RefObject<HTMLElement | null>, change: (delta: 
       if (!event.ctrlKey) return
       event.preventDefault()
       event.stopPropagation()
-      change(-event.deltaY * 0.005)
+      if (event.deltaY !== 0) change(wheelStep ? (event.deltaY < 0 ? wheelStep : -wheelStep) : -event.deltaY * 0.005)
     }
     const key = (event: KeyboardEvent) => {
       if (!(event.ctrlKey || event.metaKey) || !['+', '=', '-'].includes(event.key)) return
       event.preventDefault()
       event.stopPropagation()
-      change(event.key === '-' ? -0.1 : 0.1)
+      const step = wheelStep ?? 0.1
+      change(event.key === '-' ? -step : step)
     }
     const touches = new Map<number, { x: number; y: number }>()
     let distance = 0
@@ -50,5 +51,5 @@ export function usePaneZoom(ref: RefObject<HTMLElement | null>, change: (delta: 
       window.removeEventListener('pointerup', up)
       window.removeEventListener('pointercancel', up)
     }
-  }, [ref, change, enabled])
+  }, [ref, change, enabled, wheelStep])
 }

@@ -14,3 +14,7 @@ export function getQnaModelFallbackChain(configuredModel?: GeminiModel, thinkDee
   ])]
   return { preferred: models[0], fallbacks: models.slice(1) }
 }
+
+export function qnaThinkingLabel(model: string, thinkDeeper = false): 'HIGH' | 'predefinito' {
+  return qnaThinkingConfig(model, thinkDeeper).thinkingConfig ? 'HIGH' : 'predefinito'
+}

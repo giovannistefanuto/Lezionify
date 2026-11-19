@@ -215,7 +215,7 @@ export async function runFocusPdfScenarios(root: Root, api: any) {
     chat.scrollTop = 0
     const anchorTop = quote.getBoundingClientRect().top
     chat.scrollTop = 150
-    check(chat.scrollTop > 0 && quote.getBoundingClientRect().top === anchorTop, 'Chat does not scroll independently of pinned anchor')
+    check(chat.scrollTop > 0 && quote.getBoundingClientRect().top < anchorTop, 'Anchor must scroll with the discussion to leave room for reading')
     await act(async () => toggle.click())
     check(toggle.getAttribute('aria-expanded') === 'true' && quote.clientHeight > compactHeight, 'Anchor did not expand')
     check(quote.scrollHeight > quote.clientHeight && chat.clientHeight > 100, 'Expanded anchor hides chat or cannot scroll')
@@ -288,7 +288,9 @@ export async function runFocusPdfScenarios(root: Root, api: any) {
 async function runDrawerAttachmentScenario(root: Root, api: any, source: any,
   until: (condition: () => boolean, message: string) => Promise<void>,
   check: (condition: unknown, message: string) => void) {
-  const lecture = { id: 'attachment-drawer', courseCode: 'TEST', studyStatus: 'in-corso', sourceAudioFileName: 'synthetic.mp3' }
+  const savedSamples = localStorage.getItem('lezionify.paragraph-samples.v1')
+  localStorage.setItem('lezionify.paragraph-samples.v1', JSON.stringify(['synthetic-a','synthetic-b'].map(document => ({ document, day: '2026-11-19', words: 100, numbers: 0, formulas: 0, seconds: 60 }))))
+  const lecture = { id: 'attachment-drawer', title: 'Notazione $TD(\\lambda)$', courseCode: 'TEST', studyStatus: 'in-corso', sourceAudioFileName: 'synthetic.mp3' }
   const keys = ['loadQnaThreads', 'getReminders', 'getHighlights', 'getLectureWordCounts', 'saveQnaImage', 'readQnaImage', 'saveQnaThreads', 'generateQnaResponse']
   const previous = Object.fromEntries(keys.map(key => [key, api[key]]))
   const originalNow = Date.now, originalInterval = window.setInterval, originalClear = window.clearInterval, originalFocus = document.hasFocus
@@ -331,7 +333,7 @@ async function runDrawerAttachmentScenario(root: Root, api: any, source: any,
   api.generateQnaResponse = async () => { aiCalls++; throw new Error('No AI call allowed in attachment test') }
   const props: any = {
     selectedLecture: lecture, allLectures: [lecture], onClose: noop, activeTab: 'markdown', setActiveTab: noop,
-    markdownText: '# Capitolo\n\n' + 'Testo sintetico.\n\n'.repeat(70), transcriptText: '', studySet: null,
+    markdownText: '# Capitolo\n\n' + 'Questo paragrafo sintetico contiene parole sufficienti per verificare la stima della lettura.\n\n'.repeat(70), transcriptText: '', studySet: null,
     isGeneratingStudySet: false, onGenerateStudySet: noop, isLoadingContent: false, isGenerating: false,
     isTranscribing: false, setIsEditingMetadata: noop, setEditCourseCode: noop, setEditRecordedAt: noop,
     setShowDeleteConfirm: noop, existingCourses: [], settingsModel: 'gemini-3.8-flash',
@@ -343,8 +345,24 @@ async function runDrawerAttachmentScenario(root: Root, api: any, source: any,
   try {
     await act(async () => root.render(<LectureDrawer {...props} />))
     await until(() => Boolean(document.querySelector('[title="Modalità studio immersiva"]')), 'Drawer not ready')
+    check(document.querySelector('.detail-header h2 .katex'), 'Lecture title does not render inline math')
+    check(document.querySelector('.study-estimate-trigger'), 'Remaining study time unavailable outside Full Focus')
+    const beforePreview = localStorage.getItem('lezionify.paragraph-samples.v1')
+    await act(async () => document.querySelector<HTMLButtonElement>('.study-estimate-trigger')!.focus())
+    await until(() => document.querySelector('.study-estimate-panel')?.textContent?.includes('Studio restante:') === true, 'Ordinary reading has no remaining-time estimate despite valid samples')
+    const remainingMinutes = () => Number(/Studio restante: circa (\d+)/.exec(document.querySelector('.study-estimate-panel')?.textContent ?? '')?.[1])
+    const initialRemaining = remainingMinutes()
+    const ordinaryText = document.querySelector<HTMLElement>('.markdown-view-container')!
+    const ordinaryScroll = ordinaryText.scrollHeight > ordinaryText.clientHeight + 1 ? ordinaryText : document.querySelector<HTMLElement>('.detail-body')!
+    await act(async () => { ordinaryScroll.scrollTop = ordinaryScroll.scrollHeight / 2; ordinaryScroll.dispatchEvent(new Event('scroll', { bubbles: true })) })
+    await until(() => remainingMinutes() < initialRemaining, 'Remaining time did not follow the actual scrolling column')
+    await act(async () => { ordinaryScroll.scrollTop = 0; ordinaryScroll.dispatchEvent(new Event('scroll', { bubbles: true })) })
+    check(localStorage.getItem('lezionify.paragraph-samples.v1') === beforePreview, 'Ordinary reading changed the study samples')
+    await act(async () => document.querySelector<HTMLButtonElement>('.study-estimate-trigger')!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })))
     await act(async () => document.querySelector<HTMLButtonElement>('[title="Modalità studio immersiva"]')!.click())
     await until(() => Boolean(document.querySelector('.focus-pdf-page-count')), 'Drawer PDF did not load')
+    await act(async () => document.querySelector('.focus-mode-content')!.dispatchEvent(new WheelEvent('wheel', { ctrlKey: true, deltaY: -100, bubbles: true, cancelable: true })))
+    check(document.querySelector('[aria-label="Ripristina zoom spiegazione"]')?.textContent === '105%', 'A wheel notch must zoom the lesson by five percentage points')
     assertSingleEstimate()
     await tick(65)
     check(document.querySelector('.focus-timer-subtle')?.textContent?.includes('1:05'), 'Regression must exercise the real study heartbeat')
@@ -361,8 +379,10 @@ async function runDrawerAttachmentScenario(root: Root, api: any, source: any,
     await tick(3)
     const attachButton = document.querySelector<HTMLButtonElement>('[aria-label="Allega slide dal PDF"]')
     check(attachButton, 'Q&A has no explicit attachment entry point')
+    const hidePdf = document.querySelector<HTMLButtonElement>('[aria-label="Nascondi PDF"]')
+    if (hidePdf) await act(async () => hidePdf.click())
     await act(async () => attachButton!.click())
-    await until(() => Boolean(document.querySelector('.pdf-page-select')), 'Explicit attachment command did not enable PDF selection')
+    await until(() => Boolean(document.querySelector('.pdf-page-select')) && getComputedStyle(document.querySelector('.focus-pdf-column')!).display !== 'none', 'Explicit attachment command did not restore visible PDF selection')
     const field = document.querySelector<HTMLTextAreaElement>('.qna-input-row textarea')!
     await act(async () => {
       field.focus(); field.dispatchEvent(new FocusEvent('focusin', { bubbles: true }))
@@ -390,11 +410,21 @@ async function runDrawerAttachmentScenario(root: Root, api: any, source: any,
     check(imageInput.page === 1 && imageInput.data.startsWith('iVBOR') && persisted[0].attachmentIds[0] === 'drawer-slide',
       'Drawer did not persist the selected page and its discussion reference')
     check(field.value === 'Spiega questa slide' && aiCalls === 0, 'Attaching lost the draft or sent an AI request')
+    const workspace = document.querySelector<HTMLElement>('.focus-workspace')!
+    workspace.style.width = '900px'
+    await until(() => getComputedStyle(document.querySelector('.focus-pdf-column')!).display === 'none', 'Narrow reading should yield PDF space before selecting slides')
+    await act(async () => attachButton!.click())
+    await until(() => document.querySelector('.focus-workspace')?.classList.contains('is-selecting-slides') === true, 'Narrow workspace did not make room for slide selection')
+    check(getComputedStyle(document.querySelector('.focus-pdf-column')!).display !== 'none' && field.value === 'Spiega questa slide', 'Narrow selection lost the PDF or the question draft')
+    await act(async () => document.querySelector<HTMLButtonElement>('.slide-selection-back')!.click())
+    check(!document.querySelector('.is-selecting-slides'), 'Cannot return from slide selection to the explanation')
+    workspace.style.width = '100%'
     await require('electron').ipcRenderer.invoke('capture-video-import', 'focus-pdf-qna')
   } finally {
     await act(async () => root.render(null))
     Date.now = originalNow; window.setInterval = originalInterval; window.clearInterval = originalClear; document.hasFocus = originalFocus
     Object.assign(api, previous)
+    if (savedSamples === null) localStorage.removeItem('lezionify.paragraph-samples.v1'); else localStorage.setItem('lezionify.paragraph-samples.v1', savedSamples)
     check(!document.querySelector('.study-estimate-trigger'), 'Unmount left orphan estimate icons')
   }
 }

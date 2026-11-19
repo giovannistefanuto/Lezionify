@@ -10,12 +10,13 @@ import type { PdfExportRequest } from '../../shared/pdfExport'
 
 const FocusPdfViewer = React.lazy(() => import('./FocusPdfViewer').then(module => ({ default: module.FocusPdfViewer })))
 
-export function FocusWorkspace({ lectureId, children, qna, onCloseQna, onTextZoom, textZoom, exportRequest, onAttachPages, canSelectSlides = false, qnaButton }: {
+export function FocusWorkspace({ lectureId, children, qna, onCloseQna, onTextZoom, textZoom, exportRequest, onAttachPages, canSelectSlides = false, slideSelectionRequest = 0, qnaButton }: {
   lectureId: string; children: React.ReactNode; qna: React.ReactNode; onCloseQna: () => void
   onTextZoom: (delta: number) => void; textZoom: number
   exportRequest?: PdfExportRequest
   onAttachPages?: (images: import('../../shared/qnaImages').QnaImageInput[]) => Promise<void>
   qnaButton?: React.ReactNode
+  slideSelectionRequest?: number
   canSelectSlides?: boolean
 }) {
   const root = useRef<HTMLDivElement>(null)
@@ -24,6 +25,7 @@ export function FocusWorkspace({ lectureId, children, qna, onCloseQna, onTextZoo
   const [qnaRatio, setQnaRatio] = useNumericPreference('lezionify:qna-width:focus:v1', 0.29, 0.15, 0.85)
   const [pdf, setPdf] = useState<FocusPdfDocument | null>(null)
   const [showPdf, setShowPdf] = useState(true)
+  const [selectionMode, setSelectionMode] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const generation = useRef(0)
@@ -39,7 +41,7 @@ export function FocusWorkspace({ lectureId, children, qna, onCloseQna, onTextZoo
 
   useEffect(() => {
     const current = ++generation.current
-    setPdf(null); setError(null); setShowPdf(true); setBusy(false)
+    setPdf(null); setError(null); setShowPdf(true); setBusy(false); setSelectionMode(false)
     void window.archive.getFocusPdf?.(lectureId).then(document => {
       if (current !== generation.current) { if (document) void window.archive.releaseFocusPdf(document.id); return }
       granted.current = document
@@ -69,7 +71,19 @@ export function FocusWorkspace({ lectureId, children, qna, onCloseQna, onTextZoo
     finally { if (current === generation.current) setBusy(false) }
   }
 
-  const layout = focusLayout(width, ratio, Boolean(pdf && showPdf), Boolean(qna), qnaRatio)
+  useEffect(() => {
+    if (!slideSelectionRequest) return
+    setShowPdf(true)
+    setSelectionMode(true)
+    setQnaRatio(0.29)
+    if (!granted.current) void select()
+    // A request is an explicit user action, not a file-picker retry on render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [slideSelectionRequest])
+
+  const baseLayout = focusLayout(width, ratio, Boolean(pdf && showPdf), Boolean(qna), qnaRatio)
+  const pickingSlides = selectionMode && canSelectSlides && Boolean(pdf && showPdf) && !baseLayout.showPdf
+  const layout = pickingSlides ? { ...baseLayout, showPdf: true, pdfWidth: Math.max(220, width - baseLayout.qnaWidth - 10) } : baseLayout
   const resizeQna = (next: number) => setQnaRatio(Math.max(0.15, Math.min(0.85, next)))
   const resize = (next: number) => {
     // An explicit widening of the slides dismisses the visible question, preserving its thread.
@@ -78,13 +92,13 @@ export function FocusWorkspace({ lectureId, children, qna, onCloseQna, onTextZoo
   }
   const center = () => { if (qna) onCloseQna(); setRatio(0.5) }
 
-  return <div ref={root} className={`focus-workspace${pdf && showPdf ? ' has-pdf' : ''}`}>
+  return <div ref={root} className={`focus-workspace${pdf && showPdf ? ' has-pdf' : ''}${pickingSlides ? ' is-selecting-slides' : ''}`}>
     {pdf && <div className="focus-pdf-column" style={{ width: layout.pdfWidth, display: layout.showPdf ? 'flex' : 'none' }}>
       <React.Suspense fallback={<p className="focus-pdf-status">Caricamento lettore PDF…</p>}>
-        <FocusPdfViewer source={pdf} lectureId={lectureId} onChange={() => void select()} onHide={() => setShowPdf(false)} onAttachPages={canSelectSlides ? onAttachPages : undefined} />
+        <FocusPdfViewer source={pdf} lectureId={lectureId} onChange={() => void select()} onHide={() => setShowPdf(false)} onAttachPages={canSelectSlides && onAttachPages ? async images => { await onAttachPages(images); setSelectionMode(false) } : undefined} />
       </React.Suspense>
     </div>}
-    {layout.showPdf && <PaneDivider label="Larghezza delle slide" value={ratio} onReset={center} onStep={delta => resize(ratio + delta)}
+    {layout.showPdf && !pickingSlides && <PaneDivider label="Larghezza delle slide" value={ratio} onReset={center} onStep={delta => resize(ratio + delta)}
       onDrag={clientX => {
         if (!root.current) return
         const bounds = root.current.getBoundingClientRect()
@@ -94,7 +108,7 @@ export function FocusWorkspace({ lectureId, children, qna, onCloseQna, onTextZoo
         if (qna && requested >= 0.49) { onCloseQna(); resize((clientX - bounds.left) / (bounds.width - 10)) }
         else resize(requested)
       }} />}
-    <section className="focus-explanation-column" aria-label="Spiegazione del professore">
+    <section style={pickingSlides ? { display: 'none' } : undefined} className="focus-explanation-column" aria-label="Spiegazione del professore">
       <div className="focus-pane-toolbar">
         <span className="focus-pane-label">Spiegazione</span>
         <MusicButton compact />
@@ -103,9 +117,9 @@ export function FocusWorkspace({ lectureId, children, qna, onCloseQna, onTextZoo
         {mermaid.hasDiagrams && <button type="button" onClick={mermaid.toggleAll}>
           {mermaid.allHidden ? 'Mostra tutti gli schemi' : 'Nascondi tutti gli schemi'}
         </button>}
-        <button aria-label="Riduci zoom spiegazione" onClick={() => onTextZoom(-0.1)}>−</button>
+        <button aria-label="Riduci zoom spiegazione" onClick={() => onTextZoom(-0.05)}>−</button>
         <button aria-label="Ripristina zoom spiegazione" onClick={() => onTextZoom(1 - textZoom)}>{Math.round(textZoom * 100)}%</button>
-        <button aria-label="Aumenta zoom spiegazione" onClick={() => onTextZoom(0.1)}>+</button>
+        <button aria-label="Aumenta zoom spiegazione" onClick={() => onTextZoom(0.05)}>+</button>
         {pdf && !layout.showPdf && <button title={showPdf ? 'Le slide torneranno quando ci sarà spazio' : 'Mostra slide'} onClick={() => { setShowPdf(true); if (qna) onCloseQna() }}>Mostra PDF</button>}
         <button aria-label="Scegli PDF della lezione" title="Apri un PDF Notability in sola lettura" disabled={busy} onClick={() => void select()}>{busy ? 'Apertura…' : 'PDF'}</button>
       </div>
@@ -113,6 +127,7 @@ export function FocusWorkspace({ lectureId, children, qna, onCloseQna, onTextZoo
       {pdf && showPdf && !layout.showPdf && <div className="focus-pdf-space-hint">Slide temporaneamente nascoste per lasciare spazio alla lettura.</div>}
       <MermaidCollapseContext.Provider value={mermaid.controls}>{children}</MermaidCollapseContext.Provider>
     </section>
+    {pickingSlides && <button className="slide-selection-back secondary-button small" onClick={() => setSelectionMode(false)}>Torna alla dispensa</button>}
     {qna && <PaneDivider label="Larghezza della discussione" value={qnaRatio}
       onStep={delta => resizeQna(qnaRatio - delta)} onReset={() => setQnaRatio(0.29)}
       onDrag={clientX => {

@@ -48,12 +48,12 @@ export function useFocusModeController({
   const intentionalFullscreenExitRef = useRef(false)
   const [textZoom, setTextZoom] = useState(1)
   const changeTextZoom = useCallback((delta: number) => {
-    const next = Math.min(4, Math.max(0.5, zoomLevelRef.current + delta))
+    const next = Math.min(4, Math.max(0.5, Math.round((zoomLevelRef.current + delta) * 100) / 100))
     zoomLevelRef.current = next
     setTextZoom(next)
     if (zoomLabelRef.current) zoomLabelRef.current.innerText = `${Math.round(next * 100)}%`
   }, [zoomLevelRef, zoomLabelRef])
-  usePaneZoom(contentRef, changeTextZoom, isFullScreen && hasContent)
+  usePaneZoom(contentRef, changeTextZoom, isFullScreen && hasContent, 0.05)
 
   const leaveFullscreen = useCallback(async () => {
     if (!document.fullscreenElement) return

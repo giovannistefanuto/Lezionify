@@ -33,7 +33,7 @@ export async function runQnaImageScenarios(root: Root, api: any) {
     for (const [id, value] of images) if (selection.all || selection.id === id || selection.day === value.image.day) { images.delete(id); count++ }
     return count
   }
-  api.generateQnaResponse = async (_owner: string, thread: any, full: boolean) => { requests.push({ thread: structuredClone(thread), full }); return { success: true, text: 'Synthetic answer' } }
+  api.generateQnaResponse = async (_owner: string, thread: any, full: boolean) => { requests.push({ thread: structuredClone(thread), full }); return { success: true, text: 'Synthetic answer', model: 'gemini-3.1-flash-lite', thinking: 'HIGH' } }
   function Harness() {
     state = useQna('image-test-lecture')
     return <div><div style={{ height: 500 }}><QnaSidebar threads={state.threads} activeThreadId={state.activeThreadId} setActiveThreadId={state.setActiveThreadId} isGenerating={state.isGeneratingQna || state.isAttachingImages} error={state.qnaError} onSendMessage={state.sendMessage} onDeleteThread={state.deleteThread} onRemoveImage={state.removeImage} onClose={() => {}} /></div><QnaImageLibrary /></div>
@@ -59,7 +59,10 @@ export async function runQnaImageScenarios(root: Root, api: any) {
     await act(async () => root.render(null))
     await act(async () => root.render(<Harness />)); await settle()
     await act(async () => state.setActiveThreadId(id)); await settle()
-    check(document.querySelectorAll('.qna-image-preview img').length === 1, 'Image references must survive a hook remount')
+    check(document.querySelectorAll('.qna-active-images .qna-image-preview img').length === 1, 'Active image references must survive a hook remount')
+    check(document.querySelectorAll('.qna-message-slides img').length === 5, 'Historical slide previews must remain attached to their original questions after a remount')
+    check(persisted[0].messages.filter((message: any) => message.role === 'ai').every((message: any) => message.model === 'gemini-3.1-flash-lite' && message.thinking === 'HIGH'), 'Actual model and Think were not persisted with the answers')
+    check(document.querySelector('.qna-message.ai .qna-model-info')?.textContent?.includes('gemini-3.1-flash-lite, Think: HIGH'), 'Actual fallback model and Think missing after reopening the discussion')
     const countBeforeFailure = images.size
     failSave = true
     await act(async () => {
