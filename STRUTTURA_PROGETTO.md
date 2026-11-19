@@ -2,7 +2,7 @@
 
 ## Stato attuale
 
-La preparazione 0.3.1 migliora la lettura delle dispense e del Q&A.
+La 0.3.1, pubblicata e verificata il 19 novembre, migliora la lettura delle dispense e del Q&A.
 `src/hooks/useStudyPreview.ts` consulta il modello dei paragrafi senza
 accreditare tempo fuori Full Focus; `InlineMathTitle.tsx` rende le formule
 nei titoli. `shared/qnaModelPolicy.ts` alimenta modello/Think previsti e i

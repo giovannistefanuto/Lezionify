@@ -6415,3 +6415,14 @@ Non modificare manualmente la sezione `Registro`: aggiungi le nuove decisioni es
 - **Impatto:** 954 unitari, 49 Python, 41 Node, updater, React/Electron, raccolte, Sessione e PDF reali passati. Verificati 384 file build, nove componenti NSIS e tre backup. Setup SHA256 edc67ff703b2daa7fee73abdd64c12f63815fcd796de5c4f42fbe82250fdec09; artefatti privati esclusi; firma NotSigned.
 - **Follow-up:** Commit e push delle modifiche pubblicabili; creare, caricare e pubblicare la release con i tre asset verificati, poi confrontare il manifesto pubblico. Installer non eseguito sul profilo personale; upgrade reale, UAC e SmartScreen non collaudati.
 - **File coinvolti:** docs/product/idee-future-2026-10-13.md, docs/quality/lettura-qna-2026-11-19.md, docs/releases/0.3.1.md, docs/publishing/aggiornamenti-windows.md, STRUTTURA_PROGETTO.md, package.json, package-lock.json, electron-builder.yml, DECISIONI.md
+
+## D-0583 — Release stabile 0.3.1 pubblicata e verificata
+
+- **Data:** 2026-11-19
+- **Stato:** accettata
+- **Area:** release
+- **Decisione:** Pubblicare Lezionify 0.3.1 sul commit dei binari 5d725205175e63aadb6774c74aef8d75dd655439 con setup, blockmap e latest.yml gia collaudati, senza rigenerare o sostituire asset.
+- **Motivazione:** Richiesta esplicita di completare le modifiche e la release tramite skill, dopo il gate completo e il confronto degli asset caricati.
+- **Impatto:** Release pubblica stabile latest; tre asset con digest e dimensioni coincidenti ai locali; manifesto scaricato senza credenziali identico byte per byte. Le cinque voci sono completate e rimangono 16 attivita operative aperte, inclusa 131 per dati insufficienti.
+- **Follow-up:** Aggiornamento disponibile, non installato automaticamente sul PC. Firma e upgrade Windows reale restano nei limiti dichiarati. Pubblicare anche la documentazione finale e verificarne il commit remoto.
+- **File coinvolti:** docs/publishing/aggiornamenti-windows.md, docs/quality/lettura-qna-2026-11-19.md, STRUTTURA_PROGETTO.md, DECISIONI.md

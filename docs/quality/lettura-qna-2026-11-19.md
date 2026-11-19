@@ -37,3 +37,10 @@ Screenshot sintetici locali: `local-artifacts/reading-2026-11-19/`.
 Nessun gruppo dello storico prospettico raggiunge le 20 lezioni confrontabili per lingua, metodo e fase. La calibrazione personale resta aperta: non si abbassano le soglie e non si trasformano i soli totali dello studio in esiti prospettici.
 
 Nessuna nuova prova di qualità o consumi Gemini reali: i contratti AI sono verificati con risposte sintetiche. Installer `NotSigned`, verificato senza eseguirlo sul profilo personale. Upgrade Windows reale, UAC e SmartScreen restano fuori dai collaudi. Vedere anche le [note 0.3.1](../releases/0.3.1.md).
+
+## Distribuzione
+
+[Release v0.3.1](https://github.com/giovannistefanuto/Lezionify/releases/tag/v0.3.1)
+pubblicata sul commit `5d725205175e63aadb6774c74aef8d75dd655439`, con setup,
+blockmap e manifesto verificati anche sul remoto. Il manifesto pubblico coincide
+byte per byte con quello locale. Installer non eseguito sul profilo personale.

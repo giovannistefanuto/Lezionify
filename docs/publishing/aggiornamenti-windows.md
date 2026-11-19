@@ -139,7 +139,10 @@ e tre asset del backup 0.2.5. Nessun artefatto personale nel pacchetto.
 
 Authenticode: `NotSigned`. Installer estratto e verificato, non eseguito sul
 profilo personale. Upgrade Windows reale, UAC e SmartScreen non collaudati.
-Preparazione locale completata; pubblicazione ancora da completare.
+Release stabile [v0.3.1](https://github.com/giovannistefanuto/Lezionify/releases/tag/v0.3.1)
+pubblicata sul commit dei binari `5d725205175e63aadb6774c74aef8d75dd655439`.
+Tutti e tre gli asset remoti hanno dimensioni e digest coincidenti con i file
+locali; il manifesto pubblico scaricato senza credenziali è identico byte per byte.
 
 ### Pacchetto 0.3.0 del 18 novembre
 
