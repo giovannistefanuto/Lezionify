@@ -253,6 +253,18 @@ const archiveApi: ArchiveApi = {
   saveHighlights: (lectureId, highlights) =>
     ipcRenderer.invoke('archive:save-highlights', lectureId, highlights),
   getBatteryStatus: () => ipcRenderer.invoke('archive:battery-status'),
+  getDeviceNoticeStatus: () => ipcRenderer.invoke('archive:device-notice-status'),
+  setLanguageShortcutActive: active => ipcRenderer.invoke('archive:language-shortcut-active', active),
+  onLanguageShortcut: callback => {
+    const listener = () => callback()
+    ipcRenderer.on('archive:language-shortcut', listener)
+    return () => ipcRenderer.removeListener('archive:language-shortcut', listener)
+  },
+  onDeviceNotice: callback => {
+    const listener = (_: unknown, notice: import('../../shared/deviceNotices').DeviceNotice) => callback(notice)
+    ipcRenderer.on('archive:device-notice', listener)
+    return () => ipcRenderer.removeListener('archive:device-notice', listener)
+  },
   getAppLogs: () => ipcRenderer.invoke('archive:get-app-logs'),
   getAppLogDay: day => ipcRenderer.invoke('archive:get-app-log-day', day),
   clearAppLogs: () => ipcRenderer.invoke('archive:clear-app-logs'),

@@ -8,6 +8,12 @@ Il 19 novembre vengono aggiunte sette richieste, voci 158–164 e posizioni
 104–110: le attività aperte operative diventano **21**, le sospese restano 7.
 Successivamente completate 158, 159, 161, 162 e 164: restano **16 attività
 aperte operative** e **7 sospese**. La 131 resta aperta per dati insufficienti.
+Il 20 novembre vengono aggiunte le voci 165–167 e riattivata la voce 33,
+in fondo alla coda (posizioni 111–114): **20 attività aperte operative**
+e **6 sospese**. La prima attività resta la voce 7.
+Implementate 165–167 e 137; aggiunta e implementata la 168 per alimentazione:
+restano **16 attività aperte operative** e **6 sospese**. La 33 include ora il
+percorso nativo collaudato, con verifica personale della cornice gialla aperta.
 
 Le attività concluse, i precedenti ordini, le due voci ritirate (114 e 115)
 e tutti gli aggiornamenti storici sono conservati nel
@@ -38,7 +44,7 @@ soltanto dopo implementazione e verifiche pertinenti.
 | 75. [ ] | Controllo aggiornamenti GitHub all'avvio e pulsante Aggiorna | 129 | Alta: versionamento, distribuzione e aggiornamento recuperabile. |
 | 77. [ ] | Intervallo statistico del tempo restante calibrato sullo storico | 131 | D-0482: raccolta prospettica e intervalli implementati/collaudati; resta la calibrazione personale su almeno 20 lezioni confrontabili per fase, lingua e metodo. |
 | 80. [ ] | Sezione Altre cose per materiali fuori dagli esami | 134 | Implementata e collaudata anche sul podcast reale; attesa la valutazione finale dell'utente sulla scheda. |
-| 83. [ ] | Notifica Bluetooth animata in Focus per connessione cuffiette | 137 | Da verificare: eventi reali Windows e animazione non invasiva di 5 secondi. |
+| 83. [x] | Notifica Bluetooth animata in Focus per connessione cuffiette | 137 | Da verificare: eventi reali Windows e animazione non invasiva di 5 secondi. |
 
 | 91. [ ] | Valutare chiavi API e modelli di altri provider | 145 | Da definire: operazioni supportate, credenziali, costi e compatibilità. |
 | 92. [x] | Riepilogo settimanale in un box sotto Tempo per Materia | 146 | Separare il riepilogo mantenendo chiari periodo e confronto. |
@@ -60,6 +66,17 @@ soltanto dopo implementazione e verifiche pertinenti.
 | 108. [x] | Q&A più leggibile e Allega slide funzionante | 162 | Medio/alta: spazio per la risposta, opzioni richiudibili e confronto dei due ingressi alle slide. |
 | 109. [ ] | Ripensare inserimento e modifica degli esami in Sessione | 163 | Alta: flusso completo, terminologia, piani, parziali ed esclusioni da rendere comprensibili. |
 | 110. [x] | Zoom della dispensa Full Focus con rotella a passi del 5% | 164 | Bassa/media: riprodurre i salti del 50% e preservare scorrimento e altri controlli di zoom. |
+| 111. [x] | Q&A: Pensa di più per ogni modello compatibile | 165 | Da verificare: Gemini nuovo, livelli supportati e configurazione effettivamente inviata. |
+| 112. [ ] | Ctrl+L non cambia lingua: riprendere la diagnosi | 33 | Percorso nativo e regressioni collaudati; conferma personale della cornice gialla ancora aperta. |
+| 113. [x] | Pausa dalla Home anche fuori Full Focus | 166 | Media: durate rapide e libera, timer e schermata pausa già esistente. |
+| 114. [x] | Record e continuità di studio nelle Statistiche | 167 | Da ricercare e progettare: metriche utili, grafica coerente e riuso delle streak. |
+| 115. [x] | Avvisi di collegamento e scollegamento della corrente | 168 | Eventi powerMonitor, animazione silenziosa e interruttore dedicato verificati. |
+
+**Aggiunte del 20 novembre:** tre nuove voci e riattivazione della 33,
+nell'ordine ricevuto, inizialmente senza implementazioni o ricerche.
+Successivamente l'utente autorizza tutti questi lavori, la 137 e gli avvisi
+di alimentazione (168), con release finale. Le altre priorità conservano il
+loro ordine; la voce 33 mantiene soltanto la conferma personale residua.
 
 **Aggiunte del 19 novembre:** richieste registrate per lavoro futuro, senza
 avviarne l'implementazione. L'ordine precedente e gli stati storici restano
@@ -76,13 +93,12 @@ le altre voci residue. Le funzioni esistenti vengono riusate, non duplicate.
 
 ## Archiviate per ora — attività sospese
 
-Queste sette attività non sono completate né annullate e non vengono avviate
+Queste sei attività non sono completate né annullate e non vengono avviate
 da `LISTA_ORDINE`. Riattivazione soltanto su richiesta esplicita dell’utente.
 Le posizioni precedenti sono conservate per riferimento.
 
 | Posizione precedente | Attività | Voce | Stato tecnico conservato |
 | --- | --- | --- | --- |
-| 18 | Ctrl / Ctrl+L e cerchio bianco attorno al mouse | 33 | Media incerta: test nativi positivi e cerchio spiegato; serve l'episodio personale storico. |
 | 31 | Valutare limite YouTube di 30 minuti al giorno negli orari di studio | 75 | Alta: strumento esterno e perimetro d'uso da concordare, affidabilità su PC da provare. |
 | 32 | Timer pausa sul telefono | 32 | Alta: trasporto locale e avvisi affidabili a schermo bloccato. |
 | 33 | Audio nel Q&A e registrazione dal telefono | 31 | Alta: acquisizione, trasferimento, allegati e invio AI esplicito. |
@@ -356,7 +372,10 @@ o criteri di validità. Non vengono ricostruiti esiti mancanti dai soli totali.
 
 ### 137. Notifica Bluetooth animata per le cuffiette in Focus
 
-- [ ] Quando le cuffiette si connettono effettivamente al PC durante la
+Estesa il 20 novembre all’intera app, con nome cuffiette configurabile
+(predefinito EarFun Air Pro 4) e interruttore nelle Impostazioni.
+
+- [x] Quando le cuffiette si connettono effettivamente al PC durante la
   modalità Focus, mostrare un simbolo Bluetooth per confermare la connessione
   senza obbligare l'utente a uscire dalla lettura.
 - Il simbolo parte dal basso dello schermo, sale come un palloncino, rallenta,
@@ -367,6 +386,9 @@ o criteri di validità. Non vengono ricostruiti esiti mancanti dai soli totali.
   gestione delle riconnessioni e movimento ridotto per accessibilità.
 - Coordinare con la voce 106 sui comandi EarFun, che resta archiviata:
   la notifica è una richiesta distinta e non ne riattiva l'integrazione.
+
+Implementata e collaudata per la 0.4.0 (D-0588).
+[Ricerca, prove e limiti](../quality/studio-connessioni-2026-11-20.md).
 
 ## Nuove richieste del 13 novembre 2026
 
@@ -680,11 +702,36 @@ della dispensa in Full Focus, non una nuova funzione di ingrandimento.
 Completata il 19 novembre nella 0.3.1: D-0581 e D-0582.
 [Implementazione, prove e limiti](../quality/lettura-qna-2026-11-19.md).
 
-## Descrizioni delle attività sospese
+## Nuove richieste del 20 novembre 2026
+
+### 165. Q&A: Pensa di più disponibile per ogni modello compatibile
+
+- [x] Verificare perché sul nuovo Gemini scelto nel Q&A non sia possibile
+  impostare Think High, identificando il modello esatto e riproducendo il caso.
+- [x] Verificare sulle API ufficiali le modalità di ragionamento disponibili
+  per ogni modello selezionabile e consentire Pensa di più dove supportato,
+  con livelli e parametri corretti per il modello.
+- [x] Rendere chiari limiti, indisponibilità e comportamento dei fallback;
+  verificare che scelta mostrata e configurazione effettivamente inviata coincidano.
+
+Estensione delle voci concluse 153 e 158. Riusare `shared/qnaModelPolicy.ts` e i collaudi esistenti; non presumere
+che tutti i modelli espongano un parametro High identico. Le eventuali prove AI
+restano esplicite e tracciabili.
+
+Implementata e collaudata per la 0.4.0 (D-0588).
+[Ricerca, prove e limiti](../quality/studio-connessioni-2026-11-20.md).
 
 ### 33. Ctrl+L seleziona la schermata ma non cambia lingua
 
-**Stato attuale: archiviata per ora dal 29 ottobre 2026, su richiesta utente. Esclusa da LISTA_ORDINE fino a riattivazione esplicita.**
+**Stato attuale: riattivata il 20 novembre 2026 su richiesta utente, in posizione 112.**
+
+Nuova segnalazione: «Perché Ctrl+L non cambia lingua?». Riprendere la diagnosi
+sulla versione attuale, conservando le evidenze storiche riportate sotto.
+Il precedente problema del cerchio con Ctrl non dimostra la causa del mancato
+cambio lingua con Ctrl+L. La successiva autorizzazione porta al percorso nativo in Full Focus, cattura
+DOM, supporto KeyL e filtro dei soli dialoghi visibili, con collaudi Electron.
+Il sintomo personale non è stato riprodotto: verifica ancora aperta.
+[Ricerca, implementazione e limiti della 0.4.0](../quality/studio-connessioni-2026-11-20.md).
 
 - [ ] Riprodurre e indagare la segnalazione «Ctrl+L va a selezionare la schermata ma non cambia la lingua».
 
@@ -722,6 +769,65 @@ Ctrl+L nativo in Electron passa di nuovo. L'episodio storico di vero Ctrl+L
 senza cambio lingua non è acquisito: casella ancora aperta, senza scambiare
 la spiegazione del cerchio per una correzione di quel diverso sintomo.
 [Esiti, fonti e ripresa](interventi-2026-10-21.md#ctrl-cerchio-bianco-e-limite-residuo).
+
+### 166. Avviare una pausa dalla Home anche fuori Full Focus
+
+- [x] Aggiungere dalla Home un pulsante per avviare una pausa senza dover
+  entrare in una lezione o in Full Focus.
+- [x] Offrire durate rapide di **5, 15 e 30 minuti**, oltre a una durata libera
+  personalizzabile con timer.
+- [x] Mostrare la stessa schermata pausa già usata dopo Esc in Full Focus,
+  riusando countdown, scadenza e controlli di ripresa.
+- [x] Verificare avvio, annullamento, scadenza e ritorno alla Home; la pausa
+  non deve accreditare studio né avviare automaticamente una lezione.
+
+La richiesta riguarda l'accesso alla pausa nell'app, indipendentemente dalle
+attività sospese relative a telefono e watch, che restano sospese.
+
+Implementata e collaudata per la 0.4.0 (D-0588).
+[Ricerca, prove e limiti](../quality/studio-connessioni-2026-11-20.md).
+
+### 167. Record e continuità di studio nelle Statistiche
+
+- [x] Ricercare e selezionare i record più utili prima di implementarli,
+  valutando collocazione, gerarchia e grafica coerenti con le Statistiche.
+- [x] Valutare giorno con più studio, settimana con più studio e maggiore
+  durata di concentrazione consecutiva, con definizioni esplicite e conteggi
+  coerenti con studio effettivo, pause e settimane di calendario.
+- [x] Valutare con cautela la lezione completata più velocemente per corso,
+  limitata a lezioni sopra i **20 minuti**: chiarire a quale durata si riferisce
+  la soglia e se salti e completamenti manuali rendano il record fuorviante.
+  Non considerare questa metrica già approvata per l'implementazione.
+- [x] Verificare e riusare le streak esistenti prima di aggiungerne altre;
+  valutare continuità come **7 giorni consecutivi con almeno 10 minuti di
+  studio al giorno**, record della serie migliore e soglia giornaliera.
+- [x] Implementare e collaudare le metriche selezionate, documentando criteri,
+  dati insufficienti e casi limite senza premiare lezioni saltate.
+
+La Dashboard espone già «Streak di Studio» tramite `currentStreakDays`:
+verificare la definizione attuale prima di proporre modifiche o duplicazioni.
+Scelte confermate il 20 novembre: giorno e settimana migliori, concentrazione
+osservata e serie con soglia 10 minuti. Escluso il record di velocità delle
+lezioni; ricerca, implementazione e prove sono nel rapporto collegato.
+
+Implementata e collaudata per la 0.4.0 (D-0588).
+[Ricerca, prove e limiti](../quality/studio-connessioni-2026-11-20.md).
+
+### 168. Avvisi animati quando si collega o scollega la corrente
+
+- [x] Rilevare le transizioni native di alimentazione, distinguendole dallo
+  stato già presente all'avvio e dall'avviso batteria scarica esistente.
+- [x] Mostrare un'animazione silenziosa di 5 secondi nell'intera app, anche
+  in Full Focus, senza spostare il focus o bloccare i clic.
+- [x] Fornire un interruttore dedicato nelle Impostazioni, anteprime etichettate
+  e dissolvenza per chi preferisce il movimento ridotto.
+
+Richiesta e impostazioni approvate il 20 novembre. Eventi `on-ac`/`on-battery`
+di Electron, preferenze locali e portale fullscreen; nessuna modifica forzata
+dell'alimentazione. Implementata e collaudata per la 0.4.0 (D-0588).
+[Ricerca, prove e limiti](../quality/studio-connessioni-2026-11-20.md).
+
+## Descrizioni delle attività sospese
 
 ### 75. YouTube: valutare un limite di 30 minuti al giorno negli orari di studio
 

@@ -64,6 +64,7 @@ import { getLectureDurationSeconds } from '../../shared/archive'
 import { countLectureWords } from '../../shared/lectureLength'
 import { extractLectureTitle, replaceLectureTitle, validateLectureTitles } from '../../shared/lectureTitles'
 import { getQnaModelFallbackChain, qnaThinkingLabel } from '../../shared/qnaModelPolicy'
+import { studyRecords } from '../../shared/studyRecords'
 import { notesProgressMessage } from './ai/progressDiagnostics'
 import {
   formatLocalCalendarDate,
@@ -2649,22 +2650,9 @@ export class ArchiveService {
     }
     const monthAvgDailySeconds = Math.round(monthTotal / 30)
 
-    let currentStreakDays = 0
-    const todayHasStudy = (totalsByDate.get(todayStr) || 0) > 0
-    let startOffset = todayHasStudy ? 0 : 1
-
-    while (true) {
-      const checkD = new Date()
-      checkD.setDate(checkD.getDate() - startOffset)
-      const checkDateStr = formatLocalCalendarDate(checkD)
-      const hasStudy = (totalsByDate.get(checkDateStr) || 0) > 0
-      if (hasStudy) {
-        currentStreakDays++
-        startOffset++
-      } else {
-        break
-      }
-    }
+    const { currentStreakDays, records } = studyRecords(totalsByDate, todayStr)
+    const longestFocusSeconds = await this.studyHistory.concentrationRecord(sessions,
+      Object.fromEntries(library.lectures.map(lecture => [lecture.id, lecture.courseCode])), [...archived], todayStr)
 
     const courseBreakdown: CourseStudyBreakdown[] = Object.entries(courseTotals)
       .map(([courseCode, totalSeconds]) => ({
@@ -2704,6 +2692,7 @@ export class ArchiveService {
       monthAvgDailySeconds,
       totalSemesterSeconds,
       currentStreakDays,
+      records: { ...records, longestFocusSeconds },
       courseBreakdown
     }
   }

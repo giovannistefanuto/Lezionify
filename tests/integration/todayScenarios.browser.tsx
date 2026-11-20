@@ -165,7 +165,7 @@ export async function runTodayScenarios(root: Root, api: any) {
     check(options.textContent?.includes('Modello: gemini-4-hydrogen, Think: predefinito'), 'Planned Q&A model is static')
     const thinking = Array.from(options.querySelectorAll<HTMLInputElement>('input')).find(input => input.parentElement?.textContent?.includes('Pensa di più'))!
     await act(async () => thinking.click())
-    check(options.textContent?.includes('Modello: gemini-3.5-flash-lite, Think: HIGH'), 'Deep thinking did not update the model label using the real policy')
+    check(options.textContent?.includes('Modello: gemini-4-hydrogen, Think: HIGH'), 'Deep thinking did not update the model label using the real policy')
     await act(async () => thinking.click())
     await act(async () => Array.from(document.querySelectorAll<HTMLButtonElement>('.qna-length-toggle button')).find(button => button.textContent === 'Lunga')!.click())
     const savedWidth = localStorage.getItem(keys[1])

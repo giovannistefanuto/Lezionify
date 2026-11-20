@@ -34,6 +34,9 @@ async function exercise(mode) {
       if (result) return result
       await delay(45)
     }
+    if (label === 'study did not start' || label === 'study did not resume') {
+      throw Error(label + ' ' + JSON.stringify({ hidden: document.hidden, focused: document.hasFocus(), fullscreen: Boolean(document.fullscreenElement), modals: [...document.querySelectorAll('.modal-overlay, [aria-modal=true]')].map(element => ({ tag: element.tagName, classes: element.className, hidden: element.hidden, open: element.hasAttribute('open'), visible: Boolean(element.getClientRects().length), parentHidden: Boolean(element.closest('[hidden]')) })), sessione: Boolean(document.querySelector('[data-study-exclusion="sessione"]')), timer: document.querySelector('.focus-timer-subtle')?.getAttribute('title') }))
+    }
     throw Error(label)
   }
   const findButton = (text, root = document) => [...root.querySelectorAll('button, summary')]
@@ -48,6 +51,7 @@ async function exercise(mode) {
   }
   const api = window.archive
   assert(api?.sessione, 'preload Sessione absent')
+  assert((await api.detectUsbRecorder()).detected === false, 'compiled fixture must isolate physical USB recorders')
   const settings = await api.getSettings()
   assert(!settings.apiKey && !settings.apiKeys.length, 'test profile must not contain credentials')
   if (mode === 'run') {
@@ -107,7 +111,7 @@ try {
   prepareFixture()
   const main = join(directory, 'main.cjs')
   writeFileSync(main, `
-    const { app, dialog, BrowserWindow } = require('electron')
+    const { app, dialog, BrowserWindow, ipcMain } = require('electron')
     const { writeFileSync } = require('node:fs')
     const { join } = require('node:path')
     app.setAppPath(${JSON.stringify(repository)})
@@ -122,6 +126,10 @@ try {
     setTimeout(() => { console.error('FAIL: timeout Sessione compilata'); app.exit(1) }, 60000).unref()
     app.once('browser-window-created', (_event, win) => {
       trace('window')
+      // This scenario owns a synthetic library and must not consult a physical recorder.
+      // USB detection/import has its own integration coverage.
+      ipcMain.removeHandler('archive:detect-usb-recorder')
+      ipcMain.handle('archive:detect-usb-recorder', () => ({ detected: false, files: [] }))
       win.webContents.session.webRequest.onBeforeRequest(offline, (_info, callback) => callback({ cancel: true }))
       const run = (source, gesture = false) => win.webContents.executeJavaScript(source, gesture)
       const capture = async name => {
@@ -220,6 +228,7 @@ try {
               reading.scrollTop = 550
               const readingOffset = reading.scrollTop
               if (readingOffset < 100) throw Error('fixture cannot establish a reading position')
+              if (document.querySelector('.recorder-choice')) throw Error('physical recorder contaminated the synthetic scenario')
               let ticks = 0
               const tick = () => { ticks++ }
               document.addEventListener('lezionify-study-tick', tick)

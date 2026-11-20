@@ -8,8 +8,11 @@ declare const require: any
 
 export async function runLanguageShortcutScenarios(root: Root) {
   const api = window.archive as any
-  const keys = ['getReminders', 'getFocusPdf', 'releaseFocusPdf', 'scanAndSyncLibrary', 'listLectures', 'getArchivedCourseCodes', 'getCourseStats', 'getSettings', 'getScratchpad', 'getArchivePipelineStatus', 'onArchivePipelineProgress', 'getLectureWordCounts', 'readMarkdown', 'readMarkdownEn', 'saveStudySession', 'languageShortcutDiagnosticsEnabled', 'logClientMessage']
+  const keys = ['setLanguageShortcutActive', 'onLanguageShortcut', 'getReminders', 'getFocusPdf', 'releaseFocusPdf', 'scanAndSyncLibrary', 'listLectures', 'getArchivedCourseCodes', 'getCourseStats', 'getSettings', 'getScratchpad', 'getArchivePipelineStatus', 'onArchivePipelineProgress', 'getLectureWordCounts', 'readMarkdown', 'readMarkdownEn', 'saveStudySession', 'languageShortcutDiagnosticsEnabled', 'logClientMessage']
   const originals = Object.fromEntries(keys.map(key => [key, api[key]]))
+  const ipc = require('electron').ipcRenderer
+  api.setLanguageShortcutActive = (active: boolean) => ipc.invoke('language-shortcut-active', active)
+  api.onLanguageShortcut = (callback: () => void) => { const handler = () => callback(); ipc.on('archive:language-shortcut', handler); return () => ipc.removeListener('archive:language-shortcut', handler) }
   const traces: any[] = []
   api.languageShortcutDiagnosticsEnabled = false
   api.logClientMessage = async (...entry: any[]) => { traces.push(entry) }
@@ -80,6 +83,29 @@ export async function runLanguageShortcutScenarios(root: Root) {
         input.remove(); view.focus()
         await nativeShortcut()
         check(language !== editingLanguage, 'Shortcut must resume after focusing lecture text again')
+        const hiddenDialog = document.createElement('div'); hiddenDialog.setAttribute('role', 'dialog'); hiddenDialog.hidden = true; document.body.append(hiddenDialog)
+        const beforeHidden = language
+        await nativeShortcut()
+        check(language !== beforeHidden, 'A hidden dialog must not block native language switching')
+        hiddenDialog.remove()
+        const nativeDialog = document.createElement('dialog')
+        const dialogButton = document.createElement('button'); dialogButton.textContent = 'Synthetic dialog control'
+        nativeDialog.append(dialogButton); document.body.append(nativeDialog); nativeDialog.showModal(); dialogButton.focus()
+        const beforeNativeDialog = language
+        await nativeShortcut()
+        check(language === beforeNativeDialog, 'An open native HTML dialog must preserve the underlying notes language')
+        nativeDialog.close(); nativeDialog.remove(); view.focus()
+        const consume = (event: KeyboardEvent) => { if (event.ctrlKey && event.code === 'KeyL') { event.preventDefault(); event.stopImmediatePropagation(); view.style.outline = '3px solid gold' } }
+        view.addEventListener('keydown', consume)
+        view.focus()
+        const beforeConsumed = language
+        await nativeShortcut()
+        check(language !== beforeConsumed, 'Native route must switch language even if the text pane consumes DOM Ctrl+L for focus')
+        check(view.style.outline !== 'gold solid 3px', 'Native shortcut must not reach pane focus/navigation defaults')
+        view.removeEventListener('keydown', consume)
+        const physicalBefore = language
+        await act(async () => window.dispatchEvent(new KeyboardEvent('keydown', { key: '\u000c', code: 'KeyL', ctrlKey: true, cancelable: true, bubbles: true })))
+        check(language !== physicalBefore, 'Physical KeyL must also switch language when the logical key is a control character')
       }
     }
     await act(async () => root.render(null))
@@ -117,7 +143,7 @@ export async function runLanguageShortcutScenarios(root: Root) {
     check(fullView.textContent?.includes('italiano sintetico'), 'Full App language button must switch back to Italian')
     await nativeShortcut()
     check(fullView.textContent?.includes('Synthetic English'), 'Native Ctrl+L must work after using the full App language button')
-    check(traces.some(entry => entry[2].includes('renderer-capture')), 'Opt-in trace must observe native key arrival')
+    check(traces.some(entry => entry[2].includes('renderer-capture') || entry[2].includes('renderer-native')), 'Opt-in trace must observe native key arrival')
     check(traces.some(entry => entry[3]?.includes('toggle-requested')), 'Opt-in trace must record toggle outcome')
     check(traces.some(entry => entry[2].includes('language-state') && JSON.parse(entry[3]).language === 'en'), 'Opt-in trace must observe the committed language')
     check(!JSON.stringify(traces).includes('Synthetic') && !JSON.stringify(traces).includes(lecture.id), 'Trace must not include lesson text or identifiers')

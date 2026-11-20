@@ -6459,3 +6459,58 @@ Non modificare manualmente la sezione `Registro`: aggiungi le nuove decisioni es
 - **Impatto:** Release stabile latest pubblica; tag sul commit atteso; digest e dimensioni dei tre asset coincidenti; manifesto pubblico scaricato senza credenziali identico al locale. Sorgenti sul remoto. Skill release aggiornata, validata e copia installata allineata.
 - **Follow-up:** Installazione personale non eseguita; upgrade Windows temporaneo, UAC e SmartScreen non collaudati. Checkout esterni richiedono aggiornamento separato. Pubblicare documentazione finale e verificarne commit remoto.
 - **File coinvolti:** docs/publishing/aggiornamenti-windows.md, STRUTTURA_PROGETTO.md, DECISIONI.md
+
+## D-0587 — Nuove richieste Q&A, pausa e record; riattivazione Ctrl+L
+
+- **Data:** 2026-11-20
+- **Stato:** accettata
+- **Area:** pianificazione
+- **Decisione:** Aggiungere le voci 165-167 e riattivare la voce 33 nelle posizioni 111-114, nell'ordine richiesto: ragionamento per modelli Q&A compatibili, Ctrl+L, pausa dalla Home e record nelle Statistiche.
+- **Motivazione:** Conservare le quattro richieste come lavoro futuro con criteri verificabili, riusando diagnosi Ctrl+L e streak esistenti senza duplicarle.
+- **Impatto:** Solo documentazione: 20 attivita operative aperte e sei sospese. Ordine precedente invariato, nessuna implementazione o ricerca avviata; registrati dubbi sui record di velocita e verifica delle capacita dei modelli.
+- **Follow-up:** Prima voce operativa sempre 7. Per le nuove richieste riprendere policy Q&A, diagnosi tastiera, schermata pausa e conteggio streak prima di intervenire.
+- **File coinvolti:** docs/product/idee-future-2026-10-13.md, DECISIONI.md
+
+## D-0588 — Q&A per modello, pausa Home, record e avvisi di connessione
+
+- **Data:** 2026-11-20
+- **Stato:** accettata
+- **Area:** studio
+- **Decisione:** Implementare le richieste 165-167 e 137, aggiungere la 168 per alimentazione e rafforzare Ctrl+L con consegna nativa in Full Focus. Rispettare il modello Q&A scelto; HIGH per Gemini 3/4 e budget espliciti per 2.5. Pausa 5/15/30 o libera; record giorno, settimana, concentrazione osservata e serie con soglia 10 minuti.
+- **Motivazione:** L utente ha autorizzato tutte le richieste odierne e la release, approvando avvisi silenziosi di 5 secondi in tutta l app, interruttori distinti e rinuncia al record di velocita delle lezioni. Riprodotto il cambio involontario di modello Q&A con test prima rosso.
+- **Impatto:** Nuove preferenze locali per nome cuffiette e avvisi, senza dipendenze o migrazioni distruttive. Bluetooth classico Windows da Win32 fConnected, senza inquiry o pairing; powerMonitor per corrente. Streak ricalcolata sullo storico con soglia 600 secondi. La cornice gialla personale non e stata riprodotta: la voce 33 conserva la verifica residua.
+- **Follow-up:** Gate completo e release 0.4.0. Conferma personale di Ctrl+L residua; connessioni fisiche non forzate e prove AI solo sintetiche. Conservare audio, fonti e libreria personale.
+- **File coinvolti:** shared/qnaModelPolicy.ts, shared/studyRecords.ts, shared/deviceNotices.ts, electron/main/, electron/preload/index.ts, src/components/, src/App.tsx, tests/, tools/check_device_notices.cjs, docs/product/idee-future-2026-10-13.md, docs/quality/studio-connessioni-2026-11-20.md, docs/releases/0.4.0.md
+
+## D-0589 — Isolare il collaudo Sessione compilata dal registratore fisico
+
+- **Data:** 2026-11-20
+- **Stato:** accettata
+- **Area:** collaudi
+- **Decisione:** Nel launcher sintetico Sessione sostituire solo il rilevamento USB con un risultato senza dispositivi, verificando esplicitamente l isolamento. Conservare API compilate, timer reale, sospensione durante Sessione e verifica del riavvio.
+- **Motivazione:** Il gate si e fermato tre volte sul timer: finestra attiva e fullscreen, ma due modali del registratore fisico aperti automaticamente. Il tempo era correttamente sospeso; l hardware esterno contaminava un test di Sessione.
+- **Impatto:** Nessuna modifica al comportamento USB o al conteggio in produzione. Scenario compilato ora deterministico; le prove USB dedicate restano nel gate. Diagnostica degli errori del test include solo stati della fixture sintetica.
+- **Follow-up:** Ripetere il profilo completo di release senza saltare lo scenario o indebolirne le asserzioni.
+- **File coinvolti:** tools/run_sessione_compiled.cjs, docs/quality/studio-connessioni-2026-11-20.md, DECISIONI.md
+
+## D-0590 — Ctrl+L preserva anche i dialoghi HTML nativi
+
+- **Data:** 2026-11-20
+- **Stato:** accettata
+- **Area:** lettura
+- **Decisione:** Includere dialog[open] tra i dialoghi che impediscono il cambio lingua della dispensa. Verificare il percorso nativo con un vero dialogo modale HTML e mantenere inerti i dialoghi nascosti.
+- **Motivazione:** La nuova regressione Electron era rossa: un dialogo nativo senza attributo role esplicito non veniva individuato dal selettore e Ctrl+L cambiava la lingua sottostante.
+- **Impatto:** Corretto il difetto riprodotto, senza disabilitare il cambio lingua in lettura. Il sintomo personale della cornice gialla rimane distinto e non riprodotto. Preparazione fermata prima del packaging per ripetere il gate sui sorgenti finali.
+- **Follow-up:** Gate completo e release 0.4.0; mantenere la conferma personale residua nella voce 33.
+- **File coinvolti:** src/components/LectureDrawer.tsx, tests/integration/languageShortcutScenarios.browser.tsx, docs/quality/studio-connessioni-2026-11-20.md, DECISIONI.md
+
+## D-0591 — Gate completo e installer Windows 0.4.0 verificati
+
+- **Data:** 2026-11-20
+- **Stato:** accettata
+- **Area:** release
+- **Decisione:** Preparare Lezionify 0.4.0 con il profilo completo, riusando la build del gate per il setup. Completare 165-167, 137 e 168; mantenere aperta la sola conferma personale della voce 33.
+- **Motivazione:** Il gate finale e verde dopo la regressione sui dialoghi nativi e l isolamento USB della fixture Sessione. Tutte le verifiche degli asset e del payload coincidono con la build collaudata.
+- **Impatto:** 977 unitari, 49 Python, 41 Node, RAG offline, updater, React/Electron, raccolte, Sessione e PDF passati. Verificati 385 file build, nove componenti NSIS e tre backup. Setup 300545797 byte, SHA256 be7e1dc0a38d36f60272083c3cecb191962c0771fb47911c4c8c19b87b081e40, NotSigned. Identita Start corretta e canali nuovi presenti nel pacchetto.
+- **Follow-up:** Commit e push di tutte le modifiche pubblicabili, upload dei tre asset, pubblicazione e confronto del manifesto pubblico. Nessuna installazione sul profilo personale; connessioni fisiche non forzate e Q&A verificato con SDK sintetico.
+- **File coinvolti:** docs/quality/studio-connessioni-2026-11-20.md, docs/publishing/aggiornamenti-windows.md, docs/releases/0.4.0.md, STRUTTURA_PROGETTO.md, docs/product/idee-future-2026-10-13.md, DECISIONI.md

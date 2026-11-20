@@ -1,0 +1,13 @@
+.study-records { margin: 22px 0; }
+.study-records .chart-card-header { gap: 12px; flex-wrap: wrap; }
+.study-records-grid { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 20px; margin: 22px 0; }
+.study-records-grid > div { border-left: 3px solid var(--primary); padding-left: 14px; min-width: 0; }
+.study-records dt { font-size: 13px; color: var(--text-muted); }
+.study-records dd { font-size: 26px; font-weight: 700; margin: 8px 0; color: var(--text-main); }
+.study-records small { display: block; color: var(--text-muted); font-size: 12px; line-height: 1.5; }
+.study-streak-progress { display: grid; grid-template-columns: auto minmax(80px,240px); gap: 8px 20px; align-items: center; }
+.study-streak-progress progress { width: 100%; accent-color: var(--primary); height: 10px; }
+.study-streak-progress small { grid-column: 1 / -1; }
+.study-records-note { margin: 18px 0 0; color: var(--text-muted); font-size: 12px; line-height: 1.5; }
+@media (max-width:1000px) { .study-records-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+@media (max-width:500px) { .study-records-grid,.study-streak-progress { grid-template-columns:1fr; } }

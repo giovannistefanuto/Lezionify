@@ -20,6 +20,19 @@ function restart() {
 beforeEach(async () => { root = await mkdtemp(join(tmpdir(), 'lezionify-history-')); sessions = []; operations = new Map(); failProjection = false; restart() })
 afterEach(async () => { await rm(root, { recursive: true, force: true }) })
 
+test('concentration records read actual history, exclude archived or corrected sessions and preserve pauses', async () => {
+  expect(await history.concentrationRecord(sessions, {}, [], '2026-11-20')).toBeNull()
+  await history.ingest(batch(60))
+  expect(await history.concentrationRecord(sessions, {}, [], '2026-11-20')).toBe(60)
+  expect(await history.concentrationRecord(sessions, { lesson: 'OTHER' }, ['OTHER'], '2026-11-20')).toBeNull()
+  const paused = batch(120)
+  paused.observations = paused.observations.slice(7).map(p => ({ ...p, creditedSeconds: 60, exclusions: ['pause'] }))
+  await history.ingest(paused)
+  expect(await history.concentrationRecord(sessions, {}, [], '2026-11-20')).toBe(60)
+  expect(await history.concentrationRecord(sessions.map(s => ({ ...s, corrections: [{ seconds: 10, createdAt: new Date().toISOString() }] })), {}, [], '2026-11-20')).toBeNull()
+  expect(await history.concentrationRecord(sessions, {}, [], '2026-11-08')).toBeNull()
+})
+
 test('projects confirmed seconds once, preserves pauses and repairs a lost ACK/projection across restart', async () => {
   const input = batch()
   failProjection = true

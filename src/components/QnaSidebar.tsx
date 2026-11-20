@@ -3,7 +3,7 @@ import ReactMarkdown from 'react-markdown'
 import remarkMath from 'remark-math'
 import rehypeKatex from 'rehype-katex'
 import remarkGfm from 'remark-gfm'
-import { getQnaModelFallbackChain, qnaThinkingLabel } from '../../shared/qnaModelPolicy'
+import { getQnaModelFallbackChain, qnaThinkingLabel, qnaThinkingConfig } from '../../shared/qnaModelPolicy'
 import type { GeminiModel, QnaThread, QnaStatusUpdate } from '../../shared/archive'
 import '../qna.css'
 import { useNumericPreference } from '../hooks/useNumericPreference'
@@ -83,7 +83,9 @@ export function QnaSidebar({
   const [useFullContext, setUseFullContext] = React.useState(true)
   const [includeOtherQna, setIncludeOtherQna] = React.useState(false)
   const [searchOnline, setSearchOnline] = React.useState(false)
-  const [thinkDeeper, setThinkDeeper] = React.useState(false)
+  const [requestedThinking, setThinkDeeper] = React.useState(false)
+  const supportsThinking = Boolean(qnaThinkingConfig(configuredModel ?? 'gemini-3.5-flash-lite', true).thinkingConfig)
+  const thinkDeeper = requestedThinking && supportsThinking
   const [optionsOpen, setOptionsOpen] = React.useState(false)
   const plannedModel = getQnaModelFallbackChain(configuredModel as GeminiModel | undefined, thinkDeeper).preferred
   const activeThreadRef = React.useRef(activeThreadId)
@@ -322,8 +324,9 @@ export function QnaSidebar({
           Includi altri Q&amp;A pertinenti di questa lezione
         </label>
         {includeOtherQna && <small>Invia anche estratti di altre discussioni pertinenti (massimo 5). Le risposte AI non sono fonti originali.</small>}
-        <label className="qna-context-toggle"><input type="checkbox" checked={thinkDeeper} disabled={isGenerating} onChange={event => setThinkDeeper(event.target.checked)} />Pensa di più</label>
+        <label className="qna-context-toggle"><input type="checkbox" checked={thinkDeeper} disabled={isGenerating || !supportsThinking} onChange={event => setThinkDeeper(event.target.checked)} />Pensa di più</label>
         <small className="qna-model-info">Previsto · Modello: {plannedModel}, Think: {qnaThinkingLabel(plannedModel, thinkDeeper)}</small>
+        {!supportsThinking && <small>Il ragionamento configurabile non è verificato per questo modello. Scegli un modello compatibile nelle Impostazioni.</small>}
         {thinkDeeper && <small>Può richiedere più tempo e credito API. La lunghezza resta quella scelta.</small>}
         <label className="qna-context-toggle"><input type="checkbox" checked={searchOnline} disabled={isGenerating} onChange={event => setSearchOnline(event.target.checked)} />Cerca online per questa domanda</label>
         {searchOnline && <small>Gemini può inviare query derivate dalla domanda e dal contesto a Google Search. Possono applicarsi costi aggiuntivi secondo il tuo piano. Le fonti web saranno separate dalla lezione.</small>}

@@ -1334,7 +1334,7 @@ describe('ArchiveService — QnA Key Rotation & Diagnostic Status', () => {
         keyId: 'key-0',
         keyAlias: 'Chiave 1',
         quotaGroup: 'default-project',
-        model: 'gemini-3.5-flash-lite'
+        model: 'gemini-3.6-flash'
       })
       params.onRetry(1, 2_000, 'Quota temporaneamente esaurita.')
       params.onAttempt({
@@ -1343,7 +1343,7 @@ describe('ArchiveService — QnA Key Rotation & Diagnostic Status', () => {
         keyId: 'key-1',
         keyAlias: 'Chiave 2',
         quotaGroup: 'default-project-2',
-        model: 'gemini-3.5-flash-lite'
+        model: 'gemini-3.6-flash'
       })
       params.onAttempt({ attempt: 3, keyIndex: 1, keyId: 'key-1', keyAlias: 'Chiave 2', quotaGroup: 'default-project-2', model: 'gemini-3.7-flash' })
       yield 'Spiegazione del '
@@ -1370,7 +1370,7 @@ describe('ArchiveService — QnA Key Rotation & Diagnostic Status', () => {
     expect(statusUpdates.some((u) => u.phase === 'connecting')).toBe(true)
     expect(statusUpdates.some((u) => u.phase === 'rotating_key')).toBe(true)
     expect(statusUpdates.some((u) => u.phase === 'fallback_model')).toBe(true)
-    expect(statusUpdates.filter((u) => u.phase === 'connecting').every((u) => u.model === 'gemini-3.5-flash-lite')).toBe(true)
+    expect(statusUpdates.filter((u) => u.phase === 'connecting').every((u) => u.model === 'gemini-3.6-flash')).toBe(true)
     expect(statusUpdates.some((u) => u.phase === 'streaming')).toBe(true)
     expect(statusUpdates.some((u) => u.phase === 'completed')).toBe(true)
 

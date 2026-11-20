@@ -1,5 +1,6 @@
 import { MusicButton } from './MusicButton'
 import { StudyHistoryOverview } from './StudyHistoryOverview'
+import { StudyRecords } from './StudyRecords'
 import { StudyDayTimeline } from './StudyDayTimeline'
 import { StudyTimeRemovalDialog } from './StudyTimeRemovalDialog'
 import React, { useState, useEffect, useCallback, useMemo } from 'react'
@@ -490,7 +491,7 @@ export function Dashboard({
             <div className="hero-kpi-card">
               <div className="hero-kpi-icon">🔥</div>
               <div className="hero-kpi-info">
-                <span className="hero-kpi-label">Streak di Studio</span>
+                <span className="hero-kpi-label" title="Almeno 10 minuti di studio accreditato al giorno">Streak di Studio · 10 min/giorno</span>
                 <strong className="hero-kpi-val">
                   {analytics?.currentStreakDays || 0}{' '}
                   {analytics?.currentStreakDays === 1 ? 'giorno' : 'giorni'}
@@ -520,6 +521,7 @@ export function Dashboard({
             </div>
           </div>
 
+          <StudyRecords analytics={analytics} />
           <StudyDayTimeline courses={courseStats.map(c=>c.courseCode)} refreshToken={timelineRevision} />
 
           {/* Grafico a Barre 7 Giorni & Breakdown Materie */}

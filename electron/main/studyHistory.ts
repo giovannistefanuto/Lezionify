@@ -267,6 +267,28 @@ export class StudyHistory {
     const path = join(this.root, 'forecasts', 'legacy-v1.json')
     return this.mutex.runExclusive(async () => { if (await this.read(path, null) === null) await this.write(path, { version: 'legacy-v1', eligible: false, data: value }) })
   }
+  concentrationRecord(sessions: StudySession[], courses: Record<string, string | null>, archived: string[], today: string) {
+    return this.mutex.runExclusive(async () => {
+      const segments: StudySegment[] = []
+      // A non-localized correction cannot safely be attributed to one observed block.
+      const corrected = new Set(sessions.filter(s => s.corrections?.length).map(s => s.observationSessionId))
+      let dates: string[] = []
+      try { dates = await readdir(join(this.root, 'history')) } catch (error) { if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error }
+      for (const date of dates) {
+        if (!parseLocalCalendarDate(date) || date > today) continue
+        const directory = join(this.root, 'history', date)
+        for (const file of await this.files(directory)) segments.push(...await this.read<StudySegment[]>(join(directory, file), []))
+      }
+      const visible = segments.filter(s => {
+        const code = s.lectureId && Object.hasOwn(courses, s.lectureId) ? courses[s.lectureId] : s.courseCode
+        return !corrected.has(s.sessionId) && !(code && archived.includes(code))
+      })
+      const combined = overlayStudySystem(visible.filter(s => !s.system), visible.filter(s => s.system))
+      if (!combined.some(s => s.creditedSeconds > 0 && !s.exclusions.length)) return null
+      // Keep adjacent midnight slices together; no inference from manual/legacy durations.
+      return buildStudyDay(today, 'UTC', combined, [], false).longestBlockSeconds
+    })
+  }
   getDay(date: string, sessions: StudySession[], courses: Record<string, string | null>, archived: string[], filter: StudyDayFilter = {}) {
     return this.mutex.runExclusive(async () => {
       if (typeof date !== 'string' || !parseLocalCalendarDate(date) || !filter || typeof filter !== 'object' ||

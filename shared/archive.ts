@@ -158,6 +158,7 @@ export interface CourseConfig {
 }
 
 export interface AppSettings {
+  deviceNotices?: import('./deviceNotices').DeviceNoticePreferences
   apiKey: string
   apiKeys: string[]
   /**
@@ -472,6 +473,7 @@ export interface CourseStudyBreakdown {
 }
 
 export interface StudyAnalytics {
+  records?: import('./studyRecords').StudyRecords
   courseLectureAverages: Array<{
     courseCode: string
     timedCompletedLectures: number
@@ -754,6 +756,10 @@ export interface ArchiveApi extends StudyHistoryApi, CourseRagApi, RepetitionApi
     highlights: LectureHighlight[]
   ) => Promise<void>
   getBatteryStatus: () => Promise<import('./battery').BatteryStatus>
+  onDeviceNotice?: (callback: (notice: import('./deviceNotices').DeviceNotice) => void) => () => void
+  setLanguageShortcutActive?: (active: boolean) => Promise<void>
+  onLanguageShortcut?: (callback: () => void) => () => void
+  getDeviceNoticeStatus?: () => Promise<{ bluetooth: 'starting' | 'ready' | 'unavailable' }>
   getAppLogs: () => Promise<AppLogEntry[]>
   getAppLogDay: (day?: string) => Promise<import('./appLogs').AppLogDay>
   clearAppLogs: () => Promise<void>

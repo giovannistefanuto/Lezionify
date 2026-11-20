@@ -320,3 +320,13 @@ Il setup è `NotSigned` e non è stato eseguito; nessuna Release binaria pubblic
 - Nessuna Release, tag, installer o certificato viene pubblicato da questi test.
   Prima di distribuire il bootstrap provare davvero upgrade per utente/macchina,
   riapertura, archivio personalizzato e rifiuto UAC in ambiente isolato.
+
+## Preparazione locale 0.4.0 — 20 novembre 2026
+
+D-0591: gate completo e asset verificati, stessa build per NSIS, compressione
+invariata. Setup 300545797 byte, SHA256
+`be7e1dc0a38d36f60272083c3cecb191962c0771fb47911c4c8c19b87b081e40`.
+385 file build e nove componenti embedded confrontati; tre backup verificati,
+nessun artefatto personale incluso. Firma NotSigned; AuditShell passato.
+[Collaudi e limiti](../quality/studio-connessioni-2026-11-20.md).
+Pubblicazione dei tre asset ancora da completare; installer personale non avviato.

@@ -9,6 +9,7 @@ import {
 } from 'react'
 import { ToolSettingsContext, type ToolSettingsSection } from './components/ToolSettingsContext'
 import { BatteryIndicator } from './components/BatteryIndicator'
+import { DeviceNotices } from './components/DeviceNotices'
 import { AmbientSoundProvider } from './components/AmbientSoundContext'
 import type { StudyStatus, VideoImportSelection } from '../shared/archive'
 import { Sidebar } from './components/Sidebar'
@@ -806,6 +807,7 @@ export default function App() {
         </Suspense>
       </SessionDialog>}
       <BatteryIndicator />
+      <DeviceNotices />
     </main>
     </AmbientSoundProvider>
     </ToolSettingsContext.Provider>

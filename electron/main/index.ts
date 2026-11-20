@@ -1,4 +1,6 @@
 import { readBatteryStatus } from './battery'
+import { startDeviceNotices } from './deviceNotices'
+import { installLanguageShortcut } from './languageShortcut'
 import { configureWindowsIdentity, windowIconPath } from './windowsIdentity'
 import electronUpdater from 'electron-updater'
 import { AppUpdateService } from './appUpdater'
@@ -72,6 +74,8 @@ protocol.registerSchemesAsPrivileged([
 ])
 
 let mainWindow: BrowserWindow | null = null
+let deviceNoticeMonitor: ReturnType<typeof startDeviceNotices> | undefined
+let languageShortcut: ReturnType<typeof installLanguageShortcut> | undefined
 const ragSelfCheck = process.argv.includes('--rag-self-check')
 if (app.isPackaged && !ragSelfCheck) {
   if (!app.requestSingleInstanceLock()) app.exit(0)
@@ -145,6 +149,14 @@ function createWindow(): void {
     return { event, listener }
   })
   mainWindow.on('closed', () => { for (const { event, listener } of systemListeners) systemEmitter.removeListener(event, listener) })
+  const deviceNotices = startDeviceNotices(() => archive.getSettings(), notice => {
+    if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('archive:device-notice', notice)
+  })
+  mainWindow.on('closed', () => deviceNotices.stop())
+  deviceNoticeMonitor = deviceNotices
+  const shortcut = installLanguageShortcut(mainWindow.webContents)
+  languageShortcut = shortcut
+  mainWindow.on('closed', () => shortcut.dispose())
 
   archive.setProgressCallback((progress) => {
     if (mainWindow && !mainWindow.isDestroyed()) {
@@ -430,6 +442,11 @@ function registerIpcHandlers(): void {
   handle('archive:section-restore', (_event, id: string) => archive.sectionRevisions.restore(id))
   handle('archive:phrase-status', () => offlineTranslation.status())
   handle('archive:battery-status', () => readBatteryStatus(powerMonitor.isOnBatteryPower()))
+  handle('archive:device-notice-status', () => deviceNoticeMonitor?.status() ?? { bluetooth: 'unavailable' })
+  handle('archive:language-shortcut-active', (_event, active: unknown) => {
+    if (typeof active !== 'boolean') throw new Error('Stato scorciatoia non valido.')
+    languageShortcut?.setActive(active)
+  })
   handle('archive:ambient-status', () => ambientSounds.status())
   handle('archive:ambient-install', (_event, soundIds: unknown) =>
     ambientSounds.install(soundIds)

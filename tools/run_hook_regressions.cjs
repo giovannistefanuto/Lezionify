@@ -26,12 +26,14 @@ const dictionaryOnly = process.argv.includes('--dictionary-only')
 const mathRenderingOnly = process.argv.includes('--math-rendering-only')
 const collectionsOnly = process.argv.includes('--collections-only')
 const sidebarMenuOnly = process.argv.includes('--sidebar-menu-only')
+const november20Only = process.argv.includes('--november20-only')
 const languageShortcutOnly = process.argv.includes('--language-shortcut-only')
 if (screenshotDirectory) mkdirSync(screenshotDirectory, { recursive: true })
 async function run() {
 try {
   buildSync({ entryPoints: ['./electron/main/studyHistory.ts'], bundle: true, platform: 'node', format: 'cjs', outfile: join(directory, 'study-history.cjs') })
   buildSync({ entryPoints: ['./electron/main/collections/service.ts'], bundle: true, platform: 'node', format: 'cjs', outfile: join(directory, 'collections.cjs') })
+  buildSync({ entryPoints: ['./electron/main/languageShortcut.ts'], bundle: true, platform: 'node', format: 'cjs', external: ['electron'], outfile: join(directory, 'language-shortcut.cjs') })
   cpSync('public/music', join(directory, 'music'), { recursive: true })
   cpSync('node_modules/katex/dist/fonts', join(directory, 'fonts'), { recursive: true })
   writeFileSync(join(directory, 'katex.css'), readFileSync('node_modules/katex/dist/katex.min.css'))
@@ -118,6 +120,12 @@ try {
         return new Response('<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360"><defs><linearGradient id="a"><stop stop-color="#314d52"/><stop offset="1" stop-color="#a5b6a1"/></linearGradient></defs><rect width="640" height="360" fill="url(#a)"/><circle cx="480" cy="180" r="120" fill="none" stroke="#ffffff55" stroke-width="2"/><text x="45" y="180" font-family="serif" font-size="42" fill="white">Study collection</text><text x="48" y="220" font-family="sans-serif" font-size="16" fill="#ffffffbb">SYNTHETIC PREVIEW</text></svg>', {headers:{'Content-Type':'image/svg+xml'}});
       });
       const win = new BrowserWindow({ show: false, width: 1240, height: 820, webPreferences: { nodeIntegration: true, contextIsolation: false, backgroundThrottling: false } });
+      const shortcut = require(${JSON.stringify(join(directory, 'language-shortcut.cjs'))}).installLanguageShortcut(win.webContents);
+      ipcMain.handle('language-shortcut-active', (_, active) => shortcut.setActive(active));
+      ipcMain.handle('feature-test-fullscreen', async (_, active) => {
+        if (active) await win.webContents.executeJavaScript('document.documentElement.requestFullscreen()', true);
+        else await win.webContents.executeJavaScript('document.exitFullscreen()', true);
+      });
       ipcMain.handle('course-rag-worker', async (_, pdf) => new Promise((resolve, reject) => {
         const { Worker } = require('node:worker_threads');
         const built = ${JSON.stringify(join(process.cwd(), 'out/main/course-rag/pdf-worker.cjs'))};
@@ -176,14 +184,14 @@ try {
       });
       ipcMain.handle('capture-video-import', async (_, name) => {
         const directory = ${JSON.stringify(screenshotDirectory)};
-        if (!directory || (!/^collections-[a-z0-9-]+$/.test(name) && !/^oct28-[a-z0-9-]+$/.test(name) && !/^repeat-[a-z0-9-]+$/.test(name) && !/^oct22-[a-z0-9-]+$/.test(name) && !['polish-sidebar', 'polish-sidebar-narrow', 'polish-sidebar-collapsed', 'polish-memo-light', 'polish-memo-dark', 'polish-memo-narrow', 'polish-info', 'study-removal', 'dictionary-long', 'today-qna', 'today-memo', 'today-sounds', 'today-mermaid', 'today-battery', 'logs-light', 'logs-dark', 'sounds-light', 'sounds-dark', 'memo-narrow', 'export-narrow', 'memo-light', 'memo-dark', 'export-light', 'export-dark', 'tools-settings-translation', 'tools-settings-music', 'music-youtube-light', 'music-youtube-dark', 'music-light', 'music-dark', 'dictionary-light', 'dictionary-dark', 'discussion-light', 'discussion-dark', 'markdown-alerts-light', 'markdown-alerts-dark', 'focus-lock-times', 'dashboard-light', 'dashboard-dark', 'dashboard-history', 'order', 'destination-light', 'destination-dark', 'home-light', 'home-dark', 'lecture-title-light', 'lecture-title-dark', 'drawer-focus-floating', 'focus-pdf-light', 'focus-pdf-dark', 'focus-pdf-qna'].includes(name))) return;
+        if (!directory || (!/^collections-[a-z0-9-]+$/.test(name) && !/^oct28-[a-z0-9-]+$/.test(name) && !/^repeat-[a-z0-9-]+$/.test(name) && !/^oct22-[a-z0-9-]+$/.test(name) && !['november20-records-light', 'november20-records-dark', 'november20-pause', 'november20-notice', 'polish-sidebar', 'polish-sidebar-narrow', 'polish-sidebar-collapsed', 'polish-memo-light', 'polish-memo-dark', 'polish-memo-narrow', 'polish-info', 'study-removal', 'dictionary-long', 'today-qna', 'today-memo', 'today-sounds', 'today-mermaid', 'today-battery', 'logs-light', 'logs-dark', 'sounds-light', 'sounds-dark', 'memo-narrow', 'export-narrow', 'memo-light', 'memo-dark', 'export-light', 'export-dark', 'tools-settings-translation', 'tools-settings-music', 'music-youtube-light', 'music-youtube-dark', 'music-light', 'music-dark', 'dictionary-light', 'dictionary-dark', 'discussion-light', 'discussion-dark', 'markdown-alerts-light', 'markdown-alerts-dark', 'focus-lock-times', 'dashboard-light', 'dashboard-dark', 'dashboard-history', 'order', 'destination-light', 'destination-dark', 'home-light', 'home-dark', 'lecture-title-light', 'lecture-title-dark', 'drawer-focus-floating', 'focus-pdf-light', 'focus-pdf-dark', 'focus-pdf-qna'].includes(name))) return;
         await win.webContents.executeJavaScript('new Promise(resolve => setTimeout(() => requestAnimationFrame(() => requestAnimationFrame(resolve)), 200))');
         await win.webContents.capturePage();
         await new Promise(resolve => setTimeout(resolve, 250));
         const screenshot = await win.webContents.capturePage();
         require('node:fs').writeFileSync(require('node:path').join(directory, name + '.png'), screenshot.toPNG());
       });
-      win.loadFile(${JSON.stringify(join(directory, 'index.html'))}, process.argv.includes('--resume-collections') ? { query: { collectionsResume: '1' } } : process.argv.includes('--resume-reading') ? { query: { resumeReading: '1' } } : ${JSON.stringify(collectionsOnly ? { query: { collectionsOnly: '1' } } : sidebarMenuOnly ? { query: { sidebarMenuOnly: '1' } } : october28Only ? { query: { 'october28-only': '1' } } : repetitionOnly ? { query: { 'repetition-only': '1' } } : october22Only ? { query: { 'october22-only': '1' } } : interfacePolishOnly ? { query: { 'interface-polish-only': '1' } } : todayOnly ? { query: { 'today-only': '1' } } : memoLogsExportOnly ? { query: { 'memo-logs-export-only': '1' } } : lectureListOnly ? { query: { 'lecture-list-only': '1' } } : courseRagOnly ? { query: { 'course-rag-only': '1' } } : studyToolsOnly ? { query: { 'study-tools-only': '1' } } : languageShortcutOnly ? { query: { languageShortcutOnly: '1' } } : focusPdfOnly ? { query: { focusPdfOnly: '1' } } : musicOnly ? { query: { musicOnly: '1' } } : mathRenderingOnly ? { query: { mathRenderingOnly: '1' } } : dictionaryOnly ? { query: { dictionaryOnly: '1' } } : studyPauseOnly ? { query: { studyPauseOnly: '1' } } : readingPositionOnly ? { query: { readingPositionOnly: '1' } } : readingRestartOnly ? { query: { readingRestartOnly: '1' } } : {})});
+      win.loadFile(${JSON.stringify(join(directory, 'index.html'))}, process.argv.includes('--resume-collections') ? { query: { collectionsResume: '1' } } : process.argv.includes('--resume-reading') ? { query: { resumeReading: '1' } } : ${JSON.stringify(november20Only ? { query: { november20Only: '1' } } : collectionsOnly ? { query: { collectionsOnly: '1' } } : sidebarMenuOnly ? { query: { sidebarMenuOnly: '1' } } : october28Only ? { query: { 'october28-only': '1' } } : repetitionOnly ? { query: { 'repetition-only': '1' } } : october22Only ? { query: { 'october22-only': '1' } } : interfacePolishOnly ? { query: { 'interface-polish-only': '1' } } : todayOnly ? { query: { 'today-only': '1' } } : memoLogsExportOnly ? { query: { 'memo-logs-export-only': '1' } } : lectureListOnly ? { query: { 'lecture-list-only': '1' } } : courseRagOnly ? { query: { 'course-rag-only': '1' } } : studyToolsOnly ? { query: { 'study-tools-only': '1' } } : languageShortcutOnly ? { query: { languageShortcutOnly: '1' } } : focusPdfOnly ? { query: { focusPdfOnly: '1' } } : musicOnly ? { query: { musicOnly: '1' } } : mathRenderingOnly ? { query: { mathRenderingOnly: '1' } } : dictionaryOnly ? { query: { dictionaryOnly: '1' } } : studyPauseOnly ? { query: { studyPauseOnly: '1' } } : readingPositionOnly ? { query: { readingPositionOnly: '1' } } : readingRestartOnly ? { query: { readingRestartOnly: '1' } } : {})});
     });
     setTimeout(() => { console.error('Hook tests timed out'); app.exit(1) }, ${hookTimeoutMs});
   `
@@ -207,7 +215,7 @@ try {
     process.stderr.write(restarted.stderr || '')
     process.exitCode = restarted.status ?? 1
   }
-  if (result.status === 0 && !collectionsOnly && !sidebarMenuOnly && !october28Only && !repetitionOnly && !october22Only && !interfacePolishOnly && !todayOnly && !memoLogsExportOnly && !lectureListOnly && !courseRagOnly && !studyToolsOnly && !focusPdfOnly && !musicOnly && !readingPositionOnly && !studyPauseOnly && !dictionaryOnly && !mathRenderingOnly && !languageShortcutOnly) {
+  if (result.status === 0 && !november20Only && !collectionsOnly && !sidebarMenuOnly && !october28Only && !repetitionOnly && !october22Only && !interfacePolishOnly && !todayOnly && !memoLogsExportOnly && !lectureListOnly && !courseRagOnly && !studyToolsOnly && !focusPdfOnly && !musicOnly && !readingPositionOnly && !studyPauseOnly && !dictionaryOnly && !mathRenderingOnly && !languageShortcutOnly) {
     const restarted = spawnSync(require('electron'), [join(directory, 'main.cjs'), '--resume-reading'], { env, encoding: 'utf8', windowsHide: true, timeout: 190000 })
     process.stdout.write(restarted.stdout || '')
     process.stderr.write(restarted.stderr || '')

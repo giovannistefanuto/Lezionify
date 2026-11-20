@@ -1,4 +1,5 @@
 import { validateLaboratorySchedule } from './laboratorySchedule'
+import { deviceNoticePreferences } from '../../shared/deviceNotices'
 import { validExamReminderPreference } from '../../shared/examReminders'
 import { copyFile, readFile, rename, stat, writeFile } from 'node:fs/promises'
 import * as path from 'node:path'
@@ -45,6 +46,7 @@ function validateSettingsUpdate(
 ): asserts value is Partial<AppSettings> {
   if (!isRecord(value)) throw new Error('Impostazioni non valide.')
   const allowed = new Set([
+    'deviceNotices',
     'apiKey',
     'apiKeys',
     'apiKeyQuotaGroups',
@@ -63,6 +65,9 @@ function validateSettingsUpdate(
     throw new Error('Impostazioni non valide.')
   }
   if (value.publishing !== undefined) validatePublishing(value.publishing)
+  if (value.deviceNotices !== undefined && (!isRecord(value.deviceNotices) || Object.keys(value.deviceNotices).some(key => !['headphonesName', 'headphones', 'power'].includes(key)) ||
+    typeof value.deviceNotices.headphonesName !== 'string' || !value.deviceNotices.headphonesName.trim() || value.deviceNotices.headphonesName.length > 120 ||
+    typeof value.deviceNotices.headphones !== 'boolean' || typeof value.deviceNotices.power !== 'boolean')) throw new Error('Impostazioni avvisi non valide.')
   if (
     (value.apiKey !== undefined &&
       (typeof value.apiKey !== 'string' || value.apiKey.length > 10_000)) ||
@@ -300,6 +305,7 @@ export class SettingsService {
     }
 
     return {
+      deviceNotices: deviceNoticePreferences(parsed.deviceNotices),
       apiKey: activeApiKey,
       apiKeys,
       apiKeyQuotaGroups,
@@ -416,6 +422,7 @@ export class SettingsService {
     const activeApiKey = apiKeys[activeKeyIndex] ?? ''
 
     const updated: AppSettings = {
+      deviceNotices: deviceNoticePreferences(updates.deviceNotices ?? current.deviceNotices),
       apiKey: activeApiKey,
       apiKeys,
       apiKeyQuotaGroups,

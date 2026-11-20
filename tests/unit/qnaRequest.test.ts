@@ -62,7 +62,7 @@ it('invia al SDK la vera domanda e uno storico senza domanda duplicata o placeho
     response += chunk
   }
   expect(response).toBe('risposta')
-  expect(sdk.config.model).toBe('gemini-3.5-flash-lite')
+  expect(sdk.config.model).toBe('gemini-3.6-flash')
   expect(sdk.message).toBe('Domanda corrente?')
   expect(sdk.config.config.systemInstruction).toContain('Prima risposta')
   expect(sdk.config.config.systemInstruction).toContain('METODO DIDATTICO:')
@@ -89,6 +89,15 @@ it('invia solo le immagini attive come parti PNG e la domanda corrente senza alt
 })
 
 describe('Q&A centralizzato', () => {
+  it.each(['gemini-4-hydrogen', 'gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-3.5-flash-lite', 'gemini-3.1-flash-lite', 'gemini-3.1-pro-preview', 'gemini-2.5-flash', 'gemini-2.5-pro', 'gemini-2.5-flash-lite'] as const)('mantiene %s e invia il ragionamento nel formato supportato', async model => {
+    const service = new GeminiService({ requestManager: new GeminiRequestManager({ ...DEFAULT_GEMINI_POLICY, rpmLimit: 100 }) })
+    for await (const chunk of service.generateQnaResponse({ apiKey: 'synthetic', model, thread: { id: `thinking-${model}`, quote: 'Sintetico', contextHeading: null, messages: [{ role: 'user', text: 'Spiega', timestamp: '' }], createdAt: '', updatedAt: '' }, thinkDeeper: true })) expect(chunk).toBe('risposta')
+    expect(sdk.config.model).toBe(model)
+    if (model.startsWith('gemini-2.5')) {
+      expect(sdk.config.config.thinkingConfig.thinkingBudget).toBe(model === 'gemini-2.5-pro' ? 32768 : 24576)
+      expect(sdk.config.config.thinkingConfig.thinkingLevel).toBeUndefined()
+    } else expect(sdk.config.config.thinkingConfig).toEqual({ thinkingLevel: 'HIGH' })
+  })
   it('cancels a deep request during the initial wait without waiting 90 seconds or falling back', async () => {
     const transport = new GeminiTransport(), controller = new AbortController()
     const attempts = vi.spyOn(transport, 'generateContentStream').mockImplementation(async params => {
@@ -101,15 +110,15 @@ describe('Q&A centralizzato', () => {
     expect(attempts).toHaveBeenCalledTimes(1)
   })
   it('requests native HIGH reasoning only when explicitly enabled and preserves response length', async () => {
-    const service = new GeminiService()
+    const service = new GeminiService({ requestManager: new GeminiRequestManager({ ...DEFAULT_GEMINI_POLICY, rpmLimit: 100 }) })
     for await (const chunk of service.generateQnaResponse({ apiKey: 'synthetic', model: 'gemini-4-hydrogen', thread, thinkDeeper: true, responseLength: 'brief' })) expect(chunk).toBe('risposta')
-    expect(sdk.config.model).toBe('gemini-3.5-flash-lite')
+    expect(sdk.config.model).toBe('gemini-4-hydrogen')
     expect(sdk.config.config.thinkingConfig).toEqual({ thinkingLevel: 'HIGH' })
     expect(sdk.config.config.systemInstruction).toContain('meno di 200 parole')
     for await (const chunk of service.generateQnaResponse({ apiKey: 'synthetic', model: 'gemini-4-hydrogen', thread })) expect(chunk).toBe('risposta')
     expect(sdk.config.model).toBe('gemini-4-hydrogen')
     expect(sdk.config.config.thinkingConfig).toBeUndefined()
-    expect(qnaThinkingConfig('gemini-2.5-flash', true)).toEqual({})
+    expect(qnaThinkingConfig('gemini-2.5-flash', true)).toEqual({ thinkingConfig: { thinkingBudget: 24576 } })
     expect(qnaThinkingConfig('unverified-model', true)).toEqual({})
   })
   it('keeps HIGH on compatible fallbacks, longer initial wait and unchanged cancellation signal', async () => {
@@ -124,9 +133,9 @@ describe('Q&A centralizzato', () => {
     for await (const chunk of service.generateQnaResponse({ apiKey: 'synthetic', model: 'gemini-2.5-pro', thread, thinkDeeper: true, searchOnline: true })) text += chunk
     expect(text.startsWith('Risposta approfondita')).toBe(true)
     expect(text).toContain('Nessuna fonte web restituita dal provider')
-    expect(requests.map(request => request.model)).toEqual(['gemini-3.5-flash-lite', 'gemini-3.8-flash'])
-    for (const request of requests) {
-      expect(request.config.thinkingConfig).toEqual({ thinkingLevel: 'HIGH' })
+    expect(requests.map(request => request.model)).toEqual(['gemini-2.5-pro', 'gemini-3.5-flash-lite'])
+    for (const [index, request] of requests.entries()) {
+      expect(request.config.thinkingConfig).toEqual(index === 0 ? { thinkingBudget: 32768 } : { thinkingLevel: 'HIGH' })
       expect(request.firstChunkTimeoutMs).toBe(90_000)
       expect(request.signal).toBeInstanceOf(AbortSignal)
       expect(request.config.tools).toEqual([{ googleSearch: {} }])
@@ -148,8 +157,8 @@ describe('Q&A centralizzato', () => {
     updatedAt: ''
   }
 
-  it('mantiene una catena Q&A separata, senza duplicati e con modello configurato di riserva', () => {
-    expect(getQnaModelFallbackChain('gemini-3.6-flash')).toEqual({ preferred: 'gemini-3.5-flash-lite', fallbacks: ['gemini-3.1-flash-lite', 'gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-3.8-flash'] })
+  it('rispetta il modello scelto e mantiene fallback Q&A senza duplicati', () => {
+    expect(getQnaModelFallbackChain('gemini-3.6-flash')).toEqual({ preferred: 'gemini-3.6-flash', fallbacks: ['gemini-3.5-flash-lite', 'gemini-3.1-flash-lite', 'gemini-3.7-flash', 'gemini-3.5-flash', 'gemini-3.8-flash'] })
     const chain = getQnaModelFallbackChain('gemini-3.5-flash-lite')
     expect(new Set([chain.preferred, ...chain.fallbacks]).size).toBe(chain.fallbacks.length + 1)
   })
@@ -171,7 +180,7 @@ describe('Q&A centralizzato', () => {
     let text = ''
     for await (const chunk of service.generateQnaResponse({ apiKey: 'synthetic', model: 'gemini-3.6-flash', thread: { ...thread, messages: [{ role: 'user', text: 'Prima domanda', timestamp: '' }, { role: 'ai', text: 'Prima risposta', timestamp: '' }, ...thread.messages] }, fullLectureText: 'Contesto intero sintetico', images: [{ page: 7, mimeType: 'image/png', data: 'c3ludGhldGlj' }] })) text += chunk
     expect(text).toBe('Risposta dal Flash')
-    expect(requests.map(value => value.model)).toEqual(['gemini-3.5-flash-lite', 'gemini-3.1-flash-lite', 'gemini-3.7-flash'])
+    expect(requests.map(value => value.model)).toEqual(['gemini-3.6-flash', 'gemini-3.5-flash-lite', 'gemini-3.1-flash-lite'])
     for (const request of requests) {
       expect(request.contents).toEqual(requests[0].contents)
       expect(request.config.systemInstruction).toContain('Contesto intero sintetico')
@@ -266,13 +275,13 @@ describe('Q&A centralizzato', () => {
     expect(sdkSignal?.aborted).toBe(true)
   })
 
-  it('inizia da Flash Lite e passa subito al prossimo modello dopo un 503', async () => {
+  it('inizia dal modello scelto e passa subito al prossimo dopo un 503', async () => {
     const transport = new GeminiTransport()
     const models: string[] = []
     vi.spyOn(transport, 'generateContentStream').mockImplementation(
       async (params) => {
         models.push(params.model)
-        if (params.model === 'gemini-3.5-flash-lite') {
+        if (params.model === 'gemini-3.7-flash') {
           throw new Error('503 Service Unavailable')
         }
         params.onChunk('fallback riuscito')
@@ -296,8 +305,8 @@ describe('Q&A centralizzato', () => {
 
     expect(output).toBe('fallback riuscito')
     expect(models).toEqual([
-      'gemini-3.5-flash-lite',
-      'gemini-3.1-flash-lite'
+      'gemini-3.7-flash',
+      'gemini-3.5-flash-lite'
     ])
   })
 

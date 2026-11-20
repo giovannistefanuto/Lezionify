@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { MusicButton } from './MusicButton'
+import { HomePause } from './HomePause'
 import { CollectionNavigation } from './CollectionNavigation'
 import type { CourseDefinition } from '../../shared/archive'
 import { formatCourseDisplayName } from '../utils/courseFormat'
@@ -349,6 +350,7 @@ export function Sidebar({
       {!isCollapsed && (
         <>
           <div className="sidebar-music-access">
+            <HomePause />
             <MusicButton prominent />
           </div>
           <div className="sidebar-search">
@@ -452,6 +454,7 @@ export function Sidebar({
       {isCollapsed && (
         <div className="sidebar-collapsed-nav">
           {onOpenCollections && <button className={`sidebar-icon-btn ${mainView === 'collections' ? 'is-active' : ''}`} onClick={() => onOpenCollections()} title="Altro" aria-label="Altro">📁</button>}
+          <HomePause compact />
           <MusicButton compact />
           <button
             className={`sidebar-icon-btn ${mainView === 'archive' ? 'is-active' : ''}`}

@@ -2,6 +2,16 @@
 
 ## Stato attuale
 
+La 0.4.0 aggiunge pausa dalla Home (`HomePause`), record nelle Statistiche
+(`shared/studyRecords.ts`, `StudyRecords`) e avvisi silenziosi di connessione.
+`electron/main/deviceNotices.ts` usa `bluetoothProbe.ts` per connessioni Win32
+classiche e powerMonitor per alimentazione; preferenze locali, IPC e portale
+fullscreen vivono in `shared/deviceNotices.ts` e `DeviceNotices`.
+`languageShortcut.ts` consegna Ctrl+L al renderer prima dei default Chromium
+in Full Focus. La policy Q&A rispetta il modello scelto e distingue livelli e
+budget thinking. Ricerca, prove e verifica personale Ctrl+L residua in
+[studio e connessioni](docs/quality/studio-connessioni-2026-11-20.md).
+
 La correzione Windows 0.3.2, pubblicata e verificata il 19 novembre, separa l'identita di sviluppo da quella NSIS in
 `electron/main/windowsIdentity.ts`. Vite include l'icona BrowserWindow nella
 build main. `tools/verify_windows_identity.ps1` controlla metadati e icona EXE,

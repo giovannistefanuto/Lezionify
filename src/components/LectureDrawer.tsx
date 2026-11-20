@@ -389,6 +389,7 @@ export function LectureDrawer({
 
   useEffect(() => {
     if (!selectedLecture || (!isFullScreen && activeTab !== 'markdown')) return
+    void window.archive.setLanguageShortcutActive?.(isFullScreen).catch(() => {})
     const trace = (stage: string, event: KeyboardEvent, outcome?: string) => {
       if (!window.archive.languageShortcutDiagnosticsEnabled || !(event.ctrlKey || event.metaKey) ||
         (event.key.toLowerCase() !== 'l' && event.code !== 'KeyL')) return
@@ -398,7 +399,7 @@ export function LectureDrawer({
         trusted: event.isTrusted, prevented: event.defaultPrevented, repeat: event.repeat,
         composing: event.isComposing, shift: event.shiftKey, alt: event.altKey,
         editable: Boolean(target?.closest('input, textarea, select, [contenteditable]:not([contenteditable="false"]), [role="textbox"]')),
-        dialog: Boolean(document.querySelector('[role="dialog"], [aria-modal="true"]')),
+        dialog: Boolean(document.querySelector('dialog[open], [role="dialog"], [aria-modal="true"]')),
         focus: isFullScreen, loading: isLoadingContent, generating: isGenerating, translating: isTranslating,
         hasNotes: Boolean(markdownText), hasEnglish: hasEnglishTranslation,
         callback: Boolean(onToggleLanguage), language: effectiveLanguage,
@@ -408,18 +409,27 @@ export function LectureDrawer({
     const capture = (event: KeyboardEvent) => trace('renderer-capture', event)
     const handler = (event: KeyboardEvent) => {
       if (event.defaultPrevented || event.isComposing || event.repeat || event.altKey || event.shiftKey ||
-        !(event.ctrlKey || event.metaKey) || event.key.toLowerCase() !== 'l') { trace('renderer-result', event, 'event-excluded'); return }
+        !(event.ctrlKey || event.metaKey) || (event.key.toLowerCase() !== 'l' && event.code !== 'KeyL')) { trace('renderer-result', event, 'event-excluded'); return }
       const target = event.target instanceof Element ? event.target : document.activeElement
       if (showFocusLock || pauseTimerActive || target?.closest('input, textarea, select, [contenteditable]:not([contenteditable="false"]), [role="textbox"]') ||
-        document.querySelector('[role="dialog"], [aria-modal="true"]')) { trace('renderer-result', event, 'interaction-excluded'); return }
+        [...document.querySelectorAll('dialog[open], [role="dialog"], [aria-modal="true"]')].some(element => element.getClientRects().length > 0)) { trace('renderer-result', event, 'interaction-excluded'); return }
       event.preventDefault()
       if (isLoadingContent || isGenerating || isTranslating || !markdownText || !hasEnglishTranslation) { trace('renderer-result', event, 'notes-unavailable'); return }
       onToggleLanguage?.(effectiveLanguage === 'it' ? 'en' : 'it')
       trace('renderer-result', event, onToggleLanguage ? 'toggle-requested' : 'callback-missing')
     }
     window.addEventListener('keydown', capture, true)
-    document.addEventListener('keydown', handler)
-    return () => { window.removeEventListener('keydown', capture, true); document.removeEventListener('keydown', handler) }
+    window.addEventListener('keydown', handler, true)
+    const unsubscribe = window.archive.onLanguageShortcut?.(() => {
+      const event = new KeyboardEvent('keydown', { key: 'l', code: 'KeyL', ctrlKey: true, cancelable: true })
+      trace('renderer-native', event)
+      handler(event)
+    })
+    return () => {
+      unsubscribe?.()
+      void window.archive.setLanguageShortcutActive?.(false).catch(() => {})
+      window.removeEventListener('keydown', capture, true); window.removeEventListener('keydown', handler, true)
+    }
   }, [selectedLecture, isFullScreen, activeTab, isLoadingContent, isGenerating, isTranslating, markdownText, hasEnglishTranslation, effectiveLanguage, onToggleLanguage, showFocusLock, pauseTimerActive])
 
   useEffect(() => {

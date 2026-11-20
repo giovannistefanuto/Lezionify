@@ -1,6 +1,8 @@
 import { useEffect, useState, useRef } from 'react'
+import { useModalFocus } from '../hooks/useModalFocus'
 
 interface PauseTimerOverlayProps {
+  homeMode?: boolean
   show: boolean
   minutes: number
   onReturnToStudy: () => void
@@ -14,6 +16,7 @@ function formatMinutesAndSeconds(totalSeconds: number): string {
 }
 
 export function PauseTimerOverlay({
+  homeMode = false,
   show,
   minutes,
   onReturnToStudy,
@@ -23,6 +26,8 @@ export function PauseTimerOverlay({
   const [remainingSeconds, setRemainingSeconds] = useState(totalSeconds)
   const returnBtnRef = useRef<HTMLButtonElement | null>(null)
   const endTimeRef = useRef(0)
+  const dialog = useRef<HTMLDivElement>(null)
+  useModalFocus(dialog, show)
 
   // Reset del timer quando la modale si apre o cambiano i minuti
   useEffect(() => {
@@ -81,7 +86,7 @@ export function PauseTimerOverlay({
   const strokeDashoffset = circumference * (1 - progressRatio)
 
   return (
-    <div className="pause-timer-overlay" role="dialog" aria-modal="true">
+    <div ref={dialog} tabIndex={-1} className="pause-timer-overlay" role="dialog" aria-modal="true" aria-label="Pausa studio">
       <div className="pause-timer-card">
         <div className="pause-timer-badge">☕ PAUSA STUDIO</div>
 
@@ -144,7 +149,7 @@ export function PauseTimerOverlay({
               onClick={onReturnToStudy}
               autoFocus
             >
-              {isExpired ? '🟢 Sì, torniamo a studiare (Esc)' : '🟢 Torna a studiare adesso (Esc)'}
+              {homeMode ? 'Torna alla Home (Esc)' : isExpired ? '🟢 Sì, torniamo a studiare (Esc)' : '🟢 Torna a studiare adesso (Esc)'}
             </button>
             {isExpired && (
               <button

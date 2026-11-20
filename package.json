@@ -1,6 +1,6 @@
 {
   "name": "lezionify",
-  "version": "0.3.2",
+  "version": "0.4.0",
   "description": "App desktop local-first per trasformare registrazioni universitarie in materiale di studio strutturato.",
   "author": "Giovanni",
   "private": true,
@@ -35,6 +35,7 @@
     "lint:fix": "eslint . --fix",
     "format": "prettier --write \"src/**/*.{ts,tsx}\" \"electron/**/*.ts\" \"shared/**/*.ts\"",
     "test": "vitest run --maxWorkers=2",
+    "test:device-notices": "node tools/check_device_notices.cjs",
     "test:inventory": "node tools/audit_test_inventory.cjs",
     "test:benchmark": "python -m unittest discover -s tests/python -p \"test_*.py\"",
     "test:hooks": "node tools/run_hook_regressions.cjs",
@@ -47,7 +48,7 @@
     "benchmark:qna": "node tools/qna_benchmark.mjs",
     "benchmark:gemini-transcription": "electron tools/run_gemini_benchmark_with_app_keys.cjs",
     "audit:styles": "node tools/audit_styles.mjs",
-    "check": "npm run test:inventory && npm run typecheck && npm run lint && npm test && npm run test:rag-retrieval && npm run test:benchmark && npm run test:qna-benchmark && npm run test:app-update && npm run test:hooks && npm run release:validate && npm run build && npm run test:collections && npm run test:sessione && npm run test:pdf-export",
+    "check": "npm run test:inventory && npm run typecheck && npm run lint && npm test && npm run test:device-notices && npm run test:rag-retrieval && npm run test:benchmark && npm run test:qna-benchmark && npm run test:app-update && npm run test:hooks && npm run release:validate && npm run build && npm run test:collections && npm run test:sessione && npm run test:pdf-export",
     "release:validate": "node tools/validate_release.cjs",
     "release:local": "python tools/prepare_release.py",
     "test:app-update": "node tools/run_app_update_regressions.cjs"

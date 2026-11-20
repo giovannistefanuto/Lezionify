@@ -1,3 +1,4 @@
+import { runNovember20Scenarios } from './november20Scenarios.browser'
 import { runOctober22Scenarios } from './october22Scenarios.browser'
 import { runSidebarMenuScenario } from './sidebarMenu.browser'
 import { runOctober28Scenarios } from './october28Scenarios.browser'
@@ -411,6 +412,7 @@ async function run() {
   }
   if (new URLSearchParams(location.search).has('today-only')) {
     await runTodayScenarios(root, api)
+    await runNovember20Scenarios(root, api)
     require('electron').ipcRenderer.send('done', 'PASS: today Q&A zoom, context, resize, Memo, battery, downloads and Mermaid')
     return
   }
@@ -436,6 +438,12 @@ async function run() {
     await runStudyTimingScenarios(root, api)
     await runStudyHistoryScenarios(root, api)
     require('electron').ipcRenderer.send('done', 'PASS: grouped captures and study remaining time')
+    return
+  }
+  if (new URLSearchParams(window.location.search).has('november20Only')) {
+    await runNovember20Scenarios(root, api)
+    await runLanguageShortcutScenarios(root)
+    require('electron').ipcRenderer.send('done', 'PASS: November20 pause, records, notifications, settings, Q&A and native Ctrl+L')
     return
   }
   if (new URLSearchParams(window.location.search).has('languageShortcutOnly')) {
@@ -1996,6 +2004,8 @@ flowchart TD
   await runMusicTranslationScenarios(root, api)
   await runInterfacePolishScenarios(root, api)
   await runTodayScenarios(root, api)
+  await runNovember20Scenarios(root, api)
+  await runLanguageShortcutScenarios(root)
   await runOctober22Scenarios(root, api)
   await runRepetitionScenarios(root, api)
   require('electron').ipcRenderer.send('test-checkpoint', 'runOctober28Scenarios')
