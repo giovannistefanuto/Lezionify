@@ -6514,3 +6514,14 @@ Non modificare manualmente la sezione `Registro`: aggiungi le nuove decisioni es
 - **Impatto:** 977 unitari, 49 Python, 41 Node, RAG offline, updater, React/Electron, raccolte, Sessione e PDF passati. Verificati 385 file build, nove componenti NSIS e tre backup. Setup 300545797 byte, SHA256 be7e1dc0a38d36f60272083c3cecb191962c0771fb47911c4c8c19b87b081e40, NotSigned. Identita Start corretta e canali nuovi presenti nel pacchetto.
 - **Follow-up:** Commit e push di tutte le modifiche pubblicabili, upload dei tre asset, pubblicazione e confronto del manifesto pubblico. Nessuna installazione sul profilo personale; connessioni fisiche non forzate e Q&A verificato con SDK sintetico.
 - **File coinvolti:** docs/quality/studio-connessioni-2026-11-20.md, docs/publishing/aggiornamenti-windows.md, docs/releases/0.4.0.md, STRUTTURA_PROGETTO.md, docs/product/idee-future-2026-10-13.md, DECISIONI.md
+
+## D-0592 — Release stabile 0.4.0 pubblicata e verificata
+
+- **Data:** 2026-11-20
+- **Stato:** accettata
+- **Area:** release
+- **Decisione:** Pubblicare Lezionify 0.4.0 sul commit sorgente 6deff6916d1876adb983e5bd48a3d72ee3ef0926 con installer, blockmap e latest.yml collaudati e immutati.
+- **Motivazione:** L utente ha autorizzato implementazione e pubblicazione di tutte le richieste odierne. Gate completo verde, asset della bozza confrontati prima della pubblicazione e verifica pubblica completata.
+- **Impatto:** Release stabile latest pubblica; tag sul commit atteso; digest e dimensioni dei tre asset coincidenti; manifesto pubblico scaricato senza credenziali identico byte per byte. Implementate 165-167, 137 e 168; percorso Ctrl+L rafforzato e collaudato, episodio personale della cornice gialla ancora da confermare.
+- **Follow-up:** Pubblicare e verificare anche questa documentazione finale. Aggiornamento disponibile, installer non avviato sul profilo personale. Restano i limiti dichiarati su firma, upgrade Windows, prove fisiche e Q&A sintetico.
+- **File coinvolti:** docs/publishing/aggiornamenti-windows.md, docs/quality/studio-connessioni-2026-11-20.md, STRUTTURA_PROGETTO.md, DECISIONI.md

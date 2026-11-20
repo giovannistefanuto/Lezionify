@@ -2,7 +2,7 @@
 
 ## Stato attuale
 
-La 0.4.0 aggiunge pausa dalla Home (`HomePause`), record nelle Statistiche
+La 0.4.0, pubblicata e verificata il 20 novembre, aggiunge pausa dalla Home (`HomePause`), record nelle Statistiche
 (`shared/studyRecords.ts`, `StudyRecords`) e avvisi silenziosi di connessione.
 `electron/main/deviceNotices.ts` usa `bluetoothProbe.ts` per connessioni Win32
 classiche e powerMonitor per alimentazione; preferenze locali, IPC e portale

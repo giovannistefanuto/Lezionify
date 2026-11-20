@@ -321,7 +321,7 @@ Il setup è `NotSigned` e non è stato eseguito; nessuna Release binaria pubblic
   Prima di distribuire il bootstrap provare davvero upgrade per utente/macchina,
   riapertura, archivio personalizzato e rifiuto UAC in ambiente isolato.
 
-## Preparazione locale 0.4.0 — 20 novembre 2026
+## Release stabile 0.4.0 — 20 novembre 2026
 
 D-0591: gate completo e asset verificati, stessa build per NSIS, compressione
 invariata. Setup 300545797 byte, SHA256
@@ -329,4 +329,8 @@ invariata. Setup 300545797 byte, SHA256
 385 file build e nove componenti embedded confrontati; tre backup verificati,
 nessun artefatto personale incluso. Firma NotSigned; AuditShell passato.
 [Collaudi e limiti](../quality/studio-connessioni-2026-11-20.md).
-Pubblicazione dei tre asset ancora da completare; installer personale non avviato.
+D-0592: [release pubblica stabile latest](https://github.com/giovannistefanuto/Lezionify/releases/tag/v0.4.0),
+tag sul commit `6deff6916d1876adb983e5bd48a3d72ee3ef0926`.
+I tre asset remoti coincidono per digest e dimensioni con i locali; il manifesto
+pubblico scaricato senza credenziali è identico byte per byte. Aggiornamento
+disponibile, installer personale non avviato.

@@ -88,7 +88,7 @@ conferma, senza bloccare le altre funzionalità della release.
 ## Collaudi e ripresa
 
 - Test Q&A inizialmente rossi sul modello sostituito; ora il trasporto SDK è
-  verificato per tutti gli undici modelli selezionabili, configurazione thinking,
+  verificato per tutti gli undici modelli ammessi dalla configurazione, configurazione thinking,
   fallback, storico, allegati e cancellazione. Nessuna richiesta AI reale.
 - Test record: soglia, giorni mancanti, cambio ora, settimane, parità, date
   future, corsi archiviati, rettifiche, osservazioni e pause.
@@ -164,3 +164,16 @@ collaudati. Le limitazioni su prove AI e connessioni fisiche restano dichiarate.
 Le ultime schermate sintetiche sono state rigenerate e verificate nei due temi;
 il percorso mirato November20 e Ctrl+L è passato anche dopo il packaging, senza
 modificare sorgenti o ricostruire la build.
+
+## Pubblicazione verificata
+
+D-0592: [Lezionify 0.4.0](https://github.com/giovannistefanuto/Lezionify/releases/tag/v0.4.0)
+è pubblica e stabile, latest. Il tag punta al commit sorgente
+`6deff6916d1876adb983e5bd48a3d72ee3ef0926`, pubblicato prima della bozza.
+Installer, blockmap e `latest.yml` coincidono per dimensioni e digest con gli
+asset locali collaudati. L'helper `verify` ha confrontato il manifesto pubblico,
+scaricato senza credenziali, byte per byte con il locale: identico.
+
+Nessuna ricostruzione durante upload o pubblicazione, nessun installer avviato
+sul profilo personale. La versione è disponibile per l'aggiornamento; resta
+aperta la conferma personale del sintomo Ctrl+L già indicata nella voce 33.
