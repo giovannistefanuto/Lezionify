@@ -2,7 +2,7 @@
 
 ## Stato attuale
 
-La 0.5.0 prepara coda cancellabile e priorità Q&A: `ArchivePipeline.clear()`
+La 0.5.0, pubblicata e verificata il 23 novembre, aggiunge coda cancellabile e priorità Q&A: `ArchivePipeline.clear()`
 propaga AbortSignal e drena le scritture; il manager Gemini interrompe e
 riaccoda il background con tre minuti di quiete. L'updater prepara i salvataggi,
 congela nuovi IPC e arresta i servizi prima del passaggio NSIS.

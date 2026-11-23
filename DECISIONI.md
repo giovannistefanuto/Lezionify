@@ -6580,3 +6580,36 @@ Non modificare manualmente la sezione `Registro`: aggiungi le nuove decisioni es
 - **Impatto:** Asset pubblico Lezionify-Android-0.1.2.apk, 42039 byte, SHA256 d56319470d024191d1d1a87d90176ea9069b984cefcd44e9b38798c0a8c86b62; digest API e download anonimo verificati. Sorgenti delle cinque richieste su origin/main. Lavoro Mistral concorrente preservato fuori dal commit.
 - **Follow-up:** Utente riattiva o ricollega la radio Bluetooth; riprendere gate completo e packaging Windows, preferendo worktree isolato se il checkout resta condiviso. Installazioni personali non eseguite.
 - **File coinvolti:** docs/quality/coda-qna-widget-2026-11-23.md, docs/product/idee-future-2026-10-13.md, docs/product/statistiche-android.md, DECISIONI.md
+
+## D-0599 — Android 0.1.2 installato e ripresa release Windows isolata
+
+- **Data:** 2026-11-23
+- **Stato:** accettata
+- **Area:** release
+- **Decisione:** Aggiornare sul posto il companion del telefono da 0.1.1 a 0.1.2 su richiesta esplicita; riprendere il profilo completo Windows in un worktree codex/release-0.5.0 sul commit delle cinque modifiche.
+- **Motivazione:** L utente ha riattivato Bluetooth, connesso le cuffiette e collegato un telefono autorizzato. Il controllo Bluetooth passa nuovamente; il checkout principale contiene lavoro Mistral concorrente da preservare.
+- **Impatto:** Installazione adb -r riuscita, versione 0.1.2 codice 3 e apertura verificate; nessuna disinstallazione o cancellazione dati. APK identico a quello pubblicato. Dipendenze esistenti condivise nel worktree e asset 0.4.0 copiati per backup.
+- **Follow-up:** Gate completo, packaging unico, verifica asset, commit/push e release Windows 0.5.0 senza altre conferme.
+- **File coinvolti:** docs/quality/coda-qna-widget-2026-11-23.md, docs/publishing/aggiornamenti-windows.md, DECISIONI.md
+
+## D-0600 — Gate e installer Windows 0.5.0 verificati nel checkout isolato
+
+- **Data:** 2026-11-23
+- **Stato:** accettata
+- **Area:** release
+- **Decisione:** Distribuire Windows 0.5.0 dalla build del gate completo, riusata per NSIS. Aggiornare il solo verificatore al testo Aggiorna ora e alle nuove funzioni, poi completare la verifica sugli asset immutati senza ricostruire.
+- **Motivazione:** Bluetooth nuovamente disponibile e tutti i collaudi passati; il verificatore cercava ancora Riavvia e aggiorna, testo sostituito dalla funzione richiesta. Il controllo aggiornato aggiunge anche svuotamento, preemption e conservazione Q&A parziale.
+- **Impatto:** 983 unitari, 49 Python, 41 Node, periodi Java, Bluetooth, RAG, updater, React/Electron, raccolte, Sessione e PDF passati. Verificati 384 file, nove componenti NSIS e tre backup. Setup 300561964 byte, SHA256 673ff8601e38464d9fb16e344de6eabcfaacdfc60adfdc1da1ee7f02a0659b0d, NotSigned. Android 0.1.2 installato sul telefono su richiesta; Windows personale non installato.
+- **Follow-up:** Commit e push del ramo isolato codex/release-0.5.0; prepare, publish e verify dei tre asset immutabili. Conservare il lavoro Mistral nel checkout principale.
+- **File coinvolti:** tools/verify_installer.cjs, docs/quality/coda-qna-widget-2026-11-23.md, docs/publishing/aggiornamenti-windows.md, DECISIONI.md
+
+## D-0601 — Windows 0.5.0 pubblicato e verificato, Android aggiornato sul telefono
+
+- **Data:** 2026-11-23
+- **Stato:** accettata
+- **Area:** release
+- **Decisione:** Pubblicare Windows 0.5.0 stabile latest sul commit 728a4fda876cee32123cb3129fb65c3715fbaf02 con installer, blockmap e latest.yml collaudati e immutati. Completare le sole voci 169-173; Android 0.1.2 gia pubblicato e installato sul telefono su richiesta.
+- **Motivazione:** Gate completo e controlli finali passati dopo il ripristino Bluetooth. Upload Python interrotto senza asset remoto; caricamento alternativo curl completato sulla stessa bozza, seguito da resume dei soli asset mancanti e verifica pubblica.
+- **Impatto:** Tre asset Windows uploaded con dimensioni e digest coincidenti; manifesto anonimo identico byte per byte e release latest pubblica. Setup SHA256 673ff8601e38464d9fb16e344de6eabcfaacdfc60adfdc1da1ee7f02a0659b0d, 300561964 byte, NotSigned. Telefono aggiornato 0.1.1 a 0.1.2 con adb -r e avvio verificato; nessuna installazione Windows personale.
+- **Follow-up:** Pubblicare anche la documentazione finale e verificarne il commit remoto. Conservare il lavoro Mistral concorrente nel checkout principale. Nessuna altra attivita della coda avviata.
+- **File coinvolti:** DECISIONI.md, STRUTTURA_PROGETTO.md, docs/product/idee-future-2026-10-13.md, docs/product/statistiche-android.md, docs/quality/coda-qna-widget-2026-11-23.md, docs/publishing/aggiornamenti-windows.md
