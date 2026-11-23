@@ -2,12 +2,13 @@
 
 ## Stato attuale
 
-La 0.6.0 aggiunge avvisi Bluetooth in entrambe le direzioni e durata di due
+La 0.6.0, pubblicata e verificata il 23 novembre, aggiunge avvisi Bluetooth in entrambe le direzioni e durata di due
 secondi, Pausa nella fila di Sessione e recupero automatico Q&A con sostituzione
 esplicita dei frammenti via IPC. `electron/main/ai/keyUsage.ts` conserva
 identificativi SHA256 ed esiti in `library/key-usage.json`, finestra mobile di
 30 giorni; il manager bilancia le richieste e le Impostazioni mostrano i conteggi.
-Contratto pubblico in `shared/keyUsage.ts`.
+Contratto pubblico in `shared/keyUsage.ts`. Collaudi, asset e limiti:
+[avvisi, chiavi e Q&A](docs/quality/avvisi-chiavi-qna-2026-11-23.md).
 
 Il pilota separato `tools/prepare_mistral_qna.py` e `tools/mistral_qna_test.mjs`
 confronta cinque Q&A Gemini storici con Mistral Large 4. Snapshot e risultati

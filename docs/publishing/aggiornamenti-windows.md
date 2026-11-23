@@ -356,3 +356,19 @@ Digest e dimensioni dei tre asset coincidono; manifesto pubblico anonimo
 identico byte per byte. Gli asset sono quelli collaudati, senza ricostruzione.
 Upload iniziale interrotto con bozza vuota; stesso installer trasferito con curl,
 poi resume dei soli asset mancanti tramite helper e verifica pubblica completa.
+
+
+## Release 0.6.0 del 23 novembre 2026
+
+Pubblicata e verificata [v0.6.0](https://github.com/giovannistefanuto/Lezionify/releases/tag/v0.6.0), stabile latest, sul commit dei binari `9b09e0a0702600f8709dd5415e4ba957cf05cbeb`.
+Le cinque richieste riguardano disconnessione cuffiette, avvisi di due secondi, Pausa compatta, conteggi e bilanciamento delle chiavi Gemini, recupero Q&A con massimo due ulteriori chiamate fisiche. [Collaudi e limiti](../quality/avvisi-chiavi-qna-2026-11-23.md), [note](../releases/0.6.0.md); D-0602–D-0605.
+
+Profilo completo passato: 1976 unitari, 49 Python, 41 Node, periodi Java, Bluetooth Win32, RAG, updater reale e UI, React/Electron con riavvio, raccolte, Sessione compilata e PDF reali. Altri cinque test Node del pilota preesistente e scenari visivi mirati passati. Build unica riusata per il packaging, compressione invariata; verificati 385 file build, nove componenti NSIS e tre backup. Nessun materiale personale nel setup.
+
+| Asset | Byte | SHA256 |
+| --- | ---: | --- |
+| `Lezionify-Setup-0.6.0.exe` | 300571533 | `c4758fdad6f194895bf41136267647aebfb4582dd4fd1682dccc453bb8973d8f` |
+| `Lezionify-Setup-0.6.0.exe.blockmap` | 306300 | `e89941cd394a73829ecd5d8bd31edc49f351e1758673554bfb9e1c5d7ba48caa` |
+| `latest.yml` | 2921 | `a4568ea3de90f2412a9f8ebf1a7f74fc25be632e5de70bd108ada2113b73a088` |
+
+Tre asset remoti uploaded con dimensioni e digest coincidenti; manifesto pubblico scaricato senza credenziali identico byte per byte. Authenticode: `NotSigned`. Audit Shell passato; installer non eseguito sul profilo personale. Upgrade su Windows temporaneo, UAC e SmartScreen non collaudati. Il nuovo conteggio locale parte dalle chiamate effettuate con questa versione; nessuna ricostruzione dello storico precedente o misura della fatturazione Google. Nessuna inferenza reale sui materiali personali per questi collaudi.

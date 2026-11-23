@@ -30,7 +30,7 @@ Setup: 300571533 byte, SHA256 `c4758fdad6f194895bf41136267647aebfb4582dd4fd1682d
 
 ASAR: SHA256 `e07ffa241a7e74189fd09c37713e4fd8b9e4a124b2dcc444d5b9ccf565055688`.
 
-Authenticode: `NotSigned`. Installer estratto e verificato, non eseguito sul profilo personale. Pubblicazione e verifica remota vengono registrate nella procedura Windows e nel registro decisioni.
+Authenticode: `NotSigned`. Installer estratto e verificato, non eseguito sul profilo personale. Release [v0.6.0](https://github.com/giovannistefanuto/Lezionify/releases/tag/v0.6.0) pubblicata e verificata sul commit `9b09e0a0702600f8709dd5415e4ba957cf05cbeb`: tre asset uploaded con dimensioni e digest corrispondenti; release stabile latest e manifesto pubblico anonimo identico byte per byte. Dettagli anche nella procedura Windows e nel registro decisioni.
 
 ## Limiti
 

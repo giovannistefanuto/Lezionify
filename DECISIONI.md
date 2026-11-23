@@ -6657,3 +6657,14 @@ Non modificare manualmente la sezione `Registro`: aggiungi le nuove decisioni es
 - **Impatto:** 1976 unitari, 49 Python, 41 Node, cinque Node del pilota, Java, Bluetooth, RAG, updater, React/Electron, raccolte, Sessione e PDF passati. Verificati 385 file build, nove componenti NSIS e tre backup; nessun materiale personale. Setup 300571533 byte, SHA256 c4758fdad6f194895bf41136267647aebfb4582dd4fd1682dccc453bb8973d8f, NotSigned. Nessuna installazione personale.
 - **Follow-up:** Pubblicare sorgenti e release, verificare digest remoti e manifesto pubblico. Annotare URL e SHA sorgente dopo la pubblicazione.
 - **File coinvolti:** docs/quality/avvisi-chiavi-qna-2026-11-23.md, docs/releases/0.6.0.md, DECISIONI.md, STRUTTURA_PROGETTO.md, electron, shared, src, tests, package.json, package-lock.json, electron-builder.yml
+
+## D-0605 — Windows 0.6.0 pubblicato e verificato
+
+- **Data:** 2026-11-23
+- **Stato:** accettata
+- **Area:** release
+- **Decisione:** Pubblicare la release stabile latest v0.6.0 sul commit 9b09e0a0702600f8709dd5415e4ba957cf05cbeb con installer, blockmap e latest.yml della build unica collaudata. Completare esclusivamente le cinque modifiche concordate e conservare i materiali personali fuori dai binari e da Git.
+- **Motivazione:** Gate completo, verifiche del pacchetto e collaudi visivi passati. Upload completato senza sostituire asset; publish e verify confermano release pubblica, digest remoti e manifesto anonimo identico.
+- **Impatto:** Setup 300571533 byte, SHA256 c4758fdad6f194895bf41136267647aebfb4582dd4fd1682dccc453bb8973d8f, NotSigned. Tutti e tre gli asset uploaded e verificati. Aggiornamento disponibile agli utenti; nessuna installazione personale. Conteggi delle chiavi dalla nuova versione, non retroattivi; massimo due ulteriori chiamate fisiche per recuperare QnA temporaneamente interrotto.
+- **Follow-up:** Pubblicare la documentazione finale e verificarne il commit sul remoto. Nessun altro elemento della coda avviato.
+- **File coinvolti:** DECISIONI.md, STRUTTURA_PROGETTO.md, docs/quality/avvisi-chiavi-qna-2026-11-23.md, docs/publishing/aggiornamenti-windows.md
