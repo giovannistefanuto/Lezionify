@@ -1,6 +1,6 @@
 # Coda, Q&A, aggiornamenti e widget — 23 novembre 2026
 
-**Stato attuale:** Android installato; installer Windows 0.5.0 verificato e pronto alla pubblicazione. I blocchi storici descritti sotto sono risolti.
+**Stato finale:** Windows 0.5.0 pubblicato e verificato; Android 0.1.2 installato sul telefono. Tutte le cinque richieste 169–173 completate. I blocchi storici descritti sotto sono risolti.
 
 Perimetro esclusivo: voci 169–173; autorizzazione e chiarimenti in D-0593.
 Release prevista Windows 0.5.0 e companion Android 0.1.2.
@@ -129,3 +129,22 @@ corretta. Firma setup NotSigned. Setup 300.561.964 byte; SHA256
 ASAR SHA256 `2c8708e12dc71c8868498ef721e39c881603cdac478ae452e74d3cece1970715`.
 Nessuna installazione Windows sul profilo personale; upgrade in Windows
 temporaneo, UAC e SmartScreen non collaudati.
+
+## Pubblicazione completata
+
+[Windows 0.5.0](https://github.com/giovannistefanuto/Lezionify/releases/tag/v0.5.0)
+è stabile latest e pubblica sul commit `728a4fda876cee32123cb3129fb65c3715fbaf02`.
+Installer, blockmap e latest.yml hanno digest e dimensioni coincidenti ai
+locali. Il manifesto scaricato senza credenziali è identico byte per byte.
+Il setup e l'ASAR non sono stati ricostruiti dopo il gate.
+
+Il primo upload Python si è interrotto a circa 21 MiB; GitHub non aveva
+conservato alcun asset. Dopo ispezione della stessa bozza, curl ha completato
+l'installer con credenziali solo in memoria (HTTP 201, circa 281 secondi e
+1,07 MB/s medi); digest server coincidente. L'helper ha poi ripreso soltanto
+blockmap e manifesto mancanti. Nessuna seconda bozza o sostituzione binaria.
+La causa precisa dell'interruzione Python non è dimostrata.
+
+Voci 169–173 completate; nessuna altra voce avviata. Android 0.1.2 è installato
+sul telefono con aggiornamento sul posto e apertura verificata. Windows 0.5.0
+è disponibile per l'aggiornamento, non installato automaticamente sul PC.

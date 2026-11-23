@@ -6602,3 +6602,14 @@ Non modificare manualmente la sezione `Registro`: aggiungi le nuove decisioni es
 - **Impatto:** 983 unitari, 49 Python, 41 Node, periodi Java, Bluetooth, RAG, updater, React/Electron, raccolte, Sessione e PDF passati. Verificati 384 file, nove componenti NSIS e tre backup. Setup 300561964 byte, SHA256 673ff8601e38464d9fb16e344de6eabcfaacdfc60adfdc1da1ee7f02a0659b0d, NotSigned. Android 0.1.2 installato sul telefono su richiesta; Windows personale non installato.
 - **Follow-up:** Commit e push del ramo isolato codex/release-0.5.0; prepare, publish e verify dei tre asset immutabili. Conservare il lavoro Mistral nel checkout principale.
 - **File coinvolti:** tools/verify_installer.cjs, docs/quality/coda-qna-widget-2026-11-23.md, docs/publishing/aggiornamenti-windows.md, DECISIONI.md
+
+## D-0601 — Windows 0.5.0 pubblicato e verificato, Android aggiornato sul telefono
+
+- **Data:** 2026-11-23
+- **Stato:** accettata
+- **Area:** release
+- **Decisione:** Pubblicare Windows 0.5.0 stabile latest sul commit 728a4fda876cee32123cb3129fb65c3715fbaf02 con installer, blockmap e latest.yml collaudati e immutati. Completare le sole voci 169-173; Android 0.1.2 gia pubblicato e installato sul telefono su richiesta.
+- **Motivazione:** Gate completo e controlli finali passati dopo il ripristino Bluetooth. Upload Python interrotto senza asset remoto; caricamento alternativo curl completato sulla stessa bozza, seguito da resume dei soli asset mancanti e verifica pubblica.
+- **Impatto:** Tre asset Windows uploaded con dimensioni e digest coincidenti; manifesto anonimo identico byte per byte e release latest pubblica. Setup SHA256 673ff8601e38464d9fb16e344de6eabcfaacdfc60adfdc1da1ee7f02a0659b0d, 300561964 byte, NotSigned. Telefono aggiornato 0.1.1 a 0.1.2 con adb -r e avvio verificato; nessuna installazione Windows personale.
+- **Follow-up:** Pubblicare anche la documentazione finale e verificarne il commit remoto. Conservare il lavoro Mistral concorrente nel checkout principale. Nessuna altra attivita della coda avviata.
+- **File coinvolti:** DECISIONI.md, STRUTTURA_PROGETTO.md, docs/product/idee-future-2026-10-13.md, docs/product/statistiche-android.md, docs/quality/coda-qna-widget-2026-11-23.md, docs/publishing/aggiornamenti-windows.md

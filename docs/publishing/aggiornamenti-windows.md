@@ -350,4 +350,9 @@ i binari. Setup 300.561.964 byte, SHA256
 NotSigned. [Rapporto e limiti](../quality/coda-qna-widget-2026-11-23.md).
 Android 0.1.2 installato sul telefono su richiesta, con dati e abbinamento
 conservati tramite aggiornamento sul posto. Nessuna installazione Windows
-personale eseguita. Pubblicazione dei tre asset Windows ancora da completare.
+personale eseguita. [Release Windows 0.5.0](https://github.com/giovannistefanuto/Lezionify/releases/tag/v0.5.0)
+pubblicata stabile latest e verificata sul commit `728a4fda876cee32123cb3129fb65c3715fbaf02`.
+Digest e dimensioni dei tre asset coincidono; manifesto pubblico anonimo
+identico byte per byte. Gli asset sono quelli collaudati, senza ricostruzione.
+Upload iniziale interrotto con bozza vuota; stesso installer trasferito con curl,
+poi resume dei soli asset mancanti tramite helper e verifica pubblica completa.

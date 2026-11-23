@@ -68,3 +68,7 @@ la versione desktop 0.2.5, configurato il token e confermato la visualizzazione
 delle statistiche reali; Android riporta aggiornamento riuscito. I valori e i
 codici personali non sono riportati qui. Non e' stato eseguito un confronto
 automatico valore per valore con il desktop ne' un collaudo prolungato di Doze.
+
+Il 23 novembre il telefono personale è stato aggiornato su richiesta da 0.1.1
+(codice 2) a 0.1.2 (codice 3) tramite `adb install -r`. Installazione e apertura
+verificate; nessuna disinstallazione, cancellazione dati o nuovo abbinamento.

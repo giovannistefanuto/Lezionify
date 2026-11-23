@@ -71,16 +71,15 @@ soltanto dopo implementazione e verifiche pertinenti.
 | 113. [x] | Pausa dalla Home anche fuori Full Focus | 166 | Media: durate rapide e libera, timer e schermata pausa già esistente. |
 | 114. [x] | Record e continuità di studio nelle Statistiche | 167 | Da ricercare e progettare: metriche utili, grafica coerente e riuso delle streak. |
 | 115. [x] | Avvisi di collegamento e scollegamento della corrente | 168 | Eventi powerMonitor, animazione silenziosa e interruttore dedicato verificati. |
-
-| 116. [ ] | Svuota coda con interruzione del lavoro attivo e conservazione delle fonti | 169 | Richiesta del 23 novembre; verificare cancellazione, import concorrenti e riavvio. |
-| 117. [ ] | Aggiorna ora salva, interrompe, svuota e installa automaticamente | 170 | Salvataggi e arresto coordinato; errori bloccano il riavvio. |
-| 118. [ ] | Q&A interrompe e riaccoda il background, ripresa dopo tre minuti | 171 | Preemption, ordine, rinnovo attesa, quote condivise e cancellazione. |
-| 119. [ ] | Pulsante pausa Home più piccolo e discreto | 172 | Conservare accessibilità e durate. |
+| 116. [x] | Svuota coda con interruzione del lavoro attivo e conservazione delle fonti | 169 | Richiesta del 23 novembre; verificare cancellazione, import concorrenti e riavvio. |
+| 117. [x] | Aggiorna ora salva, interrompe, svuota e installa automaticamente | 170 | Salvataggi e arresto coordinato; errori bloccano il riavvio. |
+| 118. [x] | Q&A interrompe e riaccoda il background, ripresa dopo tre minuti | 171 | Preemption, ordine, rinnovo attesa, quote condivise e cancellazione. |
+| 119. [x] | Pulsante pausa Home più piccolo e discreto | 172 | Conservare accessibilità e durate. |
 | 120. [x] | Widget Android: periodi correnti anche da cache offline | 173 | Cambio giorno, lunedì, mese e anno; lezioni rimanenti invariate. |
 
 **Richieste del 23 novembre:** l'utente autorizza unicamente 169–173,
 con chiarimenti confermati, collaudi e nuova release. Non è LISTA_ORDINE.
-169–172 implementate e collaudate, con distribuzione Windows bloccata dalla radio Bluetooth assente; 173 distribuita come Android 0.1.2.
+169–173 completate e collaudate: Windows 0.5.0 pubblicato e verificato; Android 0.1.2 pubblicato e installato sul telefono. Restano 16 attività operative aperte e sei sospese.
 Stato e limiti: [verifica coda, aggiornamenti e widget](../quality/coda-qna-widget-2026-11-23.md).
 
 **Aggiunte del 20 novembre:** tre nuove voci e riattivazione della 33,
@@ -842,19 +841,19 @@ dell'alimentazione. Implementata e collaudata per la 0.4.0 (D-0588).
 
 ### 169. Svuota coda
 
-- [ ] Interrompere la richiesta attiva e svuotare trascrizione, dispensa ITA e ENG; conservare fonti, risultati e checkpoint. Impedire ripartenze dopo svuotamento o riavvio.
+- [x] Interrompere la richiesta attiva e svuotare trascrizione, dispensa ITA e ENG; conservare fonti, risultati e checkpoint. Impedire ripartenze dopo svuotamento o riavvio.
 
 ### 170. Aggiorna ora autonomo
 
-- [ ] Salvare viste aperte e bozze, interrompere lavori e svuotare coda prima di installare. Su errore di salvataggio mantenere l'app aperta. Avvisi iniziali invariati.
+- [x] Salvare viste aperte e bozze, interrompere lavori e svuotare coda prima di installare. Su errore di salvataggio mantenere l'app aperta. Avvisi iniziali invariati.
 
 ### 171. Priorità Q&A con preemption
 
-- [ ] Interrompere la richiesta background in corso e rimetterla prima in coda. Riprendere dopo la risposta e almeno tre minuti dall'ultima domanda. Rinnovare l'attesa a ogni domanda senza aggirare quote e limiti.
+- [x] Interrompere la richiesta background in corso e rimetterla prima in coda. Riprendere dopo la risposta e almeno tre minuti dall'ultima domanda. Rinnovare l'attesa a ogni domanda senza aggirare quote e limiti.
 
 ### 172. Pausa Home discreta
 
-- [ ] Ridurre dimensioni e visibilità del pulsante mantenendo testo, accessibilità e comportamento.
+- [x] Ridurre dimensioni e visibilità del pulsante mantenendo testo, accessibilità e comportamento.
 
 ### 173. Widget Android con periodi correnti
 
