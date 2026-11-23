@@ -1,3 +1,4 @@
+import { useUpdateSave } from './useUpdateSave'
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { getStudyHistoryClient } from '../utils/studyHistoryClient'
 import type {
@@ -83,6 +84,14 @@ export function useLectureContent({
   // Paste modal
   const [showPasteModal, setShowPasteModal] = useState(false)
   const [pasteInputText, setPasteInputText] = useState('')
+
+  useUpdateSave(async () => {
+    if (!selectedLecture) return
+    if (isEditingMetadata) await window.archive.updateLecture(selectedLecture.id, {
+      courseCode: editCourseCode.trim() || null, recordedAt: editRecordedAt.trim() || null
+    })
+    if (showPasteModal && pasteInputText.trim()) await window.archive.saveMarkdown(selectedLecture.id, pasteInputText)
+  }, Boolean(selectedLecture))
 
   // Timer ref to prevent memory leaks and overlapping timers (M1)
   const copyFeedbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(

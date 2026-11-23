@@ -1,3 +1,4 @@
+import { useUpdateSave } from './useUpdateSave'
 import { useState, useCallback, useEffect } from 'react'
 import type { AppSettings, GeminiModel, PublishingStatus } from '../../shared/archive'
 
@@ -202,6 +203,30 @@ export function useSettings(onNotice: (msg: string) => void) {
     isSavingSettings,
     onNotice
   ])
+
+  useUpdateSave(async () => {
+    if (!showSettingsModal) return
+    if (isSavingSettings) throw new Error('Salvataggio impostazioni ancora in corso.')
+    if (publishingEnabled && (!publishingRepoUrl.trim() || (!publishingToken.trim() && !publishingStatus?.configured))) throw new Error('Configurazione pubblicazione incompleta.')
+    const updated = await window.archive.saveSettings({
+        apiKeys: inputApiKeys,
+        apiKeyQuotaGroups: inputApiKeys.map(
+          (_, index) => inputApiKeyQuotaGroups[index]?.trim() || 'default-project'
+        ),
+        activeKeyIndex: activeKeyIdx,
+        autoRotateOnQuota: autoRotate,
+        model: inputModel,
+        autoProcessOnImport,
+        publishing: {
+          enabled: publishingEnabled,
+          repoUrl: publishingRepoUrl.trim(),
+          branch: settings.publishing?.branch || 'main',
+          autoPublishOnStartup: true,
+          ...(publishingToken.trim() ? { githubToken: publishingToken.trim() } : {})
+        }
+      })
+    setSettings(updated)
+  }, showSettingsModal)
 
   const saveCourseConfig = useCallback(async (courseCode: string, config: { examDate?: string, expectedHours?: number }) => {
     try {

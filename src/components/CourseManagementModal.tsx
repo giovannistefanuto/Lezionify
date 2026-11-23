@@ -1,3 +1,4 @@
+import { useUpdateSave } from '../hooks/useUpdateSave'
 import React, { useState, useEffect } from 'react'
 import type {
   CourseDefinition,
@@ -71,6 +72,31 @@ export function CourseManagementModal({
   const [isMatching, setIsMatching] = useState(false)
   const [matches, setMatches] = useState<CourseScheduleMatch[]>([])
   const [selectedMatchIds, setSelectedMatchIds] = useState<Set<string>>(new Set())
+
+  useUpdateSave(async () => {
+    if (activeTab === 'edit') localStorage.setItem('lezionify:course-editor-draft', JSON.stringify({ editingCourseCode, formPublishing, formCode, formName, formCfu, formColor, formStartDate, formEndDate, formExamDate, examReminderEnabled, examReminderEvery, examReminderUnit, formSchedule }))
+  }, isOpen)
+  useEffect(() => {
+    if (!isOpen) return
+    try {
+      const saved = JSON.parse(localStorage.getItem('lezionify:course-editor-draft') || 'null')
+      if (!saved || typeof saved.formCode !== 'string' || !Array.isArray(saved.formSchedule)) return
+      setEditingCourseCode(saved.editingCourseCode)
+      setFormPublishing(saved.formPublishing)
+      setFormCode(saved.formCode)
+      setFormName(saved.formName)
+      setFormCfu(saved.formCfu)
+      setFormColor(saved.formColor)
+      setFormStartDate(saved.formStartDate)
+      setFormEndDate(saved.formEndDate)
+      setFormExamDate(saved.formExamDate)
+      setExamReminderEnabled(saved.examReminderEnabled)
+      setExamReminderEvery(saved.examReminderEvery)
+      setExamReminderUnit(saved.examReminderUnit)
+      setFormSchedule(saved.formSchedule)
+      setActiveTab('edit')
+    } catch { /* Keep the existing editor if the optional draft is unreadable. */ }
+  }, [isOpen])
 
   const loadCourses = React.useCallback(async () => {
     if (!window.archive) return
@@ -224,6 +250,7 @@ export function CourseManagementModal({
 
     try {
       await window.archive.saveCourse(courseDef, editingCourseCode || undefined)
+      localStorage.removeItem('lezionify:course-editor-draft')
       onNotice(`Corso "${trimmedCode}" salvato con successo.`)
       await loadCourses()
       await onRefreshLibrary()

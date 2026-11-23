@@ -1161,7 +1161,7 @@ Genera la dispensa didattica strutturata per questa lezione seguendo rigorosamen
             model: m,
             contents: prompt,
             config: {
-              systemInstruction: GEMS_SYSTEM_INSTRUCTION
+              systemInstruction: GEMS_SYSTEM_INSTRUCTION, abortSignal: s
             }
           })
           if (s.aborted) {
@@ -1882,6 +1882,7 @@ Return ONLY the verbatim transcript:`
           model: m,
           contents: [`Trascrizione Lezione:\n\n${params.transcript}`],
           config: {
+            abortSignal: s,
             systemInstruction: COURSE_LOGISTICS_EXTRACTION_PROMPT,
             temperature: 0.2
           }
@@ -1924,6 +1925,7 @@ Return ONLY the verbatim transcript:`
             `FILE ESISTENTE:\n${params.existingInfo}\n\nNUOVE INFORMAZIONI ESTRATTE:\n${params.newExtractedInfo}`
           ],
           config: {
+            abortSignal: s,
             systemInstruction: COURSE_LOGISTICS_MERGE_PROMPT,
             temperature: 0.1
           }
@@ -1971,6 +1973,7 @@ Return ONLY the verbatim transcript:`
             `Corso: ${params.courseCode ?? 'Generale'}\n\n${textContent}`
           ],
           config: {
+            abortSignal: s,
             systemInstruction: STUDY_SET_SYSTEM_INSTRUCTION,
             responseMimeType: 'application/json',
             temperature: 0.3

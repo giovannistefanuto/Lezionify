@@ -156,6 +156,8 @@ const archiveApi: ArchiveApi = {
     ipcRenderer.invoke('archive:get-pipeline-status'),
   startArchivePipeline: () => ipcRenderer.invoke('archive:start-pipeline'),
   resumeArchivePipeline: () => ipcRenderer.invoke('archive:resume-pipeline'),
+  clearArchivePipeline: () => ipcRenderer.invoke('archive:clear-pipeline'),
+  cancelQnaResponses: () => ipcRenderer.invoke('archive:cancel-qna'),
   requestArchivePipelineStop: () => ipcRenderer.invoke('archive:stop-pipeline'),
   printLectureNotes: () => ipcRenderer.invoke('archive:print-notes'),
   scanAndSyncLibrary: () => ipcRenderer.invoke('archive:sync-library'),

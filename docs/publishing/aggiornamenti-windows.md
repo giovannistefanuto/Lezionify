@@ -24,14 +24,18 @@ Tutti i rilasci consente di leggere le versioni intermedie quando i metadati
 contengono soltanto le novità dell'ultima. Dopo un aggiornamento le note vengono
 mostrate una volta, tramite una ricevuta locale fuori dall'archivio delle lezioni.
 
-Prima del riavvio occorre chiudere lezione, Sala e finestre di modifica.
-Le callback di Memo, storico di studio e bozze Sala attendono il salvataggio;
-quelle fallite restano raggiungibili anche dopo la chiusura della vista.
-Il main rifiuta l'installazione durante IPC pendenti, pipeline, RIPETERE,
-pubblicazione o lavori RAG. Poi blocca nuovi IPC, differisce il publisher,
-svuota lo storage Electron e i log prima di invocare NSIS. Un errore riabilita
-il lavoro. Un lock di singola istanza evita due applicazioni installate aperte
-contemporaneamente. Non si cambia il formato dei dati né il percorso del profilo.
+Dalla 0.5.0 il comando **Aggiorna ora**, dopo il download verificato, salva
+le modifiche aperte e le bozze ripristinabili senza richiedere chiusure manuali.
+Memo, storico, Sala e Q&A partecipano alla preparazione; le risposte parziali
+sono conservate con indicazione dell'interruzione. Gli editor conservano i dati
+salvati o bozze locali riapribili. Un salvataggio fallito blocca il riavvio.
+Poi il main congela nuovi IPC, interrompe le richieste AI, svuota la pipeline
+e attende servizi e IPC già accettati. Pubblicazioni già in corso terminano
+prima del riavvio. Storage Electron e log vengono scaricati su disco prima
+che NSIS sia invocato. Errori riabilitano l'app; i lavori cancellati richiedono
+un nuovo avvio esplicito. Il controllo e gli avvisi iniziali restano invariati.
+Un lock di singola istanza evita due applicazioni installate aperte insieme.
+Non si cambia il formato delle fonti né il percorso del profilo.
 
 Le build di sviluppo, il controllo CLI RAG e la portable non avviano controlli
 automatici NSIS. La portable conserva l'accesso alla pagina dei rilasci.

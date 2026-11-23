@@ -1,4 +1,4 @@
-import { createContext, lazy, Suspense, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
+import { createContext, lazy, Suspense, useContext, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import type { AppUpdateState } from '../../shared/appUpdate'
 import { useModalFocus } from '../hooks/useModalFocus'
@@ -10,14 +10,21 @@ const UpdateNotes = lazy(() => import('react-markdown'))
 const UpdateContext = createContext<{ state: AppUpdateState | null; open: () => void }>({ state: null, open: () => {} })
 export const useAppUpdates = () => useContext(UpdateContext)
 
-export function AppUpdates({ children, canRestart }: { children: ReactNode; canRestart: boolean }) {
+export function AppUpdates({ children }: { children: ReactNode; canRestart?: boolean }) {
   const [state, setState] = useState<AppUpdateState | null>(null)
   const [open, setOpen] = useState(false)
   const [preparing, setPreparing] = useState(false)
   const [error, setError] = useState('')
   const dismissed = useRef<string | undefined>(undefined)
-  const panel = useRef<HTMLDivElement>(null)
+  const panel = useRef<HTMLDialogElement>(null)
+  const hasState = state !== null
   useModalFocus(panel, open)
+  useLayoutEffect(() => {
+    const dialog = panel.current
+    if (!open || !dialog) return
+    dialog.showModal()
+    return () => dialog.close()
+  }, [open, hasState])
   useEffect(() => {
     const api = window.appUpdate
     if (!api) return
@@ -53,10 +60,6 @@ export function AppUpdates({ children, canRestart }: { children: ReactNode; canR
   }
   const install = async () => {
     if (preparing) return
-    if (!canRestart || document.querySelectorAll('[role="dialog"]').length > 1) {
-      setError('Chiudi la lezione, la Sala e le finestre di modifica prima di riavviare. Il pacchetto resterà pronto.')
-      return
-    }
     setPreparing(true)
     setError('')
     try {
@@ -72,11 +75,11 @@ export function AppUpdates({ children, canRestart }: { children: ReactNode; canR
   const busy = preparing || state?.phase === 'installing'
   const action = (work: () => Promise<unknown>) => { setError(''); void work().catch(() => setError('Operazione non riuscita. Riprova più tardi.')) }
   return <UpdateContext.Provider value={{ state, open: () => setOpen(true) }}>
-    {children}
+    <div inert={busy} style={{ display: 'contents' }}>{children}</div>
     {open && state && createPortal(<div className="modal-overlay app-update-overlay" onKeyDown={event => {
       if (event.key === 'Escape') { event.stopPropagation(); close() }
     }}>
-      <div className="modal-content app-update-panel" role="dialog" aria-modal="true" aria-labelledby="app-update-title" tabIndex={-1} ref={panel}>
+      <dialog className="modal-content app-update-panel" role="dialog" onCancel={event => { event.preventDefault(); close() }} aria-modal="true" aria-labelledby="app-update-title" tabIndex={-1} ref={panel}>
         <div className="modal-header">
           <h3 id="app-update-title">{state.installedNotes ? 'Lezionify è stato aggiornato' : 'Aggiornamenti di Lezionify'}</h3>
           <button type="button" className="modal-close" aria-label="Chiudi aggiornamenti" disabled={busy} onClick={close}>×</button>
@@ -96,15 +99,15 @@ export function AppUpdates({ children, canRestart }: { children: ReactNode; canR
         {state.checkedAt && <p className="app-update-detail">Ultima verifica: {new Date(state.checkedAt).toLocaleString('it-IT')}</p>}
         {(state.message && state.supported) && <p role="status">{state.message}</p>}
         {error && <p role="alert">{error}</p>}
-        {state.phase === 'ready' && <p>Salva e chiudi le modifiche aperte. Lezionify si chiuderà per installare l’aggiornamento e si riaprirà. Windows potrebbe chiedere i permessi.</p>}
+        {state.phase === 'ready' && <p>Lezionify salverà il lavoro aperto, interromperà le elaborazioni e svuoterà la coda, poi installerà l’aggiornamento e si riaprirà. Windows potrebbe chiedere i permessi.</p>}
         <div className="modal-actions app-update-actions">
           <button type="button" className="secondary-button" disabled={busy} onClick={() => action(() => window.appUpdate!.openReleases())}>Tutti i rilasci ↗</button>
           {state.supported && ['idle', 'error', 'current'].includes(state.phase) && <button type="button" className="primary-button" onClick={() => action(() => window.appUpdate!.check())}>Controlla aggiornamenti</button>}
           {state.phase === 'available' && <button type="button" className="primary-button" onClick={() => action(() => window.appUpdate!.download())}>Aggiorna · scarica</button>}
-          {state.phase === 'ready' && <button type="button" className="primary-button" disabled={busy} onClick={() => void install()}>Riavvia e aggiorna</button>}
+          {state.phase === 'ready' && <button type="button" className="primary-button" disabled={busy} onClick={() => void install()}>Aggiorna ora</button>}
           <button type="button" className="secondary-button" disabled={busy} onClick={close}>{state.phase === 'available' || state.phase === 'ready' ? 'Più tardi' : 'Chiudi'}</button>
         </div>
-      </div>
+      </dialog>
     </div>, document.fullscreenElement ?? document.body)}
   </UpdateContext.Provider>
 }

@@ -6525,3 +6525,47 @@ Non modificare manualmente la sezione `Registro`: aggiungi le nuove decisioni es
 - **Impatto:** Release stabile latest pubblica; tag sul commit atteso; digest e dimensioni dei tre asset coincidenti; manifesto pubblico scaricato senza credenziali identico byte per byte. Implementate 165-167, 137 e 168; percorso Ctrl+L rafforzato e collaudato, episodio personale della cornice gialla ancora da confermare.
 - **Follow-up:** Pubblicare e verificare anche questa documentazione finale. Aggiornamento disponibile, installer non avviato sul profilo personale. Restano i limiti dichiarati su firma, upgrade Windows, prove fisiche e Q&A sintetico.
 - **File coinvolti:** docs/publishing/aggiornamenti-windows.md, docs/quality/studio-connessioni-2026-11-20.md, STRUTTURA_PROGETTO.md, DECISIONI.md
+
+## D-0593 — Coda cancellabile, priorita Q&A e aggiornamento autonomo
+
+- **Data:** 2026-11-23
+- **Stato:** accettata
+- **Area:** elaborazione
+- **Decisione:** Limitare la sessione alle cinque richieste del 23 novembre: Svuota coda interrompe anche il lavoro attivo; Q&A interrompe la richiesta background e la rimette prima in coda, con ripresa dopo risposta e almeno tre minuti dall ultima domanda; Aggiorna ora salva, arresta lavori, svuota e installa; pausa Home discreta; widget Android ricalcola periodi alla data corrente.
+- **Motivazione:** L utente ha confermato interruzione immediata, preemption Q&A e installazione senza chiusure manuali, autorizzando collaudi e nuova release.
+- **Impatto:** Conservare fonti e checkpoint; impedire ripartenze dopo svuotamento o durante aggiornamento; bloccare il riavvio su salvataggi falliti. Dati Android da cache anche offline, lezioni rimanenti invariate.
+- **Follow-up:** Completare regressioni, gate completo, APK Android e release Windows verificata. Nessuna altra voce della coda autorizzata.
+- **File coinvolti:** electron/main/ai, electron/main/archive.ts, electron/main/index.ts, src/components, src/hooks, android-companion, tests, docs
+
+## D-0594 — Bozze Sessione e dialoghi nativi protetti prima del riavvio
+
+- **Data:** 2026-11-23
+- **Stato:** accettata
+- **Area:** aggiornamenti
+- **Decisione:** Conservare bozze Sessione, appelli e pannello senza confermarle automaticamente; mostrare l updater come dialogo nativo sopra gli editor aperti. Attendere nel test raccolte il reale selettore delle generazioni dopo il checkpoint backend.
+- **Motivazione:** La revisione finale ha individuato campi Sessione in memoria e dialoghi top layer che il precedente overlay non poteva superare. Il gate ha riprodotto una corsa fra completamento backend e polling UI delle raccolte.
+- **Impatto:** Aggiunto useRestartDraft per bozze locali non sensibili; nessun cambiamento funzionale alle raccolte. Test Electron di ripristino Sessione e aggiornamento con dialoghi nativi aperti passati. APK originale aperto in emulatore isolato e calcoli della cache verificati con fixture sintetica.
+- **Follow-up:** Ripetere il gate completo sui sorgenti finali prima di packaging e pubblicazione 0.5.0 e Android 0.1.2.
+- **File coinvolti:** src/hooks/useRestartDraft.ts, src/components/sessione, src/components/AppUpdates.tsx, src/components/appUpdates.css, tests/integration/appUpdates.browser.tsx, tests/integration/collections.browser.tsx, docs/quality/coda-qna-widget-2026-11-23.md
+
+## D-0595 — Finestra e timer della fixture Sessione compilata
+
+- **Data:** 2026-11-23
+- **Stato:** accettata
+- **Area:** collaudi
+- **Decisione:** Disattivare il background throttling della sola finestra sintetica e mostrarla/metterla a fuoco prima della richiesta Full Focus nel test compilato.
+- **Motivazione:** Il gate scadeva nel segmento Full Focus: la diagnostica ha localizzato la richiesta fullscreen non disponibile. La stessa build con precondizioni esplicite ha passato scenario e riavvio in due processi senza estendere i timeout o rimuovere assert.
+- **Impatto:** Nessuna modifica ai timer o alle regole di visibilita dell app. Restano verificati secondi reali, pausa durante Sessione, lingua, punto di lettura e ripresa. Ripetizione del gate completo prima del packaging.
+- **Follow-up:** Conservare la build definitiva del gate e completare la release 0.5.0.
+- **File coinvolti:** tools/run_sessione_compiled.cjs, docs/quality/coda-qna-widget-2026-11-23.md, DECISIONI.md
+
+## D-0597 — Collaudi 0.5.0 completati, radio Bluetooth assente nel gate Windows
+
+- **Data:** 2026-11-23
+- **Stato:** accettata
+- **Area:** release
+- **Decisione:** Conservare l implementazione delle sole voci 169-173 e pubblicare sorgenti e companion Android 0.1.2 verificato; mantenere packaging e pubblicazione Windows bloccati finche il controllo nativo Bluetooth non e nuovamente disponibile.
+- **Motivazione:** Tutti i collaudi software pertinenti sono passati. Il probe Bluetooth invariato ha smesso di vedere radio: errore Win32 6 sui dispositivi e 259 sulla enumerazione radio, con servizi attivi. Non modificare hardware o criteri del gate per distribuire.
+- **Impatto:** 983 unitari, periodi Java, 49 Python, 41 Node, updater, React/Electron, raccolte, Sessione compilata e PDF reali passati. APK originale 42039 byte con firma locale; materiali personali esclusi. Nessuna installazione sul profilo personale.
+- **Follow-up:** Riattivare o ricollegare la radio Bluetooth del PC, rieseguire il gate completo, generare e verificare installer 0.5.0 e pubblicare la release Windows con tutti gli asset.
+- **File coinvolti:** docs/quality/coda-qna-widget-2026-11-23.md, DECISIONI.md, docs/releases/0.5.0.md, android-companion, electron, src, shared, tests, tools

@@ -111,7 +111,7 @@ export class AppUpdateService {
       if (!this.installError) this.updater.quitAndInstall(true, true)
     } catch {
       this.resume()
-      this.set({ phase: 'ready', message: 'Riavvio rinviato. Chiudi le finestre di modifica e attendi la conclusione dei lavori e dei salvataggi, poi riprova.' })
+      this.set({ phase: 'ready', message: 'Riavvio rinviato: un salvataggio o l’interruzione di un lavoro non è terminato. I dati sono conservati; riprova.' })
     } finally { this.operation = false }
     return this.getState()
   }

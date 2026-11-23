@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import type {
   ArchivePipelineStage,
   ArchivePipelineStatus
@@ -7,6 +8,7 @@ interface ArchivePipelinePanelProps {
   status: ArchivePipelineStatus
   onResume: () => void
   onStop: () => void
+  onClear?: () => Promise<void>
 }
 
 const STAGE_LABELS: Record<ArchivePipelineStage, string> = {
@@ -24,8 +26,11 @@ function completedCount(status: ArchivePipelineStatus): number {
 export function ArchivePipelinePanel({
   status,
   onResume,
-  onStop
+  onStop,
+  onClear
 }: ArchivePipelinePanelProps) {
+  const [clearing, setClearing] = useState(false)
+  const [clearError, setClearError] = useState(false)
   const total = status.tasks.length
   const running = status.status === 'planning' || status.status === 'running'
   const resumable = status.status === 'paused'
@@ -87,14 +92,19 @@ export function ArchivePipelinePanel({
         </p>
       )}
 
+      {clearError && <p role="alert">Coda non svuotata. Riprova.</p>}
       <div className="archive-pipeline-actions">
+        {onClear && <button className="text-button danger" disabled={clearing} title="Interrompe i lavori e svuota la coda. Il materiale già salvato resta disponibile." onClick={async () => {
+          setClearing(true); setClearError(false)
+          try { await onClear() } catch { setClearError(true) } finally { setClearing(false) }
+        }}>{clearing ? 'Svuotamento…' : 'Svuota coda'}</button>}
         {running && (
-          <button className="text-button danger" onClick={onStop}>
+          <button className="text-button danger" disabled={clearing} onClick={onStop}>
             Interrompi dopo l’attività corrente
           </button>
         )}
         {resumable && (
-          <button className="secondary-button small" onClick={onResume}>
+          <button className="secondary-button small" disabled={clearing} onClick={onResume}>
             ▶ Riprendi elaborazione
           </button>
         )}

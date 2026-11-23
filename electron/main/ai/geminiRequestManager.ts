@@ -90,6 +90,8 @@ interface QueuedItem {
   run: () => Promise<void>
   abort: (err: Error) => void
   signal?: AbortSignal
+  interrupt?: () => void
+  cancel?: () => void
 }
 
 interface RequestTelemetry {
@@ -121,6 +123,32 @@ export class GeminiRequestManager {
   private activeCount = 0
   private queue: QueuedItem[] = []
   private consecutiveInteractiveServed = 0
+  private focusWindowMs = 0
+  private focusUntil = 0
+  private focusRequests = 0
+  private focusTimer?: ReturnType<typeof setTimeout>
+  private activeItems = new Set<QueuedItem>()
+  private suspended = false
+
+  setSuspended(value: boolean): void {
+    this.suspended = value
+    if (value) {
+      clearTimeout(this.focusTimer)
+      for (const item of this.activeItems) item.cancel?.()
+      for (const item of this.queue.splice(0)) item.abort(new GeminiError({ category: 'cancelled', isRetryable: false, isDailyQuota: false, sanitizedMessage: 'Richiesta annullata per aggiornamento.' }))
+    } else { this.scheduleFocusRelease(); void this.processQueue() }
+  }
+
+  enableQnaFocus(quietMs = 180_000): void { this.focusWindowMs = quietMs }
+
+  private scheduleFocusRelease(): void {
+    clearTimeout(this.focusTimer)
+    const delay = this.focusUntil - this.clock.now()
+    if (delay > 0) {
+      this.focusTimer = setTimeout(() => this.scheduleFocusRelease(), delay)
+      this.focusTimer.unref?.()
+    } else if (this.focusRequests === 0) void this.processQueue()
+  }
 
   // Finestra mobile RPM: Map<"${quotaGroup}:${model}", timestamp[]>
   private requestTimestamps = new Map<string, number[]>()
@@ -319,6 +347,7 @@ export class GeminiRequestManager {
    * Esegue una richiesta logica rispettando lo scheduler globale
    */
   async execute<T>(options: LogicalRequestOptions<T>): Promise<T> {
+    if (this.suspended) throw new GeminiError({ category: 'cancelled', isRetryable: false, isDailyQuota: false, sanitizedMessage: 'Elaborazioni sospese per aggiornamento.' })
     if (options.keys.length === 0) {
       this.writeTelemetry('warn', 'gemini_recovery_stopped', {
         actionId: options.jobId, requestId: options.requestId || options.jobId,
@@ -333,6 +362,13 @@ export class GeminiRequestManager {
     }
 
     const priority = options.priority || 'background'
+    const focus = this.focusWindowMs > 0 && options.purpose === 'qna'
+    if (focus) {
+      this.focusRequests++
+      this.focusUntil = this.clock.now() + this.focusWindowMs
+      for (const item of this.activeItems) if (item.priority === 'background') item.interrupt?.()
+      this.scheduleFocusRelease()
+    }
     const deadline = this.clock.now() + (options.timeoutMs ?? (this.usesArchivePool(options) ? Number.POSITIVE_INFINITY : this.policy.logicalDeadlineMs))
     const telemetry: RequestTelemetry = {
       startedAt: this.clock.now(),
@@ -342,6 +378,8 @@ export class GeminiRequestManager {
     }
 
     return new Promise<T>((resolve, reject) => {
+      let controller: AbortController | undefined
+      let interrupted = false
       const lifecycle = (event: string, message: string, fields: Record<string, unknown> = {}) =>
         this.writeTelemetry('info', event, {
           actionId: options.jobId, requestId: options.requestId || options.jobId,
@@ -352,15 +390,30 @@ export class GeminiRequestManager {
         priority,
         enqueuedAt: this.clock.now(),
         signal: options.signal,
+        interrupt: () => { interrupted = true; controller?.abort() },
+        cancel: () => { interrupted = false; controller?.abort() },
         run: async () => {
+          interrupted = false
+          controller = new AbortController()
+          const abort = () => controller?.abort(options.signal?.reason)
+          options.signal?.addEventListener('abort', abort, { once: true })
+          if (options.signal?.aborted) abort()
           lifecycle('gemini_queue_started', 'Richiesta estratta dalla coda: avvio elaborazione.', {
             queuedMs: Math.max(0, this.clock.now() - telemetry.startedAt)
           })
           try {
-            const result = await this.runLogicalRequest(options, deadline, telemetry)
+            const result = await this.runLogicalRequest({ ...options, signal: controller.signal }, deadline, telemetry)
+            controller.signal.throwIfAborted()
             this.logRequestSummary(options, telemetry, 'success')
             resolve(result)
           } catch (err) {
+            if (interrupted && !options.signal?.aborted) {
+              // Keep the logical caller waiting, retaining its checkpoints and queue position.
+              const firstBackground = this.queue.findIndex(item => item.priority === 'background')
+              this.queue.splice(firstBackground < 0 ? this.queue.length : firstBackground, 0, queuedItem)
+              lifecycle('gemini_queue_preempted', 'Lavoro sospeso per il Q&A; primo in coda alla ripresa.')
+              return
+            }
             this.logRequestSummary(
               options,
               telemetry,
@@ -368,6 +421,8 @@ export class GeminiRequestManager {
               normalizeGeminiError(err)
             )
             reject(err)
+          } finally {
+            options.signal?.removeEventListener('abort', abort)
           }
         },
         abort: (err: Error) => {
@@ -390,7 +445,9 @@ export class GeminiRequestManager {
         keyCount: options.keys.length, maxTotalAttempts: this.attemptBudget(options)
       })
       this.processQueue()
-    })
+    }).finally(() => {
+      if (focus) { this.focusRequests--; this.scheduleFocusRelease() }
+    }) as Promise<T>
   }
 
   private enqueue(item: QueuedItem): void {
@@ -423,6 +480,10 @@ export class GeminiRequestManager {
 
   private dequeueNext(): QueuedItem | undefined {
     if (this.queue.length === 0) return undefined
+    if (this.focusWindowMs && (this.focusRequests > 0 || this.clock.now() < this.focusUntil)) {
+      const index = this.queue.findIndex(item => item.priority === 'interactive')
+      return index < 0 ? undefined : this.queue.splice(index, 1)[0]
+    }
 
     // Starvation check: se sono stati serviti 3 interattivi consecutivi e c'è un background in attesa
     if (this.consecutiveInteractiveServed >= 3) {
@@ -443,6 +504,7 @@ export class GeminiRequestManager {
   }
 
   private async processQueue(): Promise<void> {
+    if (this.suspended) return
     if (this.activeCount >= this.policy.concurrencyLimit) return
     const item = this.dequeueNext()
     if (!item) return
@@ -454,10 +516,12 @@ export class GeminiRequestManager {
     }
 
     this.activeCount++
+    this.activeItems.add(item)
     try {
       await item.run()
     } finally {
       this.activeCount--
+      this.activeItems.delete(item)
       this.processQueue()
     }
   }

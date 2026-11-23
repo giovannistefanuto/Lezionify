@@ -89,6 +89,20 @@ describe('consenso e stato aggiornamenti', () => {
 })
 
 describe('barriera di riavvio', () => {
+  it('congela i nuovi IPC, attende il salvataggio accettato e si riapre dopo un errore', async () => {
+    const gate = new UpdateShutdownGate()
+    let finish!: () => void
+    const save = gate.run(() => new Promise<void>(resolve => { finish = resolve }))
+    gate.begin()
+    await expect(gate.run(() => 'new generation')).rejects.toThrow()
+    let drained = false
+    const drain = gate.drain().then(() => { drained = true })
+    expect(drained).toBe(false)
+    finish(); await save; await drain
+    expect(drained).toBe(true)
+    gate.unlock()
+    await expect(gate.run(() => 'retry')).resolves.toBe('retry')
+  })
   it('attende operazioni IPC pendenti e respinge quelle nuove dopo il lock', async () => {
     const gate = new UpdateShutdownGate()
     let release!: () => void

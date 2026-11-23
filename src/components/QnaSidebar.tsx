@@ -1,3 +1,4 @@
+import { useUpdateSave } from '../hooks/useUpdateSave'
 import React, { useRef, useEffect, useLayoutEffect, useCallback } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkMath from 'remark-math'
@@ -123,11 +124,18 @@ export function QnaSidebar({
   const anchor = useRef<{ index: number; fraction: number; width: number } | null>(null)
   const activeThread = threads.find(t => t.id === activeThreadId)
   useEffect(() => {
-    setInputText('')
+    setInputText(activeThreadId ? localStorage.getItem('lezionify:qna-draft:' + activeThreadId) || '' : '')
     onCompositionChange?.(false)
     if (activeThreadId) questionRef.current?.focus({ preventScroll: true })
     return () => onCompositionChange?.(false)
   }, [activeThreadId, onCompositionChange])
+  useUpdateSave(async () => {
+    if (activeThreadId) {
+      const key = 'lezionify:qna-draft:' + activeThreadId
+      if (inputText) localStorage.setItem(key, inputText)
+      else localStorage.removeItem(key)
+    }
+  })
   const userCount = activeThread?.messages.filter(message => message.role === 'user').length ?? 0
   const rememberPosition = useCallback(() => {
     const container = messagesRef.current
@@ -209,6 +217,7 @@ export function QnaSidebar({
     setOptionsOpen(false)
     const draft = inputText
     const threadId = activeThread.id
+    localStorage.removeItem('lezionify:qna-draft:' + threadId)
     setInputText('')
     onCompositionChange?.(false)
     const restoreDraft = () => {

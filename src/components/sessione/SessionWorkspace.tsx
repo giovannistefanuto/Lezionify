@@ -1,3 +1,5 @@
+import { readRestartDraft, useRestartDraft } from '../../hooks/useRestartDraft'
+import { useUpdateSave } from '../../hooks/useUpdateSave'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import type { AppSettings } from '../../../shared/archive'
 import { formatLocalCalendarDate } from '../../../shared/calendarDate'
@@ -60,8 +62,8 @@ function DateEditor({ initial, onSave, busy }: {
   onSave: (next: ExamAppointment) => Promise<boolean>
   busy: boolean
 }) {
-  const [value, set] = useState(initial)
-  return <form className="session-form" onSubmit={event => { event.preventDefault(); void onSave(value) }}>
+  const [value, set, clearDraft] = useRestartDraft('lezionify:session-date:' + initial.id, initial)
+  return <form className="session-form" onSubmit={event => { event.preventDefault(); void onSave(value).then(saved => { if (saved) clearDraft() }) }}>
     <fieldset disabled={busy}><legend>Appello ufficiale</legend>
       <p>La nuova data vale per tutte le bozze che usano l’appello. Dashboard e promemoria cambiano alla prossima conferma.</p>
       <AppointmentFields item={value} onChange={set} />
@@ -81,11 +83,14 @@ interface WorkspaceProps {
 }
 
 export function SessionWorkspace({ archive, settings, today, busy, error, onApply, availableCourses = [] }: WorkspaceProps) {
-  const [selectedSessionId, setSelectedSessionId] = useState('')
-  const [selectedPlanId, setSelectedPlanId] = useState('')
-  const [panel, setPanel] = useState<Panel>()
-  const [editingInitial, setEditingInitial] = useState<ExamSessionDraft>()
-  const [planName, setPlanName] = useState('')
+  const [restored] = useState(() => readRestartDraft<{ selectedSessionId: string; selectedPlanId: string; panel?: Panel; editingInitial?: ExamSessionDraft; planName: string }>('lezionify:session-workspace', { selectedSessionId: '', selectedPlanId: '', planName: '' }))
+  const [selectedSessionId, setSelectedSessionId] = useState(restored.selectedSessionId)
+  const [selectedPlanId, setSelectedPlanId] = useState(restored.selectedPlanId)
+  const [panel, setPanel] = useState<Panel | undefined>(restored.panel)
+  const [editingInitial, setEditingInitial] = useState<ExamSessionDraft | undefined>(restored.editingInitial)
+  const [planName, setPlanName] = useState(restored.planName)
+  useUpdateSave(async () => { localStorage.setItem('lezionify:session-workspace', JSON.stringify({ version: 1,
+    value: { selectedSessionId, selectedPlanId, panel, editingInitial, planName } })) })
   const session = archive.sessions.find(row => row.draft.id === (selectedSessionId || archive.activeSessionId)) ?? archive.sessions.at(-1)
   const draft = session?.draft
   const plan = draft?.plans.find(row => row.id === (selectedPlanId || session?.confirmed?.planId)) ?? draft?.plans[0]
@@ -94,7 +99,7 @@ export function SessionWorkspace({ archive, settings, today, busy, error, onAppl
     ...availableCourses, ...(draft?.courses.map(course => course.code) ?? [])])]
     .filter(code => code !== 'Senza corso').sort((a, b) => a.localeCompare(b, 'it'))
   const courseName = (code: string) => settings.courses?.[code]?.name || code
-  const closePanel = () => setPanel(undefined)
+  const closePanel = () => { setPanel(undefined); localStorage.removeItem('lezionify:session-workspace') }
   const save = async (next: ExamSessionDraft, close = true) => {
     if (!await onApply({ type: 'save', draft: next })) return false
     if (close) closePanel()

@@ -1,3 +1,4 @@
+import { useUpdateSave } from '../../hooks/useUpdateSave'
 import { useState } from 'react'
 import type { AppSettings } from '../../../shared/archive'
 import { legacyExamDates, type ConfirmedExamPlan, type ExamAppointment, type ExamPath, type ExamSessionDraft, type ExamStep } from '../../../shared/sessione'
@@ -23,7 +24,12 @@ interface Props {
 }
 
 export function SessionCourseEditor({ draft, courseCode, settings, onSave, busy, confirmed }: Props) {
-  const [course, setCourse] = useState(() => draft.courses.find(row => row.code === courseCode) ?? { code: courseCode, paths: [] })
+  const draftKey = 'lezionify:session-course-draft:' + draft.id + ':' + courseCode
+  const [course, setCourse] = useState(() => {
+    const fallback = draft.courses.find(row => row.code === courseCode) ?? { code: courseCode, paths: [] }
+    try { const saved = JSON.parse(localStorage.getItem(draftKey) || 'null'); return saved?.code === courseCode && Array.isArray(saved.paths) ? saved as typeof fallback : fallback } catch { return fallback }
+  })
+  useUpdateSave(async () => { localStorage.setItem(draftKey, JSON.stringify(course)) })
   const [allowRemoval, setAllowRemoval] = useState(false)
   const updatePath = (updated: ExamPath) => setCourse(previous => ({ ...previous, paths: previous.paths.map(path => path.id === updated.id ? updated : path) }))
   const updateStep = (path: ExamPath, step: ExamStep) => updatePath({ ...path, steps: path.steps.map(row => row.id === step.id ? step : row) })
@@ -62,7 +68,7 @@ export function SessionCourseEditor({ draft, courseCode, settings, onSave, busy,
     }
   }
 
-  return <form className="session-form" onSubmit={event => { event.preventDefault(); void onSave(next) }}>
+  return <form className="session-form" onSubmit={event => { event.preventDefault(); void onSave(next).then(saved => { if (saved) localStorage.removeItem(draftKey) }) }}>
     <fieldset disabled={busy}>
       <legend>{settings.courses?.[courseCode]?.name || courseCode}</legend>
       {sources.length > 0 && <div className="session-actions">

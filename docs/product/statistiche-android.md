@@ -17,6 +17,25 @@ aggiornamento sul posto. La Home mostra il totale e l'app conferma la
 sincronizzazione riuscita con l'abbinamento esistente. I due temi e il
 dettaglio esteso sono stati verificati anche con dati sintetici in emulatore.
 
+## Periodi correnti offline — Android 0.1.2
+
+Oggi, settimana da lunedì e mese sono ricalcolati dai giorni dello snapshot
+rispetto alla data corrente nel fuso del riepilogo PC. Se non ci sono dati
+per il periodo corrente viene mostrato zero; i giorni ancora appartenenti
+alla settimana o al mese correnti continuano a contribuire. Le lezioni
+rimanenti restano quelle dell'ultima sincronizzazione, la cui data rimane visibile.
+La cache originale non viene riscritta o cancellata al cambio di data.
+
+Il widget aggiorna localmente la vista su cambio data/orario/fuso e tramite
+un allarme non esatto al successivo giorno, senza download per questi eventi.
+Restano gli aggiornamenti periodici ogni 30 minuti e quelli manuali.
+Android può differire allarmi e aggiornamenti quando il dispositivo è sospeso;
+si ricalcola alla successiva esecuzione consentita dal sistema.
+[Indicazioni Android ufficiali](https://developer.android.com/develop/ui/views/appwidgets/advanced).
+
+APK 0.1.2 separato dall'installer Windows: aggiornare il companion mantenendo
+l'abbinamento. Prove e limiti nel [rapporto del 23 novembre](../quality/coda-qna-widget-2026-11-23.md).
+
 ## Preparazione GitHub
 
 1. Usa un repository GitHub pubblico dedicato alle statistiche. Per il primo

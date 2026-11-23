@@ -2,6 +2,17 @@
 
 ## Stato attuale
 
+La 0.5.0 prepara coda cancellabile e priorità Q&A: `ArchivePipeline.clear()`
+propaga AbortSignal e drena le scritture; il manager Gemini interrompe e
+riaccoda il background con tre minuti di quiete. L'updater prepara i salvataggi,
+congela nuovi IPC e arresta i servizi prima del passaggio NSIS.
+`useUpdateSave.ts` collega gli editor al registro di preparazione;
+`useRestartDraft.ts` conserva le bozze Sessione senza confermarle e recupera
+bozze ripristinabili. `StudyPeriods.java` ricalcola i periodi Android dalla cache
+sulla data corrente; test Java nel gate tramite `tools/test_android_periods.cjs`.
+Uso, prove e limiti: [coda, Q&A e widget](docs/quality/coda-qna-widget-2026-11-23.md).
+
+
 La 0.4.0, pubblicata e verificata il 20 novembre, aggiunge pausa dalla Home (`HomePause`), record nelle Statistiche
 (`shared/studyRecords.ts`, `StudyRecords`) e avvisi silenziosi di connessione.
 `electron/main/deviceNotices.ts` usa `bluetoothProbe.ts` per connessioni Win32

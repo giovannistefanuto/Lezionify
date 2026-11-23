@@ -145,7 +145,11 @@ export function isRetryableApiError(errorText: string): boolean {
 export class ArchiveService {
   readonly collections: CollectionsService
   private updating = false
-  setUpdating(value: boolean) { this.updating = value }
+  private clearingQueue = false
+  private aiControllers = new Set<AbortController>()
+  private qnaControllers = new Set<AbortController>()
+  private autoQueueEpoch = 0
+  setUpdating(value: boolean) { this.updating = value; this.requestManager.setSuspended(value) }
   isBusyForUpdate() {
     return Boolean(this.collections.isBusy() || this.archivePipeline.isProcessing() || this.autoPipelineLaunch || this.repetition.isBusy() || this.publishService.isBusy())
   }
@@ -230,6 +234,7 @@ export class ArchiveService {
     })
     this.jobStore = customJobStore ?? new AiJobStore(this.rootDirectory)
     this.requestManager = customRequestManager ?? new GeminiRequestManager()
+    this.requestManager.enableQnaFocus()
     this.geminiService =
       customGeminiService ??
       new GeminiService({
@@ -253,11 +258,11 @@ export class ArchiveService {
       canProcessImports: async () => (await this.settingsService.getSettings()).autoProcessOnImport !== false,
       listLectures: () => this.listLectures(),
       hasConfiguredKey: async () => (await this.getManagedKeys()).length > 0,
-      transcribe: (lectureId, jobId) => this.transcribeAudio(lectureId, jobId),
-      generateNotes: (lectureId, jobId) =>
-        this.generateLectureNotes(lectureId, jobId),
-      translate: (lectureId, jobId) =>
-        this.translateLectureNotes(lectureId, jobId)
+      transcribe: (lectureId, jobId, signal) => this.transcribeAudio(lectureId, jobId, signal),
+      generateNotes: (lectureId, jobId, signal) =>
+        this.generateLectureNotes(lectureId, jobId, signal),
+      translate: (lectureId, jobId, signal) =>
+        this.translateLectureNotes(lectureId, jobId, signal)
     })
     this.archivePipeline.setStatusCallback(status => {
       this.pipelineStatusCallback?.(status)
@@ -332,6 +337,7 @@ export class ArchiveService {
   }
 
   async startArchivePipeline(): Promise<ArchivePipelineStartResult> {
+    if (this.updating || this.clearingQueue) throw new Error('Elaborazioni sospese per aggiornamento o svuotamento coda.')
     return this.archivePipeline.start({
       trigger: 'manual',
       includeTranslation: true
@@ -339,7 +345,45 @@ export class ArchiveService {
   }
 
   async resumeArchivePipeline(): Promise<ArchivePipelineStartResult> {
+    if (this.updating || this.clearingQueue) throw new Error('Elaborazioni sospese per aggiornamento o svuotamento coda.')
     return this.archivePipeline.resume()
+  }
+
+  private async runAiOperation<T>(work: (signal: AbortSignal) => Promise<T>, parent?: AbortSignal, interactive = false): Promise<T> {
+    if (this.updating || this.clearingQueue) throw new Error('Elaborazioni sospese: svuotamento coda o aggiornamento in corso.')
+    const controller = new AbortController()
+    const abort = () => controller.abort(parent?.reason)
+    parent?.addEventListener('abort', abort, { once: true })
+    if (parent?.aborted) abort()
+    const controllers = interactive ? this.qnaControllers : this.aiControllers
+    controllers.add(controller)
+    try { controller.signal.throwIfAborted(); return await work(controller.signal) }
+    finally { parent?.removeEventListener('abort', abort); controllers.delete(controller) }
+  }
+
+  async clearArchivePipeline(): Promise<ArchivePipelineStatus> {
+    this.clearingQueue = true
+    this.autoQueueEpoch++
+    try {
+      for (const controller of this.aiControllers) controller.abort()
+      const status = await this.archivePipeline.clear()
+      await this.waitForAutoProcessing()
+      // Includes direct single-lesson operations and their final local saves.
+      while (this.aiControllers.size) await new Promise(resolve => setTimeout(resolve, 20))
+      return status
+    } finally { this.clearingQueue = false }
+  }
+
+  async cancelQnaResponses(): Promise<void> {
+    for (const controller of this.qnaControllers) controller.abort()
+    while (this.qnaControllers.size) await new Promise(resolve => setTimeout(resolve, 20))
+  }
+
+  async prepareForUpdate(): Promise<void> {
+    this.setUpdating(true)
+    this.videoImporter.abortAll()
+    await Promise.all([this.clearArchivePipeline(), this.cancelQnaResponses(), this.collections.stop(), this.repetition.stop()])
+    while (this.publishService.isBusy()) await new Promise(resolve => setTimeout(resolve, 50))
   }
 
   async requestArchivePipelineStop(): Promise<ArchivePipelineStatus> {
@@ -369,9 +413,11 @@ export class ArchiveService {
   }
 
   queueAutomaticLectureProcessing(lectureIds: string[]): void {
+    if (this.updating || this.clearingQueue) return
+    const epoch = this.autoQueueEpoch
     const launch: Promise<void> = (this.autoPipelineLaunch ?? Promise.resolve()).then(async () => {
       const settings = await this.settingsService.getSettings()
-      if (settings.autoProcessOnImport === false) return
+      if (settings.autoProcessOnImport === false || this.updating || this.clearingQueue || epoch !== this.autoQueueEpoch) return
       const result = await this.archivePipeline.start({
         trigger: 'import',
         lectureIds,
@@ -1045,10 +1091,11 @@ export class ArchiveService {
     return this.geminiService.testApiKey(apiKey)
   }
 
-  async generateLectureNotes(
-    id: string,
-    jobId: string = randomUUID()
-  ): Promise<GenerationResult> {
+  async generateLectureNotes(id: string, jobId: string = randomUUID(), signal?: AbortSignal): Promise<GenerationResult> {
+    return this.runAiOperation(s => this.generateLectureNotesWork(id, jobId, s), signal)
+  }
+
+  private async generateLectureNotesWork(id: string, jobId: string, signal: AbortSignal): Promise<GenerationResult> {
     const library = await this.repository.readLibrary()
     const lecture = library.lectures.find((item) => item.id === id)
     if (!lecture) {
@@ -1090,6 +1137,7 @@ export class ArchiveService {
       })
 
       const generatedMarkdown = await this.geminiService.generateLectureNotes({
+        signal,
         keys: managedKeys,
         lectureId: id,
         model: settings.model,
@@ -1131,6 +1179,7 @@ export class ArchiveService {
           })
 
           const extractedInfo = await this.geminiService.extractCourseLogistics({
+            signal,
             keys: managedKeys,
             model: settings.model,
             transcript
@@ -1148,6 +1197,7 @@ export class ArchiveService {
               } else {
                 logger.info('course-logistics', 'Unione delle nuove informazioni con le note del corso esistenti.', JSON.stringify({ lectureId: id, jobId }))
                 const mergedInfo = await this.geminiService.mergeCourseLogistics({
+                  signal,
                   keys: managedKeys,
                   model: settings.model,
                   existingInfo,
@@ -1267,10 +1317,11 @@ export class ArchiveService {
     )
   }
 
-  async translateLectureNotes(
-    id: string,
-    jobId: string = randomUUID()
-  ): Promise<GenerationResult> {
+  async translateLectureNotes(id: string, jobId: string = randomUUID(), signal?: AbortSignal): Promise<GenerationResult> {
+    return this.runAiOperation(s => this.translateLectureNotesWork(id, jobId, s), signal)
+  }
+
+  private async translateLectureNotesWork(id: string, jobId: string, signal: AbortSignal): Promise<GenerationResult> {
     const library = await this.repository.readLibrary()
     const lecture = library.lectures.find((item) => item.id === id)
     if (!lecture) {
@@ -1319,6 +1370,7 @@ export class ArchiveService {
       // cooldown e fallback modello. Un ciclo esterno qui duplicava il pool e
       // poteva trasformare una singola traduzione in decine di richieste.
       const translatedMarkdown = await this.geminiService.translateToEnglish({
+        signal,
         keys: managedKeys,
         model: settings.model,
         markdownIta,
@@ -1705,10 +1757,11 @@ export class ArchiveService {
     })
   }
 
-  async transcribeAudio(
-    id: string,
-    jobId: string = randomUUID()
-  ): Promise<TranscribeAudioResult> {
+  async transcribeAudio(id: string, jobId: string = randomUUID(), signal?: AbortSignal): Promise<TranscribeAudioResult> {
+    return this.runAiOperation(s => this.transcribeAudioWork(id, jobId, s), signal)
+  }
+
+  private async transcribeAudioWork(id: string, jobId: string, signal: AbortSignal): Promise<TranscribeAudioResult> {
     const library = await this.repository.readLibrary()
     const lecture = library.lectures.find((item) => item.id === id)
     if (!lecture) {
@@ -1746,6 +1799,7 @@ export class ArchiveService {
 
     try {
       const transcriptText = await this.geminiService.transcribeAudioFile({
+        signal,
         keys: managedKeys,
         lectureId: id,
         audioFilePath: audioPath,
@@ -2259,15 +2313,23 @@ export class ArchiveService {
     return { sources, missingTranscripts }
   }
 
-  async generateQnaResponse(
+  async generateQnaResponse(lectureId: string, thread: unknown, useFullContext: unknown, includeOtherQna: unknown = false,
+    responseLength: unknown = 'brief', searchOnline: unknown = false, thinkDeeper: unknown = false
+  ): Promise<{ success: boolean; text?: string; error?: string; model?: string; thinking?: 'HIGH' | 'predefinito' }> {
+    return this.runAiOperation(signal => this.generateQnaResponseWork(lectureId, thread, useFullContext, includeOtherQna, responseLength, searchOnline, thinkDeeper, signal), undefined, true)
+  }
+
+  private async generateQnaResponseWork(
     lectureId: string,
     thread: unknown,
     useFullContext: unknown,
     includeOtherQna: unknown = false,
     responseLength: unknown = 'brief',
     searchOnline: unknown = false,
-    thinkDeeper: unknown = false
+    thinkDeeper: unknown = false,
+    signal?: AbortSignal
   ): Promise<{ success: boolean; text?: string; error?: string; model?: string; thinking?: 'HIGH' | 'predefinito' }> {
+    let fullResponse = ''
     try {
       validateQnaThread(thread)
       if (typeof searchOnline !== 'boolean') throw new Error('Opzione ricerca online non valida.')
@@ -2318,6 +2380,7 @@ export class ArchiveService {
       if (Buffer.byteLength(JSON.stringify({ thread, fullLectureText, otherQnaContext, images }), 'utf8') > 18_000_000) throw new Error('Contesto troppo grande: riduci le slide o disattiva il contesto completo.')
 
       const stream = this.geminiService.generateQnaResponse({
+        signal,
         keys: managedKeys,
         model: settings.model,
         courseCode: lecture?.courseCode || null,
@@ -2366,7 +2429,6 @@ export class ArchiveService {
         }
       })
 
-      let fullResponse = ''
       let firstChunkReceived = false
       for await (const chunk of stream) {
         if (!firstChunkReceived) {
@@ -2414,6 +2476,7 @@ export class ArchiveService {
       const usedModel = completedAttempt?.model || qnaPrimaryModel
       return { success: true, text: fullResponse, model: usedModel, thinking: qnaThinkingLabel(usedModel, thinkDeeper) }
     } catch (err: unknown) {
+      if (signal?.aborted && fullResponse.trim()) return { success: true, text: fullResponse + '\n\n_Risposta interrotta per aggiornamento._' }
       const message = errorMessage(err, 'Errore imprevisto')
       logger.error(
         'qna',

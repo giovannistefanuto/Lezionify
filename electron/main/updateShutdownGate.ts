@@ -16,5 +16,18 @@ export class UpdateShutdownGate {
     this.closing = true
   }
 
+  begin() {
+    if (this.closing) throw new Error('Riavvio già in corso.')
+    this.closing = true
+  }
+
+  async drain(timeoutMs = 60_000) {
+    const deadline = Date.now() + timeoutMs
+    while (this.active) {
+      if (Date.now() >= deadline) throw new Error('Salvataggi ancora in corso. Riavvio rinviato.')
+      await new Promise(resolve => setTimeout(resolve, 20))
+    }
+  }
+
   unlock() { this.closing = false }
 }

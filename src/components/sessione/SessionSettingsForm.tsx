@@ -1,4 +1,5 @@
-import { useState, type FormEvent } from 'react'
+import { useRestartDraft } from '../../hooks/useRestartDraft'
+import { type FormEvent } from 'react'
 import type { ExamSessionDraft } from '../../../shared/sessione'
 import { sessionId } from './editSessionDraft'
 
@@ -7,10 +8,10 @@ export function SessionSettingsForm({ initial, onSave, busy }: {
   onSave: (draft: ExamSessionDraft) => Promise<boolean>
   busy: boolean
 }) {
-  const [draft, set] = useState(initial)
+  const [draft, set, clearDraft] = useRestartDraft('lezionify:session-settings:' + initial.id, initial)
   const save = (event: FormEvent) => {
     event.preventDefault()
-    void onSave(draft)
+    void onSave(draft).then(saved => { if (saved) clearDraft() })
   }
   return <form className="session-form" onSubmit={save}>
     <fieldset disabled={busy}>

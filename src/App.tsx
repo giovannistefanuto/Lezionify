@@ -439,7 +439,8 @@ export default function App() {
     pipelineStatus,
     startPipeline,
     resumePipeline,
-    stopPipeline
+    stopPipeline,
+    clearPipeline
   } = useArchivePipeline({
     onRefreshLibrary: refreshLibrary,
     onNotice: setNotice
@@ -458,7 +459,7 @@ export default function App() {
   }, [sessione.archive, review])
 
   return (
-    <AppUpdates canRestart={!selectedLectureId && !courseChatOpen && !showRepetitions && !videoSelection && !sessione.open && !sessione.busy}>
+    <AppUpdates>
     <ToolSettingsContext.Provider value={{ isOpen: showSettingsModal, open: section => { setToolSettingsSection(section); openSettingsModal() } }}>
     <AmbientSoundProvider>
     <main className={`app-shell ${theme === 'dark' ? 'dark-theme' : ''}`}>
@@ -564,6 +565,7 @@ export default function App() {
                 void resumePipeline()
               }}
               onStopPipeline={() => void stopPipeline()}
+              onClearPipeline={clearPipeline}
               onManualSync={() => void handleManualSync()}
               onImportFiles={() => void handleImport('files')}
               onImportFolder={() => void handleImport('folder')}

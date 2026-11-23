@@ -1,6 +1,9 @@
 package it.lezionify.mobile;
 
 import android.app.PendingIntent;
+import android.app.AlarmManager;
+import java.time.ZonedDateTime;
+import java.time.ZoneId;
 import android.appwidget.AppWidgetManager;
 import android.appwidget.AppWidgetProvider;
 import android.content.ComponentName;
@@ -124,9 +127,31 @@ public class StatisticsWidget extends AppWidgetProvider {
         }
     }
 
+    private static final String ROLLOVER = "it.lezionify.mobile.CALENDAR_ROLLOVER";
+    private static PendingIntent rolloverIntent(Context context) {
+        return PendingIntent.getBroadcast(context, 1, new Intent(context, StatisticsWidget.class).setAction(ROLLOVER), PENDING_FLAGS);
+    }
+    private static void scheduleRollover(Context context) {
+        StatisticsStore.Snapshot snapshot = StatisticsStore.readSnapshot(context);
+        ZoneId zone = snapshot == null ? ZoneId.systemDefault() : snapshot.generated.getZone();
+        long next = ZonedDateTime.now(zone).toLocalDate().plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli();
+        AlarmManager alarms = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+        alarms.set(AlarmManager.RTC, next, rolloverIntent(context));
+    }
+    @Override public void onDisabled(Context context) {
+        ((AlarmManager)context.getSystemService(Context.ALARM_SERVICE)).cancel(rolloverIntent(context));
+    }
+
     @Override public void onReceive(Context context, Intent intent) {
         super.onReceive(context, intent);
         String action = intent.getAction();
+        int[] ids = AppWidgetManager.getInstance(context).getAppWidgetIds(new ComponentName(context, StatisticsWidget.class));
+        if (ids.length == 0) return;
+        scheduleRollover(context);
+        if (ROLLOVER.equals(action) || Intent.ACTION_DATE_CHANGED.equals(action) || Intent.ACTION_TIME_CHANGED.equals(action) || Intent.ACTION_TIMEZONE_CHANGED.equals(action)) {
+            display(context);
+            return;
+        }
         if (AppWidgetManager.ACTION_APPWIDGET_UPDATE.equals(action) || REFRESH.equals(action)) {
             display(context);
             PendingResult pending = goAsync();

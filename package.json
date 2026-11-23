@@ -1,6 +1,6 @@
 {
   "name": "lezionify",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "App desktop local-first per trasformare registrazioni universitarie in materiale di studio strutturato.",
   "author": "Giovanni",
   "private": true,
@@ -48,10 +48,11 @@
     "benchmark:qna": "node tools/qna_benchmark.mjs",
     "benchmark:gemini-transcription": "electron tools/run_gemini_benchmark_with_app_keys.cjs",
     "audit:styles": "node tools/audit_styles.mjs",
-    "check": "npm run test:inventory && npm run typecheck && npm run lint && npm test && npm run test:device-notices && npm run test:rag-retrieval && npm run test:benchmark && npm run test:qna-benchmark && npm run test:app-update && npm run test:hooks && npm run release:validate && npm run build && npm run test:collections && npm run test:sessione && npm run test:pdf-export",
+    "check": "npm run test:inventory && npm run typecheck && npm run lint && npm test && npm run test:android-periods && npm run test:device-notices && npm run test:rag-retrieval && npm run test:benchmark && npm run test:qna-benchmark && npm run test:app-update && npm run test:hooks && npm run release:validate && npm run build && npm run test:collections && npm run test:sessione && npm run test:pdf-export",
     "release:validate": "node tools/validate_release.cjs",
     "release:local": "python tools/prepare_release.py",
-    "test:app-update": "node tools/run_app_update_regressions.cjs"
+    "test:app-update": "node tools/run_app_update_regressions.cjs",
+    "test:android-periods": "node tools/test_android_periods.cjs"
   },
   "dependencies": {
     "@google/genai": "^2.19.0",

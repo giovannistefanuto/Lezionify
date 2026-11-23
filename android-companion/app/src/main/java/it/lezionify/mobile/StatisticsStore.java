@@ -17,8 +17,6 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
-import java.time.temporal.TemporalAdjusters;
-import java.time.DayOfWeek;
 import java.util.HashSet;
 import java.util.Map;
 import javax.crypto.Cipher;
@@ -127,20 +125,17 @@ final class StatisticsStore {
             JSONObject data = validate(raw, (String) cached.get("stream"));
             ZonedDateTime generated = Instant.parse(data.getString("generatedAt"))
                 .atZone(ZoneId.of(data.getString("timeZone")));
-            LocalDate date = generated.toLocalDate();
-            LocalDate monday = date.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
-            long today = 0, week = 0, month = 0;
+            LocalDate date = LocalDate.now(generated.getZone());
             JSONArray days = data.getJSONArray("days");
+            LocalDate[] dates = new LocalDate[days.length()];
+            long[] seconds = new long[days.length()];
             for (int i = 0; i < days.length(); i++) {
                 JSONObject day = days.getJSONObject(i);
-                LocalDate dayDate = LocalDate.parse(day.getString("date"));
-                if (dayDate.isAfter(date)) continue;
-                long seconds = day.getLong("seconds");
-                if (dayDate.equals(date)) today += seconds;
-                if (!dayDate.isBefore(monday)) week += seconds;
-                if (dayDate.getYear() == date.getYear() && dayDate.getMonth() == date.getMonth()) month += seconds;
+                dates[i] = LocalDate.parse(day.getString("date"));
+                seconds[i] = day.getLong("seconds");
             }
-            return new Snapshot(generated, today, week, month, data.getJSONArray("courses"));
+            long[] totals = StudyPeriods.totals(date, dates, seconds);
+            return new Snapshot(generated, totals[0], totals[1], totals[2], data.getJSONArray("courses"));
         } catch (Exception e) {
             return null;
         }

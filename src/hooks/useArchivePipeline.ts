@@ -113,10 +113,20 @@ export function useArchivePipeline({
     }
   }, [onNotice])
 
+  const clearPipeline = useCallback(async (): Promise<void> => {
+    try {
+      const status = await window.archive.clearArchivePipeline()
+      setPipelineStatus(status)
+      await onRefreshLibrary()
+      onNotice('Coda svuotata. Audio, trascrizioni e dispense già salvati sono conservati.')
+    } catch { onNotice('Impossibile svuotare la coda. Controlla lo stato e riprova.') }
+  }, [onNotice, onRefreshLibrary])
+
   return {
     pipelineStatus,
     startPipeline,
     resumePipeline,
-    stopPipeline
+    stopPipeline,
+    clearPipeline
   }
 }

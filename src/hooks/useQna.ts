@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import type { QnaThread, QnaStatusUpdate } from '../../shared/archive'
+import { useUpdateSave } from './useUpdateSave'
 import { QNA_IMAGE_LIMIT, type QnaImageInput } from '../../shared/qnaImages'
 
 export function useQna(lectureId: string | null) {
@@ -21,7 +22,10 @@ export function useQna(lectureId: string | null) {
 
   const currentLecture = useRef(lectureId)
   currentLecture.current = lectureId
+  const loadingThreads = useRef<Promise<void>>(Promise.resolve())
+  const loadFailed = useRef(false)
   const running = useRef(false)
+  const preparingUpdate = useRef(false)
   const adding = useRef(false)
   const [isAttachingImages, setIsAttachingImages] = useState(false)
   const streaming = useRef<{ lectureId: string; threadId: string } | null>(null)
@@ -32,20 +36,33 @@ export function useQna(lectureId: string | null) {
     setActiveThreadState(null)
     setQnaError(null)
     setQnaStatuses({})
+    loadFailed.current = false
     if (lectureId) {
-      window.archive
+      loadingThreads.current = window.archive
         .loadQnaThreads(lectureId)
         .then((loaded) => {
-          if (!cancelled) setThreads(loaded || [])
+          if (!cancelled) { latestThreads.current = loaded || []; setThreads(loaded || []) }
         })
         .catch(() => {
-          if (!cancelled) setQnaError('Impossibile caricare la conversazione.')
+          if (!cancelled) { loadFailed.current = true; setQnaError('Impossibile caricare la conversazione.') }
         })
     }
     return () => {
       cancelled = true
     }
   }, [lectureId])
+
+  useUpdateSave(async () => {
+    if (!lectureId) return
+    preparingUpdate.current = true
+    try {
+      await loadingThreads.current
+      if (loadFailed.current) throw new Error('Conversazioni non caricate: salvataggio rinviato.')
+      await window.archive.cancelQnaResponses()
+      while (running.current || adding.current) await new Promise(resolve => setTimeout(resolve, 20))
+      await window.archive.saveQnaThreads(lectureId, latestThreads.current)
+    } finally { preparingUpdate.current = false }
+  }, Boolean(lectureId))
 
   // Ascolta gli aggiornamenti di stato diagnostici da Gemini
   useEffect(() => {
@@ -127,7 +144,7 @@ export function useQna(lectureId: string | null) {
     searchOnline = false,
     thinkDeeper = false
   ) => {
-    if (!lectureId || running.current || adding.current || !text.trim()) return false
+    if (preparingUpdate.current || !lectureId || running.current || adding.current || !text.trim()) return false
     const currentThread = threads.find((t) => t.id === threadId)
     if (!currentThread) return false
     const owner = lectureId
@@ -191,11 +208,19 @@ export function useQna(lectureId: string | null) {
           : t
       )
       await window.archive.saveQnaThreads(owner, final)
-      if (currentLecture.current === owner) setThreads(final)
+      if (currentLecture.current === owner) { latestThreads.current = final; setThreads(final) }
       return true
     } catch (e) {
       if (currentLecture.current === owner) {
-        setThreads(base)
+        if (preparingUpdate.current) {
+          const partial = latestThreads.current.map(thread => thread.id !== threadId ? thread : {
+            ...thread, messages: thread.messages.filter(message => message.role !== 'ai' || message.text.trim()).map((message, index, messages) =>
+              message.role === 'ai' && index === messages.length - 1 ? { ...message, text: message.text + '\n\n_Risposta interrotta per aggiornamento._' } : message)
+          })
+          latestThreads.current = partial
+          setThreads(partial)
+          await window.archive.saveQnaThreads(owner, partial)
+        } else setThreads(base)
         setQnaError(e instanceof Error ? e.message : 'Errore imprevisto')
       }
       return false

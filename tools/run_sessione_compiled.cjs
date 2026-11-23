@@ -126,6 +126,8 @@ try {
     setTimeout(() => { console.error('FAIL: timeout Sessione compilata'); app.exit(1) }, 60000).unref()
     app.once('browser-window-created', (_event, win) => {
       trace('window')
+      // The scenario owns its clock and requires actual foreground Focus.
+      win.webContents.setBackgroundThrottling(false)
       // This scenario owns a synthetic library and must not consult a physical recorder.
       // USB detection/import has its own integration coverage.
       ipcMain.removeHandler('archive:detect-usb-recorder')
@@ -216,6 +218,7 @@ try {
               notes.click()
               await waitFor(() => document.querySelector('button[title="Modalità studio immersiva"]'), 'focus button missing')
             })()`)})
+            win.show(); win.focus()
             await run(${JSON.stringify(`document.querySelector('button[title="Modalità studio immersiva"]').click()`)}, true)
             await run(${JSON.stringify(`(async () => {
               const { keyboard, waitFor, delay } = window.__sessioneCheck

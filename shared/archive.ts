@@ -685,6 +685,8 @@ export interface ArchiveApi extends StudyHistoryApi, CourseRagApi, RepetitionApi
   getArchivePipelineStatus: () => Promise<ArchivePipelineStatus>
   startArchivePipeline: () => Promise<ArchivePipelineStartResult>
   resumeArchivePipeline: () => Promise<ArchivePipelineStartResult>
+  clearArchivePipeline: () => Promise<ArchivePipelineStatus>
+  cancelQnaResponses: () => Promise<void>
   requestArchivePipelineStop: () => Promise<ArchivePipelineStatus>
   printLectureNotes: () => Promise<void>
   scanAndSyncLibrary: () => Promise<Lecture[]>

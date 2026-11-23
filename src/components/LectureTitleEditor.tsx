@@ -1,3 +1,4 @@
+import { useUpdateSave } from '../hooks/useUpdateSave'
 import { useEffect, useRef, useState } from 'react'
 import type { Lecture, LectureTitleUpdates } from '../../shared/archive'
 import { extractLectureTitle, validateLectureTitles } from '../../shared/lectureTitles'
@@ -28,6 +29,13 @@ export function LectureTitleEditor({ lecture, onSave, onClose }: {
       }).catch(() => { if (!canceled) { setLoading(false); setLoadError(true); setError('Impossibile leggere i titoli. Riprova.') } })
     return () => { canceled = true }
   }, [lecture, attempt])
+  useUpdateSave(async () => {
+    while (pending.current) await new Promise(resolve => setTimeout(resolve, 20))
+    if (loading || loadError) return
+    const changes: LectureTitleUpdates = {}
+    for (const language of ['it', 'en'] as const) if (values[language].trim() !== initial.current[language].trim()) changes[language] = values[language].trim()
+    if (Object.keys(changes).length) { validateLectureTitles(changes); await onSave(lecture.id, changes) }
+  })
   const finish = () => { dialog.current?.close(); onClose() }
   const close = () => { if (!pending.current) finish() }
   return <dialog ref={dialog} className="lecture-title-dialog" aria-labelledby="lecture-title-editor-heading"

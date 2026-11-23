@@ -539,6 +539,8 @@ function registerIpcHandlers(): void {
   handle('archive:get-pipeline-status', () =>
     archive.getArchivePipelineStatus()
   )
+  handle('archive:clear-pipeline', () => archive.clearArchivePipeline())
+  handle('archive:cancel-qna', () => archive.cancelQnaResponses())
   handle('archive:start-pipeline', () => archive.startArchivePipeline())
   handle('archive:resume-pipeline', () => archive.resumeArchivePipeline())
   handle('archive:stop-pipeline', () =>
@@ -737,11 +739,14 @@ app.whenReady().then(async () => {
     appUpdates = new AppUpdateService(nativeUpdater, app.getVersion(), state => {
       if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('update:state-changed', state)
     }, async () => {
-      updateGate.lock(archive.isBusyForUpdate() || courseRag.isBusy())
+      updateGate.begin()
       archive.setUpdating(true)
+      await Promise.all([archive.prepareForUpdate(), courseRag.prepareForUpdate()])
+      await updateGate.drain()
+      if (archive.isBusyForUpdate() || courseRag.isBusy()) throw new Error('Salvataggi ancora in corso.')
       await mainWindow?.webContents.session.flushStorageData()
       await logger.flush()
-    }, () => { updateGate.unlock(); archive.setUpdating(false) }, join(app.getPath('userData'), 'app-update-receipt.json'))
+    }, () => { updateGate.unlock(); archive.setUpdating(false); courseRag.setUpdating(false) }, join(app.getPath('userData'), 'app-update-receipt.json'))
     await appUpdates.initialize()
     const assertUpdateSender = (event: Electron.IpcMainInvokeEvent) => {
       const expected = process.env.ELECTRON_RENDERER_URL ?? pathToFileURL(join(__dirname, '../renderer/index.html')).href

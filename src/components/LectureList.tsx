@@ -22,6 +22,7 @@ interface LectureListProps {
   onStartPipeline: () => void
   onResumePipeline: () => void
   onStopPipeline: () => void
+  onClearPipeline?: () => Promise<void>
   onManualSync: () => void
   onImportFiles: () => void
   onImportFolder: () => void
@@ -86,6 +87,7 @@ export function LectureList({
   onStartPipeline,
   onResumePipeline,
   onStopPipeline,
+  onClearPipeline,
   onManualSync,
   onImportFiles,
   onImportFolder,
@@ -352,6 +354,7 @@ export function LectureList({
           status={pipelineStatus}
           onResume={onResumePipeline}
           onStop={onStopPipeline}
+          onClear={onClearPipeline}
         />
       )}
 

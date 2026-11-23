@@ -36,10 +36,11 @@ interface ArchivePipelineOperations {
   hasConfiguredKey: () => Promise<boolean>
   transcribe: (
     lectureId: string,
-    jobId: string
+    jobId: string,
+    signal?: AbortSignal
   ) => Promise<TranscribeAudioResult>
-  generateNotes: (lectureId: string, jobId: string) => Promise<GenerationResult>
-  translate: (lectureId: string, jobId: string) => Promise<GenerationResult>
+  generateNotes: (lectureId: string, jobId: string, signal?: AbortSignal) => Promise<GenerationResult>
+  translate: (lectureId: string, jobId: string, signal?: AbortSignal) => Promise<GenerationResult>
 }
 
 const STAGES: ArchivePipelineStage[] = ['transcription', 'notes', 'translation']
@@ -175,6 +176,8 @@ export class ArchivePipeline {
   private status: ArchivePipelineStatus = emptyStatus()
   private reservation: PipelineRunReservation | null = null
   private onStatus?: (status: ArchivePipelineStatus) => void
+  private taskController?: AbortController
+  private clearing: Promise<ArchivePipelineStatus> | null = null
 
   constructor(
     private readonly store: AiJobStore,
@@ -238,6 +241,7 @@ export class ArchivePipeline {
   async start(
     options: StartArchivePipelineOptions
   ): Promise<ArchivePipelineStartResult> {
+    if (this.clearing) return { started: false, status: this.getStatus() }
     if (options.trigger === 'import' && (this.reservation || this.status.status === 'paused')) {
       for (const id of options.lectureIds ?? []) this.pendingImports.add(id)
       await this.persistAndEmit()
@@ -317,6 +321,7 @@ export class ArchivePipeline {
   }
 
   async resume(): Promise<ArchivePipelineStartResult> {
+    if (this.clearing) return { started: false, status: this.getStatus() }
     if (this.reservation) return { started: false, status: this.getStatus() }
     if (this.status.status !== 'paused' || !this.status.runId) {
       return { started: false, status: cloneStatus(this.status) }
@@ -382,6 +387,22 @@ export class ArchivePipeline {
       'Interruzione richiesta: l’attività Gemini corrente terminerà prima di fermare la coda.'
     await this.persistAndEmit()
     return this.getStatus()
+  }
+
+  clear(): Promise<ArchivePipelineStatus> {
+    if (this.clearing) return this.clearing
+    if (this.reservation) this.reservation.stopRequested = true
+    this.status.stopRequested = true
+    this.pendingImports.clear()
+    this.taskController?.abort()
+    this.clearing = (async () => {
+      await this.waitForCompletion()
+      this.pendingImports.clear()
+      this.status = emptyStatus()
+      await this.persistAndEmit()
+      return this.getStatus()
+    })().finally(() => { this.clearing = null })
+    return this.clearing
   }
 
   private reserve(): PipelineRunReservation {
@@ -611,16 +632,20 @@ export class ArchivePipeline {
     lectureId: string,
     jobId: string
   ): Promise<TranscribeAudioResult | GenerationResult> {
+    const controller = new AbortController()
+    this.taskController = controller
     try {
       if (stage === 'transcription') {
-        return await this.operations.transcribe(lectureId, jobId)
+        return await this.operations.transcribe(lectureId, jobId, controller.signal)
       }
       if (stage === 'notes')
-        return await this.operations.generateNotes(lectureId, jobId)
-      return await this.operations.translate(lectureId, jobId)
+        return await this.operations.generateNotes(lectureId, jobId, controller.signal)
+      return await this.operations.translate(lectureId, jobId, controller.signal)
     } catch (error) {
       if (error instanceof GeminiError) return pipelineFailureFromError(error)
       throw error
+    } finally {
+      if (this.taskController === controller) this.taskController = undefined
     }
   }
 

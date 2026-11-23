@@ -11,3 +11,6 @@
 .app-update-panel progress { width: 100%; margin-top: 12px; accent-color: var(--primary-color, #35684a); }
 .app-update-actions { flex-wrap: wrap; }
 @media (max-width: 600px) { .app-update-actions button { flex: 1 1 140px; } }
+
+dialog.app-update-panel { margin: auto; border: 0; color: var(--text-primary); }
+dialog.app-update-panel::backdrop { background: rgba(0, 0, 0, .45); }

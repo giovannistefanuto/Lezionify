@@ -107,7 +107,11 @@ export async function runCollectionsScenarios(root: Root) {
     await ipc.invoke('collection-test', 'wait'); await wait(1700)
     const read = await api.read((await api.state()).items[0].id)
     check(read.generations.length === 2, 'Regeneration did not preserve history')
+    // The backend checkpoint may finish before the renderer's next poll/read.
+    const deadline = Date.now() + 5000
+    while (!document.querySelector('.collections-version select') && Date.now() < deadline) await wait(50)
     const select = document.querySelector<HTMLSelectElement>('.collections-version select')!
+    check(select, 'Generation history did not reach the renderer after regeneration')
     await act(async () => { select.value = read.generations[1].id; select.dispatchEvent(new Event('change', { bubbles: true })) }); await wait()
     await click('Usa questa versione')
     check((await api.read(read.item.id)).item.currentGeneration === read.generations[1].id, 'Previous version not activated')

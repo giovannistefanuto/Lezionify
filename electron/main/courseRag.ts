@@ -73,6 +73,16 @@ function cleanCitation(value: CourseCitation): CourseCitation {
 
 /** The only document access paths originate in native selections or an approved folder. */
 export class CourseRagService {
+  private updating = false
+  setUpdating(value: boolean) { this.updating = value }
+  async prepareForUpdate() {
+    this.updating = true
+    for (const item of this.running.values()) item.controller.abort()
+    for (const item of this.indexJobs.values()) item.controller.abort()
+    await Promise.all([...this.indexJobs.values()].map(item => item.promise))
+    await Promise.all([...this.syncing.values()])
+    while (this.running.size) await new Promise(resolve => setTimeout(resolve, 20))
+  }
   isBusy() { return Boolean(this.running.size || this.indexJobs.size || this.syncing.size) }
   private mutexes = new Map<string, AsyncMutex>()
   private syncing = new Map<string, Promise<void>>()
@@ -446,6 +456,7 @@ export class CourseRagService {
     await this.syncing.get(course)
   }
   async syncEnabled() {
+    if (this.updating) return
     let files: string[]
     try {
       files = await readdir(this.directory)
@@ -706,6 +717,7 @@ export class CourseRagService {
     imageSourceId?: string,
     imageSourceVersion?: string
   ) {
+    if (this.updating) throw new Error('Riavvio per aggiornamento in corso.')
     validateCourse(course)
     validId(threadId)
     validId(requestId)

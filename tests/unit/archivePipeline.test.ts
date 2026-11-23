@@ -75,6 +75,31 @@ function operationsFor(lectures: Lecture[]) {
 }
 
 describe('ArchivePipeline', () => {
+  it('svuota durante la trascrizione, annulla la richiesta, conserva checkpoint e impedisce ripartenze', async () => {
+    const store = await createStore()
+    const lectures = [lecture('01'), lecture('02')]
+    const ops = operationsFor(lectures)
+    const started = deferred<void>()
+    const pipeline = new ArchivePipeline(store, { ...ops, transcribe: async (_id, _job, signal) => {
+      started.resolve()
+      return new Promise(resolve => signal!.addEventListener('abort', () => resolve({ success: false, failureKind: 'cancelled', error: 'Annullato.' }), { once: true }))
+    } })
+    await store.saveAsrCheckpoint({ lectureId: '01', audioChecksum: 'source', totalChunks: 2, chunks: { 0: { startSec: 0, endSec: 10, text: 'saved', status: 'transcribed', method: 'asr' } }, status: 'in_progress', updatedAt: new Date().toISOString() })
+    await pipeline.start({ trigger: 'manual', includeTranslation: true })
+    await started.promise
+    await pipeline.start({ trigger: 'import', lectureIds: ['02'], includeTranslation: true })
+    const clearing = pipeline.clear()
+    expect((await pipeline.start({ trigger: 'manual', includeTranslation: true })).started).toBe(false)
+    const status = await clearing
+    expect(status).toMatchObject({ status: 'idle', tasks: [], queuedImportLectureIds: [] })
+    expect((await store.loadArchivePipelineState())?.tasks).toEqual([])
+    expect((await store.loadAsrCheckpoint('01'))?.chunks[0].text).toBe('saved')
+    expect(ops.generateNotes).not.toHaveBeenCalled()
+    const restarted = new ArchivePipeline(store, ops)
+    await restarted.initialize()
+    expect(restarted.getStatus().status).toBe('idle')
+  })
+
   it.each(['provider_unavailable', 'network', 'quota_exhausted', 'rate_limited', 'authentication'] as const)('dopo errore ENG %s continua con la lezione successiva', async kind => {
     const store = await createStore()
     const lectures = ['01', '02'].map(id => lecture(id, { transcriptFileName: `${id}.txt`, markdownFileName: `${id}.md` }))
