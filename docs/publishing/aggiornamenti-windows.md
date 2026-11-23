@@ -338,3 +338,16 @@ tag sul commit `6deff6916d1876adb983e5bd48a3d72ee3ef0926`.
 I tre asset remoti coincidono per digest e dimensioni con i locali; il manifesto
 pubblico scaricato senza credenziali è identico byte per byte. Aggiornamento
 disponibile, installer personale non avviato.
+
+## Preparazione Windows 0.5.0, 23 novembre
+
+Gate completo verde nel checkout isolato dopo la riattivazione Bluetooth;
+983 unitari, 49 Python, 41 Node e tutti gli scenari desktop passati. Setup
+ricavato dalla stessa build; validati 384 file, nove componenti NSIS e tre
+backup. Verificatore allineato al nuovo pulsante Aggiorna ora senza cambiare
+i binari. Setup 300.561.964 byte, SHA256
+`673ff8601e38464d9fb16e344de6eabcfaacdfc60adfdc1da1ee7f02a0659b0d`,
+NotSigned. [Rapporto e limiti](../quality/coda-qna-widget-2026-11-23.md).
+Android 0.1.2 installato sul telefono su richiesta, con dati e abbinamento
+conservati tramite aggiornamento sul posto. Nessuna installazione Windows
+personale eseguita. Pubblicazione dei tre asset Windows ancora da completare.

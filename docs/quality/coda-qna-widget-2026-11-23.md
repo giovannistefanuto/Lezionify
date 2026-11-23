@@ -1,5 +1,7 @@
 # Coda, Q&A, aggiornamenti e widget — 23 novembre 2026
 
+**Stato attuale:** Android installato; installer Windows 0.5.0 verificato e pronto alla pubblicazione. I blocchi storici descritti sotto sono risolti.
+
 Perimetro esclusivo: voci 169–173; autorizzazione e chiarimenti in D-0593.
 Release prevista Windows 0.5.0 e companion Android 0.1.2.
 
@@ -96,3 +98,34 @@ isolato se il checkout continua a essere usato contemporaneamente.
 verificare `npm run test:device-notices`, quindi completare `npm run release:local`
 con gate completo, commit/push, prepare/publish/verify della skill. Nessun
 installer 0.5.0 generato o pubblicato e nessuna installazione personale eseguita.
+
+## Ripresa con dispositivi disponibili
+
+Bluetooth riattivato dall'utente e probe nativo nuovamente passato. Telefono
+aggiornato su richiesta da Android 0.1.1 (codice 2) a 0.1.2 (codice 3) con
+`adb install -r`, senza disinstallazione o cancellazione dati; apertura riuscita.
+APK e hash identici alla release pubblica. Nessun seriale o valore personale
+registrato nei documenti.
+
+Release Windows ripresa in `codex/release-0.5.0`, checkout isolato dal lavoro
+Mistral concorrente; gate completo e packaging in corso.
+
+## Preparazione Windows verificata
+
+Gate completo nel checkout isolato: 983 unitari, 49 Python, 41 Node, periodi
+Java, probe Bluetooth, RAG, updater, scenari React/Electron con riavvio, raccolte,
+Sessione compilata e PDF reali passati. Una sola build, riusata per NSIS.
+Il launcher completo ha concluso gate, packaging, validazione metadati e
+confronto payload; l'ultimo controllo cercava ancora il vecchio nome del
+pulsante. Corretto solo il verificatore, sostituendo quel nome e aggiungendo
+le nuove funzioni richieste, la verifica finale è passata sullo stesso setup.
+Il report originale incompleto rimane conservato e il completamento manuale
+è documentato separatamente: nessuna ricostruzione o modifica dei binari.
+
+Verificati 384 file compilati, nove componenti NSIS e tre backup; runtime e
+app.asar coincidono con la build. Nessun artefatto personale. Identità Start
+corretta. Firma setup NotSigned. Setup 300.561.964 byte; SHA256
+`673ff8601e38464d9fb16e344de6eabcfaacdfc60adfdc1da1ee7f02a0659b0d`.
+ASAR SHA256 `2c8708e12dc71c8868498ef721e39c881603cdac478ae452e74d3cece1970715`.
+Nessuna installazione Windows sul profilo personale; upgrade in Windows
+temporaneo, UAC e SmartScreen non collaudati.
