@@ -40,7 +40,7 @@ async function runQueueAndSave() {
     cleared++; return new Promise(resolve => { finishClear = resolve })
   }} /></>))
   const pause = document.querySelector<HTMLElement>('.home-pause-button')!
-  assert(parseFloat(getComputedStyle(pause).fontSize) <= 12 && pause.getBoundingClientRect().height < 36, 'Home pause is not compact')
+  assert(pause.classList.contains('settings-gear-btn') && pause.querySelector('.sidebar-action-label')?.textContent === 'Pausa' && pause.getBoundingClientRect().height <= 48 && pause.getBoundingClientRect().width <= 70, 'Home pause must use the compact Sessione action style')
   await click('Svuota coda')
   assert(cleared === 1 && document.querySelector<HTMLButtonElement>('.archive-pipeline-actions button')?.disabled, 'Queue clear must serialize clicks')
   await ipcRenderer.invoke('update-test:screenshot')

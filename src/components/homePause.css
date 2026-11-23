@@ -1,4 +1,3 @@
-.home-pause-button { color: inherit; background: transparent; border: 1px solid transparent; opacity: .68; border-radius: 9px; padding: 4px 7px; font: inherit; font-size: 12px; cursor: pointer; max-width: 100%; }
 .home-pause-backdrop { position: fixed; inset: 0; z-index: 10020; background: #10291cd9; display: grid; place-items: center; padding: 20px; }
 .home-pause-card { color: var(--text-main); background: var(--bg-surface,#fff); border-radius: 20px; padding: 28px; width: min(420px,100%); box-sizing: border-box; max-height: 90vh; overflow-y: auto; }
 .home-pause-card h2 { margin-top: 0; }.home-pause-card p { color: var(--text-muted); line-height: 1.5; }
@@ -6,5 +5,3 @@
 .home-pause-card button { cursor: pointer; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--border-subtle); font: inherit; background: var(--primary,#297052); color: #fff; }
 .home-pause-card form { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; margin-bottom: 20px; }.home-pause-card label { display: grid; gap: 8px; flex: 1; }.home-pause-card input { padding: 9px; border: 1px solid var(--border-subtle); border-radius: 6px; width: 100%; box-sizing: border-box; color: var(--text-main); background: var(--bg-surface); font: inherit; }
 .home-pause-card button:disabled { opacity: .45; cursor: default; }
-
-.home-pause-button:hover, .home-pause-button:focus-visible { opacity: 1; border-color: currentColor; }

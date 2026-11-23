@@ -31,7 +31,8 @@ export function startDeviceNotices(read: () => Promise<{ deviceNotices?: DeviceN
         if (!Array.isArray(value.names) || !value.names.every((name: unknown) => typeof name === 'string')) { bluetooth = 'unavailable'; connection.reset(); return }
         bluetooth = 'ready'
         const preferences = deviceNoticePreferences((await read()).deviceNotices)
-        if (!stopped && connection.sample(value.names, preferences)) notify({ kind: 'headphones', name: preferences.headphonesName })
+        const connected = connection.sample(value.names, preferences)
+        if (!stopped && (connected || connection.disconnected)) notify({ kind: connected ? 'headphones' : 'headphones-disconnected', name: preferences.headphonesName })
       } catch { bluetooth = 'unavailable'; connection.reset() }
       finally { busy = false }
     })()

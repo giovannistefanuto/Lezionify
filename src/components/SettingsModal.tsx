@@ -125,6 +125,14 @@ export function SettingsModal({
   setPublishingToken,
   publishingStatus
 }: SettingsModalProps) {
+  const [keyUsage, setKeyUsage] = useState<import('../../shared/keyUsage').KeyUsageSummary[]>([])
+  useEffect(() => {
+    if (!show || !window.archive.getKeyUsage) return
+    let disposed = false
+    const refresh = () => { void window.archive.getKeyUsage!(inputApiKeys).then(value => { if (!disposed) setKeyUsage(value) }).catch(() => {}) }
+    refresh(); const timer = setInterval(refresh, 5000)
+    return () => { disposed = true; clearInterval(timer) }
+  }, [show, inputApiKeys])
   const [showAdvanced, setShowAdvanced] = useState<boolean>(inputApiKeys.length >= 2)
   const [section, setSection] = useState<'general' | ToolSettingsSection>(initialSection ?? 'general')
   const [dayBoundary, setDayBoundary] = useState(() => localStorage.getItem('study-day-boundary') || '13:00')
@@ -250,6 +258,7 @@ export function SettingsModal({
                             {isActive && <span className="active-key-badge">Attiva</span>}
                           </div>
                           <span className="key-masked-text">{maskedKey}</span>
+                          <small title="Conteggio locale delle chiamate completate da questa versione, non della fatturazione Google.">{keyUsage[idx] ? `Ultimi 30 giorni: ${keyUsage[idx].successes} riuscite · ${keyUsage[idx].errors} errori${keyUsage[idx].suspendedUntil ? " · temporaneamente sospesa" : ""}` : "Utilizzo non disponibile"}</small>
                         </div>
                       </label>
 
@@ -370,8 +379,7 @@ export function SettingsModal({
                   onChange={(e) => setAutoRotate(e.target.checked)}
                 />
                 <span>
-                  <strong>Rotazione automatica del pool</strong> se la chiave attiva esaurisce la quota
-                  temporanea (Consigliato per Free Tier)
+                  <strong>Cambio chiave in caso di errore</strong>: prova le altre chiavi del pool se una non funziona o esaurisce la quota. Ogni nuova richiesta parte comunque dalla chiave disponibile meno usata negli ultimi 30 giorni.
                 </span>
               </label>
 

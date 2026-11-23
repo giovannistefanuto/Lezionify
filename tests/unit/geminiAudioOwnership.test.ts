@@ -70,7 +70,7 @@ describe('Audio Gemini: proprietà dei file durante la rotazione', () => {
     await rm(root, { recursive: true, force: true })
   })
 
-  function setup(maxTotalAttempts = 6) {
+  function setup(maxTotalAttempts = 6, preferFirst = true) {
     const a = clientFor('project-a')
     const b = clientFor('project-b')
     const transport = new GeminiTransport()
@@ -80,6 +80,12 @@ describe('Audio Gemini: proprietà dei file durante la rotazione', () => {
       transport,
       { now: () => Date.now(), sleep: async () => {} }
     )
+    // These fixtures exercise same-key reuse and explicit failure rotation.
+    // Keep A least used across ASR + fallback under the new balancing policy.
+    if (preferFirst) {
+      manager.getKeyUsageStore().record(keys[1].key, true)
+      manager.getKeyUsageStore().record(keys[1].key, true)
+    }
     return { a, b, service: new GeminiService({ requestManager: manager }) }
   }
 
@@ -91,6 +97,19 @@ describe('Audio Gemini: proprietà dei file durante la rotazione', () => {
     expect(a.files.upload).toHaveBeenCalledTimes(1)
     expect(b.files.upload).toHaveBeenCalledTimes(1)
     expect(b.models.generateContent).toHaveBeenCalledTimes(1)
+    expect(a.models.generateContent).toHaveBeenCalledTimes(1)
+    expect(a.files.delete).toHaveBeenCalledWith(expect.objectContaining({ name: a.file.name }))
+    expect(b.files.delete).toHaveBeenCalledWith(expect.objectContaining({ name: b.file.name }))
+  })
+
+  it('con utilizzo iniziale uguale bilancia il fallback su B e carica un file di proprieta B', async () => {
+    const { a, b, service } = setup(6, false)
+    a.interactions.create.mockResolvedValue({ output_text: '' })
+    await expect(service.transcribeAudioFile({ keys, audioFilePath: audio })).resolves.toBe(validText)
+    expect(a.models.generateContent).not.toHaveBeenCalled()
+    expect(b.models.generateContent).toHaveBeenCalledTimes(1)
+    expect(a.files.upload).toHaveBeenCalledTimes(1)
+    expect(b.files.upload).toHaveBeenCalledTimes(1)
     expect(a.files.delete).toHaveBeenCalledWith(expect.objectContaining({ name: a.file.name }))
     expect(b.files.delete).toHaveBeenCalledWith(expect.objectContaining({ name: b.file.name }))
   })

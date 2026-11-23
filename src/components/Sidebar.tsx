@@ -271,6 +271,7 @@ export function Sidebar({
 
               {onOpenSessione && <button type="button" className="settings-gear-btn session-sidebar-button" onClick={onOpenSessione} aria-pressed={Boolean(sessioneOpen)}
                 title="Sessione (Ctrl+Alt+S)" aria-label="Apri Sessione">▦<span className="sidebar-action-label">Sessione</span></button>}
+              <HomePause />
               {onOpenLogViewer && (
                 <button
                   className="settings-gear-btn"
@@ -350,7 +351,6 @@ export function Sidebar({
       {!isCollapsed && (
         <>
           <div className="sidebar-music-access">
-            <HomePause />
             <MusicButton prominent />
           </div>
           <div className="sidebar-search">

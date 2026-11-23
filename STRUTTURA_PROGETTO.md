@@ -2,6 +2,19 @@
 
 ## Stato attuale
 
+La 0.6.0 aggiunge avvisi Bluetooth in entrambe le direzioni e durata di due
+secondi, Pausa nella fila di Sessione e recupero automatico Q&A con sostituzione
+esplicita dei frammenti via IPC. `electron/main/ai/keyUsage.ts` conserva
+identificativi SHA256 ed esiti in `library/key-usage.json`, finestra mobile di
+30 giorni; il manager bilancia le richieste e le Impostazioni mostrano i conteggi.
+Contratto pubblico in `shared/keyUsage.ts`.
+
+Il pilota separato `tools/prepare_mistral_qna.py` e `tools/mistral_qna_test.mjs`
+confronta cinque Q&A Gemini storici con Mistral Large 4. Snapshot e risultati
+personali restano in `local-artifacts/qna-benchmark/mistral-five-20261123/`,
+esclusi da Git; chiave in `.env.mistral-test`. Non cambia i provider dell'app.
+Protocollo: [pilota Mistral](docs/research/mistral-qna-pilota-2026-11-23.md).
+
 La 0.5.0, pubblicata e verificata il 23 novembre, aggiunge coda cancellabile e priorità Q&A: `ArchivePipeline.clear()`
 propaga AbortSignal e drena le scritture; il manager Gemini interrompe e
 riaccoda il background con tre minuti di quiete. L'updater prepara i salvataggi,

@@ -501,6 +501,7 @@ function registerIpcHandlers(): void {
   handle('archive:search-fulltext', (_event, query: string) =>
     archive.searchFullText(query)
   )
+  handle('archive:key-usage', (_event, keys) => archive.getKeyUsage(keys))
   handle('archive:get-settings', () => archive.getSettings())
   handle('archive:publish-lectures', () => archive.publishLectures())
   handle('archive:get-publishing-status', () => archive.getPublishingStatus())

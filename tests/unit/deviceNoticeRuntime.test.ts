@@ -38,6 +38,11 @@ it('maps real power event names to one silent notice per transition, honors sett
       state.child.stdout.write('{"names":["EarFun Air Pro 4"]}\n'); await flush()
       expect(notify).toHaveBeenLastCalledWith({ kind: 'headphones', name: 'EarFun Air Pro 4' })
       expect(monitor.status().bluetooth).toBe('ready')
+      state.child.stdout.write('{"names":[]}\n'); await flush()
+      expect(notify).toHaveBeenLastCalledWith({ kind: 'headphones-disconnected', name: 'EarFun Air Pro 4' })
+      const disconnectedCount = notify.mock.calls.length
+      state.child.stdout.write('{"names":[]}\n'); await flush()
+      expect(notify).toHaveBeenCalledTimes(disconnectedCount)
       state.child.stdout.write('{"unavailable":true}\n'); await flush()
       expect(monitor.status().bluetooth).toBe('unavailable')
     }

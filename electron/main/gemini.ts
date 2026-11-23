@@ -1,3 +1,4 @@
+import { defaultClock } from './ai/geminiRequestManager'
 import { GoogleGenAI, createPartFromUri } from '@google/genai'
 import { REPETITION_INSTRUCTION, validateRepetitionAssessment } from './ai/repetitionPrompt'
 import { stat } from 'node:fs/promises'
@@ -2058,6 +2059,7 @@ Return ONLY the verbatim transcript:`
     searchOnline?: boolean
     thinkDeeper?: boolean
     fullLectureText?: string
+    onReset?: () => void
     onRetry?: (attempt: number, delayMs: number, reason: string) => void
     onAttempt?: (info: RequestAttemptInfo) => void
     signal?: AbortSignal
@@ -2115,6 +2117,7 @@ ${params.otherQnaContext ? `ALTRI Q&A PERTINENTI DELLA STESSA LEZIONE (estratti 
 
     type ChunkEvent =
       | { type: 'chunk'; text: string }
+      | { type: 'reset' }
       | { type: 'done' }
       | { type: 'error'; error: Error }
 
@@ -2143,8 +2146,13 @@ ${params.otherQnaContext ? `ALTRI Q&A PERTINENTI DELLA STESSA LEZIONE (estratti 
     const webModels = new Set(['gemini-3.5-flash-lite', 'gemini-3.6-flash', 'gemini-3.8-flash', 'gemini-3.1-pro-preview', 'gemini-2.5-pro', 'gemini-2.5-flash', 'gemini-2.5-flash-lite'])
     const webSources = new Map<string, string>()
 
-    this.requestManager.execute({
+    let recoveryCount = 0
+    let resetPending = false
+    let partialFailure = false
+    const recoveryDeadline = Date.now() + this.requestManager.getPolicy().logicalDeadlineMs
+    const executeStream = () => this.requestManager.execute({
       jobId: `qna-${thread.id}`,
+      ...(recoveryCount > 0 ? { recovery: { maxTotalAttempts: 1, modelPasses: 1, passDelayMs: 0 } } : {}),
       purpose: 'qna',
       preferModelFallback: true,
       priority: 'interactive',
@@ -2154,6 +2162,8 @@ ${params.otherQnaContext ? `ALTRI Q&A PERTINENTI DELLA STESSA LEZIONE (estratti 
       signal,
       call: async (activeApiKey, activeModel, attemptSignal) => {
         let emittedChunk = false
+        partialFailure = false
+        webSources.clear()
         try {
           await this.requestManager.getTransport().generateContentStream({
             apiKey: activeApiKey,
@@ -2173,6 +2183,7 @@ ${params.otherQnaContext ? `ALTRI Q&A PERTINENTI DELLA STESSA LEZIONE (estratti 
             signal: attemptSignal,
             onChunk: (text) => {
               if (!text.trim() && !emittedChunk) return
+              if (!emittedChunk && resetPending) { pushEvent({ type: 'reset' }); resetPending = false }
               emittedChunk = true
               pushEvent({ type: 'chunk', text })
             }
@@ -2181,6 +2192,7 @@ ${params.otherQnaContext ? `ALTRI Q&A PERTINENTI DELLA STESSA LEZIONE (estratti 
         } catch (error) {
           if (emittedChunk) {
             const normalized = normalizeGeminiError(error)
+            partialFailure = Boolean(params.onReset) && normalized.isRetryable && ['timeout', 'service_unavailable', 'network_error', 'rate_limited'].includes(normalized.category) && normalized.recoveryDisposition !== 'terminal'
             throw new GeminiError(
               {
                 category: normalized.category,
@@ -2202,7 +2214,24 @@ ${params.otherQnaContext ? `ALTRI Q&A PERTINENTI DELLA STESSA LEZIONE (estratti 
       onRetry: (attempt, delayMs, reason) => {
         params.onRetry?.(attempt, delayMs, reason)
       }
-    }).then(
+    })
+    const recover = async () => {
+      while (true) {
+        try { await executeStream(); return }
+        catch (error) {
+          const normalized = normalizeGeminiError(error)
+          const temporaryRecoveryFailure = recoveryCount > 0 && normalized.isRetryable && normalized.recoveryDisposition !== 'terminal' && ['timeout', 'service_unavailable', 'network_error', 'rate_limited'].includes(normalized.category)
+          if ((!partialFailure && !temporaryRecoveryFailure) || recoveryCount >= 2 || signal?.aborted) throw error
+          const delayMs = Math.max(1200, normalizeGeminiError(error).retryDelayMs ?? 0)
+          if (Date.now() + delayMs >= recoveryDeadline) throw error
+          recoveryCount++
+          params.onRetry?.(recoveryCount, delayMs, 'Risposta interrotta: nuovo tentativo automatico')
+          await defaultClock.sleep(delayMs, signal)
+          resetPending = true
+        }
+      }
+    }
+    void recover().then(
       () => pushEvent({ type: 'done' }),
       (err) => pushEvent({ type: 'error', error: err instanceof Error ? err : new Error(String(err)) })
     )
@@ -2211,6 +2240,8 @@ ${params.otherQnaContext ? `ALTRI Q&A PERTINENTI DELLA STESSA LEZIONE (estratti 
       const evt = await pullEvent()
       if (evt.type === 'chunk') {
         yield evt.text
+      } else if (evt.type === 'reset') {
+        params.onReset?.()
       } else if (evt.type === 'done') {
         if (params.searchOnline) {
           const links = [...webSources].map(([uri, title]) => `- [${title.replace(/[[\]\\\r\n]/g, '')}](${encodeURI(uri).replace(/[()]/g, char => char === '(' ? '%28' : '%29')})`).join('\n')

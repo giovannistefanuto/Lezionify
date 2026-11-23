@@ -644,6 +644,8 @@ async function run() {
   await act(async () => {
     chunk({ threadId: 't1', chunk: 'parziale' })
   })
+  await act(async () => { chunk({ threadId: 't1', chunk: '', reset: true }); chunk({ threadId: 't1', chunk: 'nuova risposta' }) })
+  check(output.threads[0].messages.at(-1).text === 'nuova risposta', 'Automatic Q&A recovery concatenated old and new output')
   await render('B')
   await act(async () => {
     generation.resolve({ success: true, text: 'Risposta completa' })

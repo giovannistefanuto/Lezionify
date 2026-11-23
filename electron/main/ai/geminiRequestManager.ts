@@ -1,3 +1,4 @@
+import { KeyUsageStore } from './keyUsage'
 /**
  * geminiRequestManager.ts
  * Gestore globale unificato per le richieste Gemini in Lezionify.
@@ -102,6 +103,10 @@ interface RequestTelemetry {
 }
 
 export class GeminiRequestManager {
+  private readonly keyUsage = new KeyUsageStore(undefined, () => this.clock.now())
+  private usageStore = this.keyUsage
+  setKeyUsageStore(store: KeyUsageStore) { this.usageStore = store }
+  getKeyUsageStore() { return this.usageStore }
   private policy: GeminiPolicyConfig
   private transport: GeminiTransport
   private clock: Clock
@@ -532,7 +537,7 @@ export class GeminiRequestManager {
     telemetry: RequestTelemetry
   ): Promise<T> {
     const models = [options.preferredModel, ...(options.fallbackModels || [])]
-    const keyConfigs = options.keys
+    const keyConfigs = this.usageStore.order(options.keys)
     const step = (event: string, message: string, fields: Record<string, unknown> = {}, level: 'info' | 'warn' = 'info') =>
       this.writeTelemetry(level, event, {
         actionId: options.jobId, requestId: options.requestId || options.jobId,
@@ -589,8 +594,8 @@ export class GeminiRequestManager {
           }, lastError)
         }
 
-        const currentKeyIdx = keyPointer % keyConfigs.length
-        const keyConfig = keyConfigs[currentKeyIdx]
+        const keyConfig = keyConfigs[keyPointer % keyConfigs.length]
+        const currentKeyIdx = options.keys.indexOf(keyConfig)
         const apiKey = keyConfig.key
         const quotaGroup = keyConfig.quotaGroup || 'unknown-project'
         const keyId = `${quotaGroup}:${apiKey.slice(-6)}`
@@ -598,7 +603,7 @@ export class GeminiRequestManager {
         const keyModelId = `${keyId}:${model}`
         const keyAlias = this.getKeyAlias(keyConfig, currentKeyIdx)
 
-        if (excludedKeys.has(keyId) || this.dailySuspendedGroupModels.has(groupModelKey)) {
+        if (excludedKeys.has(keyId) || this.dailySuspendedGroupModels.has(groupModelKey) || (options.purpose !== 'key_verification' && this.usageStore.summary(apiKey).suspensionReason === 'authentication') || (options.purpose !== 'key_verification' && this.usageStore.summary(apiKey).suspendedUntil > 0 && keyConfigs.some(k => this.usageStore.summary(k.key).suspendedUntil === 0))) {
           const skipReason = this.dailySuspendedGroupModels.has(groupModelKey)
             ? keyConfig.quotaGroupKnown === false ? 'quota giornaliera della chiave/modello esaurita; progetto non verificato' : 'quota giornaliera del progetto/modello esaurita'
             : 'chiave esclusa per autenticazione'
@@ -697,6 +702,7 @@ export class GeminiRequestManager {
           }))
         }, attemptTimeout)
 
+        let callCompleted = false
         try {
           assertGeminiOnline()
           const result = await options.call(
@@ -708,6 +714,8 @@ export class GeminiRequestManager {
           if (options.signal) {
             options.signal.removeEventListener('abort', onParentAbort)
           }
+          callCompleted = true
+          this.usageStore.record(apiKey, true)
           this.handleSuccess(quotaGroup, model)
           this.writeTelemetry('info', 'gemini_request_result', {
             actionId: options.jobId,
@@ -727,6 +735,7 @@ export class GeminiRequestManager {
             options.signal.removeEventListener('abort', onParentAbort)
           }
 
+          if (callCompleted) throw rawError
           const normalized = connectedGeminiError(rawError)
           const error = normalized.recoveryDisposition !== 'terminal' &&
             normalized.category === 'cancelled' &&
@@ -734,6 +743,7 @@ export class GeminiRequestManager {
               ? attemptAbortController.signal.reason
               : normalized
           lastError = error
+          this.usageStore.record(apiKey, false, error.category, error.retryDelayMs)
           if (!(error.category === 'network_error' && error.recoveryDisposition === 'terminal')) this.handleFailure(quotaGroup, model, error, groupModelKey)
           this.writeTelemetry('warn', 'gemini_request_result', {
             actionId: options.jobId,
@@ -809,10 +819,10 @@ export class GeminiRequestManager {
           }
 
           // Se abbiamo altre chiavi valide disponibili, passiamo alla prossima chiave ruotando
-          const otherAvailableKeys = keyConfigs.some((kc, idx) => {
+          const otherAvailableKeys = keyConfigs.some(kc => {
             const kid = `${kc.quotaGroup || 'unknown-project'}:${kc.key.slice(-6)}`
              const keyModel = `${kid}:${model}`
-             return idx !== currentKeyIdx && !excludedKeys.has(kid) && (attemptsPerKeyModel.get(keyModel) || 0) < this.policy.maxAttemptsPerKey
+             return kc !== keyConfig && !excludedKeys.has(kid) && (attemptsPerKeyModel.get(keyModel) || 0) < this.policy.maxAttemptsPerKey
           })
 
           if (otherAvailableKeys) {

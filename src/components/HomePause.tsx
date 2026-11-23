@@ -15,7 +15,7 @@ export function HomePause({ compact = false }: { compact?: boolean }) {
   const start = (value: number) => { setSelecting(false); setMinutes(value) }
   const valid = Number.isInteger(Number(custom)) && Number(custom) >= 1 && Number(custom) <= 1440
   return <>
-    <button ref={trigger} type="button" className="home-pause-button" aria-label="Fai una pausa" title="Fai una pausa" onClick={() => setSelecting(true)}>{compact ? '☕' : '☕ Fai una pausa'}</button>
+    <button ref={trigger} type="button" className={`home-pause-button ${compact ? "sidebar-icon-btn" : "settings-gear-btn"}`} aria-label="Fai una pausa" title="Fai una pausa" onClick={() => setSelecting(true)}>☕{!compact && <span className="sidebar-action-label">Pausa</span>}</button>
     {selecting && createPortal(<div className="home-pause-backdrop" onKeyDown={event => { if (event.key === 'Escape') { event.stopPropagation(); close() } }}>
       <div ref={dialog} className="home-pause-card" role="dialog" aria-modal="true" aria-labelledby="home-pause-title" tabIndex={-1}>
         <h2 id="home-pause-title">Quanto dura la pausa?</h2><p>Un momento per staccare, anche senza una lezione aperta.</p>

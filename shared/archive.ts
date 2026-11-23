@@ -666,6 +666,7 @@ export interface ArchiveApi extends StudyHistoryApi, CourseRagApi, RepetitionApi
   ) => Promise<Lecture>
   deleteLecture: (lectureId: string) => Promise<boolean>
   searchFullText: (query: string) => Promise<string[]>
+  getKeyUsage?: (keys?: string[]) => Promise<import('./keyUsage').KeyUsageSummary[]>
   getSettings: () => Promise<AppSettings>
   saveSettings: (settings: Partial<AppSettings>) => Promise<AppSettings>
   testApiKey: (apiKey: string) => Promise<TestApiKeyResult>
@@ -778,7 +779,7 @@ export interface ArchiveApi extends StudyHistoryApi, CourseRagApi, RepetitionApi
     callback: (status: ArchivePipelineStatus) => void
   ) => () => void
   onQnaChunk: (
-    callback: (data: { threadId: string; chunk: string }) => void
+    callback: (data: { threadId: string; chunk: string; reset?: boolean }) => void
   ) => () => void
   onQnaStatus: (callback: (data: QnaStatusUpdate) => void) => () => void
   publishLectures: () => Promise<PublishResult>

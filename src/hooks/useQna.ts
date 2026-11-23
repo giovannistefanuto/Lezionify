@@ -83,7 +83,7 @@ export function useQna(lectureId: string | null) {
 
   // Ascolta i chunk in arrivo
   useEffect(() => {
-    const removeListener = window.archive.onQnaChunk(({ threadId, chunk }) => {
+    const removeListener = window.archive.onQnaChunk(({ threadId, chunk, reset }) => {
       if (
         streaming.current?.lectureId !== currentLecture.current ||
         streaming.current?.threadId !== threadId
@@ -98,7 +98,7 @@ export function useQna(lectureId: string | null) {
             if (lastMessage.role === 'ai') {
               messages[messages.length - 1] = {
                 ...lastMessage,
-                text: lastMessage.text + chunk
+                text: reset ? chunk : lastMessage.text + chunk
               }
             }
           }

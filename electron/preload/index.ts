@@ -133,6 +133,7 @@ const archiveApi: ArchiveApi = {
     ipcRenderer.invoke('archive:delete-lecture', lectureId),
   searchFullText: (query: string) =>
     ipcRenderer.invoke('archive:search-fulltext', query),
+  getKeyUsage: keys => ipcRenderer.invoke('archive:key-usage', keys),
   getSettings: () => ipcRenderer.invoke('archive:get-settings'),
   saveSettings: (settings: Partial<AppSettings>) =>
     ipcRenderer.invoke('archive:save-settings', settings),
@@ -297,7 +298,7 @@ const archiveApi: ArchiveApi = {
   onQnaChunk: (callback) => {
     const handler = (
       _event: unknown,
-      payload: { threadId: string; chunk: string }
+      payload: { threadId: string; chunk: string; reset?: boolean }
     ) => callback(payload)
     ipcRenderer.on('archive:qna-chunk', handler)
     return () => {

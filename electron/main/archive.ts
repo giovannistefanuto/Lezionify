@@ -1,3 +1,4 @@
+import { KeyUsageStore } from './ai/keyUsage'
 import { StudyHistory } from './studyHistory'
 import { CollectionsService } from './collections/service'
 import { collectionAdapters } from './collections/adapters'
@@ -234,6 +235,7 @@ export class ArchiveService {
     })
     this.jobStore = customJobStore ?? new AiJobStore(this.rootDirectory)
     this.requestManager = customRequestManager ?? new GeminiRequestManager()
+    this.requestManager.setKeyUsageStore(new KeyUsageStore(path.join(this.rootDirectory, 'key-usage.json')))
     this.requestManager.enableQnaFocus()
     this.geminiService =
       customGeminiService ??
@@ -319,7 +321,7 @@ export class ArchiveService {
         quotaGroupKnown: false
       })
     }
-    return result
+    return this.requestManager.getKeyUsageStore().order(result)
   }
 
   setProgressCallback(callback: (progress: GenerationProgress) => void): void {
@@ -1034,6 +1036,12 @@ export class ArchiveService {
     }
 
     return matchingIds
+  }
+
+  async getKeyUsage(keys?: unknown) {
+    if (keys !== undefined && (!Array.isArray(keys) || keys.length > 50 || keys.some(key => typeof key !== 'string' || key.length > 500))) throw new Error('Elenco chiavi non valido.')
+    const configured = keys as string[] | undefined ?? (await this.settingsService.getSettings()).apiKeys
+    return configured.map(key => this.requestManager.getKeyUsageStore().summary(key))
   }
 
   async getSettings(): Promise<AppSettings> {
@@ -2273,11 +2281,12 @@ export class ArchiveService {
   private qnaStreamCallback?: (data: {
     threadId: string
     chunk: string
+    reset?: boolean
   }) => void
   private qnaStatusCallback?: (data: QnaStatusUpdate) => void
 
   setQnaStreamCallback(
-    callback: (data: { threadId: string; chunk: string }) => void
+    callback: (data: { threadId: string; chunk: string; reset?: boolean }) => void
   ): void {
     this.qnaStreamCallback = callback
   }
@@ -2392,6 +2401,10 @@ export class ArchiveService {
         searchOnline,
         thinkDeeper,
         images,
+        onReset: () => {
+          fullResponse = ''
+          this.qnaStreamCallback?.({ threadId: thread.id, chunk: '', reset: true })
+        },
         onAttempt: (info) => {
           const previous = attemptState.current
           attemptState.current = info
@@ -2422,6 +2435,7 @@ export class ArchiveService {
           })
         },
         onRetry: (attempt, delayMs, reason) => {
+          this.qnaStatusCallback?.({ threadId: thread.id, phase: 'connecting', message: `${reason}. Recupero ${attempt} tra ${Math.ceil(delayMs / 1000)} s…`, model: attemptState.current?.model || qnaPrimaryModel })
           logger.warn(
             'qna',
             `Retry QnA #${attempt} tra ${Math.round(delayMs / 1000)}s: ${reason}`

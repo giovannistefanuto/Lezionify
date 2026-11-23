@@ -7,7 +7,7 @@ publish:
   repo: Lezionify
   releaseType: draft
 releaseInfo:
-  releaseNotesFile: docs/releases/0.5.0.md
+  releaseNotesFile: docs/releases/0.6.0.md
 
 directories:
   output: dist

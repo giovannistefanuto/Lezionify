@@ -6559,6 +6559,17 @@ Non modificare manualmente la sezione `Registro`: aggiungi le nuove decisioni es
 - **Follow-up:** Conservare la build definitiva del gate e completare la release 0.5.0.
 - **File coinvolti:** tools/run_sessione_compiled.cjs, docs/quality/coda-qna-widget-2026-11-23.md, DECISIONI.md
 
+## D-0596 — Pilota privato di cinque QnA con Mistral Large 4
+
+- **Data:** 2026-11-23
+- **Stato:** accettata
+- **Area:** ricerca-qna
+- **Decisione:** Preparare cinque domande reali GT e RL con risposte Gemini storiche e dispense attuali verificate. Usare runner separato Mistral Large 4 con reasoning high, cinque richieste sequenziali, massimo 8192 token output e tetto locale 1 USD. Chiave in .env.mistral-test escluso da Git.
+- **Motivazione:** L utente vuole confrontare qualita e costo prima di integrare il provider e autorizza il test sui propri materiali. Una revisione preliminare della baseline evita di assumere Gemini come soluzione corretta.
+- **Impatto:** Snapshot privati e hash locali, nessuna modifica della libreria o dei provider applicativi. Cinque regressioni offline e dry run passati; riserva prudenziale circa 0.218 USD. Nessun retry automatico o reinvio dopo tentativo incerto; errori sanitizzati e risposte troncate conservate come incomplete. Nessuna dipendenza o inferenza reale durante la preparazione.
+- **Follow-up:** Dopo inserimento della chiave eseguire il pilota autorizzato e valutare le cinque risposte rispetto alle fonti, con confronto motivato, formule, usage e tempi. Prompt e contesti storici non esattamente ricostruibili; nessuna conclusione generale da cinque casi.
+- **File coinvolti:** tools/prepare_mistral_qna.py, tools/mistral_qna_test.mjs, tests/node/mistral_qna_test.test.mjs, docs/research/mistral-qna-pilota-2026-11-23.md, docs/research/README.md, STRUTTURA_PROGETTO.md, DECISIONI.md
+
 ## D-0597 — Collaudi 0.5.0 completati, radio Bluetooth assente nel gate Windows
 
 - **Data:** 2026-11-23
@@ -6613,3 +6624,36 @@ Non modificare manualmente la sezione `Registro`: aggiungi le nuove decisioni es
 - **Impatto:** Tre asset Windows uploaded con dimensioni e digest coincidenti; manifesto anonimo identico byte per byte e release latest pubblica. Setup SHA256 673ff8601e38464d9fb16e344de6eabcfaacdfc60adfdc1da1ee7f02a0659b0d, 300561964 byte, NotSigned. Telefono aggiornato 0.1.1 a 0.1.2 con adb -r e avvio verificato; nessuna installazione Windows personale.
 - **Follow-up:** Pubblicare anche la documentazione finale e verificarne il commit remoto. Conservare il lavoro Mistral concorrente nel checkout principale. Nessuna altra attivita della coda avviata.
 - **File coinvolti:** DECISIONI.md, STRUTTURA_PROGETTO.md, docs/product/idee-future-2026-10-13.md, docs/product/statistiche-android.md, docs/quality/coda-qna-widget-2026-11-23.md, docs/publishing/aggiornamenti-windows.md
+
+## D-0602 — Avvisi brevi, Pausa compatta, bilanciamento chiavi e recupero QnA
+
+- **Data:** 2026-11-23
+- **Stato:** accettata
+- **Area:** studio-gemini
+- **Decisione:** Implementare esclusivamente le cinque richieste concordate: disconnessione cuffiette, avvisi di due secondi, Pausa nella fila Sessione, utilizzo locale per chiave nei 30 giorni mobili e precedenza alle meno usate con successo; fino a due recuperi QnA dopo testo parziale, sostituendo i frammenti via reset IPC.
+- **Motivazione:** Ridurre ingombro e interazioni ripetitive, distribuire le chiamate sulle chiavi funzionanti e recuperare interruzioni temporanee senza concatenare risposte incompatibili. L utente autorizza collaudi e pubblicazione 0.6.0.
+- **Impatto:** Registro locale con SHA256 e soli esiti; storico nuovo dalla versione 0.6.0. Successi ed errori distinti. Autenticazione sospesa 24 ore, problemi temporanei declassati; quote progetto e opzione failover preservate. Recuperi cancellabili, osservabili e limitati; nessuna chiamata AI di collaudo sui materiali personali.
+- **Follow-up:** Eseguire gate completo, verificare installer e pubblicare nuova release con commit e asset coerenti. Conservare lavoro Mistral preesistente senza modificarlo.
+- **File coinvolti:** electron/main/ai/keyUsage.ts, electron/main/ai/geminiRequestManager.ts, electron/main/gemini.ts, electron/main/archive.ts, shared, src, tests, docs/releases/0.6.0.md, STRUTTURA_PROGETTO.md, electron-builder.yml, package.json, package-lock.json
+
+## D-0603 — Separare il runner Node del pilota dal discovery Vitest
+
+- **Data:** 2026-11-23
+- **Stato:** accettata
+- **Area:** collaudi
+- **Decisione:** Rinominare il test Mistral preesistente da .test.mjs a .node.mjs, seguendo la convenzione degli altri test Node e aggiornando il comando documentato. Conservare contenuto e cinque assert offline invariati.
+- **Motivazione:** Il gate ha passato 1976 verifiche ma Vitest ha caricato il test node:test e si e fermato per suite vuota. Il test passa con il proprio runner Node; la rinomina corregge il discovery senza saltare controlli o alterare il pilota.
+- **Impatto:** Nessuna modifica al provider o al funzionamento applicativo. Verifiche Node dedicate passate; ripetizione del gate completo per la release 0.6.0. Fixture audio inizializzate con utilizzo esplicito per mantenere test di riuso; aggiunto collaudo del bilanciamento ASR-fallback tra progetti.
+- **Follow-up:** Conservare i test nativi Node con suffisso .node.mjs. Completare gate, packaging e pubblicazione autorizzata.
+- **File coinvolti:** tests/node/mistral_qna_test.node.mjs, docs/research/mistral-qna-pilota-2026-11-23.md, tests/unit/geminiAudioOwnership.test.ts, DECISIONI.md
+
+## D-0604 — Gate completo e installer 0.6.0 verificati
+
+- **Data:** 2026-11-23
+- **Stato:** accettata
+- **Area:** release
+- **Decisione:** Distribuire le cinque modifiche richieste nella release Windows 0.6.0 dalla build unica del gate completo, riusata per NSIS. Procedere con commit e push di tutte le modifiche pubblicabili e pubblicazione autorizzata dei tre asset verificati.
+- **Motivazione:** Gate completo e collaudi visivi aggiuntivi passati; test del pilota preesistente separato correttamente da Vitest. Nessuna variazione di compressione o dipendenze. Le ulteriori chiamate fisiche di recupero QnA sono limitate a due e cancellabili.
+- **Impatto:** 1976 unitari, 49 Python, 41 Node, cinque Node del pilota, Java, Bluetooth, RAG, updater, React/Electron, raccolte, Sessione e PDF passati. Verificati 385 file build, nove componenti NSIS e tre backup; nessun materiale personale. Setup 300571533 byte, SHA256 c4758fdad6f194895bf41136267647aebfb4582dd4fd1682dccc453bb8973d8f, NotSigned. Nessuna installazione personale.
+- **Follow-up:** Pubblicare sorgenti e release, verificare digest remoti e manifesto pubblico. Annotare URL e SHA sorgente dopo la pubblicazione.
+- **File coinvolti:** docs/quality/avvisi-chiavi-qna-2026-11-23.md, docs/releases/0.6.0.md, DECISIONI.md, STRUTTURA_PROGETTO.md, electron, shared, src, tests, package.json, package-lock.json, electron-builder.yml
