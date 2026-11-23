@@ -6569,3 +6569,14 @@ Non modificare manualmente la sezione `Registro`: aggiungi le nuove decisioni es
 - **Impatto:** 983 unitari, periodi Java, 49 Python, 41 Node, updater, React/Electron, raccolte, Sessione compilata e PDF reali passati. APK originale 42039 byte con firma locale; materiali personali esclusi. Nessuna installazione sul profilo personale.
 - **Follow-up:** Riattivare o ricollegare la radio Bluetooth del PC, rieseguire il gate completo, generare e verificare installer 0.5.0 e pubblicare la release Windows con tutti gli asset.
 - **File coinvolti:** docs/quality/coda-qna-widget-2026-11-23.md, DECISIONI.md, docs/releases/0.5.0.md, android-companion, electron, src, shared, tests, tools
+
+## D-0598 — Android 0.1.2 pubblicato e verificato, Windows 0.5.0 in attesa hardware
+
+- **Data:** 2026-11-23
+- **Stato:** accettata
+- **Area:** release
+- **Decisione:** Pubblicare il companion Android 0.1.2 come release separata android-v0.1.2 sul commit 8d3df8e525d84a09d4bf316d9461b872ec1b5fca, senza cambiare latest Windows. Conservare il blocco Windows per la radio Bluetooth non disponibile.
+- **Motivazione:** APK originale compilato, firma verificata, aperto in emulatore e ricalcolo offline collaudato. Il gate Windows resta rosso sul controllo hardware invariato e non viene aggirato.
+- **Impatto:** Asset pubblico Lezionify-Android-0.1.2.apk, 42039 byte, SHA256 d56319470d024191d1d1a87d90176ea9069b984cefcd44e9b38798c0a8c86b62; digest API e download anonimo verificati. Sorgenti delle cinque richieste su origin/main. Lavoro Mistral concorrente preservato fuori dal commit.
+- **Follow-up:** Utente riattiva o ricollega la radio Bluetooth; riprendere gate completo e packaging Windows, preferendo worktree isolato se il checkout resta condiviso. Installazioni personali non eseguite.
+- **File coinvolti:** docs/quality/coda-qna-widget-2026-11-23.md, docs/product/idee-future-2026-10-13.md, docs/product/statistiche-android.md, DECISIONI.md

@@ -80,4 +80,19 @@ richiesta all'utente; packaging/pubblicazione Windows ancora bloccati dal gate.
 APK Android originale: 42.039 byte, SHA256
 `d56319470d024191d1d1a87d90176ea9069b984cefcd44e9b38798c0a8c86b62`.
 La fixture debuggabile è separata e non distribuibile. L'APK originale mantiene
-la firma del companion 0.1.1. Pubblicazione Android indipendente in preparazione.
+la firma del companion 0.1.1. [Android 0.1.2](https://github.com/giovannistefanuto/Lezionify/releases/tag/android-v0.1.2)
+pubblicato e verificato: un asset originale, digest e dimensioni API coincidenti,
+download pubblico senza credenziali confrontato per SHA256. Tag sul commit
+`8d3df8e525d84a09d4bf316d9461b872ec1b5fca`; non impostato come latest Windows.
+Nessuna installazione sul telefono personale.
+
+Il commit sorgente è presente su origin/main. Nel frattempo un'altra attività
+ha aggiunto file di ricerca Mistral e una decisione al checkout condiviso:
+conservati ed esclusi dal commit di questa attività mediante staging parziale.
+Per la ripresa mantenere separate quelle modifiche, preferendo un worktree
+isolato se il checkout continua a essere usato contemporaneamente.
+
+**Prossimo passo Windows:** ripristinare la disponibilità della radio Bluetooth,
+verificare `npm run test:device-notices`, quindi completare `npm run release:local`
+con gate completo, commit/push, prepare/publish/verify della skill. Nessun
+installer 0.5.0 generato o pubblicato e nessuna installazione personale eseguita.

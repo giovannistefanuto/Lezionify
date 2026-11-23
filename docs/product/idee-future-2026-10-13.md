@@ -76,10 +76,11 @@ soltanto dopo implementazione e verifiche pertinenti.
 | 117. [ ] | Aggiorna ora salva, interrompe, svuota e installa automaticamente | 170 | Salvataggi e arresto coordinato; errori bloccano il riavvio. |
 | 118. [ ] | Q&A interrompe e riaccoda il background, ripresa dopo tre minuti | 171 | Preemption, ordine, rinnovo attesa, quote condivise e cancellazione. |
 | 119. [ ] | Pulsante pausa Home più piccolo e discreto | 172 | Conservare accessibilità e durate. |
-| 120. [ ] | Widget Android: periodi correnti anche da cache offline | 173 | Cambio giorno, lunedì, mese e anno; lezioni rimanenti invariate. |
+| 120. [x] | Widget Android: periodi correnti anche da cache offline | 173 | Cambio giorno, lunedì, mese e anno; lezioni rimanenti invariate. |
 
 **Richieste del 23 novembre:** l'utente autorizza unicamente 169–173,
 con chiarimenti confermati, collaudi e nuova release. Non è LISTA_ORDINE.
+169–172 implementate e collaudate, con distribuzione Windows bloccata dalla radio Bluetooth assente; 173 distribuita come Android 0.1.2.
 Stato e limiti: [verifica coda, aggiornamenti e widget](../quality/coda-qna-widget-2026-11-23.md).
 
 **Aggiunte del 20 novembre:** tre nuove voci e riattivazione della 33,
@@ -857,7 +858,7 @@ dell'alimentazione. Implementata e collaudata per la 0.4.0 (D-0588).
 
 ### 173. Widget Android con periodi correnti
 
-- [ ] Calcolare oggi, settimana da lunedì e mese sulla data corrente anche senza nuovi dati. Conservare quanto noto nel periodo corrente e i conteggi delle lezioni rimanenti; mantenere la data dell'ultimo snapshot.
+- [x] Calcolare oggi, settimana da lunedì e mese sulla data corrente anche senza nuovi dati. Conservare quanto noto nel periodo corrente e i conteggi delle lezioni rimanenti; mantenere la data dell'ultimo snapshot.
 
 ## Descrizioni delle attività sospese
 

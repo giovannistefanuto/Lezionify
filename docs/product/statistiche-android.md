@@ -33,7 +33,7 @@ Android può differire allarmi e aggiornamenti quando il dispositivo è sospeso;
 si ricalcola alla successiva esecuzione consentita dal sistema.
 [Indicazioni Android ufficiali](https://developer.android.com/develop/ui/views/appwidgets/advanced).
 
-APK 0.1.2 separato dall'installer Windows: aggiornare il companion mantenendo
+[APK 0.1.2 pubblicato e verificato](https://github.com/giovannistefanuto/Lezionify/releases/tag/android-v0.1.2), separato dall'installer Windows: aggiornare il companion mantenendo
 l'abbinamento. Prove e limiti nel [rapporto del 23 novembre](../quality/coda-qna-widget-2026-11-23.md).
 
 ## Preparazione GitHub
