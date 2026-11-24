@@ -60,6 +60,34 @@ pubblicata e verificata sul commit dei binari
 corrispondenti, tag sul commit atteso e manifesto pubblico identico byte per byte.
 Aggiornamento disponibile, installazione personale non eseguita.
 
+## Convenzione di versionamento
+
+Convenzione ufficiale per l'app desktop, approvata il 24 novembre 2026
+(D-0611). Il formato è `MAJOR.MINOR.PATCH`: il numero viene scelto manualmente
+prima della preparazione della release, secondo il contenuto effettivo delle
+modifiche. Gli strumenti automatizzano preparazione e controlli, ma non decidono
+quale componente incrementare.
+
+| Passaggio | Criterio |
+| --- | --- |
+| `0.7.0 → 0.7.1` | Correzioni di bug o testi, piccoli ritocchi grafici e miglioramenti delle funzioni esistenti senza modifiche importanti ai flussi. |
+| `0.7.0 → 0.8.0` | Nuove funzionalità o modifiche importanti ai flussi dell'app. |
+| `0.x.x → 1.0.0` | Decisione esplicita di prodotto: le funzioni principali sono considerate stabili e affidabili. Registrare la valutazione in `DECISIONI.md`; il numero di modifiche o di release precedenti non determina questo passaggio. |
+| `1.0.0 → 1.0.1` | Correzioni e piccoli miglioramenti compatibili. |
+| `1.0.0 → 1.1.0` | Nuove funzionalità o modifiche importanti compatibili. |
+| `1.x.x → 2.0.0` | Cambiamenti incompatibili con i comportamenti o i contratti supportati; descrivere adattamenti e migrazioni nelle note. Lo stesso criterio vale per i successivi incrementi MAJOR. |
+
+Per una release con modifiche di categorie diverse, scegliere l'incremento
+richiesto dalla modifica di maggiore impatto. Incrementando MINOR si azzera
+PATCH; incrementando MAJOR si azzerano MINOR e PATCH. Per esempio, una nuova
+funzione insieme a correzioni porta da `0.7.3` a `0.8.0`.
+
+La `0.7.0` resta la release già pubblicata: questa convenzione non rinumera
+release esistenti. Un aggiornamento della sola documentazione, senza nuovi
+binari distribuiti, non richiede un incremento della versione dell'app.
+Ogni nuovo binario distribuito richiede comunque una versione maggiore
+dell'ultima pubblicata, anche se la modifica è piccola.
+
 ## Preparare ogni nuova versione
 
 La verifica dell'identita Windows fa parte del packaging: metadati e icona EXE,
@@ -72,8 +100,9 @@ l'esecuzione completa, incluse ripresa degli upload e verifica pubblica.
 La [diagnosi della 0.2.2](../../skills/lezionify-release/references/incidenti-0.2.2.md)
 distingue errori operativi, limiti dell'ambiente e cause ancora non dimostrate.
 
-1. Incrementare la versione stabile, ad esempio `npm version 0.2.1 --no-git-tag-version`.
-2. Creare `docs/releases/0.2.1.md` con sezioni Novità, Dati e riavvio, Limiti noti.
+1. Scegliere la prossima versione secondo la [convenzione di versionamento](#convenzione-di-versionamento)
+   e incrementarla, ad esempio `npm version 0.7.1 --no-git-tag-version`.
+2. Creare `docs/releases/<versione>.md` con sezioni Novità, Dati e riavvio, Limiti noti.
    Specificare eventuali cambiamenti ai dati. Aggiornare `releaseInfo.releaseNotesFile`
    in `electron-builder.yml` al nuovo file.
 3. Scegliere il profilo e avviare `npm run release:local` come descritto sotto.

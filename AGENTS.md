@@ -100,6 +100,10 @@ asset, protezione dei dati personali e diagnosi dei fallimenti gia' osservati.
 
 - Ogni aggiornamento distribuito deve avere una versione crescente. Non
   riutilizzare una versione gia' distribuita per binari diversi.
+- Prima di scegliere il numero della prossima release, applica la
+  [convenzione di versionamento](docs/publishing/aggiornamenti-windows.md#convenzione-di-versionamento).
+  La scelta e' manuale in base alle modifiche; il passaggio a 1.0.0 e' una
+  decisione esplicita di maturita' del prodotto da registrare in `DECISIONI.md`.
 - Scrivi le note della versione prima della distribuzione, includendo novita',
   correzioni, eventuali cambiamenti ai dati e problemi noti.
 - Verifica la coerenza tra versione dell'app, lockfile, note, tag della Release,

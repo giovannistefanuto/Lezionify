@@ -6723,3 +6723,14 @@ Non modificare manualmente la sezione `Registro`: aggiungi le nuove decisioni es
 - **Impatto:** Release https://github.com/giovannistefanuto/Lezionify/releases/tag/v0.7.0 disponibile agli utenti. Setup 300574402 byte SHA256 2ce27be7fa3e60965b098fff899becc160ac44859578e74377b7b7a35ab3b8d7, NotSigned. 1978 unitari e gate completo superati, tutti e tre gli asset uploaded e verificati. Nessuna installazione personale, migrazione o nuova dipendenza.
 - **Follow-up:** Pubblicare la documentazione finale e verificarne il commit su origin/main. Nessuna altra voce della coda avviata.
 - **File coinvolti:** DECISIONI.md, STRUTTURA_PROGETTO.md, docs/quality/navigazione-statistiche-2026-11-24.md, docs/publishing/aggiornamenti-windows.md
+
+## D-0611 — Convenzione ufficiale per il numero di versione
+
+- **Data:** 2026-11-24
+- **Stato:** accettata
+- **Area:** release
+- **Decisione:** Adottare la scelta manuale MAJOR.MINOR.PATCH: in fase 0.x, PATCH per correzioni e piccoli miglioramenti compatibili, MINOR per nuove funzioni o modifiche importanti ai flussi; 1.0.0 soltanto con decisione esplicita di maturita e affidabilita delle funzioni principali. Dopo 1.0, PATCH per correzioni compatibili, MINOR per nuove funzioni compatibili e MAJOR per cambiamenti incompatibili.
+- **Motivazione:** L utente approva e chiede di registrare ufficialmente la convenzione discussa. La categoria deve riflettere il contenuto della release, senza scegliere numeri automaticamente o collegare 1.0.0 al solo numero di modifiche.
+- **Impatto:** Fonte normativa unica nella procedura Windows, richiamata da AGENTS e dal primo passo di preparazione. Con modifiche miste prevale l impatto maggiore; MINOR azzera PATCH e MAJOR azzera MINOR e PATCH. Nessuna rinumerazione della 0.7.0, modifica a script o binari, nuova release o dipendenza. Documentazione sola senza distribuzione di nuovi binari non incrementa la versione.
+- **Follow-up:** Applicare la convenzione alla prossima release e registrare esplicitamente l eventuale passaggio a 1.0.0.
+- **File coinvolti:** AGENTS.md, docs/publishing/aggiornamenti-windows.md, DECISIONI.md
