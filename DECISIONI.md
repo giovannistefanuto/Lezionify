@@ -6712,3 +6712,14 @@ Non modificare manualmente la sezione `Registro`: aggiungi le nuove decisioni es
 - **Impatto:** 1978 unitari, 49 Python, 41 Node, Java, Bluetooth reale, RAG offline, updater, React Electron con riavvio, raccolte, Sessione e PDF passati. Verificati 385 file build, nove componenti NSIS, tre backup e assenza di dati privati. Setup 300574402 byte SHA256 2ce27be7fa3e60965b098fff899becc160ac44859578e74377b7b7a35ab3b8d7, NotSigned. Nessuna installazione personale.
 - **Follow-up:** Push dei sorgenti, prepare publish verify dei tre asset immutati; aggiornare URL e commit dopo la verifica pubblica. Conservare aggiornamenti documentali Mistral concorrenti secondo AGENTS.
 - **File coinvolti:** docs/quality/navigazione-statistiche-2026-11-24.md, docs/publishing/aggiornamenti-windows.md, docs/releases/0.7.0.md, DECISIONI.md, STRUTTURA_PROGETTO.md, src, tests, tools/run_sessione_compiled.cjs, package.json, package-lock.json, electron-builder.yml
+
+## D-0610 — Windows 0.7.0 pubblicato e verificato
+
+- **Data:** 2026-11-24
+- **Stato:** accettata
+- **Area:** release
+- **Decisione:** Pubblicare la release stabile latest v0.7.0 sul commit 08ee3787deba829821e7f2676c8a7422035b0f0f con installer, blockmap e latest.yml della build unica collaudata. Completare esclusivamente le quindici richieste concordate, preservando i documenti concorrenti e tutti i materiali personali esterni a Git e ai binari.
+- **Motivazione:** Gate completo e verifiche degli asset passati. Upload completato sui medesimi binari senza sostituzioni; publish e verify confermano release pubblica, digest remoti corrispondenti e manifesto anonimo identico byte per byte.
+- **Impatto:** Release https://github.com/giovannistefanuto/Lezionify/releases/tag/v0.7.0 disponibile agli utenti. Setup 300574402 byte SHA256 2ce27be7fa3e60965b098fff899becc160ac44859578e74377b7b7a35ab3b8d7, NotSigned. 1978 unitari e gate completo superati, tutti e tre gli asset uploaded e verificati. Nessuna installazione personale, migrazione o nuova dipendenza.
+- **Follow-up:** Pubblicare la documentazione finale e verificarne il commit su origin/main. Nessuna altra voce della coda avviata.
+- **File coinvolti:** DECISIONI.md, STRUTTURA_PROGETTO.md, docs/quality/navigazione-statistiche-2026-11-24.md, docs/publishing/aggiornamenti-windows.md

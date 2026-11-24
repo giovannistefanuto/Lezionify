@@ -58,7 +58,7 @@ Verificati 385 file build, nove componenti NSIS, tre backup con hash, runtime e 
 
 ASAR SHA256: `85b0cb28146ad60264197bce33d4aeca5184ae8075ec9aadb7bfa596721ba6b6`. Firma effettiva: `NotSigned`. Installer estratto e verificato, non eseguito sul profilo personale.
 
-Pubblicazione e commit sorgente: da registrare dopo la verifica pubblica.
+Release stabile latest [v0.7.0](https://github.com/giovannistefanuto/Lezionify/releases/tag/v0.7.0) pubblicata e verificata sul commit dei binari `08ee3787deba829821e7f2676c8a7422035b0f0f`. Installer, blockmap e manifesto sono tutti uploaded con nomi, dimensioni e digest corrispondenti ai file locali. `verify` conferma release pubblica e manifesto anonimo identico byte per byte. Sorgenti verificati sul remoto `main`; documentazione finale pubblicata con commit successivo. L’aggiornamento è disponibile; nessuna installazione personale eseguita.
 
 ## Limiti
 

@@ -2,8 +2,8 @@
 
 ## Stato attuale
 
-La 0.7.0 prepara le sole richieste di navigazione, ricerca e statistiche del
-24 novembre. `ArchiveSearch` possiede il campo sopra l’elenco; comando laterale
+La 0.7.0, pubblicata e verificata il 24 novembre, completa le sole richieste
+di navigazione, ricerca e statistiche concordate. `ArchiveSearch` possiede il campo sopra l’elenco; comando laterale
 e Ctrl+K aprono la stessa vista. `KeyboardShortcuts` documenta le combinazioni
 nelle Impostazioni; `src/utils/examPace.ts` evita ritmi non nulli arrotondati a zero.
 Il calendario affiancato alla barra usa un dialogo non modale, mentre editor

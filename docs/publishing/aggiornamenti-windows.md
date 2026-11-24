@@ -390,4 +390,8 @@ ASAR SHA256 `85b0cb28146ad60264197bce33d4aeca5184ae8075ec9aadb7bfa596721ba6b6`.
 Authenticode `NotSigned`; Start risolve l’identità corretta. Nessuna installazione
 sul profilo personale; upgrade Windows temporaneo, UAC e SmartScreen non collaudati.
 Rapporto completo locale in `local-artifacts/release-20261124-170545/report.json`.
-Pubblicazione da confermare con verifica degli asset remoti e del manifesto anonimo.
+Release stabile latest [v0.7.0](https://github.com/giovannistefanuto/Lezionify/releases/tag/v0.7.0)
+pubblicata e verificata sul commit dei binari `08ee3787deba829821e7f2676c8a7422035b0f0f`.
+Tutti e tre gli asset remoti sono uploaded, con dimensioni e digest identici ai
+file locali; il manifesto pubblico scaricato senza credenziali è identico byte
+per byte. Aggiornamento disponibile, installazione personale non eseguita.
