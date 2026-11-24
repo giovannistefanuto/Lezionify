@@ -6668,3 +6668,47 @@ Non modificare manualmente la sezione `Registro`: aggiungi le nuove decisioni es
 - **Impatto:** Setup 300571533 byte, SHA256 c4758fdad6f194895bf41136267647aebfb4582dd4fd1682dccc453bb8973d8f, NotSigned. Tutti e tre gli asset uploaded e verificati. Aggiornamento disponibile agli utenti; nessuna installazione personale. Conteggi delle chiavi dalla nuova versione, non retroattivi; massimo due ulteriori chiamate fisiche per recuperare QnA temporaneamente interrotto.
 - **Follow-up:** Pubblicare la documentazione finale e verificarne il commit sul remoto. Nessun altro elemento della coda avviato.
 - **File coinvolti:** DECISIONI.md, STRUTTURA_PROGETTO.md, docs/quality/avvisi-chiavi-qna-2026-11-23.md, docs/publishing/aggiornamenti-windows.md
+
+## D-0606 — Pilota Mistral Large 4 completato e valutato
+
+- **Data:** 2026-11-24
+- **Stato:** accettata
+- **Area:** ricerca-qna
+- **Decisione:** Completare le cinque inferenze autorizzate con Mistral Large 4 high e confrontarle con Gemini storico e fonti congelate. Conservare risultati, valutazione per caso, usage, tempi, rendering e verifiche indipendenti negli artefatti privati.
+- **Motivazione:** L utente ha inserito la chiave e autorizzato l avvio immediato. Le risposte vanno giudicate criticamente anche quando concordano con Gemini o ripetono una fonte errata.
+- **Impatto:** Cinque risposte complete senza retry API: 44994 token input, 8009 completion, costo calcolato 0.0483147 USD senza cache o imposte, mediana 17.89 secondi end-to-end. Qualita comparabile nel piccolo campione con errori di entrambi; nessuna superiorita generale dimostrata. Rendering statico senza errori KaTeX, fonti conservate e nessuna credenziale negli artefatti. Primo tentativo fermato dal DNS sandbox, poi ripresa manuale verificata fuori sandbox.
+- **Follow-up:** Consegnare confronto e limiti. Nessuna integrazione applicativa o nuova inferenza necessaria: riusare gli esiti salvati. Eventuale integrazione da decidere separatamente.
+- **File coinvolti:** docs/research/mistral-qna-pilota-2026-11-23.md, docs/research/README.md, DECISIONI.md, local-artifacts/qna-benchmark/mistral-five-20261123 (privato escluso da Git)
+
+## D-0607 — Navigazione, ricerca e statistiche essenziali
+
+- **Data:** 2026-11-24
+- **Stato:** accettata
+- **Area:** interfaccia-studio
+- **Decisione:** Implementare esclusivamente le quindici richieste concordate: Audio prioritario, RAG al posto di Consulta, RIPETERE con Log e Impostazioni in Strumenti; ricerca in testa all Archivio con comando laterale e Ctrl+K; Sessione non modale solo quando affiancata alla barra, X visibile e scelta di sessione e piano conservata localmente; catalogo scorciatoie e statistiche alleggerite.
+- **Motivazione:** L utente ha approvato il flusso e autorizzato implementazione, collaudi e nuova release senza altre conferme. Il calendario usava showModal rendendo inerte la barra visibile; la ricerca modificava dati fuori vista; arrotondare 2/86 a un decimale produceva zero apparente.
+- **Impatto:** Soglia giornaliera invariata di 600 secondi con messaggio dinamico; piccoli carichi mostrati come lezioni nei giorni disponibili in entrambi i punti. Riepilogo archivio richiudibile, testi ridondanti rimossi, dati insufficienti spiegati dalle condizioni effettive del tracker. Nessuna migrazione, dipendenza o chiamata AI aggiunta; editor e Full Focus conservano dialoghi protetti.
+- **Follow-up:** Gate completo, controlli visivi, installer dalla stessa build, commit e push di tutte le modifiche pubblicabili, release Windows 0.7.0 e verifica pubblica.
+- **File coinvolti:** src/App.tsx, src/components, src/utils/examPace.ts, tests, tools/run_sessione_compiled.cjs, docs/releases/0.7.0.md, electron-builder.yml, package.json, package-lock.json
+
+## D-0608 — Riprova Qwen Cloudflare ritirato e preventivo Terra
+
+- **Data:** 2026-11-24
+- **Stato:** accettata
+- **Area:** ricerca-qna
+- **Decisione:** Riprovare sulle cinque domande congelate il modello Cloudflare Qwen3 30B con comando soft think. Conservare HTTP 410 e quattro casi saltati senza sostituire automaticamente modello. Verificare listino GPT 6.1 Terra e stimare costi dai conteggi del pilota Mistral.
+- **Motivazione:** L utente richiede una nuova prova thinking del candidato storico e una valutazione economica e qualitativa di Terra. La disponibilita corrente va distinta dalle misure di ottobre.
+- **Impatto:** Una richiesta Cloudflare senza risposta o usage; il ritiro dal 20 novembre e confermato dalle fonti ufficiali. Runner e budget condiviso riusati, prenotazione prudenziale conservata e nessuna inferenza Terra. Tariffe Terra 1 e 5 USD per milione input e output: circa 0.017 USD per domanda a parita ipotetica dei conteggi Mistral, non consumo Terra misurato.
+- **Follow-up:** Comunicare che Qwen3 30B non e piu testabile sul servizio scelto. Valutare eventualmente un successore o un test Terra, senza promettere superiorita o avviare nuove inferenze non richieste.
+- **File coinvolti:** docs/research/mistral-qna-pilota-2026-11-23.md, DECISIONI.md, local-artifacts/qna-benchmark/cloudflare-think-five-20261124 (privato escluso da Git)
+
+## D-0609 — Gate completo e installer 0.7.0 verificati
+
+- **Data:** 2026-11-24
+- **Stato:** accettata
+- **Area:** release
+- **Decisione:** Distribuire le sole quindici richieste concordate dalla build unica del gate completo, riusata per NSIS senza cambiare compressione. Procedere con commit e push di tutte le modifiche pubblicabili e pubblicazione autorizzata dei tre asset verificati.
+- **Motivazione:** Tutti i collaudi pertinenti sono passati, inclusi ricerca visibile da Statistiche e Sessione, soglie giornaliere, editor modali protetti, catalogo Scorciatoie e layout fino al 200 percento di zoom. Nessun cambiamento applicativo dopo il gate.
+- **Impatto:** 1978 unitari, 49 Python, 41 Node, Java, Bluetooth reale, RAG offline, updater, React Electron con riavvio, raccolte, Sessione e PDF passati. Verificati 385 file build, nove componenti NSIS, tre backup e assenza di dati privati. Setup 300574402 byte SHA256 2ce27be7fa3e60965b098fff899becc160ac44859578e74377b7b7a35ab3b8d7, NotSigned. Nessuna installazione personale.
+- **Follow-up:** Push dei sorgenti, prepare publish verify dei tre asset immutati; aggiornare URL e commit dopo la verifica pubblica. Conservare aggiornamenti documentali Mistral concorrenti secondo AGENTS.
+- **File coinvolti:** docs/quality/navigazione-statistiche-2026-11-24.md, docs/publishing/aggiornamenti-windows.md, docs/releases/0.7.0.md, DECISIONI.md, STRUTTURA_PROGETTO.md, src, tests, tools/run_sessione_compiled.cjs, package.json, package-lock.json, electron-builder.yml

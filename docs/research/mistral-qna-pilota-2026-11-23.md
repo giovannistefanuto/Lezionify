@@ -1,9 +1,76 @@
 # Pilota privato: cinque Q&A Gemini storici e Mistral Large 4
 
-Preparato il 23 novembre 2026 su richiesta dell'utente. Nessuna inferenza
-Mistral eseguita durante la preparazione; serve la chiave locale.
+Preparato il 23 novembre 2026 su richiesta dell'utente. Inferenze eseguite
+il 24 novembre dopo inserimento locale della chiave e conferma dell'utente.
+
+## Esito del 24 novembre
+
+Cinque risposte complete del modello fissato, senza retry API: 44.994 token
+input e 8.009 completion, 0.0483147 USD calcolati al listino standard senza
+sconto cache o imposte (non verifica della fattura). Medie per domanda:
+8.999 input e 1.602 completion, includendo il reasoning fatturabile.
+Tempi end-to-end 12.24, 34.91, 17.89, 16.20 e 32.23 secondi; mediana 17.89.
+
+Valutazione dell'agente: stessa fascia pratica nei cinque casi, nessuna
+superiorita generale dimostrata. Entrambi hanno imprecisioni; Mistral risolve
+piu direttamente un dubbio sugli incentivi, ma aggiunge anch'esso una
+digressione fuorviante. Una risposta ripete un errore matematico della fonte
+sulla trasformazione affine dei payoff: la fedelta al documento non implica
+correttezza. La fonte personale non e stata modificata.
+
+Rendering statico con gli stessi plugin del Q&A: 73 formule Mistral e nessun
+errore KaTeX nei dieci testi confrontati. Non e un collaudo visuale Electron.
+Revisione dettagliata, punteggi soggettivi per caso, calcoli e misure restano
+negli artefatti privati; nessun testo personale riportato qui.
+
+Il primo tentativo sandbox ha incontrato un errore DNS. Verifica anonima
+ENOTFOUND nella sandbox e HTTP 401 senza chiave fuori sandbox, poi marker
+archiviato e ripresa manuale fuori sandbox. Nessuna credenziale stampata.
+Il run completo non richiede altre chiamate: le risposte salvate si riusano.
+Prossimo passo eventuale: decidere se integrare il provider, non ancora fatto.
 
 ## Campione e confronto
+
+### Riprova Cloudflare e preventivo Terra, 24 novembre
+
+Su richiesta dell'utente preparato replay delle stesse cinque domande con
+dispensa completa e comando soft `/think`, usando il runner storico separato
+`tools/qna_replay_private.mjs`, candidato `cloudflare-qwen`, output massimo
+4096, temperatura 0.2 e budget giornaliero prudenziale condiviso invariato.
+Prompt e limite output differiscono dal test Mistral: non sarebbe un confronto
+controllato a identica configurazione. `/think` e un comando soft Qwen, non
+la prova che il servizio abbia attivato il ragionamento.
+
+Il primo invio restituisce HTTP 410 dopo circa 392 ms, senza testo, reasoning
+o usage. Il runner storico classifica genericamente 410 come invalid_request,
+disabilita il candidato e salta gli altri quattro casi. Le pagine ufficiali
+Cloudflare confermano ritiro del modello dal 20 novembre 2026. Nessuna nuova
+misura di qualita o latenza del modello; nessuna attestazione di costo zero
+in fattura. Il ledger conserva la prenotazione prudenziale della richiesta
+senza usage, non un consumo effettivamente misurato. Artefatti privati in
+`local-artifacts/qna-benchmark/cloudflare-think-five-20261124/`.
+
+Per GPT-6.1 Terra, listino ufficiale consultato il 24 novembre: Standard
+1 USD/M input e 5 USD/M output. Applicando queste tariffe agli stessi conteggi
+del pilota Mistral, senza assumere identica tokenizzazione o reasoning, il
+conto ipotetico e 0.085039 USD per cinque richieste, 0.017008 per domanda,
+8.50 USD per 500 e 13.61 USD per 800. Nessuna chiamata Terra eseguita;
+cache, imposte, retry e strumenti esclusi. Con input medio 9000 e output
+fatturabile 5000 il conto salirebbe a 0.034 USD per domanda.
+
+La documentazione Terra descrive ragionamento regolabile e capacita visive;
+queste caratteristiche lo rendono candidabile a una prova testuale e slide,
+ma non dimostrano superiorita rispetto a Gemini o Mistral sulle nostre domande.
+Un confronto iniziale medium dovrebbe misurare anche TTFT in streaming e
+correttezza rispetto alle fonti, senza assumere che meno reasoning sia gratis
+in termini di qualita o che garantisca una latenza specifica.
+
+Fonti consultate:
+
+- [Ritiri Cloudflare](https://developers.cloudflare.com/changelog/post/2026-11-05-planned-model-deprecations/).
+- [Scheda Qwen su Cloudflare](https://developers.cloudflare.com/workers-ai/models/qwen3-30b-a3b-fp8/).
+- [Switch soft Qwen](https://huggingface.co/Qwen/Qwen3-30B-A3B#advanced-usage-switching-between-thinking-and-non-thinking-modes-via-user-input).
+- [Scheda e tariffe Terra](https://developers.openai.com/api/docs/models/gpt-6.1-terra).
 
 Cinque prime domande di conversazioni distinte, due di RL e tre di GT:
 Bellman come sistema lineare, aggiornamenti TD rispetto a Monte Carlo,
@@ -66,6 +133,8 @@ Tutto in `local-artifacts/qna-benchmark/mistral-five-20261123/`, ignorato da Git
 
 - `corpus.private.json`: fonti e baseline congelate;
 - `baseline-review.private.md`: revisione preliminare e criteri congelati;
+- `evaluation.private.md`: valutazione finale dell'agente, limiti e punteggi;
+- `render-check.private.json`, `independent-checks.private.json`: verifiche offline;
 - `case-*.attempt.private.json`: tentativi e riserve;
 - `case-*.result.private.json`: risposte, usage, tempi e costi;
 - `manifest.private.json`: configurazione e impronta per la ripresa;

@@ -2,6 +2,15 @@
 
 ## Stato attuale
 
+La 0.7.0 prepara le sole richieste di navigazione, ricerca e statistiche del
+24 novembre. `ArchiveSearch` possiede il campo sopra l’elenco; comando laterale
+e Ctrl+K aprono la stessa vista. `KeyboardShortcuts` documenta le combinazioni
+nelle Impostazioni; `src/utils/examPace.ts` evita ritmi non nulli arrotondati a zero.
+Il calendario affiancato alla barra usa un dialogo non modale, mentre editor
+e Full Focus conservano la protezione modale. Sessione conserva localmente la
+scelta di vista. Riepilogo archivio compatto e testi dello studio rivisti.
+Piano di verifica: [navigazione e statistiche](docs/quality/navigazione-statistiche-2026-11-24.md).
+
 La 0.6.0, pubblicata e verificata il 23 novembre, aggiunge avvisi Bluetooth in entrambe le direzioni e durata di due
 secondi, Pausa nella fila di Sessione e recupero automatico Q&A con sostituzione
 esplicita dei frammenti via IPC. `electron/main/ai/keyUsage.ts` conserva

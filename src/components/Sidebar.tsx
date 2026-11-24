@@ -24,20 +24,17 @@ interface SidebarProps {
   onCourseArchive?: (course: string, archived: boolean) => void
   onOpenSettings: () => void
   hasConfiguredKey: boolean
-  searchQuery: string
-  setSearchQuery: (query: string) => void
-  searchOrder?: 'relevance' | 'date'
-  setSearchOrder?: (order: 'relevance' | 'date') => void
   onRefreshStats: () => void
   isCollapsed: boolean
   onToggleCollapse: () => void
-  searchInputRef?: React.RefObject<HTMLInputElement | null>
   theme: 'light' | 'dark'
   onToggleTheme: () => void
   onOpenCourseManagement: () => void
   onOpenCourseChat?: () => void
   onOpenQuickCapture?: () => void
   onOpenSessione?: () => void
+  onNavigate?: () => void
+  onSearch?: () => void
   sessioneOpen?: boolean
   onOpenLogViewer?: () => void
   onOpenUsbRecorder?: () => void
@@ -63,14 +60,9 @@ export function Sidebar({
   onCourseArchive,
   onOpenSettings,
   hasConfiguredKey,
-  searchQuery,
-  setSearchQuery,
-  searchOrder = 'relevance',
-  setSearchOrder,
   onRefreshStats,
   isCollapsed,
   onToggleCollapse,
-  searchInputRef,
   theme,
   onToggleTheme,
   onOpenCourseManagement,
@@ -78,6 +70,8 @@ export function Sidebar({
   onOpenQuickCapture,
   onOpenSessione,
   sessioneOpen,
+  onNavigate,
+  onSearch,
   onOpenLogViewer,
   onOpenUsbRecorder,
   onOpenRepetitions,
@@ -211,7 +205,10 @@ export function Sidebar({
   )
 
   return (
-    <aside className={`sidebar ${isCollapsed ? 'is-collapsed' : ''}`}>
+    <aside className={`sidebar ${isCollapsed ? 'is-collapsed' : ''}`} onClickCapture={event => {
+      const target = event.target instanceof Element ? event.target.closest('button') : null
+      if (target && !target.matches('.session-sidebar-button, .sidebar-collapse-btn, .theme-toggle-btn')) onNavigate?.()
+    }}>
       {/* Expanded Sidebar Header */}
       {!isCollapsed && (
         <div className="sidebar-header">
@@ -234,68 +231,25 @@ export function Sidebar({
           {/* Action Toolbar */}
           <div className="sidebar-action-bar">
             <div className="sidebar-action-group">
-              {onOpenUsbRecorder && (
-                <button
-                  className="settings-gear-btn"
-                  onClick={onOpenUsbRecorder}
-                  title={
-                    isUsbConnected
-                      ? 'Registratore USB Connesso (D:\\RECORD)'
-                      : 'Acquisizione Registratore USB'
-                  }
-                  aria-label="Apri registratore USB"
-                >
-                  🎙️<span className="sidebar-action-label">Audio</span>
-                  {isUsbConnected && (
-                    <span
-                      className="usb-indicator-dot"
-                      title="Registratore collegato"
-                    />
-                  )}
-                </button>
-              )}
-
-              {onOpenRepetitions && <button className="settings-gear-btn" onClick={onOpenRepetitions} title="Sessioni RIPETERE" aria-label="Apri RIPETERE">↻<span className="sidebar-action-label">RIPETERE</span></button>}
-              {onOpenCourseChat && <button className="settings-gear-btn" onClick={onOpenCourseChat}
-                title="Sala di consultazione" aria-label="Apri consultazione del corso">💬<span className="sidebar-action-label">Consulta</span></button>}
-              {onOpenQuickCapture && (
-                <button
-                  className="settings-gear-btn"
-                  onClick={onOpenQuickCapture}
-                  title="Memo (Ctrl+M o Ctrl+P)"
-                  aria-label="Apri Memo"
-                >
-                  📌<span className="sidebar-action-label">Memo</span>
-                </button>
-              )}
-
-              {onOpenSessione && <button type="button" className="settings-gear-btn session-sidebar-button" onClick={onOpenSessione} aria-pressed={Boolean(sessioneOpen)}
-                title="Sessione (Ctrl+Alt+S)" aria-label="Apri Sessione">▦<span className="sidebar-action-label">Sessione</span></button>}
+              {onOpenUsbRecorder && <button type="button" className="settings-gear-btn" onClick={onOpenUsbRecorder}
+                title="Acquisizione Registratore USB" aria-label="Apri registratore USB">🎙️<span className="sidebar-action-label">Audio</span>{isUsbConnected && <span className="usb-indicator-dot" title="Registratore collegato" />}</button>}
+              {onOpenSessione && <button type="button" className="settings-gear-btn session-sidebar-button" onClick={onOpenSessione}
+                aria-pressed={Boolean(sessioneOpen)} title="Sessione (Ctrl+Alt+S)" aria-label="Apri Sessione">▦<span className="sidebar-action-label">Sessione</span></button>}
+              {onOpenCourseChat && <button type="button" className="settings-gear-btn" onClick={onOpenCourseChat}
+                title="RAG · ricerca nelle fonti del corso" aria-label="Apri RAG">💬<span className="sidebar-action-label">RAG</span></button>}
+              {onOpenQuickCapture && <button type="button" className="settings-gear-btn" onClick={onOpenQuickCapture}
+                title="Memo (Ctrl+M o Ctrl+P)" aria-label="Apri Memo">📌<span className="sidebar-action-label">Memo</span></button>}
               <HomePause />
-              {onOpenLogViewer && (
-                <button
-                  className="settings-gear-btn"
-                  onClick={onOpenLogViewer}
-                  title="Log di Sistema & Diagnostica (Ctrl+Shift+L)"
-                  aria-label="Apri log di sistema"
-                >
-                  <span aria-hidden="true">📋</span><span className="sidebar-action-label">Log</span>
-                </button>
-              )}
-
-              <button
-                className="settings-gear-btn"
-                onClick={onOpenSettings}
-                title="Impostazioni"
-                aria-label="Apri impostazioni"
-              >
-                ⚙️<span className="sidebar-action-label">Impostazioni</span>
-                {!hasConfiguredKey && (
-                  <span className="settings-warning-dot" title="Nessuna chiave API configurata">
-                    •
-                  </span>
-                )}
-              </button>
+              <details className="sidebar-tools" onKeyDown={event => {
+                if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); event.currentTarget.open = false; event.currentTarget.querySelector('summary')?.focus() }
+              }} onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget)) event.currentTarget.open = false }}>
+                <summary title="RIPETERE, log e impostazioni">Strumenti{!hasConfiguredKey && <span title="Nessuna chiave API configurata"> •</span>}</summary>
+                <div onClick={event => { if (event.target instanceof Element && event.target.closest('button')) event.currentTarget.closest('details')?.removeAttribute('open') }}>
+                  {onOpenRepetitions && <button type="button" onClick={onOpenRepetitions}>↻ RIPETERE</button>}
+                  {onOpenLogViewer && <button type="button" onClick={onOpenLogViewer} title="Ctrl+Shift+L" aria-label="Apri log di sistema">📋 Log di sistema</button>}
+                  <button type="button" onClick={onOpenSettings} aria-label="Apri impostazioni">⚙️ Impostazioni</button>
+                </div>
+              </details>
             </div>
 
             {/* Animated Sun / Moon Theme Toggle */}
@@ -354,18 +308,7 @@ export function Sidebar({
             <MusicButton prominent />
           </div>
           <div className="sidebar-search">
-            <input
-              ref={searchInputRef}
-              type="text"
-              className="search-input"
-              placeholder="Cerca lezioni… (Ctrl+K)"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              aria-label="Cerca lezioni"
-            />
-            {searchQuery.trim() && setSearchOrder && <label className="search-order">Ordina risultati
-              <select aria-label="Ordine risultati ricerca" value={searchOrder} onChange={event => setSearchOrder(event.target.value as 'relevance' | 'date')}><option value="relevance">Pertinenza</option><option value="date">Data più recente</option></select>
-            </label>}
+            <button type="button" className="sidebar-search-launch" onClick={() => { setMainView('archive'); onSearch?.() }} aria-label="Cerca lezioni" title="Cerca lezioni (Ctrl+K)">⌕ <span>Cerca lezioni</span><kbd>Ctrl+K</kbd></button>
           </div>
 
           <div className="view-toggle">
@@ -454,6 +397,10 @@ export function Sidebar({
       {isCollapsed && (
         <div className="sidebar-collapsed-nav">
           {onOpenCollections && <button className={`sidebar-icon-btn ${mainView === 'collections' ? 'is-active' : ''}`} onClick={() => onOpenCollections()} title="Altro" aria-label="Altro">📁</button>}
+          <button type="button" className="sidebar-icon-btn" aria-label="Cerca lezioni" title="Cerca lezioni (Ctrl+K)" onClick={() => { setMainView('archive'); onSearch?.() }}>⌕</button>
+          {onOpenUsbRecorder && <button type="button" className="sidebar-icon-btn" onClick={onOpenUsbRecorder} aria-label="Apri registratore USB" title="Audio">🎙️</button>}
+          {onOpenCourseChat && <button type="button" className="sidebar-icon-btn" onClick={onOpenCourseChat} aria-label="Apri RAG" title="RAG">💬</button>}
+          {onOpenRepetitions && <button type="button" className="sidebar-icon-btn" onClick={onOpenRepetitions} aria-label="Apri RIPETERE" title="RIPETERE">↻</button>}
           <HomePause compact />
           <MusicButton compact />
           <button

@@ -13,6 +13,7 @@ import { DeviceNotices } from './components/DeviceNotices'
 import { AmbientSoundProvider } from './components/AmbientSoundContext'
 import type { StudyStatus, VideoImportSelection } from '../shared/archive'
 import { Sidebar } from './components/Sidebar'
+import { ArchiveSearch } from './components/ArchiveSearch'
 import { LectureList } from './components/LectureList'
 import { SemesterReminderBanner } from './components/SemesterReminderBanner'
 import { ErrorBoundary } from './components/ErrorBoundary'
@@ -330,25 +331,6 @@ export default function App() {
     }
   }, [])
 
-  // B-03/B-04: Global keyboard shortcuts
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      // Ctrl+K or Cmd+K → focus search input
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
-        e.preventDefault()
-        if (isSidebarCollapsed) setIsSidebarCollapsed(false)
-        setTimeout(() => searchInputRef.current?.focus(), 50)
-      }
-      // Ctrl+Shift+L or Cmd+Shift+L → toggle system log modal
-      if (!e.defaultPrevented && !e.isComposing && !e.repeat && !e.altKey && e.shiftKey && (e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'l') {
-        e.preventDefault()
-        setShowLogModal((prev) => !prev)
-      }
-    }
-    document.addEventListener('keydown', handler)
-    return () => document.removeEventListener('keydown', handler)
-  }, [isSidebarCollapsed])
-
   // 3. Selected lecture content hook
   const {
     activeTab,
@@ -458,12 +440,47 @@ export default function App() {
     if (sessione.archive && !review) setReviewAtStartup(false)
   }, [sessione.archive, review])
 
+  const closeSessione = sessione.close
+  const [searchFocusRequest, setSearchFocusRequest] = useState(0)
+  const openArchiveSearch = useCallback(() => {
+    closeSessione()
+    setSelectedLectureId(null)
+    setCourseChatOpen(false)
+    setShowMemoPage(false)
+    setMainView('archive')
+    setSearchFocusRequest(value => value + 1)
+  }, [closeSessione, setSelectedLectureId])
+  useEffect(() => {
+    if (searchFocusRequest && mainView === 'archive' && !showMemoPage) searchInputRef.current?.focus()
+  }, [searchFocusRequest, mainView, showMemoPage])
+
+  // B-03/B-04: Global keyboard shortcuts
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      // Ctrl+K or Cmd+K → focus search input
+      if (!e.defaultPrevented && !e.isComposing && !e.repeat && !e.altKey && !e.shiftKey && (e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        if (document.querySelector('dialog:modal, .settings-modal-overlay, .focus-lock-overlay')) return
+        e.preventDefault()
+        openArchiveSearch()
+      }
+      // Ctrl+Shift+L or Cmd+Shift+L → toggle system log modal
+      if (!e.defaultPrevented && !e.isComposing && !e.repeat && !e.altKey && e.shiftKey && (e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'l') {
+        e.preventDefault()
+        setShowLogModal((prev) => !prev)
+      }
+    }
+    document.addEventListener('keydown', handler)
+    return () => document.removeEventListener('keydown', handler)
+  }, [openArchiveSearch])
+
   return (
     <AppUpdates>
     <ToolSettingsContext.Provider value={{ isOpen: showSettingsModal, open: section => { setToolSettingsSection(section); openSettingsModal() } }}>
     <AmbientSoundProvider>
     <main className={`app-shell ${theme === 'dark' ? 'dark-theme' : ''}`}>
       <Sidebar
+        onNavigate={sessione.close}
+        onSearch={openArchiveSearch}
         selectedCollectionId={selectedCollectionId}
         onOpenCollections={(id, archived = false) => { setSelectedCollectionId(id); setCollectionsArchived(archived); setSelectedLectureId(null); setShowMemoPage(false); setMainView('collections') }}
         mainView={mainView}
@@ -500,13 +517,8 @@ export default function App() {
           settings.apiKey || settings.apiKeys.length > 0
         )}
         onRefreshStats={refreshCourseStats}
-        searchQuery={searchQuery}
-        setSearchQuery={setSearchQuery}
-        searchOrder={searchOrder}
-        setSearchOrder={setSearchOrder}
         isCollapsed={isSidebarCollapsed}
         onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-        searchInputRef={searchInputRef}
         theme={theme}
         onToggleTheme={toggleTheme}
         onOpenCourseManagement={() => setShowCourseModal(true)}
@@ -538,6 +550,7 @@ export default function App() {
         {!showMemoPage && mainView === 'collections' && <Suspense fallback={<LazyFallback />}><ErrorBoundary fallbackTitle="Errore nelle raccolte"><CollectionsWorkspace configuredModel={settings.model} collectionId={selectedCollectionId} archived={collectionsArchived} onSelectCollection={(id, archived = false) => { setSelectedCollectionId(id); setCollectionsArchived(archived) }} /></ErrorBoundary></Suspense>}
         {!showMemoPage && mainView === 'archive' && (
           <ErrorBoundary fallbackTitle="Errore nel caricamento dell'archivio lezioni">
+            <ArchiveSearch query={searchQuery} onChange={setSearchQuery} order={searchOrder} onOrderChange={setSearchOrder} inputRef={searchInputRef} />
             <LectureList
               selectedCourse={selectedCourse}
               isArchivedCourse={isSelectedCourseArchived}

@@ -1,15 +1,23 @@
 import React, { act } from 'react'
 import type { Root } from 'react-dom/client'
 import { Sidebar } from '../../src/components/Sidebar'
+import { SessionDialog } from '../../src/components/sessione/SessionDialog'
 
 /** Focus must not scroll a long host document and immediately dismiss its menu. */
 export async function runSidebarMenuScenario(root: Root) {
+  await act(async () => root.render(<SessionDialog title="Sessione" workspace alignSidebar onClose={() => {}}>Calendario</SessionDialog>))
+  const workspace = document.querySelector('dialog')!
+  if (workspace.matches(':modal')) throw new Error('Sessione blocks the visible sidebar with a modal dialog')
+  await act(async () => root.render(null))
+  await act(async () => root.render(<SessionDialog title="Modifica appello" onClose={() => {}}>Editor</SessionDialog>))
+  if (!document.querySelector('dialog')?.matches(':modal')) throw new Error('Session editors must protect an unfinished edit')
+  await act(async () => root.render(null))
   await act(async () => root.render(<>
     <Sidebar mainView="archive" setMainView={() => {}} selectedCourse="tutti" setSelectedCourse={() => {}}
       selectedStudyStatus="tutti" setSelectedStudyStatus={() => {}} totalLecturesCount={0}
       coursesWithCounts={[]} archivedCourseCodes={['B']} getCourseLecturesCount={() => 1}
-      onCourseArchive={() => {}} onOpenSessione={() => {}} onOpenSettings={() => {}} hasConfiguredKey searchQuery=""
-      setSearchQuery={() => {}} onRefreshStats={() => {}} isCollapsed={false} onToggleCollapse={() => {}}
+      onCourseArchive={() => {}} onOpenSessione={() => {}} onOpenSettings={() => {}} hasConfiguredKey
+      onRefreshStats={() => {}} isCollapsed={false} onToggleCollapse={() => {}}
       theme="light" onToggleTheme={() => {}} onOpenCourseManagement={() => {}} />
     <div style={{ height: 2500 }} aria-hidden="true" />
   </>))

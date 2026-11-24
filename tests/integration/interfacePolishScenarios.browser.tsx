@@ -94,8 +94,6 @@ export async function runInterfacePolishScenarios(root: Root, api: any) {
             getCourseLecturesCount={() => 4}
             onOpenSettings={noop}
             hasConfiguredKey
-            searchQuery=""
-            setSearchQuery={noop}
             onRefreshStats={noop}
             isCollapsed={collapsed}
             onToggleCollapse={noop}

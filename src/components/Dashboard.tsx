@@ -1,4 +1,4 @@
-import { MusicButton } from './MusicButton'
+import { formatExamPace } from '../utils/examPace'
 import { StudyHistoryOverview } from './StudyHistoryOverview'
 import { StudyRecords } from './StudyRecords'
 import { StudyDayTimeline } from './StudyDayTimeline'
@@ -185,7 +185,6 @@ export function Dashboard({
       cfu?: number
       completedLectures: number
       totalLectures: number
-      pace: string
       pacingColor: string
       pacingMessage: string
     }[] = []
@@ -201,11 +200,6 @@ export function Dashboard({
         targetExamDate
       )
       if (daysLeft === null) continue
-      const lecturesLeft = Math.max(
-        (stats?.totalLectures ?? 0) - (stats?.completedLectures ?? 0),
-        0
-      )
-      const pace = (lecturesLeft / Math.max(daysLeft, 1)).toFixed(1)
 
       let pacingMessage: string
       let pacingColor: string
@@ -233,7 +227,6 @@ export function Dashboard({
         cfu: courseDef?.cfu,
         completedLectures: stats?.completedLectures ?? 0,
         totalLectures: stats?.totalLectures ?? 0,
-        pace,
         pacingColor,
         pacingMessage
       })
@@ -343,7 +336,6 @@ export function Dashboard({
               concentrazione e controlla il ritmo di studio.
             </p>
           </div>
-          <MusicButton prominent />
         </header>
 
         {/* --- WIDGET COUNTDOWN ESAMI --- */}
@@ -434,7 +426,7 @@ export function Dashboard({
                       style={{ color: item.pacingColor }}
                     >
                       <span>⏱️ Ritmo consigliato:</span>
-                      <strong>{item.pace} lez/giorno</strong>
+                      <strong>{item.totalLectures ? formatExamPace(item.totalLectures - item.completedLectures, item.daysLeft) : 'Nessuna lezione archiviata'}</strong>
                     </div>
                   )}
                 </div>
@@ -461,9 +453,6 @@ export function Dashboard({
           <div className="study-analytics-header">
             <div className="study-analytics-title">
               <h2>⏱️ Analisi del Tempo di Studio</h2>
-              <span className="study-analytics-subtitle">
-                Tempo accreditato dai segnali di studio disponibili, con crediti manuali e stimati distinti.
-              </span>
             </div>
             <div className="dashboard-study-actions"><button
               className="secondary-button small add-manual-btn"
@@ -604,45 +593,15 @@ export function Dashboard({
 
         {/* Hero KPI Cards Lezioni */}
         {courseStats.length > 0 && (
-          <div className="dashboard-hero-grid">
-            <div className="hero-kpi-card hero-hours-card">
-              <div className="hero-kpi-icon">🎙️</div>
-              <div className="hero-kpi-info">
-                <span className="hero-kpi-label">
-                  Ore di Lezione Registrate
-                </span>
-                <strong className="hero-kpi-val">
-                  {formatDuration(totalAudioSeconds)}
-                </strong>
-              </div>
-            </div>
-
-            <div className="hero-kpi-card">
-              <div className="hero-kpi-icon">📚</div>
-              <div className="hero-kpi-info">
-                <span className="hero-kpi-label">Lezioni Archiviate</span>
-                <strong className="hero-kpi-val">{totalLecturesCount}</strong>
-              </div>
-            </div>
-
-            <div className="hero-kpi-card">
-              <div className="hero-kpi-icon">✨</div>
-              <div className="hero-kpi-info">
-                <span className="hero-kpi-label">Dispense AI Generate</span>
-                <strong className="hero-kpi-val">{totalDispenseCount}</strong>
-              </div>
-            </div>
-
-            <div className="hero-kpi-card">
-              <div className="hero-kpi-icon">🎯</div>
-              <div className="hero-kpi-info">
-                <span className="hero-kpi-label">Lezioni Completate</span>
-                <strong className="hero-kpi-val">
-                  {totalCompletedCount} / {totalLecturesCount}
-                </strong>
-              </div>
-            </div>
-          </div>
+          <details className="archive-totals">
+            <summary>Riepilogo archivio · {totalLecturesCount} lezioni · {totalCompletedCount} completate</summary>
+            <dl>
+              <div><dt>Audio registrato</dt><dd>{formatDuration(totalAudioSeconds)}</dd></div>
+              <div><dt>Lezioni archiviate</dt><dd>{totalLecturesCount}</dd></div>
+              <div><dt>Dispense AI generate</dt><dd>{totalDispenseCount}</dd></div>
+              <div><dt>Lezioni completate</dt><dd>{totalCompletedCount} / {totalLecturesCount}</dd></div>
+            </dl>
+          </details>
         )}
 
         <div className="dashboard-grid">
@@ -674,10 +633,9 @@ export function Dashboard({
               } else {
                 const lecturesLeft =
                   stats.totalLectures - stats.completedLectures
-                const pace = (lecturesLeft / Math.max(daysLeft, 1)).toFixed(1)
-                pacingMessage = `${daysLeft} giorni all'esame. Ritmo: ${pace} lez/giorno`
-                if (Number(pace) > 2) pacingColor = '#c93b3b'
-                else if (Number(pace) > 1) pacingColor = '#d98b28'
+                          pacingMessage = `${daysLeft} giorni all'esame · ${stats.totalLectures ? formatExamPace(lecturesLeft, daysLeft) : 'Nessuna lezione archiviata'}`
+                if (lecturesLeft / Math.max(daysLeft, 1) > 2) pacingColor = '#c93b3b'
+                else if (lecturesLeft / Math.max(daysLeft, 1) > 1) pacingColor = '#d98b28'
                 else pacingColor = '#226649'
               }
             }

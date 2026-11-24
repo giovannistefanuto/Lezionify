@@ -1,7 +1,7 @@
 .session-layout {
   container-type: inline-size;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(13rem, 23%);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 23%);
   align-items: start;
   gap: clamp(1rem, 3vw, 2rem);
   color: var(--text-main);
@@ -158,24 +158,23 @@
   background: var(--bg-content);
   overflow: auto;
 }
-.session-overlay { max-width: min(97vw, 103rem); min-height: 70vh; }
+.session-overlay { position: fixed; inset: 3vh 1.5vw; z-index: 100; max-width: min(97vw, 103rem); min-height: 70vh; }
 .session-dialog::backdrop { background: #06110cd1; }
 .session-sidebar-button[aria-pressed="true"] { background: var(--accent-mint); color: #14372b; }
-@media (min-width: 840px) {
-  .app-shell .session-docked {
-    position: fixed;
-    inset: 0 0 0 260px;
-    width: auto;
-    max-width: none;
-    max-height: none;
-    min-height: 0;
-    margin: 0;
-    border-radius: 0;
-    padding: clamp(1rem, 2.2vw, 2.35rem);
-  }
-  .app-shell:has(.sidebar.is-collapsed) .session-docked { inset-inline-start: 80px; }
-  .session-docked::backdrop { background: transparent; }
+/* Only the main workspace is nonmodal; editing dialogs still use the top layer. */
+.app-shell .session-docked {
+  position: fixed;
+  inset: 0 0 0 260px;
+  width: auto;
+  max-width: none;
+  max-height: none;
+  min-height: 0;
+  margin: 0;
+  border-radius: 0;
+  padding: clamp(1rem, 2.2vw, 2.35rem);
 }
+.app-shell:has(.sidebar.is-collapsed) .session-docked { inset-inline-start: 80px; }
+.session-docked::backdrop { background: transparent; }
 .session-overlay:has(.session-name) > .session-dialog-header {
   position: absolute;
   inset-block-start: .65rem;
@@ -189,7 +188,7 @@
   overflow: hidden;
   white-space: nowrap;
 }
-.session-overlay:has(.session-name) .session-layout { padding-inline-end: 1.1rem; }
+.session-overlay:has(.session-name) .session-name { padding-inline-end: 2.75rem; overflow-wrap: anywhere; }
 .session-dialog-header, .session-actions {
   display: flex;
   align-items: center;
@@ -241,3 +240,11 @@
 .session-error { color: var(--text-main); border-inline-start: 2px solid #c45757; padding-inline-start: .5rem; }
 .session-proposal { width: 100%; border-collapse: collapse; }
 .session-proposal :is(th, td) { text-align: left; padding: .35rem; border-bottom: 1px solid var(--border-card); }
+
+.session-dialog-header > button { display: grid; place-items: center; width: 40px; height: 40px; padding: 0; font-size: 28px; line-height: 1; color: var(--text-main); background: var(--bg-surface); border: 2px solid var(--border-card); box-shadow: 0 2px 6px #0002; }
+.session-dialog-header > button:hover, .session-dialog-header > button:focus-visible { border-color: var(--primary); background: var(--bg-hover); outline: 2px solid var(--primary); outline-offset: 2px; }
+
+.session-actions > *, .session-calendar-nav > * { min-width: 0; max-width: 100%; overflow-wrap: anywhere; }
+.session-note table { width: 100%; table-layout: fixed; }
+.session-note th { overflow-wrap: anywhere; }
+.session-note td { white-space: normal; }

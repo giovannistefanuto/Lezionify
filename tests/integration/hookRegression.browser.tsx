@@ -1030,7 +1030,7 @@ async function run() {
       getCourseLecturesCount={code => archiveFixtures.filter(lecture => (lecture.courseCode || 'Senza corso') === code).length}
       archivedCourseCodes={output.archivedCourseCodes} isSavingCourseArchive={output.isSavingCourseArchive}
       onCourseArchive={(code, archived) => { void output.handleCourseArchive(code, archived) }}
-      onOpenSettings={() => {}} hasConfiguredKey searchQuery={output.searchQuery} setSearchQuery={output.setSearchQuery}
+      onOpenSettings={() => {}} hasConfiguredKey
       onRefreshStats={() => {}} isCollapsed={false} onToggleCollapse={() => {}}
       theme="light" onToggleTheme={() => {}} onOpenCourseManagement={() => {}}
     />

@@ -372,3 +372,22 @@ Profilo completo passato: 1976 unitari, 49 Python, 41 Node, periodi Java, Blueto
 | `latest.yml` | 2921 | `a4568ea3de90f2412a9f8ebf1a7f74fc25be632e5de70bd108ada2113b73a088` |
 
 Tre asset remoti uploaded con dimensioni e digest coincidenti; manifesto pubblico scaricato senza credenziali identico byte per byte. Authenticode: `NotSigned`. Audit Shell passato; installer non eseguito sul profilo personale. Upgrade su Windows temporaneo, UAC e SmartScreen non collaudati. Il nuovo conteggio locale parte dalle chiamate effettuate con questa versione; nessuna ricostruzione dello storico precedente o misura della fatturazione Google. Nessuna inferenza reale sui materiali personali per questi collaudi.
+
+
+## Pacchetto 0.7.0 — 24 novembre 2026
+
+Le sole quindici richieste concordate per navigazione, ricerca, scorciatoie e
+statistiche sono descritte nel [rapporto](../quality/navigazione-statistiche-2026-11-24.md).
+Gate completo passato: 1978 unitari, 49 Python, 41 Node, periodi Java,
+Bluetooth reale, RAG offline, updater, React/Electron con riavvio, raccolte,
+Sessione e PDF reali. Layout collaudato da 900 pixel e fino al 200% di zoom.
+
+Build unica riusata per NSIS con compressione invariata; verificati 385 file,
+nove componenti NSIS e tre backup. Nessun materiale personale nel pacchetto.
+Setup 300574402 byte, SHA256
+`2ce27be7fa3e60965b098fff899becc160ac44859578e74377b7b7a35ab3b8d7`.
+ASAR SHA256 `85b0cb28146ad60264197bce33d4aeca5184ae8075ec9aadb7bfa596721ba6b6`.
+Authenticode `NotSigned`; Start risolve l’identità corretta. Nessuna installazione
+sul profilo personale; upgrade Windows temporaneo, UAC e SmartScreen non collaudati.
+Rapporto completo locale in `local-artifacts/release-20261124-170545/report.json`.
+Pubblicazione da confermare con verifica degli asset remoti e del manifesto anonimo.

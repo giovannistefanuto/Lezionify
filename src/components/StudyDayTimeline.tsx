@@ -8,7 +8,7 @@ const sources: Record<StudyProvenance, string> = { 'focus-observed': 'Focus osse
   'repetition-reading-estimated': 'RIPETERE · lettura stimata', manual: 'Studio manuale', 'legacy-unlocated': 'Storico senza dettaglio' }
 const activities = { reading: 'Lettura', qna: 'Q&A', slides: 'Slide', translation: 'Traduttore', unknown: 'Non osservato' }
 const reasons: Record<string, string> = { memo: 'Memo / RIPETERE aperto', sessione: 'Sessione aperta', translator: 'Traduttore', modal: 'Strumento aperto', music: 'Musica',
-  pause: 'Pausa programmata', 'focus-lock': 'Attesa di conferma', 'inactive-window': 'Altra finestra', inactivity: 'Inattività rilevata', suspended: 'PC sospeso', locked: 'Schermo bloccato', unknown: 'Dati mancanti' }
+  pause: 'Pausa programmata', 'focus-lock': 'Attesa di conferma', 'inactive-window': 'Altra finestra', inactivity: 'Inattività rilevata', suspended: 'PC sospeso', locked: 'Schermo bloccato', unknown: 'Dati insufficienti' }
 const duration = (seconds: number) => seconds < 60 ? `${Math.round(seconds)} s` : `${Math.floor(seconds / 3600) ? Math.floor(seconds / 3600) + ' h ' : ''}${Math.floor(seconds % 3600 / 60)} min`
 const exclusionLabel = (segment: StudySegment) => segment.exclusions.map(r => reasons[r]).join(' · ')
 function compact(segments: StudySegment[]) {
@@ -77,7 +77,7 @@ export function StudyDayTimeline({ courses = [], refreshToken = 0 }: { courses?:
     {!day && !error && <p role="status">Caricamento della giornata…</p>}
     {day && <>
       {!splitTotals && day.credits.some(credit => credit.correctionSeconds > 0) && <p className="study-day-warning">Mattino e pomeriggio non disponibili: le rettifiche non hanno un orario affidabile.</p>}
-      {splitTotals && <p className="study-day-note">Mattino (fino alle {boundary}): <strong>{duration(splitTotals.morning)}</strong> · Pomeriggio (dalle {boundary}): <strong>{duration(splitTotals.afternoon)}</strong>. Solo crediti con orario; eventuali rettifiche non collocabili restano distinte.</p>}
+      {splitTotals && <p className="study-day-note">Mattino (fino alle {boundary}): <strong>{duration(splitTotals.morning)}</strong> · Pomeriggio (dalle {boundary}): <strong>{duration(splitTotals.afternoon)}</strong>. Il tempo senza orario resta nel totale della giornata, senza essere assegnato al mattino o al pomeriggio.</p>}
       <div className="study-day-metrics">
         <div><span>Studio accreditato</span><strong>{duration(day.creditedSeconds)}</strong></div>
         <div><span>Tempo osservato collocabile</span><strong>{duration(day.observedSeconds)}</strong></div>
@@ -99,10 +99,10 @@ export function StudyDayTimeline({ courses = [], refreshToken = 0 }: { courses?:
       })}</div>
       {day.credits.some(c=>c.correctionSeconds>0) && <p className="study-day-warning">Rettifiche del totale: −{duration(day.credits.reduce((n,c)=>n+c.correctionSeconds,0))}. Le fasce originariamente osservate restano visibili: la sottrazione non è localizzabile con certezza sull’orologio.</p>}
       <p className="study-day-note">Le fasce vuote non indicano una pausa: possono essere ore non osservate. I crediti stimati e gli intervalli sovrapposti possono far differire il totale accreditato dal tempo sull’orologio. Fuso: {day.timeZone}.</p>
-      {day.incomplete && <p className="study-day-warning">Sono presenti tratti senza osservazioni sufficienti. Il dettaglio è incompleto.</p>}
+      {day.incomplete && <p className="study-day-warning">In alcune fasce il tracciamento si è interrotto o l’orologio del computer è cambiato: non è possibile ricostruire con certezza l’attività svolta. Le trovi come «Dati insufficienti» nella cronologia; l’eventuale tempo accreditato resta nel totale, ma non è attribuito a un’attività precisa.</p>}
       {day.recovered && <p className="study-day-warning">Alcuni file dello storico sono stati recuperati da una copia precedente. Potrebbero mancare osservazioni più recenti.</p>}
       <div className="study-day-indicators"><div><h4>Interruzioni e strumenti</h4>{day.interruptions.length ? <ul>{day.interruptions.map(r=><li key={r.reason}>{r.reason.split(',').map(v=>reasons[v]??v).join(' · ')}: <strong>{r.count}</strong> · {duration(r.seconds)}</li>)}</ul> : <p>Nessuna interruzione osservata.</p>}</div>
-        <div><h4>Cambi di contesto nello studio</h4><p><strong>{day.contextChanges}</strong> passaggi tra lettura, Q&amp;A e slide nei blocchi continui. Non sono un voto di attenzione.</p></div></div>
+        <div><h4>Cambi di contesto nello studio</h4><p><strong>{day.contextChanges}</strong> passaggi tra lettura, Q&amp;A e slide nei blocchi continui.</p></div></div>
       <details className="study-day-details"><summary>Elenco delle fasce e provenienza ({segments.length+timed.length})</summary>
         <div className="study-day-table-wrap"><table><caption>Fasce collocabili del {date}</caption><thead><tr><th>Orario</th><th>Attività / provenienza</th><th>Corso</th><th>Accreditato</th></tr></thead><tbody>
           {segments.slice(0,limit).map(s=><tr key={s.id}><td>{time(s.start,true)}–{time(s.end,true)}</td><td>{exclusionLabel(s)||activities[s.activity]} · Focus osservato</td><td>{s.courseCode||'Senza corso'}</td><td>{duration(s.creditedSeconds)}</td></tr>)}

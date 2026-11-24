@@ -1,3 +1,4 @@
+import { KeyboardShortcuts } from './KeyboardShortcuts'
 import { CopyGuardSettings } from './CopyGuard'
 import { DeviceNoticeSettings } from './DeviceNotices'
 import { AppUpdateSettings } from './AppUpdates'
@@ -134,7 +135,7 @@ export function SettingsModal({
     return () => { disposed = true; clearInterval(timer) }
   }, [show, inputApiKeys])
   const [showAdvanced, setShowAdvanced] = useState<boolean>(inputApiKeys.length >= 2)
-  const [section, setSection] = useState<'general' | ToolSettingsSection>(initialSection ?? 'general')
+  const [section, setSection] = useState<'general' | 'shortcuts' | ToolSettingsSection>(initialSection ?? 'general')
   const [dayBoundary, setDayBoundary] = useState(() => localStorage.getItem('study-day-boundary') || '13:00')
   const panel = useRef<HTMLDivElement>(null)
   useEffect(() => {
@@ -170,6 +171,7 @@ export function SettingsModal({
           <button type="button" aria-pressed={section === 'general'} onClick={() => setSection('general')}>Generali</button>
           <button type="button" aria-pressed={section === 'translation'} onClick={() => setSection('translation')}>Traduttore offline</button>
           <button type="button" aria-pressed={section === 'music'} onClick={() => setSection('music')}>Musica</button>
+          <button type="button" aria-pressed={section === 'shortcuts'} onClick={() => setSection('shortcuts')}>Scorciatoie</button>
         </nav>
         <div className="settings-modal-body" hidden={section !== 'general'}>
           <AppUpdateSettings onClose={onClose} />
@@ -432,6 +434,7 @@ export function SettingsModal({
 
         {section === 'general' && <QnaImageLibrary />}
         {section !== 'general' && <div className="settings-modal-body settings-tools-body">
+          {section === 'shortcuts' && <KeyboardShortcuts />}
           {section === 'translation' && <OfflineTranslationSettings />}
           {section === 'music' && <><SpotifyPanel configuration /><YoutubeLibrary configuration /></>}
         </div>}

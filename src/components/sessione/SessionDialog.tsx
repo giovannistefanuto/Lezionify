@@ -14,12 +14,14 @@ export function SessionDialog({ title, onClose, children, workspace = false, ali
   useLayoutEffect(() => {
     const element = ref.current
     const previous = document.activeElement
-    element?.showModal()
+    if (workspace && alignSidebar) element?.show()
+    else element?.showModal()
     return () => {
+      const restoreFocus = element?.contains(document.activeElement)
       element?.close()
-      if (previous instanceof HTMLElement && previous.isConnected) previous.focus({ preventScroll: true })
+      if (restoreFocus && previous instanceof HTMLElement && previous.isConnected) previous.focus({ preventScroll: true })
     }
-  }, [])
+  }, [workspace, alignSidebar])
 
   return <dialog ref={ref} aria-labelledby={titleId} data-study-exclusion="sessione"
     className={`session-dialog${workspace ? ' session-overlay' : ''}${alignSidebar ? ' session-docked' : ''}`}

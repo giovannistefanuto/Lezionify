@@ -47,7 +47,7 @@ export async function runNovember20Scenarios(root: Root, api: any) {
     await act(async () => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })))
     check(!document.querySelector('.pause-timer-overlay'), 'Escape explicitly returns to Home')
 
-    const analytics: any = { currentStreakDays: 7, records: { bestDay: { date: '2026-11-17', seconds: 7500 }, bestWeek: { date: '2026-11-16', seconds: 24000 }, bestStreak: { start: '2026-11-14', end: '2026-11-20', days: 7 }, longestFocusSeconds: 2700 } }
+    const analytics: any = { todaySeconds: 600, currentStreakDays: 7, records: { bestDay: { date: '2026-11-17', seconds: 7500 }, bestWeek: { date: '2026-11-16', seconds: 24000 }, bestStreak: { start: '2026-11-14', end: '2026-11-20', days: 7 }, longestFocusSeconds: 2700 } }
     for (const dark of [false, true]) {
       document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light')
       await render(<main className={dark ? 'dark-theme' : ''}><div style={{ width: '100vw', padding: 24 }}><StudyRecords analytics={analytics} /></div></main>)
@@ -57,6 +57,10 @@ export async function runNovember20Scenarios(root: Root, api: any) {
       await ipc.invoke('feature-test-window-size', { width: 390, height: 820 }); await wait()
       check(document.querySelector('.study-records')!.getBoundingClientRect().right <= window.innerWidth + 1, 'Records fit a narrow window')
       await ipc.invoke('feature-test-window-size', false)
+    }
+    for (const [todaySeconds, expected] of [[0, 'mancano 10 minuti'], [599, 'manca 1 minuto'], [600, 'Oggi completato'], [3600, 'Oggi completato']] as const) {
+      await render(<StudyRecords analytics={{ ...analytics, todaySeconds }} />)
+      check(document.querySelector('.study-streak-progress small')?.textContent?.includes(expected), `Daily status at ${todaySeconds} seconds`)
     }
     await render(<StudyRecords analytics={null} />)
     check(document.querySelector('.study-records')?.textContent?.includes('Nessuno studio'), 'Empty records explain missing history')

@@ -97,6 +97,30 @@ async function exercise(mode) {
       'countdown text covered by a separate opaque button')
     assert(document.querySelectorAll('.session-legend').length === 1, 'missing compact legend')
     assert(document.querySelector('.session-day-past') && document.querySelector('[aria-current=date]'), 'today and past states missing')
+    // Real app navigation: Sessione must leave the sidebar operable and preserve the selected plan.
+    assert(!document.querySelector('.session-overlay').matches(':modal'), 'Sessione makes the sidebar inert')
+    document.querySelectorAll('.view-toggle button')[1].click()
+    await waitFor(() => !document.querySelector('dialog[open]') && document.querySelector('.dashboard-view'), 'sidebar cannot leave Sessione')
+    findButton('Cerca lezioni').click()
+    const search = await waitFor(() => document.querySelector('#archive-search-input'), 'search did not open the Archive')
+    await waitFor(() => document.activeElement === search, 'search input was not focused')
+    assert(!document.querySelector('.dashboard-view'), 'search is editing a hidden Archive')
+    const typeSearch = value => {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(search, value)
+      search.dispatchEvent(new Event('input', { bubbles: true }))
+    }
+    typeSearch('ciao')
+    await waitFor(() => !document.querySelector('.lecture-row'), 'search did not filter the visible Archive')
+    typeSearch('')
+    await waitFor(() => document.querySelector('.lecture-row'), 'clearing search did not restore the lesson')
+    document.querySelectorAll('.view-toggle button')[1].click()
+    keyboard('k', { ctrlKey: true })
+    await waitFor(() => document.activeElement === document.querySelector('#archive-search-input'), 'Ctrl+K did not open and focus Archive from Statistics')
+    await openSession()
+    assert(document.querySelector('[aria-label="Piano visualizzato"]').value === 'principale', 'navigation lost the selected plan')
+    keyboard('k', { ctrlKey: true })
+    await waitFor(() => !document.querySelector('dialog[open]') && document.activeElement === document.querySelector('#archive-search-input'), 'Ctrl+K did not leave Sessione for Archive')
+    await openSession()
     window.__sessioneCheck = { keyboard, waitFor, findButton, date, delay }
     return
   }
@@ -157,6 +181,38 @@ try {
             await run(${JSON.stringify(`(async () => {
               const { keyboard, waitFor, findButton } = window.__sessioneCheck
               keyboard('Escape')
+              document.querySelectorAll('.view-toggle button')[1].click()
+              await waitFor(() => document.querySelector('.archive-totals'), 'compact archive summary missing')
+              if (document.querySelector('.dashboard-header [aria-label="Apri musica e suoni"]')) throw Error('Music still duplicated in Statistics')
+              if (document.querySelector('.archive-totals').open) throw Error('Archive summary must start compact')
+            })()`)})
+            await capture('statistiche-chiaro')
+            await run(${JSON.stringify(`(async () => {
+              const { waitFor, findButton } = window.__sessioneCheck
+              document.querySelector('.sidebar-tools summary').click()
+              findButton('Apri impostazioni').click()
+              await waitFor(() => findButton('Scorciatoie'), 'shortcuts settings entry missing')
+              findButton('Scorciatoie').click()
+              await waitFor(() => document.querySelector('.keyboard-shortcuts'), 'shortcuts list missing')
+              if (!document.querySelector('.keyboard-shortcuts').textContent.includes('Ctrl+Alt+S')) throw Error('Sessione shortcut missing')
+            })()`)})
+            await capture('scorciatoie-chiaro')
+            await run(${JSON.stringify(`(async () => {
+              const { keyboard, waitFor, findButton } = window.__sessioneCheck
+              keyboard('Escape')
+              await waitFor(() => !document.querySelector('.settings-modal-overlay'), 'settings did not close')
+              keyboard('k', { ctrlKey: true })
+              await waitFor(() => document.activeElement === document.querySelector('#archive-search-input'), 'search missing after settings')
+            })()`)})
+            await capture('archivio-ricerca')
+            await run(${JSON.stringify(`(async () => {
+              window.__sessioneCheck.findButton('Apri Sessione').click()
+              await window.__sessioneCheck.waitFor(() => document.querySelector('.session-layout'), 'workspace did not reopen after settings')
+            })()`)})
+
+            await run(${JSON.stringify(`(async () => {
+              const { keyboard, waitFor, findButton } = window.__sessioneCheck
+              keyboard('Escape')
               findButton('Passa alla modalità notte')?.click()
               findButton('Apri Sessione').click()
               await waitFor(() => document.querySelector('.dark-theme .session-layout'), 'dark workspace missing')
@@ -175,7 +231,7 @@ try {
               await run(${JSON.stringify(`(async () => {
                 await window.__sessioneCheck.delay(120)
                 const dialog = document.querySelector('.session-overlay')
-                if (dialog.scrollWidth > dialog.clientWidth + 1) throw Error('horizontal overflow at increased zoom')
+                if (dialog.scrollWidth > dialog.clientWidth + 1) throw Error('horizontal overflow at increased zoom: ' + JSON.stringify({width: dialog.clientWidth, content: dialog.scrollWidth, overflowing: [...dialog.querySelectorAll('*')].filter(element => element.getBoundingClientRect().right > dialog.getBoundingClientRect().right).slice(0, 8).map(element => element.className || element.tagName)}))
               })()`)})
             }
             win.webContents.setZoomFactor(1)
@@ -253,7 +309,7 @@ try {
           console.log(restart ? 'PASS: Sessione compiled restart opens the confirmed revision' : 'PASS: Sessione compiled IPC, layout, worker, Dashboard, reminders, Full Focus and study clock')
           app.exit(0)
         } catch (error) {
-          console.error('FAIL: ' + error.message)
+          console.error('FAIL: ' + error.message + ' ' + error.stack)
           if (screenshotDirectory) await capture('sessione-debug').catch(() => {})
           app.exit(1)
         }

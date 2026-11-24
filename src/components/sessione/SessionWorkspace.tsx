@@ -89,8 +89,13 @@ export function SessionWorkspace({ archive, settings, today, busy, error, onAppl
   const [panel, setPanel] = useState<Panel | undefined>(restored.panel)
   const [editingInitial, setEditingInitial] = useState<ExamSessionDraft | undefined>(restored.editingInitial)
   const [planName, setPlanName] = useState(restored.planName)
-  useUpdateSave(async () => { localStorage.setItem('lezionify:session-workspace', JSON.stringify({ version: 1,
-    value: { selectedSessionId, selectedPlanId, panel, editingInitial, planName } })) })
+  const persistWorkspace = () => { localStorage.setItem('lezionify:session-workspace', JSON.stringify({ version: 1,
+    value: { selectedSessionId, selectedPlanId, panel, editingInitial, planName } })) }
+  useUpdateSave(async () => { persistWorkspace() })
+  useEffect(() => {
+    localStorage.setItem('lezionify:session-workspace', JSON.stringify({ version: 1,
+      value: { selectedSessionId, selectedPlanId, panel, editingInitial, planName } }))
+  }, [selectedSessionId, selectedPlanId, panel, editingInitial, planName])
   const session = archive.sessions.find(row => row.draft.id === (selectedSessionId || archive.activeSessionId)) ?? archive.sessions.at(-1)
   const draft = session?.draft
   const plan = draft?.plans.find(row => row.id === (selectedPlanId || session?.confirmed?.planId)) ?? draft?.plans[0]
