@@ -61,3 +61,15 @@ lezioni conservata e nuovo ingresso Memo visibile. La fixture debuggabile è
 servita soltanto per inizializzare la cache sintetica prima dei due APK
 originali. Nessun abbinamento personale usato; verifica dell’abbinamento reale
 rinviata all’installazione sul telefono. Emulatore chiuso senza salvare lo stato.
+
+## Pubblicazione conclusa
+
+D-0619–D-0621: le modifiche desktop sono distribuite in
+[Windows 0.8.0](https://github.com/giovannistefanuto/Lezionify/releases/tag/v0.8.0),
+con gate completo e installer verificato. Il companion
+[Android 0.2.0](https://github.com/giovannistefanuto/Lezionify/releases/tag/android-v0.2.0)
+è pubblicato separatamente sullo stesso commit dei sorgenti
+`c7e4c1326872ef688ad4d04e8687d1b6b8e8142f`.
+Il download pubblico dell’APK coincide con i 50.447 byte e lo SHA256 riportati
+sopra; firma e binario invariati rispetto alla prova di upgrade in emulatore.
+Windows resta latest. Nessuna installazione sul telefono personale eseguita.

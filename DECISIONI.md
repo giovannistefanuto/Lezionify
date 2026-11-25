@@ -6833,3 +6833,14 @@ Non modificare manualmente la sezione `Registro`: aggiungi le nuove decisioni es
 - **Impatto:** Verificati 385 file build, nove componenti NSIS, sette file dei tool YouTube estratti dal setup e tre backup. Prova MP3 nativa ripetuta sulla build finale. Identita Windows corretta, Authenticode NotSigned, nessun materiale personale nel pacchetto.
 - **Follow-up:** Commit e push di tutte le modifiche pubblicabili, bozza e pubblicazione autorizzata con verifica digest remoti. Upgrade Windows temporaneo, UAC e SmartScreen non collaudati; telefono personale non installato.
 - **File coinvolti:** docs/releases/0.8.0.md, docs/releases/android-0.2.0.md, docs/publishing/aggiornamenti-windows.md, docs/quality/youtube-locale-2026-11-25.md
+
+## D-0621 — Windows 0.8.0 e Android 0.2.0 pubblicati e verificati
+
+- **Data:** 2026-11-25
+- **Stato:** accettata
+- **Area:** release
+- **Decisione:** Pubblicate v0.8.0 e android-v0.2.0 sul commit c7e4c1326872ef688ad4d04e8687d1b6b8e8142f. Windows rimane stabile latest; tre asset uploaded con dimensioni e SHA256 identici ai locali e latest.yml pubblico anonimo identico byte per byte. APK Android pubblico scaricato e verificato.
+- **Motivazione:** Completare la richiesta esplicita dopo gate completo e verifiche locali, distribuendo esattamente i binari collaudati senza ricostruzione.
+- **Impatto:** Aggiornamento Windows disponibile tramite updater e APK Android separato. APK 50447 byte SHA256 2264377db64ab4efce3cb194048429e57d3bf658d5b2d00a7aad535d0733a573; stessa firma precedente. Nessuna installazione automatica sul profilo Windows o telefono personale.
+- **Follow-up:** Release https://github.com/giovannistefanuto/Lezionify/releases/tag/v0.8.0 e https://github.com/giovannistefanuto/Lezionify/releases/tag/android-v0.2.0; aggiornare registro pubblicazione e verificare push finale. Restano i limiti documentati su Windows temporaneo e telefono personale.
+- **File coinvolti:** docs/publishing/aggiornamenti-windows.md, docs/quality/youtube-locale-2026-11-25.md, docs/quality/ritmo-studio-memo-2026-11-25.md, DECISIONI.md

@@ -122,3 +122,9 @@ ASAR `03fb00453bd103bdc9eb6b2f681785b20dc96690a7bc58d9dfffe641c6956e7f`.
 Firma effettiva `NotSigned`. Installer personale non eseguito; upgrade Windows
 temporaneo, UAC e SmartScreen restano non collaudati. L’APK Android 0.2.0 già
 preparato resta identico ai sorgenti e agli hash del rapporto originale.
+
+D-0621: [v0.8.0 pubblicata](https://github.com/giovannistefanuto/Lezionify/releases/tag/v0.8.0)
+stabile latest sul commit `c7e4c1326872ef688ad4d04e8687d1b6b8e8142f`.
+Tre asset remoti verificati per dimensioni e SHA256, tag sul commit atteso e
+manifesto pubblico anonimo identico ai byte locali. Android 0.2.0 pubblicato
+separatamente e verificato senza cambiare latest Windows. Binari invariati.

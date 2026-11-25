@@ -1,6 +1,6 @@
 # Aggiornamenti Windows
 
-## Preparazione 0.8.0 — 25 novembre 2026
+## Release 0.8.0 — 25 novembre 2026
 
 YouTube locale, ritmo consigliato corretto, tempo di studio nelle informazioni
 e invio facoltativo Memo al companion Android: [note](../releases/0.8.0.md),
@@ -21,6 +21,16 @@ Rapporto locale `local-artifacts/release-20261125-145239/report.json` completo.
 Firma effettiva `NotSigned`; installer personale non avviato. Upgrade Windows
 temporaneo, UAC e SmartScreen non collaudati. Android 0.2.0 è un pacchetto separato,
 con firma e upgrade in emulatore già verificati; telefono personale non installato.
+
+D-0621: [Windows v0.8.0](https://github.com/giovannistefanuto/Lezionify/releases/tag/v0.8.0)
+e [Android 0.2.0](https://github.com/giovannistefanuto/Lezionify/releases/tag/android-v0.2.0)
+pubblicati sul commit `c7e4c1326872ef688ad4d04e8687d1b6b8e8142f`, presente su main.
+Tag pubblici sullo stesso SHA; tre asset Windows uploaded con dimensioni e digest
+coincidenti, manifesto pubblico anonimo identico byte per byte. Android pubblicato
+con `make_latest=false`; Windows resta la release stabile latest dell’updater.
+APK pubblico scaricato e verificato: 50.447 byte, SHA256
+`2264377db64ab4efce3cb194048429e57d3bf658d5b2d00a7aad535d0733a573`.
+Nessuna ricostruzione o sostituzione dei binari dopo i collaudi.
 
 Implementazione introdotta in 0.2.0, decisione D-0528. Ricerca e alternative:
 [valutazione del 15 novembre](../research/aggiornamenti-automatici-github-2026-11-15.md).
