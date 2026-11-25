@@ -66,3 +66,12 @@ describe('Pubblicazione statistiche su GitHub', () => {
     await expect(publishMobileStatistics({ destination, token: secret, key, snapshot: data }, failing)).rejects.toThrow('Connessione GitHub non riuscita')
   })
 })
+
+it('rilegge note cifrate vicine al limite anche con il doppio involucro base64 GitHub', async () => {
+  const key = randomBytes(32)
+  const large: MobileStatistics = { ...data, memo: { groups: [{ id: '', name: 'Senza tag', notes: 'x'.repeat(230000) }], todos: [] } }
+  const envelope = JSON.stringify(encryptMobileStatistics(JSON.stringify(large), key))
+  const network = vi.fn().mockResolvedValueOnce(repo()).mockResolvedValueOnce(file(envelope))
+  expect((await publishMobileStatistics({ destination, token: 'synthetic-token', key, snapshot: large }, network)).unchanged).toBe(true)
+  expect(network).toHaveBeenCalledTimes(2)
+})

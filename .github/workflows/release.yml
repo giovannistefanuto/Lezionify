@@ -24,6 +24,8 @@ jobs:
         with:
           python-version: '3.10'
       - run: npm ci
+      - name: Prepare pinned YouTube tools
+        run: npm run prepare:youtube-tools
       - name: Validate version and release notes
         run: npm run release:validate
       - name: Quality gate
@@ -33,6 +35,8 @@ jobs:
         env:
           CSC_LINK: ${{ secrets.WINDOWS_CSC_LINK }}
           CSC_KEY_PASSWORD: ${{ secrets.WINDOWS_CSC_KEY_PASSWORD }}
+      - name: Verify pinned YouTube tools and notices in package
+        run: node tools/verify_youtube_tools.cjs dist/win-unpacked/resources/youtube-tools
       - name: Verify matching assets and metadata
         run: npm run release:validate -- --artifacts
       - name: Verify Windows executable branding and embedded window icon

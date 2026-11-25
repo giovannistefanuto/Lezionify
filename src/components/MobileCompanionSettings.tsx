@@ -18,10 +18,12 @@ export function MobileCompanionSettings() {
   }
   if (!api) return null
   return <section className="publishing-settings" aria-labelledby="mobile-settings-title">
-    <h4 id="mobile-settings-title">Statistiche sul telefono Android</h4>
+    <h4 id="mobile-settings-title">Statistiche e Memo sul telefono Android</h4>
     <p>Invia un riepilogo cifrato a un repository GitHub pubblico dedicato. Il telefono mostra l’ultima copia disponibile; l’invio avviene durante l’uso di Lezionify, al massimo ogni cinque minuti se i dati cambiano.</p>
     {status?.enabled ? <>
       <p>Collegato a <strong>{status.destination}</strong>{status.publishedAt ? ` · Ultimo invio: ${new Date(status.publishedAt).toLocaleString('it-IT')}` : ' · Nessun invio completato'}</p>
+      <label><input type="checkbox" checked={status.memoEnabled === true} disabled={busy} onChange={event => { const enabled = event.target.checked; void run(async () => setStatus(await api.setMemoEnabled(enabled))) }} /> Sincronizza anche Memo: gruppi, attività e note (sola lettura)</label>
+      <p>Memo viene cifrato prima dell’invio. Il nuovo widget Android usa lo stesso abbinamento. Disattivando l’opzione, il prossimo invio rimuove Memo dalla copia corrente; la cronologia cifrata su GitHub rimane.</p>
       {status.error && <p role="alert">{status.error}</p>}
       <button type="button" disabled={busy} onClick={() => void run(async () => setStatus(await api.publish()))}>Aggiorna ora</button>{' '}
       <button type="button" disabled={busy} onClick={() => void run(async () => setPairing(await api.pairing()))}>Mostra codice di abbinamento</button>{' '}

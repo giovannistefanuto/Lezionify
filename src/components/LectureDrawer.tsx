@@ -20,6 +20,7 @@ import {
 import { MarkdownViewer } from './MarkdownViewer'
 import { AudioPlayer } from './AudioPlayer'
 import { LectureRecordingTimes } from './LectureRecordingTimes'
+import { LectureStudyTime } from './LectureStudyTime'
 import { FocusLockModal } from './FocusLockModal'
 import { SectionRegenerator } from './SectionRegenerator'
 import { PauseTimerOverlay } from './PauseTimerOverlay'
@@ -1498,7 +1499,7 @@ export function LectureDrawer({
                   )}
                 </div>
 
-                <LectureRecordingTimes lecture={selectedLecture} />
+                <LectureStudyTime lecture={selectedLecture} visible={activeTab === 'info'} />
                 {isEditingMetadata ? (
                   <form onSubmit={onSaveMetadata} className="metadata-form">
                     <label>
@@ -1571,6 +1572,7 @@ export function LectureDrawer({
                       <strong>Dimensione audio:</strong>{' '}
                       {formatFileSize(selectedLecture.byteSize)}
                     </p>
+                    <LectureRecordingTimes lecture={selectedLecture} />
                     <button
                       className="text-button tech-details-toggle"
                       onClick={() => setShowTechDetails(!showTechDetails)}

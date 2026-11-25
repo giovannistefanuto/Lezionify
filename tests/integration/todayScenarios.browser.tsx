@@ -620,9 +620,21 @@ export async function runTodayScenarios(root: Root, api: any) {
       requests++
       return { success: true, text: 'Risposta' }
     }
+    api.getLectureStudySeconds = async () => 5160
     await act(async () => root.render(<LectureDrawer {...drawerProps} activeTab="info" selectedLecture={{ ...selectedLecture, recordedAt: '2026-10-21T10:32:00', durationSeconds: 6360 }} />))
     check(document.querySelector('.metadata-card .recording-times')?.textContent?.includes('12:18'), 'Info e Gestione did not show calculated audio end')
     check(!document.querySelector('.recording-times input'), 'Recording times must remain read-only')
+    await until(() => document.querySelector('.lecture-study-time')?.textContent?.includes('1 ora e 26 minuti'), 'Info did not load accumulated study time')
+    check(document.querySelector('.lecture-study-time')?.textContent?.includes('Tempo di studio'), 'Active lesson study label missing')
+    await act(async () => root.render(<LectureDrawer {...drawerProps} activeTab="info" selectedLecture={{ ...selectedLecture, studyStatus: 'completata' }} />))
+    await until(() => document.querySelector('.lecture-study-time')?.textContent?.includes('Completata in1 ora e 26 minuti'), 'Completed lesson duration missing')
+    await require('electron').ipcRenderer.invoke('capture-video-import', 'memo-study-info-completed')
+    const previousTheme = document.documentElement.getAttribute('data-theme')
+    document.documentElement.setAttribute('data-theme', 'dark')
+    await require('electron').ipcRenderer.invoke('capture-video-import', 'memo-study-info-dark')
+    if (previousTheme) document.documentElement.setAttribute('data-theme', previousTheme)
+    else document.documentElement.removeAttribute('data-theme')
+
     await act(async () => root.render(<LectureDrawer {...drawerProps} />))
     await wait()
     await click('Apri domande Q&A')

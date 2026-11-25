@@ -632,6 +632,7 @@ export interface ArchiveApi extends StudyHistoryApi, CourseRagApi, RepetitionApi
   ambientSoundStatus: () => Promise<import('./ambientSounds').AmbientSoundStatus>
   installAmbientSounds: (soundIds?: string[]) => Promise<import('./ambientSounds').AmbientSoundStatus>
   readAmbientSound: (id: string) => Promise<Uint8Array>
+  youtubeAudio: import('./youtubeAudio').YoutubeAudioApi
   openCompilation: (videoId: string, start: number) => Promise<void>
   spotifyConnection: () => Promise<import('./spotify').SpotifyConnection>
   configureSpotify: (clientId: string) => Promise<import('./spotify').SpotifyConnection>

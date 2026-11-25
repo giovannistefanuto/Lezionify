@@ -163,6 +163,7 @@ public class StatisticsWidget extends AppWidgetProvider {
                 } finally {
                     try {
                         display(context);
+                        MemoWidget.display(context);
                     } finally {
                         pending.finish();
                     }

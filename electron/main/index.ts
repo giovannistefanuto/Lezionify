@@ -31,6 +31,8 @@ import { parseByteRange } from './httpRange'
 import { FocusPdfService } from './focusPdf'
 import { LocalDictionaryService } from './localDictionary'
 import { OfflineTranslationService } from './offlineTranslation'
+import { YoutubeAudioService } from './youtubeAudio'
+import { getFfmpegPath } from './ffmpegPath'
 import { AmbientSoundService } from './ambientSounds'
 import { PdfExportService } from './pdfExport'
 import type {
@@ -102,6 +104,7 @@ let examReminderTimer: ReturnType<typeof setInterval> | undefined
 const dictionary = new LocalDictionaryService(join(app.getAppPath(), app.isPackaged ? 'out/renderer/dictionaries' : 'public/dictionaries'))
 let focusPdfs: FocusPdfService
 let offlineTranslation: OfflineTranslationService
+let youtubeAudio: YoutubeAudioService
 let ambientSounds: AmbientSoundService
 let spotify: SpotifyService
 let mobileCompanion: MobileCompanionService
@@ -213,6 +216,8 @@ function registerProtocols(): void {
         if (rawPath && existsSync(rawPath)) {
           filePath = rawPath
         }
+      } else if (url.hostname === 'youtube') {
+        filePath = await youtubeAudio.audioPath(url.pathname.slice(1))
       } else if (url.hostname === 'repetition') {
         filePath = await archive.repetition.audioPath(url.pathname.slice(1))
       } else {
@@ -299,6 +304,7 @@ function registerIpcHandlers(): void {
     if (!mainWindow || event.sender !== mainWindow.webContents || event.senderFrame !== mainWindow.webContents.mainFrame) throw new Error('Richiesta non autorizzata.')
     return action(event, ...args)
   })
+  mobileHandle('mobile:memo', (_event, enabled) => mobileCompanion.setMemoEnabled(enabled))
   mobileHandle('mobile:state', () => mobileCompanion.state())
   mobileHandle('mobile:configure', (_event, input) => mobileCompanion.configure(input))
   mobileHandle('mobile:pairing', () => mobileCompanion.pairing())
@@ -447,6 +453,10 @@ function registerIpcHandlers(): void {
     if (typeof active !== 'boolean') throw new Error('Stato scorciatoia non valido.')
     languageShortcut?.setActive(active)
   })
+  handle('archive:youtube-status', () => youtubeAudio.status())
+  handle('archive:youtube-download', (_event, id) => youtubeAudio.download(id))
+  handle('archive:youtube-cancel', (_event, id) => youtubeAudio.cancel(id))
+  handle('archive:youtube-url', (_event, id) => youtubeAudio.playbackUrl(id))
   handle('archive:ambient-status', () => ambientSounds.status())
   handle('archive:ambient-install', (_event, soundIds: unknown) =>
     ambientSounds.install(soundIds)
@@ -700,6 +710,7 @@ app.whenReady().then(async () => {
   }
   spotify = new SpotifyService(join(app.getPath('userData'), 'spotify.json'), { available: () => safeStorage.isEncryptionAvailable() && (process.platform !== 'linux' || safeStorage.getSelectedStorageBackend() !== 'basic_text'), encrypt: value => safeStorage.encryptString(value).toString('base64'), decrypt: value => safeStorage.decryptString(Buffer.from(value, 'base64')) }, url => shell.openExternal(url))
   offlineTranslation = new OfflineTranslationService(join(app.getPath('userData'), 'offline-translation'), join(app.isPackaged ? `${app.getAppPath()}.unpacked` : app.getAppPath(), 'out/main/translation-runtime'))
+  youtubeAudio = new YoutubeAudioService(join(app.getPath('userData'), 'youtube-audio'), join(app.isPackaged ? process.resourcesPath : join(app.getAppPath(), 'resources'), 'youtube-tools'), getFfmpegPath)
   ambientSounds = new AmbientSoundService(join(app.getPath('userData'), 'ambient-sounds'))
   focusPdfs = new FocusPdfService(join(app.getPath('userData'), 'focus-pdfs.json'), app.getPath('home'), async defaultPath => {
     const options: Electron.OpenDialogOptions = {
@@ -715,11 +726,11 @@ app.whenReady().then(async () => {
     mobileCompanion = new MobileCompanionService(join(app.getPath('userData'), 'mobile-companion.bin'), {
       available: () => safeStorage.isEncryptionAvailable() && (process.platform !== 'linux' || safeStorage.getSelectedStorageBackend() !== 'basic_text'),
       encrypt: value => safeStorage.encryptString(value), decrypt: value => safeStorage.decryptString(value)
-    }, async () => {
-      const [courses, lectures, analytics, archived] = await Promise.all([archive.getCourses(), archive.listLectures(), archive.getStudyAnalytics(), archive.getArchivedCourseCodes()])
+    }, async (includeMemo) => {
+      const [courses, lectures, analytics, archived, scratchpad] = await Promise.all([archive.getCourses(), archive.listLectures(), archive.getStudyAnalytics(), archive.getArchivedCourseCodes(), includeMemo ? archive.getScratchpad() : Promise.resolve(undefined)])
       if (!analytics.dailyHistory) throw new Error('Storico studio non disponibile.')
       const codes = new Set([...courses.map(course => course.code), ...lectures.flatMap(lecture => lecture.courseCode ? [lecture.courseCode] : [])])
-      return { courses: [...codes].sort().map(code => ({ code, archived: archived.includes(code) })), lectures, dailyHistory: analytics.dailyHistory }
+      return { courses: [...codes].sort().map(code => ({ code, archived: archived.includes(code) })), lectures, scratchpad, dailyHistory: analytics.dailyHistory }
     })
     const updateMobile = async () => { if ((await mobileCompanion.state()).enabled) await mobileCompanion.publish() }
     mobileTimer = setInterval(() => { void updateMobile().catch(() => {}) }, 5 * 60_000)
@@ -744,6 +755,7 @@ app.whenReady().then(async () => {
       archive.setUpdating(true)
       await Promise.all([archive.prepareForUpdate(), courseRag.prepareForUpdate()])
       await updateGate.drain()
+      await youtubeAudio.stop()
       if (archive.isBusyForUpdate() || courseRag.isBusy()) throw new Error('Salvataggi ancora in corso.')
       await mainWindow?.webContents.session.flushStorageData()
       await logger.flush()
@@ -809,12 +821,12 @@ app.on('window-all-closed', () => {
   clearInterval(courseRagTimer)
   clearInterval(examReminderTimer)
   courseRag?.dispose()
-  if (process.platform !== 'darwin') { archive.destroy(); void archive.collections.stop().finally(() => app.quit()) }
+  if (process.platform !== 'darwin') { archive.destroy(); void Promise.all([archive.collections.stop(), youtubeAudio?.stop()]).finally(() => app.quit()) }
 })
 
 app.on('before-quit', event => {
-  if (archive.collections.isBusy()) {
+  if (archive.collections.isBusy() || youtubeAudio?.isBusy()) {
     event.preventDefault()
-    void archive.collections.stop().finally(() => app.quit())
+    void Promise.all([archive.collections.stop(), youtubeAudio?.stop()]).finally(() => app.quit())
   }
 })

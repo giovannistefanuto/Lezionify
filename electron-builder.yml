@@ -7,7 +7,7 @@ publish:
   repo: Lezionify
   releaseType: draft
 releaseInfo:
-  releaseNotesFile: docs/releases/0.7.0.md
+  releaseNotesFile: docs/releases/0.8.0.md
 
 directories:
   output: dist
@@ -16,6 +16,15 @@ directories:
 files:
   - out/**/*
   - package.json
+
+extraResources:
+  - from: resources/youtube-tools
+    to: youtube-tools
+    filter:
+      - "*.exe"
+      - "*.json"
+      - "*.md"
+      - "*.txt"
 
 asarUnpack:
   - "out/main/course-rag/**"
@@ -26,6 +35,9 @@ asarUnpack:
   - "node_modules/sharp/**"
 
 win:
+  signExts:
+    - "!yt-dlp.exe"
+    - "!deno.exe"
   target:
     - target: nsis
       arch:

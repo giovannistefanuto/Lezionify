@@ -1,16 +1,18 @@
 import { createHash } from 'node:crypto'
 import { rm } from 'node:fs/promises'
 import { AsyncMutex } from './asyncMutex'
-import { makeMobileStatistics } from '../../shared/mobileStatistics'
+import type { ScratchpadData } from '../../shared/archive'
+import { makeMobileStatistics, makeMobileMemo } from '../../shared/mobileStatistics'
 import { studyCalendarDate } from '../../shared/studyHistory'
 import type { MobileCompanionSetup, MobileCompanionStatus } from '../../shared/mobileCompanion'
 import { createMobileIdentity, mobilePairingCode } from './mobilePairing'
 import { publishMobileStatistics } from './mobileGithubPublisher'
 import { loadMobileSecureConfig, saveMobileSecureConfig, type MobileSecretStorage } from './mobileSecureConfig'
 
-type Source = () => Promise<{
+type Source = (includeMemo: boolean) => Promise<{
   courses: Array<{ code: string; archived?: boolean }>
   lectures: Array<{ courseCode: string | null; studyStatus: string }>
+  scratchpad?: ScratchpadData
   dailyHistory: Array<{ date: string; totalSeconds: number }>
 }>
 
@@ -24,7 +26,7 @@ export class MobileCompanionService {
   async state(): Promise<MobileCompanionStatus> {
     try {
       const config = await this.read()
-      return { enabled: true, destination: `${config.destination.owner}/${config.destination.repo}`, publishedAt: config.publishedAt, error: this.error }
+      return { enabled: true, memoEnabled: config.memoEnabled === true, destination: `${config.destination.owner}/${config.destination.repo}`, publishedAt: config.publishedAt, error: this.error }
     } catch {
       const exists = await import('node:fs/promises').then(fs => fs.stat(this.file).then(() => true, () => false))
       return exists ? { enabled: false, error: 'Configurazione protetta non disponibile.' } : { enabled: false }
@@ -41,6 +43,17 @@ export class MobileCompanionService {
       this.error = undefined
       return this.state()
     })
+  }
+  async setMemoEnabled(enabled: boolean): Promise<MobileCompanionStatus> {
+    if (typeof enabled !== 'boolean') throw new Error('Preferenza non valida.')
+    await this.lock.runExclusive(async () => {
+      const config = await this.read()
+      // Discard a pending snapshot so disabling cannot resend its Memo contents.
+      // Reserve its revision: a failed request may already have reached GitHub.
+      await saveMobileSecureConfig(this.file, { ...config, memoEnabled: enabled,
+        revision: Math.max(config.revision ?? 0, config.pending?.snapshot.revision ?? 0), pending: undefined, fingerprint: undefined }, this.secrets)
+    })
+    return this.publish()
   }
   async pairing(): Promise<string> {
     const config = await this.read()
@@ -60,9 +73,11 @@ export class MobileCompanionService {
           await saveMobileSecureConfig(this.file, config, this.secrets)
         }
         if (config.pending) await send()
-        const source = await this.source(), now = new Date(), timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone
+        const source = await this.source(config.memoEnabled === true), now = new Date(), timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone
         const snapshot = makeMobileStatistics({ ...source, streamId: config.streamId, revision: (config.revision ?? 0) + 1, generatedAt: now.toISOString(), timeZone, today: studyCalendarDate(now.getTime(), timeZone) })
-        const fingerprint = createHash('sha256').update(JSON.stringify({ day: studyCalendarDate(now.getTime(), timeZone), timeZone, days: snapshot.days, courses: snapshot.courses })).digest('hex')
+        if (config.memoEnabled && source.scratchpad) snapshot.memo = makeMobileMemo(source.scratchpad)
+        if (Buffer.byteLength(JSON.stringify(snapshot)) > 240_000) throw new Error('Memo troppo grande per il collegamento Android. Riduci le note o disattiva la sincronizzazione Memo.')
+        const fingerprint = createHash('sha256').update(JSON.stringify({ day: studyCalendarDate(now.getTime(), timeZone), timeZone, days: snapshot.days, courses: snapshot.courses, memo: snapshot.memo })).digest('hex')
         if (fingerprint !== config.fingerprint) {
           config = { ...config, pending: { snapshot, fingerprint } }
           await saveMobileSecureConfig(this.file, config, this.secrets)

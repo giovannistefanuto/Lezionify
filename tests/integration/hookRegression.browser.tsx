@@ -1,3 +1,4 @@
+import { runYoutubeLocalScenarios } from './youtubeLocalScenarios.browser'
 import { runNovember20Scenarios } from './november20Scenarios.browser'
 import { runOctober22Scenarios } from './october22Scenarios.browser'
 import { runSidebarMenuScenario } from './sidebarMenu.browser'
@@ -380,6 +381,11 @@ async function runFinalLectureScenario() {
 }
 
 async function run() {
+  if (new URLSearchParams(location.search).has('youtubeLocalOnly')) {
+    await runYoutubeLocalScenarios(root, api)
+    require('electron').ipcRenderer.send('done', 'PASS YouTube local downloads and persistent playback')
+    return
+  }
   if (new URLSearchParams(location.search).has('collectionsResume')) {
     await runCollectionsRestart(root)
     require('electron').ipcRenderer.send('done', 'PASS: collections persisted across two real Electron processes')
@@ -461,6 +467,7 @@ async function run() {
   if (new URLSearchParams(window.location.search).has('musicOnly')) {
     require('electron').ipcRenderer.send('test-checkpoint', 'runMusicTranslationScenarios')
     await runMusicTranslationScenarios(root, api)
+  await runYoutubeLocalScenarios(root, api)
     require('electron').ipcRenderer.send('done', 'PASS: music artwork, automatic PC selection, consent, player commands and YouTube cards')
     return
   }
@@ -1319,6 +1326,15 @@ async function run() {
   await act(async () => root.render(<Dashboard {...(dashboardProps as any)} />))
   check(!document.querySelector('.dashboard-scratchpad-section'), 'Memo should no longer appear as a Dashboard box')
 
+  const paceStats = [{ courseCode: 'PACE', totalLectures: 2, completedLectures: 1, inProgressLectures: 1,
+    toStudyLectures: 0, totalAudioSeconds: 7200, pipelineStatus: { audioOnly: 0, transcriptAvailable: 0, markdownReady: 2 } }]
+  await act(async () => root.render(<Dashboard {...(dashboardProps as any)} courseStats={paceStats} examToday="2026-11-25"
+    settings={{ ...dashboardProps.settings, courses: { PACE: { code: 'PACE', cfu: 6, lectureHours: 42, individualStudyHours: 108,
+      totalHours: 150, startDate: '2026-11-01', endDate: '2026-12-02', examDate: '2027-02-19',
+      schedule: [{ id: 'friday', dayOfWeek: 5, startTime: '10:00', endTime: '12:00' }] } } }} />))
+  check(document.querySelector('.exam-pace-row')?.textContent?.includes('0,0233 lez/giorno'), 'Exam pace must include the future Friday lesson and preserve four decimals')
+  check(document.querySelector('.course-stat-card')?.textContent?.includes('0,0233 lez/giorno'), 'Course card and countdown must share the same pace')
+
   const dashboardStats = ['ACTIVE', 'ARCHIVED', 'EMPTY'].map(courseCode => ({
     courseCode, totalLectures: 3, completedLectures: 2, inProgressLectures: 1,
     toStudyLectures: 0, totalAudioSeconds: 7200,
@@ -2004,6 +2020,7 @@ flowchart TD
   await runStudyHistoryScenarios(root, api)
   require('electron').ipcRenderer.send('test-checkpoint', 'runMusicTranslationScenarios')
   await runMusicTranslationScenarios(root, api)
+  await runYoutubeLocalScenarios(root, api)
   await runInterfacePolishScenarios(root, api)
   await runTodayScenarios(root, api)
   await runNovember20Scenarios(root, api)

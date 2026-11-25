@@ -1,5 +1,20 @@
-/** Portable, minimal statistics exchanged with the Android companion. */
+import type { ScratchpadData } from './archive'
+
+export interface MobileMemo {
+  groups: Array<{ id: string; name: string; notes: string }>
+  todos: Array<{ id: string; groupId: string; text: string; completed: boolean }>
+}
+
+export function makeMobileMemo(data: ScratchpadData): MobileMemo {
+  return {
+    groups: [{ id: '', name: 'Senza tag', notes: data.notes }, ...(data.groups ?? []).map(({ id, name, notes }) => ({ id, name, notes }))],
+    todos: data.todos.map(({ id, groupId, text, completed }) => ({ id, groupId: groupId ?? '', text, completed }))
+  }
+}
+
+/** Memo is included only after explicit desktop opt-in. */
 export interface MobileStatistics {
+  memo?: MobileMemo
   version: 1
   streamId: string
   revision: number

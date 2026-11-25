@@ -18,11 +18,12 @@ export interface MobileSecureConfig {
   revision?: number
   fingerprint?: string
   pending?: { snapshot: MobileStatistics; fingerprint: string }
+  memoEnabled?: boolean
   publishedAt?: string
 }
 
 function validate(value: MobileSecureConfig): MobileSecureConfig {
-  if (!value || value.version !== 1 || typeof value.token !== 'string' || !value.token || /[\r\n]/.test(value.token) ||
+  if (!value || value.version !== 1 || (value.memoEnabled !== undefined && typeof value.memoEnabled !== 'boolean') || typeof value.token !== 'string' || !value.token || /[\r\n]/.test(value.token) ||
       typeof value.key !== 'string' || !/^[A-Za-z0-9+/]{43}=$/.test(value.key) || Buffer.from(value.key, 'base64').length !== 32 ||
       typeof value.streamId !== 'string' || !value.destination) throw new Error('Configurazione non valida')
   mobileRawUrl(value.destination, value.streamId)
@@ -32,7 +33,7 @@ function validate(value: MobileSecureConfig): MobileSecureConfig {
 export async function saveMobileSecureConfig(path: string, config: MobileSecureConfig, secrets: MobileSecretStorage): Promise<void> {
   if (!secrets.available()) throw new Error('Protezione credenziali non disponibile')
   const encrypted = secrets.encrypt(JSON.stringify(validate(config)))
-  if (!Buffer.isBuffer(encrypted) || encrypted.length === 0 || encrypted.length > 64_000) throw new Error('Protezione credenziali non riuscita')
+  if (!Buffer.isBuffer(encrypted) || encrypted.length === 0 || encrypted.length > 600_000) throw new Error('Protezione credenziali non riuscita')
   const temporary = `${path}.${randomBytes(12).toString('hex')}.tmp`
   try {
     await writeFile(temporary, encrypted, { mode: 0o600, flag: 'wx' })
@@ -44,7 +45,7 @@ export async function loadMobileSecureConfig(path: string, secrets: MobileSecret
   if (!secrets.available()) throw new Error('Protezione credenziali non disponibile')
   try {
     const encrypted = await readFile(path)
-    if (!encrypted.length || encrypted.length > 64_000) throw new Error()
+    if (!encrypted.length || encrypted.length > 600_000) throw new Error()
     return validate(JSON.parse(secrets.decrypt(encrypted)))
   } catch { throw new Error('Configurazione protetta non disponibile') }
 }

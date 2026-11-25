@@ -6734,3 +6734,102 @@ Non modificare manualmente la sezione `Registro`: aggiungi le nuove decisioni es
 - **Impatto:** Fonte normativa unica nella procedura Windows, richiamata da AGENTS e dal primo passo di preparazione. Con modifiche miste prevale l impatto maggiore; MINOR azzera PATCH e MAJOR azzera MINOR e PATCH. Nessuna rinumerazione della 0.7.0, modifica a script o binari, nuova release o dipendenza. Documentazione sola senza distribuzione di nuovi binari non incrementa la versione.
 - **Follow-up:** Applicare la convenzione alla prossima release e registrare esplicitamente l eventuale passaggio a 1.0.0.
 - **File coinvolti:** AGENTS.md, docs/publishing/aggiornamenti-windows.md, DECISIONI.md
+
+## D-0612 — Ritmo giornaliero preciso, tempo effettivo e widget Memo separato
+
+- **Data:** 2026-11-25
+- **Stato:** accettata
+- **Area:** studio-mobile
+- **Decisione:** Implementare esclusivamente le tre richieste del 25 novembre: ritmo giornaliero a quattro decimali con lezioni future da orario prima dell esame; totale effettivo della lezione nel box Info; nuovo widget Android Memo di sola consultazione per gruppo, con attivazione esplicita del collegamento cifrato esistente.
+- **Motivazione:** L utente conferma formato giornaliero, inclusione delle lezioni future, tempo effettivo e sola lettura; la precedente modifica aveva sostituito il rapporto con il carico totale e contava solo l archivio. Il widget delle statistiche deve mantenere il proprio comportamento.
+- **Impatto:** Nessuna dipendenza o chiamata AI. Campo memo opzionale compatibile con snapshot v1 e app precedenti; cache offline, gruppi indipendenti, note Unicode integrali e pagine. Consenso inizialmente disattivato; revoca scarta pending e riserva revisioni incerte. Limite esplicito di 240000 byte senza troncamenti; limiti degli involucri coordinati e configurazione protetta fino a 600000 byte. Orari audio compatti nei metadati e contrasto corretto nel tema scuro.
+- **Follow-up:** Terminare i controlli finali e fermarsi prima del processo di release come richiesto. Nessun installer generale rigenerato, pubblicazione o installazione personale. Distribuzione richiedera versioni crescenti di Windows e Android e gate di release completo.
+- **File coinvolti:** src/utils/examPace.ts, src/components/Dashboard.tsx, src/components/LectureStudyTime.tsx, src/components/LectureDrawer.tsx, src/styles.css, shared/mobileStatistics.ts, shared/mobileCompanion.ts, electron/main/mobileCompanion.ts, electron/main/mobileGithubPublisher.ts, electron/main/mobileSecureConfig.ts, electron/main/index.ts, electron/preload/index.ts, src/components/MobileCompanionSettings.tsx, android-companion, tests, tools/test_android_memo.ps1, tools/run_hook_regressions.cjs, docs/quality/ritmo-studio-memo-2026-11-25.md, docs/product/statistiche-android.md, STRUTTURA_PROGETTO.md
+
+## D-0613 — Tre richieste del 25 novembre verificate, arresto prima della release
+
+- **Data:** 2026-11-25
+- **Stato:** accettata
+- **Area:** collaudi
+- **Decisione:** Concludere l implementazione di ritmo preciso con lezioni future, box del tempo effettivo e widget Memo separato dopo i collaudi; fermarsi prima di preparazione e pubblicazione della release come richiesto.
+- **Motivazione:** Passano 999 test unitari in 92 file del checkout corrente, typecheck, lint, inventario, build desktop, periodi Java, suite completa React Electron con riavvio e fixture Android API 36.1 nei due temi. La rilettura delle note cifrate vicino al limite riproduceva un limite errato del doppio base64, ora corretto e coperto da test.
+- **Impatto:** Nessuna chiamata AI, invio di dati personali o installazione sul telefono personale. Android verificato in emulatore in sola lettura; fixture di test distinta dal companion originale. Una ripetizione Electron e andata in timeout durante altri carichi e un avvio ha fallito un click: successiva suite completa invariata passata con timeout configurabile di 300 secondi e senza carichi concorrenti. Nessuna verifica esclusa dal repository o asserzione allentata.
+- **Follow-up:** Solo su successiva richiesta avviare il processo di release, scegliere versioni crescenti Windows e Android ed eseguire il gate di pubblicazione. Il nuovo widget richiedera aggiornamento del companion e consenso Memo nelle impostazioni. Limite di 240000 byte esplicito; controllo fisico prolungato Doze non eseguito.
+- **File coinvolti:** DECISIONI.md, docs/quality/ritmo-studio-memo-2026-11-25.md, docs/product/statistiche-android.md, STRUTTURA_PROGETTO.md, tests, tools/test_android_memo.ps1
+
+## D-0614 — APK Android 0.2.0 preparato per installazione differita
+
+- **Data:** 2026-11-25
+- **Stato:** accettata
+- **Area:** android
+- **Decisione:** Preparare su richiesta l APK Android 0.2.0 codice 4 con il widget Memo, mantenendo pacchetto e certificato della 0.1.2. Conservare APK verificato, hash, impronta dei sorgenti e istruzioni in local-artifacts/android-install-ready/0.2.0, senza pubblicare o installare sul telefono personale.
+- **Motivazione:** L utente vuole poter installare rapidamente quando avra il telefono. La nuova funzione richiede versione crescente; la firma identica permette adb install -r conservando cache e abbinamento. Build locale e fixture leggono ora la versione da Gradle per evitare numeri duplicati divergenti.
+- **Impatto:** Android passa a 0.2.0 codice 4; Windows rimane 0.7.0 e il suo processo release non e avviato. APK 50447 byte SHA256 892012f32da20aaea0cfaeb0d7faf75c862df4daf2c77809c8769c8b12817b74; verificare il valore definitivo nel rapporto locale. Nessuna nuova dipendenza, credenziale o classe della fixture inclusa. Note Android dedicate; Memo necessita anche il desktop aggiornato e il consenso esplicito.
+- **Follow-up:** Verificare l APK originale in emulatore e conservare il rapporto. Quando l utente colleghera il telefono, controllare seriale e versione, poi installare sul posto il file verificato senza disinstallazione. Nessuna pubblicazione pubblica richiesta.
+- **File coinvolti:** android-companion/app/build.gradle, android-companion/build-local.ps1, tools/test_android_memo.ps1, docs/releases/android-0.2.0.md, docs/product/statistiche-android.md, docs/quality/ritmo-studio-memo-2026-11-25.md, STRUTTURA_PROGETTO.md, local-artifacts/android-install-ready/0.2.0 (ignorato), DECISIONI.md
+
+## D-0615 — Upgrade Android verificato e rettifica hash D-0614
+
+- **Data:** 2026-11-25
+- **Stato:** accettata
+- **Area:** android
+- **Decisione:** Confermare pronto l APK Android 0.2.0 codice 4 dopo upgrade in emulatore con gli APK originali 0.1.2 e 0.2.0. Rettificare il solo SHA256 erroneamente riportato nell Impatto di D-0614: il valore effettivo verificato e 2264377db64ab4efce3cb194048429e57d3bf658d5b2d00a7aad535d0733a573.
+- **Motivazione:** Il rapporto locale calcolato dai byte dell APK e autorevole; il precedente valore nel registro era un errore di trascrizione e non identifica il file preparato. La prova di upgrade conferma pacchetto, firma e conservazione della cache sintetica senza disinstallazione.
+- **Impatto:** APK finale 50447 byte, firma v2 e v3 verificata e certificato identico alla 0.1.2. Versione 0.2.0 codice 4 e avvio confermati, sette lezioni sintetiche e ingresso Memo visibili dopo adb install -r. Nessuna classe di test o credenziale inclusa; nessun telefono personale modificato e nessun upload. File conservato in local-artifacts/android-install-ready/0.2.0 con verified.json e INSTALLAZIONE.txt.
+- **Follow-up:** Quando disponibile, installare sul solo telefono autorizzato dopo verifica del file, conservando dati e abbinamento con adb install -r. Verificare allora l abbinamento personale. Memo richiede anche il desktop aggiornato e la sua attivazione esplicita; nessuna release Windows preparata.
+- **File coinvolti:** DECISIONI.md, docs/quality/ritmo-studio-memo-2026-11-25.md, local-artifacts/android-install-ready/0.2.0 (ignorato)
+
+## D-0616 — Ricerca documentale su estrazione audio YouTube e MP3
+
+- **Data:** 2026-11-25
+- **Stato:** accettata
+- **Area:** ricerca-audio
+- **Decisione:** Conservare il confronto richiesto su yt-dlp, wrapper Node, YouTube.js, ytdl-core e alternative Python. Proporre yt-dlp con FFmpeg come primo candidato per un eventuale pilota isolato, senza adottare dipendenze o implementare il download in questa fase.
+- **Motivazione:** La richiesta riguarda una ricerca. Le fonti primarie mostrano requisiti EJS e runtime spesso omessi, valutatore personalizzato anche per YouTube.js Node e risultati indicizzati obsoleti sullo stato di DisTube. Scaricare una traccia audio e convertirla in MP3 sono operazioni distinte.
+- **Impatto:** Rapporto con fonti e limiti in docs/research/youtube-mp3-librerie-2026-11-25.md. FFmpeg locale gia dotato di libmp3lame; ffprobe non osservato nelle dipendenze. API GitHub consultata per stato e push, senza inferire affidabilita dai soli metadati. Nessuna libreria installata, modifica runtime, richiesta AI o download di media. Lavoro precedente Android e desktop conservato.
+- **Follow-up:** Eventuale implementazione o pilota richiede una richiesta successiva e contenuti autorizzati. Prima della scelta definitiva verificare compatibilita della precisa versione Electron, licenze dei binari, aggiornamenti e comportamento reale di download e annullamento.
+- **File coinvolti:** docs/research/youtube-mp3-librerie-2026-11-25.md, docs/research/README.md, STRUTTURA_PROGETTO.md, DECISIONI.md
+
+## D-0617 — Download YouTube locale con yt-dlp e riproduzione persistente
+
+- **Data:** 2026-11-25
+- **Stato:** accettata
+- **Area:** musica-locale
+- **Decisione:** Implementare su richiesta Scarica in locale accanto alle aperture YouTube del catalogo e delle tracce; sostituirlo con Riproduci dopo verifica del file. Usare yt-dlp Windows 2026.11.23 e Deno 2.9.8 con hash fissati, avviati come processi separati; conservare audio scaricato e MP3 derivato con FFmpeg esistente. Nessuna nuova libreria npm.
+- **Motivazione:** L utente autorizza esplicitamente la funzione dopo la ricerca. Una sola compilation scaricata serve tutti i timestamp; strumenti inclusi e verificati evitano configurazioni manuali. Download esplicito, annullabile e file locali mantengono il flusso local-first.
+- **Impatto:** Nuovo archivio musica separato dalle lezioni e dai loro conteggi, IPC limitati al catalogo, staging e pubblicazione atomica dei file verificati. Riproduzione locale mantiene i controlli e continua chiudendo il pannello; stop durante audio lezione o altro sottofondo. Dipendenze binarie fissate con checksum e licenze, escluse dai sorgenti Git ma incluse nel packaging.
+- **Follow-up:** Implementare e verificare servizi, UI, annullamento, integrita, errore e packaging; collaudi offline sintetici e prova reale mirata. Non avviare installer generale o pubblicazione Windows senza successiva richiesta.
+- **File coinvolti:** shared/youtubeAudio.ts, electron/main/youtubeAudio.ts, electron/main/index.ts, electron/preload/index.ts, src/components/YoutubeLibrary.tsx, src/utils/youtubePlayback.ts, resources/youtube-tools, tools/prepare_youtube_tools.py, electron-builder.yml, tests, docs, STRUTTURA_PROGETTO.md, DECISIONI.md
+
+## D-0618 — YouTube locale implementato e verificato senza pubblicazione
+
+- **Data:** 2026-11-25
+- **Stato:** accettata
+- **Area:** musica-locale
+- **Decisione:** Concludere download e riproduzione locale YouTube nel catalogo e per ogni timestamp, con Riproduci al posto di Scarica dopo verifica del file. Conservare il pacchetto di prova separato e fermarsi senza rigenerare installer generale o pubblicare una release.
+- **Motivazione:** Passano 1006 test unitari in 93 file, sette nuovi casi sul servizio compreso arresto reale dell albero processi Windows, suite completa React Electron con riavvio, casi UI mirati e prova nativa sulla build finale. Il download reale Blender conserva M4A e produce MP3 decodificato e verificato.
+- **Impatto:** Strumenti e licenze inclusi nel pacchetto cartella di prova con hash identici agli upstream. yt-dlp.exe e deno.exe esclusi dalla firma via signExts per preservare gli hash anche con certificati futuri; controllo aggiunto al workflow release e al verificatore installer. Compressione invariata, nessuna dipendenza npm, chiamata AI o dato personale. La fonte completata resta anche su errore conversione; file mancanti o alterati tornano scaricabili; timestamp oltre durata segnalati. APK Android pronto rimasto invariato.
+- **Follow-up:** Funzione pronta per il successivo processo release Windows con versione crescente e gate previsto dalla skill. Nessun download massivo delle compilation, account, cookie o installazione personale. Prova reale su un film pubblico, disponibilita futura YouTube non garantita; staging da crash non viene dichiarato pronto.
+- **File coinvolti:** DECISIONI.md, docs/product/youtube-locale.md, docs/quality/youtube-locale-2026-11-25.md, STRUTTURA_PROGETTO.md, electron-builder.yml, .github/workflows, tools, resources/youtube-tools, electron, shared/youtubeAudio.ts, src, tests
+
+## D-0619 — Preparazione autonoma Windows 0.8.0 e Android 0.2.0
+
+- **Data:** 2026-11-25
+- **Stato:** accettata
+- **Area:** release
+- **Decisione:** Preparare e pubblicare Windows 0.8.0 con gate completo e Android 0.2.0 con il medesimo APK gia collaudato, su autorizzazione esplicita dell utente. Conservare latest Windows e distribuire Android con tag separato.
+- **Motivazione:** Le nuove funzioni YouTube locale e Memo richiedono incremento MINOR secondo la convenzione D-0611. La richiesta autorizza verifiche, commit, push e pubblicazione senza ulteriori conferme.
+- **Impatto:** Note definitive prima del packaging; backup del setup precedente, build unica, controllo hash e licenze dei tool, verifica pubblica degli asset. Nessuna installazione automatica personale.
+- **Follow-up:** Pubblicare solo dopo gate e verifica pacchetti; registrare esiti effettivi e digest finali.
+- **File coinvolti:** package.json, package-lock.json, electron-builder.yml, docs/releases/0.8.0.md, docs/releases/android-0.2.0.md
+
+## D-0620 — Gate completo e installer Windows 0.8.0 verificati
+
+- **Data:** 2026-11-25
+- **Stato:** accettata
+- **Area:** release
+- **Decisione:** Adottare gli asset del rapporto release-20261125-145239, tutti i passaggi verdi e sorgenti invariati durante preparazione. Setup 353312770 byte SHA256 89177cc6f79b32620601dd1e63993cf7d2b28e79a7b3b276a71e816c14b181f4. Conservare la stessa build per upload.
+- **Motivazione:** Gate completo superato: 1989 unitari nel discovery comprendente il vecchio worktree locale, 49 Python, 41 Node, Java, Bluetooth, RAG, updater, Electron con riavvio, raccolte, Sessione e PDF reali. Il primo tentativo aveva perso focus Windows; caso isolato e intero gate ripetuto passati senza modificare asserzioni.
+- **Impatto:** Verificati 385 file build, nove componenti NSIS, sette file dei tool YouTube estratti dal setup e tre backup. Prova MP3 nativa ripetuta sulla build finale. Identita Windows corretta, Authenticode NotSigned, nessun materiale personale nel pacchetto.
+- **Follow-up:** Commit e push di tutte le modifiche pubblicabili, bozza e pubblicazione autorizzata con verifica digest remoti. Upgrade Windows temporaneo, UAC e SmartScreen non collaudati; telefono personale non installato.
+- **File coinvolti:** docs/releases/0.8.0.md, docs/releases/android-0.2.0.md, docs/publishing/aggiornamenti-windows.md, docs/quality/youtube-locale-2026-11-25.md

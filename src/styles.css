@@ -2354,11 +2354,11 @@ h2 {
 .metadata-display p {
   margin: 8px 0;
   font-size: 13px;
-  color: #495e54;
+  color: var(--text-muted);
 }
 
 .metadata-display strong {
-  color: #21382e;
+  color: var(--text-main);
 }
 
 /* Danger delete box */
@@ -4422,12 +4422,12 @@ h2 {
 }
 
 .recording-times {
-  padding: 14px 16px;
-  margin: 0 0 20px;
-  border: 1px solid var(--border-subtle);
-  border-radius: 10px;
-  background: var(--bg-content);
+  margin: 0 0 16px;
 }
+
+.lecture-study-time { display: grid; gap: 8px; padding: 20px; margin-bottom: 20px; border: 1px solid var(--border-subtle); border-radius: 10px; background: var(--bg-content); }
+.lecture-study-time span { color: var(--text-muted); font-size: 13px; }
+.lecture-study-time strong { font-size: 24px; font-weight: 650; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
 
 .recording-times dl {
   display: flex;
@@ -4438,7 +4438,7 @@ h2 {
 
 .recording-times dt { font-size: 12px; color: var(--text-muted); }
 .recording-times dt span { font-weight: normal; }
-.recording-times dd { margin: 6px 0 0; font-size: 20px; font-weight: 650; font-variant-numeric: tabular-nums; }
+.recording-times dd { margin: 4px 0 0; font-size: 14px; font-variant-numeric: tabular-nums; }
 .recording-times p { margin: 12px 0 0; font-size: 12px; color: var(--text-muted); line-height: 1.5; }
 
 .folder-group {

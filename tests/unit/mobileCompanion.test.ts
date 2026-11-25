@@ -12,7 +12,7 @@ describe('Sincronizzazione del telefono', () => {
     const storage = { available: () => true,
       encrypt: (value: string) => { const iv = randomBytes(12), cipher = createCipheriv('aes-256-gcm', key, iv); const body = Buffer.concat([cipher.update(value, 'utf8'), cipher.final()]); return Buffer.concat([iv, cipher.getAuthTag(), body]) },
       decrypt: (value: Buffer) => { const cipher = createDecipheriv('aes-256-gcm', key, value.subarray(0, 12)); cipher.setAuthTag(value.subarray(12, 28)); return Buffer.concat([cipher.update(value.subarray(28)), cipher.final()]).toString('utf8') } }
-    const source = vi.fn().mockResolvedValue({ courses: [{ code: 'A' }], lectures: [{ courseCode: 'A', studyStatus: 'in-corso' }], dailyHistory: [] })
+    const source = vi.fn().mockResolvedValue({ courses: [{ code: 'A' }], lectures: [{ courseCode: 'A', studyStatus: 'in-corso' }], dailyHistory: [], scratchpad: { notes: 'Nota senza tag', updatedAt: '2026-11-25', groups: [{ id: 'g', name: 'Gruppo', notes: 'Nota gruppo', shortcut: 'G' }], todos: [{ id: 't', groupId: 'g', text: 'Attività', completed: false, createdAt: '2026-11-25' }] } })
     const remote = vi.fn().mockRejectedValueOnce(new Error('connessione interrotta')).mockResolvedValue({ url: 'synthetic', unchanged: false })
     const path = join(directory, 'config.bin')
     try {
@@ -31,6 +31,33 @@ describe('Sincronizzazione del telefono', () => {
       await restarted.publish()
       expect(remote.mock.calls[2][0].snapshot.revision).toBe(2)
       expect(remote.mock.calls[2][0].snapshot.courses[0].remaining).toBe(0)
+      expect(remote.mock.calls[2][0].snapshot).not.toHaveProperty('memo')
+      source.mockResolvedValue({ courses: [{ code: 'A' }], lectures: [], dailyHistory: [], scratchpad: {
+        notes: 'Nota libera', groups: [{ id: 'g', name: 'Gruppo', notes: 'Nota gruppo', shortcut: 'G' }],
+        todos: [{ id: 't', groupId: 'g', text: 'Fare', completed: false }], updatedAt: '2026-11-25' } })
+      expect((await restarted.setMemoEnabled(true)).memoEnabled).toBe(true)
+      expect(remote.mock.calls[3][0].snapshot.memo.groups).toHaveLength(2)
+      expect(remote.mock.calls[3][0].snapshot.memo.todos[0].text).toBe('Fare')
+      await restarted.publish()
+      expect(remote).toHaveBeenCalledTimes(4)
+      remote.mockRejectedValueOnce(new Error('offline'))
+      await restarted.setMemoEnabled(false)
+      expect(remote.mock.calls[4][0].snapshot).not.toHaveProperty('memo')
+      await restarted.publish()
+      expect(remote.mock.calls[5][0].snapshot).not.toHaveProperty('memo')
+      // A request may commit remotely and then fail before the local acknowledgement.
+      // Disabling must publish a fresh revision even if the old statistics match.
+      remote.mockRejectedValueOnce(new Error('risposta persa'))
+      await restarted.setMemoEnabled(true)
+      const uncertainRevision = remote.mock.calls[6][0].snapshot.revision
+      await restarted.setMemoEnabled(false)
+      expect(remote.mock.calls[7][0].snapshot.revision).toBeGreaterThan(uncertainRevision)
+      expect(remote.mock.calls[7][0].snapshot).not.toHaveProperty('memo')
+      expect(source).toHaveBeenLastCalledWith(false)
+      source.mockResolvedValue({ courses: [], lectures: [], dailyHistory: [], scratchpad: { notes: 'x'.repeat(250000), todos: [], updatedAt: '2026-11-25' } })
+      expect((await restarted.setMemoEnabled(true)).error).toContain('Memo troppo grande')
+      expect(remote).toHaveBeenCalledTimes(8)
+      expect((await restarted.setMemoEnabled(false)).error).toBeUndefined()
       await restarted.disable()
       expect(await restarted.state()).toEqual({ enabled: false })
     } finally { await rm(directory, { recursive: true, force: true }) }

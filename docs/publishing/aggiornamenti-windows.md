@@ -1,5 +1,27 @@
 # Aggiornamenti Windows
 
+## Preparazione 0.8.0 — 25 novembre 2026
+
+YouTube locale, ritmo consigliato corretto, tempo di studio nelle informazioni
+e invio facoltativo Memo al companion Android: [note](../releases/0.8.0.md),
+[collaudi](../quality/youtube-locale-2026-11-25.md), D-0619–D-0620.
+Gate completo verde: 1.989 unitari nel discovery completo (1.006 attuali più
+983 del vecchio worktree conservato), 49 Python, 41 Node e tutti gli scenari
+desktop. Build unica riusata per NSIS; 385 file build, nove componenti embedded,
+sette file YouTube estratti dal payload e tre backup verificati. AuditShell e
+identità EXE passati; nessun materiale personale nel pacchetto.
+
+| Asset | Byte | SHA256 |
+| --- | ---: | --- |
+| `Lezionify-Setup-0.8.0.exe` | 353312770 | `89177cc6f79b32620601dd1e63993cf7d2b28e79a7b3b276a71e816c14b181f4` |
+| `Lezionify-Setup-0.8.0.exe.blockmap` | 361904 | `7a254ea8522ff95629eeb95f98496d6606ab6325041249e9e88cde2ced72240d` |
+| `latest.yml` | 3168 | `0a9b96216aa3aaf6107d14c9c8152a7ebbc5fafad695fe0b049a323c2d409eee` |
+
+Rapporto locale `local-artifacts/release-20261125-145239/report.json` completo.
+Firma effettiva `NotSigned`; installer personale non avviato. Upgrade Windows
+temporaneo, UAC e SmartScreen non collaudati. Android 0.2.0 è un pacchetto separato,
+con firma e upgrade in emulatore già verificati; telefono personale non installato.
+
 Implementazione introdotta in 0.2.0, decisione D-0528. Ricerca e alternative:
 [valutazione del 15 novembre](../research/aggiornamenti-automatici-github-2026-11-15.md).
 

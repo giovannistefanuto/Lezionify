@@ -2,6 +2,34 @@
 
 ## Stato attuale
 
+Il download YouTube locale è implementato nel checkout (D-0617), ancora non
+distribuito: `YoutubeAudioService` e `shared/youtubeAudio.ts` possiedono acquisizione,
+fonti, MP3 verificati e IPC; `useYoutubeAudio` e `youtubePlayback` collegano azioni
+e lettore persistente in `YoutubeLibrary`. Binari fissati in
+`resources/youtube-tools/manifest.json`, preparazione e verifica in `tools/` e
+extraResources nel packaging. Nessuna dipendenza npm; nessun installer rigenerato.
+[Uso](docs/product/youtube-locale.md) e [collaudi](docs/quality/youtube-locale-2026-11-25.md).
+
+
+La ricerca del 25 novembre su [YouTube e MP3](docs/research/youtube-mp3-librerie-2026-11-25.md)
+confronta gli strumenti di estrazione con la conversione FFmpeg già disponibile.
+La ricerca documentale ha preceduto l’implementazione e i collaudi descritti sopra.
+
+
+Le tre richieste del 25 novembre sono implementate nel checkout, senza avviare
+la release Windows: `examPace.ts` include gli slot futuri e mantiene il rapporto giornaliero
+fino a quattro decimali; `LectureStudyTime` espone il totale effettivo in Info.
+Il campo opzionale `MobileStatistics.memo`, il consenso nelle Impostazioni e
+`MemoWidget`/`MemoContent`/`MemoActivity` estendono il collegamento cifrato Android
+alla consultazione dei gruppi. `MemoListService` copre Android precedenti a 12;
+`tools/test_android_memo.ps1` esegue la fixture solo in emulatore.
+Android 0.2.0 (codice 4) è stato successivamente compilato su richiesta per
+installazione differita, con firma compatibile con 0.1.2 e APK negli artefatti
+locali; nessuna pubblicazione o installazione personale. La build Android e
+la fixture derivano la versione da `app/build.gradle`.
+Uso, limiti e verifiche: [ritmo, studio e Memo](docs/quality/ritmo-studio-memo-2026-11-25.md).
+
+
 La 0.7.0, pubblicata e verificata il 24 novembre, completa le sole richieste
 di navigazione, ricerca e statistiche concordate. `ArchiveSearch` possiede il campo sopra l’elenco; comando laterale
 e Ctrl+K aprono la stessa vista. `KeyboardShortcuts` documenta le combinazioni

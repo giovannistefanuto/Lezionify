@@ -12,6 +12,7 @@ Deep Research e la possibile indagine con REA; nessuna prova hardware eseguita.
 
 | Documento | Contenuto |
 | --- | --- |
+| [YouTube → MP3: librerie e integrazione](youtube-mp3-librerie-2026-11-25.md) | Confronto documentale tra yt-dlp, wrapper Node, YouTube.js, ytdl-core e pytubefix; conversione MP3, runtime, manutenzione e riuso di FFmpeg in Lezionify; nessun download o integrazione |
 | [Pilota Mistral Q&A](mistral-qna-pilota-2026-11-23.md) | Cinque domande reali, baseline Gemini storica, snapshot privati e runner separato; completato il 24 novembre per circa 0.0483 USD, valutazione e limiti documentati |
 | [Aggiornamenti automatici da GitHub](aggiornamenti-automatici-github-2026-11-15.md) | Ricerca iniziale Windows Electron/NSIS; implementazione 0.2.0, setup e limiti nella [procedura aggiornata](../publishing/aggiornamenti-windows.md) |
 | [Costi dispense inglesi: Gemini e OpenAI](costi-dispense-gemini-openai-2026-11-14.md) | Fotografia dei listini al 14 novembre, misure aggregate su 56 lezioni, chiamate della pipeline, tabelle per traduzione e italiano + inglese, trascrizione separata, ipotesi e limiti del preventivo |

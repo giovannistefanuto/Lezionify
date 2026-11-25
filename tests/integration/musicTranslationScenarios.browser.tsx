@@ -105,7 +105,7 @@ export async function runMusicTranslationScenarios(root: Root, api: any) {
     check(polls.size === 0, 'Switching away from Spotify must stop polling')
     check(document.querySelectorAll('.youtube-collection-card').length === 6, 'Six preview cards missing')
     check(document.querySelectorAll('.music-track-list li').length === 31, 'Bundled classical tracklist must contain 31 entries')
-    const track = document.querySelectorAll('.music-track-list button')[1] as HTMLButtonElement
+    const track = document.querySelectorAll('.music-track-list .youtube-track-open')[1] as HTMLButtonElement
     await act(async () => track.click()); check(videos[0][0] === 'mdJU5ogrPMY' && videos[0][1] > 0, 'Track selection must open selected timestamp')
     check(document.body.textContent?.includes('Aperto su YouTube'), 'External playback must not be labelled as confirmed playing')
     for (const theme of ['light', 'dark']) {

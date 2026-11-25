@@ -92,7 +92,26 @@ final class StatisticsStore {
         HashSet<String> dates = new HashSet<>(), codes = new HashSet<>();
         for (int i=0;i<days.length();i++) { JSONObject d=days.getJSONObject(i); String date=d.getString("date"); LocalDate.parse(date); if (!dates.add(date) || d.getLong("seconds") < 0 || d.getLong("seconds") > 9007199254740991L) throw new Exception(); }
         for (int i=0;i<courses.length();i++) { JSONObject course=courses.getJSONObject(i); String code=course.getString("code"); if (code.isEmpty() || code.length()>200 || !codes.add(code) || course.getInt("remaining")<0 || course.getInt("remaining")>100000) throw new Exception(); }
+        if (data.has("memo")) validateMemo(data.getJSONObject("memo"));
         return data;
+    }
+    private static void validateMemo(JSONObject memo) throws Exception {
+        JSONArray groups=memo.getJSONArray("groups"), todos=memo.getJSONArray("todos");
+        if(groups.length()<1 || groups.length()>27 || todos.length()>1000) throw new Exception();
+        HashSet<String> ids=new HashSet<>(), tasks=new HashSet<>();
+        for(int i=0;i<groups.length();i++) {
+            JSONObject group=groups.getJSONObject(i); String id=group.getString("id");
+            if(id.length()>200 || !ids.add(id) || group.getString("name").length()>80 || group.getString("notes").length()>1000000) throw new Exception();
+        }
+        for(int i=0;i<todos.length();i++) {
+            JSONObject todo=todos.getJSONObject(i); String id=todo.getString("id");
+            if(id.isEmpty() || id.length()>200 || !tasks.add(id) || !ids.contains(todo.getString("groupId")) || todo.getString("text").length()>10000) throw new Exception();
+            todo.getBoolean("completed");
+        }
+    }
+    static JSONObject memoSnapshot(Context c) {
+        try { return validate(prefs(c).getString("snapshot", ""),prefs(c).getString("stream", "")); }
+        catch(Exception ignored) { return null; }
     }
     static final class Snapshot {
         final ZonedDateTime generated;

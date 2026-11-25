@@ -20,6 +20,7 @@ function files(directory) {
   return fs.readdirSync(directory, { withFileTypes: true }).flatMap(item => item.isDirectory() ? files(path.join(directory, item.name)) : [path.join(directory, item.name)])
 }
 async function main() {
+  require('./verify_youtube_tools.cjs').verifyYoutubeTools(path.join(root, 'dist/win-unpacked/resources/youtube-tools'))
   const branding = require('node:child_process').spawnSync('powershell.exe', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', path.join(root, 'tools/verify_windows_identity.ps1'), '-Mode', 'Package'], { windowsHide: true, encoding: 'utf8' })
   assert(branding.status === 0, 'Windows branding verification failed: ' + branding.stdout + branding.stderr)
   assert(asar.extractFile(archive, path.normalize('out/main/app-icon.png')).equals(fs.readFileSync(path.join(root, 'resources/icon.png'))), 'Window icon missing or changed in ASAR')

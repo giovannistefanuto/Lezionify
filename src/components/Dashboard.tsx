@@ -1,4 +1,4 @@
-import { formatExamPace } from '../utils/examPace'
+import { formatExamPace, futureExamLectures } from '../utils/examPace'
 import { StudyHistoryOverview } from './StudyHistoryOverview'
 import { StudyRecords } from './StudyRecords'
 import { StudyDayTimeline } from './StudyDayTimeline'
@@ -185,6 +185,7 @@ export function Dashboard({
       cfu?: number
       completedLectures: number
       totalLectures: number
+      futureLectures: number
       pacingColor: string
       pacingMessage: string
     }[] = []
@@ -227,6 +228,7 @@ export function Dashboard({
         cfu: courseDef?.cfu,
         completedLectures: stats?.completedLectures ?? 0,
         totalLectures: stats?.totalLectures ?? 0,
+        futureLectures: futureExamLectures(courseDef, examToday, targetExamDate),
         pacingColor,
         pacingMessage
       })
@@ -425,8 +427,8 @@ export function Dashboard({
                       className="exam-pace-row"
                       style={{ color: item.pacingColor }}
                     >
-                      <span>⏱️ Ritmo consigliato:</span>
-                      <strong>{item.totalLectures ? formatExamPace(item.totalLectures - item.completedLectures, item.daysLeft) : 'Nessuna lezione archiviata'}</strong>
+                      <span title="Lezioni in archivio ancora da completare e lezioni future da orario, prima dell’esame">⏱️ Ritmo consigliato:</span>
+                      <strong title={`Stima da orario: ${item.futureLectures} lezioni future. Eventuali sospensioni non registrate non sono considerate.`}>{item.totalLectures || item.futureLectures ? formatExamPace(item.totalLectures - item.completedLectures + item.futureLectures, item.daysLeft) : 'Nessuna lezione prevista'}</strong>
                     </div>
                   )}
                 </div>
@@ -632,8 +634,8 @@ export function Dashboard({
                 pacingColor = '#c93b3b'
               } else {
                 const lecturesLeft =
-                  stats.totalLectures - stats.completedLectures
-                          pacingMessage = `${daysLeft} giorni all'esame · ${stats.totalLectures ? formatExamPace(lecturesLeft, daysLeft) : 'Nessuna lezione archiviata'}`
+                  stats.totalLectures - stats.completedLectures + futureExamLectures(courseDef, examToday, targetExamDate)
+                pacingMessage = `${daysLeft} giorni all'esame · ${stats.totalLectures || lecturesLeft ? formatExamPace(lecturesLeft, daysLeft) : 'Nessuna lezione prevista'}`
                 if (lecturesLeft / Math.max(daysLeft, 1) > 2) pacingColor = '#c93b3b'
                 else if (lecturesLeft / Math.max(daysLeft, 1) > 1) pacingColor = '#d98b28'
                 else pacingColor = '#226649'

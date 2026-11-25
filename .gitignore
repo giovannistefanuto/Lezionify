@@ -41,3 +41,7 @@ Desktop.ini
 /gemini-3.5-transcribe-analisi-completa.md
 
 /tools/run_transcription_live_test.cjs
+
+# Pinned external YouTube tools, prepared with tools/prepare_youtube_tools.py
+/resources/youtube-tools/*.exe
+/resources/youtube-tools/*.tmp

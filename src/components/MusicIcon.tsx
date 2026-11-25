@@ -1,5 +1,6 @@
 import type { CSSProperties } from 'react'
 const paths = {
+  download: 'M12 3v12 M7 10l5 5 5-5 M4 16v5h16v-5',
   play: 'M8 5v14l11-7z', pause: 'M6 5h4v14H6z M14 5h4v14h-4z',
   previous: 'M6 5v14 M18 5l-10 7 10 7z', next: 'M18 5v14 M6 5l10 7-10 7z',
   volume: 'M11 5L6 9H3v6h3l5 4z M15 8a6 6 0 0 1 0 8 M18 5a10 10 0 0 1 0 14',

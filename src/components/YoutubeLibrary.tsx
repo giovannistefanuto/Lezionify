@@ -1,3 +1,6 @@
+import { useYoutubeAudio } from '../hooks/useYoutubeAudio'
+import { playYoutubeAudio, pauseYoutubeAudio, useYoutubePlayback } from '../utils/youtubePlayback'
+import { YoutubeLocalPlayer } from './YoutubeLocalPlayer'
 import { useEffect, useRef, useState } from 'react'
 import catalog from '../../shared/musicCatalog.json'
 import { formatMusicTimestamp, parseMusicTracks, validateMusicTracks, type MusicTrack } from '../../shared/music'
@@ -10,6 +13,8 @@ const selectionKey = 'lezionify:music-youtube-selection:v1'
 const thumbnail = (id: string) => `https://i.ytimg.com/vi/${id}/hqdefault.jpg`
 export function YoutubeLibrary({ configuration = false }: { configuration?: boolean }) {
   const settings = useToolSettings()
+  const local = useYoutubeAudio()
+  const playback = useYoutubePlayback()
   const [selected, setSelected] = useState(() => { try { const id = localStorage.getItem(selectionKey); return catalog.some(item => item.videoId === id) ? id! : catalog[0].videoId } catch { return catalog[0].videoId } })
   const [overrides, setOverrides] = useState<Record<string, MusicTrack[]>>({})
   const [editing, setEditing] = useState(false)
@@ -20,6 +25,22 @@ export function YoutubeLibrary({ configuration = false }: { configuration?: bool
   const alive = useRef(true)
   const entry = catalog.find(item => item.videoId === selected)!
   const tracks = overrides[selected] ?? entry.tracks
+  const downloaded = local.items.find(item => item.videoId === selected)
+  const downloading = downloaded?.phase === 'downloading' || downloaded?.phase === 'converting'
+  const activeDownload = local.items.find(item => item.phase === 'downloading' || item.phase === 'converting')
+  const anyDownload = Boolean(activeDownload)
+  const ready = downloaded?.phase === 'ready'
+  const localAction = async (start = 0) => {
+    if (ready) {
+      if (downloaded.durationSeconds && start >= downloaded.durationSeconds) { setError('Il punto scelto supera la durata dell’audio scaricato. Correggi il timestamp oppure riproduci dall’inizio.'); return }
+      setError(''); await playYoutubeAudio(selected, start); await local.refresh()
+    }
+    else await local.download(selected)
+  }
+  const actionLabel = ready ? 'Riproduci' : downloading ? downloaded.phase === 'converting' ? 'Conversione…' : `Download${downloaded.progress !== undefined ? ` ${downloaded.progress}%` : '…'}` : 'Scarica in locale'
+  const localButton = (start = 0, title = entry.title) => <button type="button" className="music-primary youtube-local-action"
+    aria-label={`${ready ? 'Riproduci in locale' : 'Scarica in locale'} ${title}`} disabled={local.loading || anyDownload && !ready}
+    onClick={() => void localAction(start)}><MusicIcon name={ready ? 'play' : 'download'} size={16} />{actionLabel}</button>
   useEffect(() => {
     alive.current = true
     try {
@@ -56,12 +77,15 @@ export function YoutubeLibrary({ configuration = false }: { configuration?: bool
     <div className="music-section-heading"><div><span className="music-eyebrow">LA TUA SELEZIONE</span><h3>Un sottofondo per ogni sessione</h3></div><span className="music-count">{catalog.length} compilation</span></div>
     <div className="youtube-collection-grid" role="group" aria-label="Compilation YouTube">{catalog.map(item => <button type="button" className={`youtube-collection-card${selected === item.videoId ? ' is-selected' : ''}`} key={item.videoId} aria-pressed={selected === item.videoId} onClick={() => choose(item.videoId)}><MusicArtwork src={thumbnail(item.videoId)} title={item.title} wide /><span><strong title={item.title}>{item.title}</strong><small>{(overrides[item.videoId] ?? item.tracks).length ? `${(overrides[item.videoId] ?? item.tracks).length} tracce` : 'Video completo'}</small></span>{selected === item.videoId && <MusicIcon name="check" size={16} />}</button>)}</div>
     <section className="youtube-detail" aria-label={`Tracce di ${entry.title}`}>
-      <div className="youtube-detail-heading"><div><span className="music-source-label"><span className="youtube-brand-icon"><MusicIcon name="play" size={12} /></span>YouTube</span><h3>{entry.title}</h3><p>{tracks.length ? `${tracks.length} tracce · scegli da dove iniziare` : 'Apri il video completo oppure aggiungi i tuoi timestamp.'}</p></div><button type="button" className="music-primary youtube-play" disabled={busy} onClick={() => void open(0)}><MusicIcon name="play" size={18} /> Apri su YouTube <MusicIcon name="external" size={14} /></button></div>
+      <div className="youtube-detail-heading"><div><span className="music-source-label"><span className="youtube-brand-icon"><MusicIcon name="play" size={12} /></span>YouTube</span><h3>{entry.title}</h3><p>{tracks.length ? `${tracks.length} tracce · scegli da dove iniziare` : 'Apri il video completo oppure aggiungi i tuoi timestamp.'}</p></div><button type="button" className="music-primary youtube-play" disabled={busy} onClick={() => void open(0)}><MusicIcon name="play" size={18} /> Apri su YouTube <MusicIcon name="external" size={14} /></button>{localButton()}</div>
+      <YoutubeLocalPlayer />
+      {activeDownload && activeDownload.videoId !== selected && <div className="youtube-download-status" role="status"><span>{activeDownload.phase === 'converting' ? 'Conversione' : 'Download'} · {catalog.find(item => item.videoId === activeDownload.videoId)?.title}</span><button type="button" className="music-text-button" onClick={() => void local.cancel(activeDownload.videoId)}>Annulla download</button></div>}
+      {(downloading || ready) && <div className="youtube-download-status" role="status"><span>{downloading ? `${actionLabel} · ${entry.title}` : 'Compilation disponibile offline · tutte le tracce usano lo stesso audio locale.'}</span>{downloading && <button type="button" className="music-text-button" onClick={() => void local.cancel(selected)}>Annulla download</button>}{ready && playback.videoId === selected && playback.playing && <button type="button" className="music-text-button" onClick={pauseYoutubeAudio}>Pausa</button>}</div>}
       <div className="youtube-track-heading"><span>#</span><span>TITOLO</span><span>INIZIO</span><span /></div>
-      <ol className="music-track-list">{tracks.map((track, index) => <li key={track.start} className={opened === track.start ? 'is-opened' : ''}><button type="button" disabled={busy} onClick={() => void open(track.start)} aria-label={`Apri ${track.title} da ${formatMusicTimestamp(track.start)}`}><span className="music-track-number">{opened === track.start ? <MusicIcon name="external" size={14} /> : index + 1}</span><strong title={track.title}>{track.title}</strong><time>{formatMusicTimestamp(track.start)}</time><MusicIcon name="play" size={15} /></button></li>)}</ol>
-      <div className="youtube-list-footer"><p>{opened !== null ? `Aperto su YouTube da ${formatMusicTimestamp(opened)}. I controlli di riproduzione sono nel browser.` : 'Le tracce si aprono nel browser al punto scelto.'}</p><button type="button" className="music-text-button" onClick={() => settings.open('music')}>Gestisci timestamp nelle Impostazioni</button></div>
+      <ol className="music-track-list">{tracks.map((track, index) => <li key={track.start} className={`youtube-track-row ${opened === track.start ? 'is-opened' : ''}`}><button className="youtube-track-open" type="button" disabled={busy} onClick={() => void open(track.start)} aria-label={`Apri ${track.title} da ${formatMusicTimestamp(track.start)}`}><span className="music-track-number">{opened === track.start ? <MusicIcon name="external" size={14} /> : index + 1}</span><strong title={track.title}>{track.title}</strong><time>{formatMusicTimestamp(track.start)}</time><MusicIcon name="external" size={15} /></button>{localButton(track.start, track.title)}</li>)}</ol>
+      <div className="youtube-list-footer"><p>{opened !== null ? `Aperto su YouTube da ${formatMusicTimestamp(opened)}. I controlli di riproduzione sono nel browser.` : 'Apri la traccia su YouTube oppure scarica una sola volta la compilation per ascoltarla offline.'}</p><button type="button" className="music-text-button" onClick={() => settings.open('music')}>Gestisci timestamp nelle Impostazioni</button></div>
 
     </section>
-    {error && <p role="alert" className="music-error">{error}</p>}
+    {(error || local.error || downloaded?.error) && <p role="alert" className="music-error">{error || local.error || downloaded?.error}</p>}
   </div>
 }

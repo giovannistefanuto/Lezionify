@@ -34,6 +34,7 @@ const archiveApi: ArchiveApi = {
     apply: command => ipcRenderer.invoke('sessione:apply', command)
   },
   mobileCompanion: {
+    setMemoEnabled: enabled => ipcRenderer.invoke('mobile:memo', enabled),
     state: () => ipcRenderer.invoke('mobile:state'),
     configure: input => ipcRenderer.invoke('mobile:configure', input),
     pairing: () => ipcRenderer.invoke('mobile:pairing'),
@@ -91,6 +92,12 @@ const archiveApi: ArchiveApi = {
   ambientSoundStatus: () => ipcRenderer.invoke('archive:ambient-status'),
   installAmbientSounds: soundIds => ipcRenderer.invoke('archive:ambient-install', soundIds),
   readAmbientSound: id => ipcRenderer.invoke('archive:ambient-read', id),
+  youtubeAudio: {
+    status: () => ipcRenderer.invoke('archive:youtube-status'),
+    download: videoId => ipcRenderer.invoke('archive:youtube-download', videoId),
+    cancel: videoId => ipcRenderer.invoke('archive:youtube-cancel', videoId),
+    playbackUrl: videoId => ipcRenderer.invoke('archive:youtube-url', videoId)
+  },
   openCompilation: (videoId, start) => ipcRenderer.invoke('archive:open-compilation', videoId, start),
   spotifyConnection: () => ipcRenderer.invoke('archive:spotify-connection'),
   configureSpotify: clientId => ipcRenderer.invoke('archive:spotify-configure', clientId),

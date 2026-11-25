@@ -1,6 +1,6 @@
 {
   "name": "lezionify",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "description": "App desktop local-first per trasformare registrazioni universitarie in materiale di studio strutturato.",
   "author": "Giovanni",
   "private": true,
@@ -26,10 +26,10 @@
   "main": "out/main/index.js",
   "scripts": {
     "dev": "electron-vite dev",
-    "build": "electron-vite build",
-    "package:win": "electron-vite build && electron-builder --win",
-    "package:portable": "electron-vite build && electron-builder --win portable",
-    "package:dir": "electron-vite build && electron-builder --dir",
+    "build": "python tools/prepare_youtube_tools.py --verify && electron-vite build",
+    "package:win": "npm run build && electron-builder --win",
+    "package:portable": "npm run build && electron-builder --win portable",
+    "package:dir": "npm run build && electron-builder --dir",
     "typecheck": "tsc --noEmit --pretty false -p tsconfig.node.json && tsc --noEmit --pretty false -p tsconfig.web.json",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
@@ -52,7 +52,8 @@
     "release:validate": "node tools/validate_release.cjs",
     "release:local": "python tools/prepare_release.py",
     "test:app-update": "node tools/run_app_update_regressions.cjs",
-    "test:android-periods": "node tools/test_android_periods.cjs"
+    "test:android-periods": "node tools/test_android_periods.cjs",
+    "prepare:youtube-tools": "python tools/prepare_youtube_tools.py"
   },
   "dependencies": {
     "@google/genai": "^2.19.0",

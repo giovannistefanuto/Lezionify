@@ -72,3 +72,34 @@ automatico valore per valore con il desktop ne' un collaudo prolungato di Doze.
 Il 23 novembre il telefono personale è stato aggiornato su richiesta da 0.1.1
 (codice 2) a 0.1.2 (codice 3) tramite `adb install -r`. Installazione e apertura
 verificate; nessuna disinstallazione, cancellazione dati o nuovo abbinamento.
+
+## Nuovo widget Memo — implementato, non ancora distribuito
+
+Il widget **Lezionify Memo** affianca quello delle statistiche. Dal PC, nelle
+Impostazioni del collegamento Android, attivare **Sincronizza anche Memo**:
+nomi dei gruppi, attività e note vengono cifrati e inviati insieme al riepilogo.
+L’opzione è inizialmente spenta; il codice di abbinamento rimane lo stesso.
+Richiede il prossimo aggiornamento del companion, non ancora pubblicato.
+
+Le frecce accanto al gruppo cambiano selezione; ogni widget conserva la propria.
+L’elenco si scorre e, quando necessario, le frecce di pagina permettono di
+consultare tutti gli elementi. Attività completate e aperte restano distinguibili;
+il titolo apre la lettura nell’app. Non è possibile modificare o spuntare dal
+telefono. Senza rete rimane l’ultima copia con la sua data.
+
+La disattivazione rimuove Memo dalla prossima copia inviata; conserva dati sul PC
+e cronologia cifrata del repository. Il riepilogo completo accetta fino a
+240.000 byte UTF-8: oltre il limite appare un errore, senza tagliare note.
+Il PC deve essere in uso per inviare modifiche e Android può ritardare il download.
+[Contratti, collaudi e punto di ripresa](../quality/ritmo-studio-memo-2026-11-25.md).
+
+### APK 0.2.0 pronto per installazione differita — 25 novembre
+
+Su richiesta è stato compilato Android 0.2.0, codice 4, con lo stesso pacchetto
+e certificato della 0.1.2. APK, hash, verifica e istruzioni sono in
+`local-artifacts/android-install-ready/0.2.0/`, fuori da Git. È pronto per il
+successivo aggiornamento sul posto; non è stato pubblicato né installato sul
+telefono personale. Non disinstallare: usare `adb install -r` dopo aver
+identificato il dispositivo autorizzato. Note in
+[Android 0.2.0](../releases/android-0.2.0.md). Il desktop pubblicato 0.7.0
+continua a inviare solo statistiche; Memo richiede anche il nuovo desktop.

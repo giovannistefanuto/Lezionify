@@ -1,0 +1,20 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+ android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical"
+ android:padding="12dp" android:background="@drawable/widget_background">
+ <LinearLayout android:layout_width="match_parent" android:layout_height="48dp" android:gravity="center_vertical">
+  <TextView android:id="@+id/memo_open" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center_vertical" android:text="Lezionify · Memo" android:textStyle="bold" android:textSize="17sp" android:textColor="@color/widget_text" />
+  <TextView android:id="@+id/memo_refresh" android:layout_width="48dp" android:layout_height="48dp" android:gravity="center" android:text="↻" android:textSize="25sp" android:textColor="@color/widget_accent" android:contentDescription="Aggiorna Memo" />
+ </LinearLayout>
+ <LinearLayout android:layout_width="match_parent" android:layout_height="48dp" android:gravity="center_vertical" android:background="@drawable/widget_total">
+  <TextView android:id="@+id/memo_previous" android:layout_width="48dp" android:layout_height="48dp" android:gravity="center" android:text="‹" android:textSize="28sp" android:textColor="@color/widget_accent" android:contentDescription="Gruppo precedente" />
+  <TextView android:id="@+id/memo_group" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:textStyle="bold" android:textSize="16sp" android:maxLines="2" android:ellipsize="end" android:textColor="@color/widget_text" />
+  <TextView android:id="@+id/memo_next" android:layout_width="48dp" android:layout_height="48dp" android:gravity="center" android:text="›" android:textSize="28sp" android:textColor="@color/widget_accent" android:contentDescription="Gruppo successivo" />
+ </LinearLayout>
+ <ListView android:id="@+id/memo_list" android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:divider="@color/widget_rule" android:dividerHeight="1dp" />
+ <LinearLayout android:id="@+id/memo_pages" android:layout_width="match_parent" android:layout_height="40dp" android:gravity="center_vertical">
+  <TextView android:id="@+id/memo_page_previous" android:layout_width="48dp" android:layout_height="40dp" android:gravity="center" android:text="‹" android:textSize="24sp" android:textColor="@color/widget_accent" android:contentDescription="Pagina precedente" />
+  <TextView android:id="@+id/memo_page" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:gravity="center" android:textColor="@color/widget_muted" />
+  <TextView android:id="@+id/memo_page_next" android:layout_width="48dp" android:layout_height="40dp" android:gravity="center" android:text="›" android:textSize="24sp" android:textColor="@color/widget_accent" android:contentDescription="Pagina successiva" />
+ </LinearLayout>
+ <TextView android:id="@+id/memo_footer" android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingTop="8dp" android:textSize="11sp" android:textColor="@color/widget_muted" />
+</LinearLayout>

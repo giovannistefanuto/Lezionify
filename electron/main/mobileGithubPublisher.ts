@@ -4,7 +4,8 @@ import type { MobileStatistics } from '../../shared/mobileStatistics'
 type Transport = typeof fetch
 export type MobileGithubDestination = { owner: string; repo: string; branch: string }
 type Options = { destination: MobileGithubDestination; token: string; key: Buffer; snapshot: MobileStatistics }
-const limit = 350_000
+// GitHub Contents wraps the already base64-encrypted envelope in base64 again.
+const limit = 500_000
 const segment = /^[a-zA-Z0-9][a-zA-Z0-9._-]{0,99}$/
 
 function checkDestination({ owner, repo, branch }: MobileGithubDestination) {
@@ -59,7 +60,7 @@ export async function publishMobileStatistics(options: Options, transport: Trans
     sha = existing.sha
     try {
       const text = Buffer.from(existing.content.replace(/\s/g, ''), 'base64').toString('utf8')
-      if (Buffer.byteLength(text) > 256_000) throw new Error()
+      if (Buffer.byteLength(text) > 350_000) throw new Error()
       const envelope = JSON.parse(text) as MobileEnvelope
       const oldText = decryptMobileStatistics(envelope, key)
       const old = JSON.parse(oldText) as MobileStatistics

@@ -178,6 +178,7 @@ export function AmbientSoundProvider({
         activeSoundIdRef.current = soundId
         isPlayingRef.current = true
         setActiveSoundId(soundId)
+        window.dispatchEvent(new CustomEvent('lezionify:background-playback', { detail: { source: 'ambient' } }))
         setIsPlaying(true)
         setPausedByLectureAudio(false)
         musicPreferences.selectAmbientSound(soundId, volumeRef.current)
@@ -274,6 +275,12 @@ export function AmbientSoundProvider({
       )
     }
   }, [play, stopCurrentSource])
+
+  useEffect(() => {
+    const otherSource = (event: Event) => { if ((event as CustomEvent).detail?.source === 'youtube') pause() }
+    window.addEventListener('lezionify:background-playback', otherSource)
+    return () => window.removeEventListener('lezionify:background-playback', otherSource)
+  }, [pause])
 
   // Pulizia AudioContext alla chiusura dell'app
   useEffect(() => {
