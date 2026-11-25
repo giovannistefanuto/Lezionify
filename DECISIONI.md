@@ -6844,3 +6844,14 @@ Non modificare manualmente la sezione `Registro`: aggiungi le nuove decisioni es
 - **Impatto:** Aggiornamento Windows disponibile tramite updater e APK Android separato. APK 50447 byte SHA256 2264377db64ab4efce3cb194048429e57d3bf658d5b2d00a7aad535d0733a573; stessa firma precedente. Nessuna installazione automatica sul profilo Windows o telefono personale.
 - **Follow-up:** Release https://github.com/giovannistefanuto/Lezionify/releases/tag/v0.8.0 e https://github.com/giovannistefanuto/Lezionify/releases/tag/android-v0.2.0; aggiornare registro pubblicazione e verificare push finale. Restano i limiti documentati su Windows temporaneo e telefono personale.
 - **File coinvolti:** docs/publishing/aggiornamenti-windows.md, docs/quality/youtube-locale-2026-11-25.md, docs/quality/ritmo-studio-memo-2026-11-25.md, DECISIONI.md
+
+## D-0622 — Trascinamento nativo con pulsante premuto nel runner Electron
+
+- **Data:** 2026-11-25
+- **Stato:** accettata
+- **Area:** test
+- **Decisione:** Correggere solo il runner React/Electron: mouseMove durante drag include modifiers leftButtonDown. Aggiungere asserzione sugli eventi nativi ricevuti che richiede buttons=1 e diagnostica pointerId, mantenendo tutte le asserzioni di layout, posizione lettura e ridimensionamento.
+- **Motivazione:** La CI post-pubblicazione si e fermata sul divisore PDF. Il caso minimo iniziale passava localmente, ma la nuova asserzione ha riprodotto deterministicamente il difetto del runner: pointerdown buttons=1 seguito da pointermove buttons=0. Dopo la correzione la stessa prova e verde.
+- **Impatto:** Nessuna modifica applicativa o ai binari Windows 0.8.0 e Android 0.2.0 gia pubblicati. Correzione del gesto sintetico condiviso dai due divisori, senza retry o riduzione dei controlli. Il commit dei binari e i digest restano invariati.
+- **Follow-up:** Ripetere la suite Electron completa e attendere la CI sul commit di manutenzione. Conservare i tag sul commit originale e non rigenerare installer per soli test e documentazione.
+- **File coinvolti:** tools/run_hook_regressions.cjs, tests/integration/focusPdfScenarios.browser.tsx, docs/quality/youtube-locale-2026-11-25.md

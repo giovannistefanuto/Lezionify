@@ -179,7 +179,7 @@ try {
         await new Promise(resolve => setTimeout(resolve, 80));
         win.webContents.sendInputEvent({ type: 'mouseDown', x: from, y, button: 'left', clickCount: 1 });
         await new Promise(resolve => setTimeout(resolve, 50));
-        win.webContents.sendInputEvent({ type: 'mouseMove', x: to, y, button: 'left' });
+        win.webContents.sendInputEvent({ type: 'mouseMove', x: to, y, button: 'left', modifiers: ['leftButtonDown'] });
         await new Promise(resolve => setTimeout(resolve, 50));
         win.webContents.sendInputEvent({ type: 'mouseUp', x: to, y, button: 'left', clickCount: 1 });
       });

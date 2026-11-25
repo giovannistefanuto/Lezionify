@@ -172,11 +172,13 @@ export async function runFocusPdfScenarios(root: Root, api: any) {
     const dividerBounds = separator.getBoundingClientRect()
     const dividerX = Math.round(dividerBounds.left + dividerBounds.width / 2)
     const nativeEvents: string[] = []
-    const track = (event: Event) => { const pointer = event as PointerEvent; nativeEvents.push(`${event.type}:${(event.target as HTMLElement).className}:${pointer.clientX}:${pointer.clientY}:capture=${separator.hasPointerCapture(pointer.pointerId)}`) }
+    const nativeMoves: number[] = []
+    const track = (event: Event) => { const pointer = event as PointerEvent; nativeEvents.push(`${event.type}:${(event.target as HTMLElement).className}:${pointer.clientX}:${pointer.clientY}:capture=${separator.hasPointerCapture(pointer.pointerId)}:buttons=${pointer.buttons}:id=${pointer.pointerId}`); if (event.type === 'pointermove' && pointer.clientX === dividerX - 70) nativeMoves.push(pointer.buttons) }
     window.addEventListener('pointerdown', track, true); window.addEventListener('pointermove', track, true)
     await keepPosition(() => require('electron').ipcRenderer.invoke('focus-pdf-drag', dividerX, dividerX - 70, Math.round(dividerBounds.top + 80)), 'Native divider drag')
     await settle()
     window.removeEventListener('pointerdown', track, true); window.removeEventListener('pointermove', track, true)
+    check(nativeMoves.length > 0 && nativeMoves.every(buttons => buttons === 1), 'Native drag must hold the left mouse button: ' + nativeEvents.join(','))
     check(Number(separator.getAttribute('aria-valuenow')) < 50, 'Native pointer drag did not move divider: ' + separator.getAttribute('aria-valuenow') + ' / ' + document.querySelector('[role="separator"]')!.getAttribute('aria-valuenow') + ': ' + nativeEvents.join(','))
     await keepPosition(() => { separator.dispatchEvent(new KeyboardEvent('keydown', { key: 'Home', bubbles: true })) }, 'Recenter divider')
     await keepPosition(() => { separator.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true })) }, 'Keyboard divider')

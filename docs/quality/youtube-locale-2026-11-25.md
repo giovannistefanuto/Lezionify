@@ -128,3 +128,18 @@ stabile latest sul commit `c7e4c1326872ef688ad4d04e8687d1b6b8e8142f`.
 Tre asset remoti verificati per dimensioni e SHA256, tag sul commit atteso e
 manifesto pubblico anonimo identico ai byte locali. Android 0.2.0 pubblicato
 separatamente e verificato senza cambiare latest Windows. Binari invariati.
+
+## Correzione del runner dopo la pubblicazione
+
+D-0622: la CI del commit documentale `e30ca51` si è fermata sul divisore PDF
+nativo, preesistente alle novità di questa release. La nuova asserzione sugli
+eventi ha riprodotto localmente il difetto del gesto sintetico: `pointerdown`
+con `buttons=1`, seguito da `pointermove` con `buttons=0`. Il comando minimo è
+`node tools/run_hook_regressions.cjs --focus-pdf-only`: rosso con il runner
+originale e verde includendo `leftButtonDown` nei modificatori del movimento.
+La nuova asserzione resta attiva, insieme alle verifiche precedenti del
+ridimensionamento e della posizione di lettura. Nessun retry, esclusione o
+cambiamento all'app: le risorse confezionate, le note della versione e i binari
+pubblicati rimangono invariati. La manutenzione riguarda solo runner e test.
+Typecheck, lint, inventario e intera suite React/Electron con riavvio passati
+dopo la correzione; nessuna soppressione o riduzione rilevata nell'inventario.
