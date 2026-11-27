@@ -40,4 +40,14 @@ Nessuna scrittura nella cartella iCloud personale durante i test: salvataggio re
 
 La stessa build è stata confezionata senza ricostruzione. Verificati 385 file, nove componenti NSIS, tool YouTube e licenze, tre file di backup e assenza di materiali privati. Setup 353.318.491 byte, SHA256 `f4e9ea5938272f1b6d91f1c07f08830dddefa8c688119da79c3fe25f5a69477a`; ASAR SHA256 `249c95fba36b72904abab4fba1efbd93120be14e14419a21fe1bb5dac3b15efc`. Authenticode `NotSigned`. AuditShell successivo ai collaudi: Start risolve `com.lezionify.app` in Lezionify. Installer non eseguito sul profilo personale.
 
-Pubblicazione GitHub ancora da completare al momento di questa registrazione; gli asset locali verificati sono quelli da caricare.
+## Pubblicazione verificata
+
+[Windows 0.9.0](https://github.com/giovannistefanuto/Lezionify/releases/tag/v0.9.0) pubblicata sul commit `09f9e61eb7cd3bc6726cfe1fdcf1a65568a97ca5`. Tutti e tre gli asset remoti sono uploaded e corrispondono per dimensione e SHA256 ai locali; `latest.yml` pubblico scaricato senza autenticazione è identico byte per byte. Aggiornamento disponibile, installazione personale non eseguita.
+
+| Asset | Byte | SHA256 |
+| --- | ---: | --- |
+| Setup | 353318491 | `f4e9ea5938272f1b6d91f1c07f08830dddefa8c688119da79c3fe25f5a69477a` |
+| Blockmap | 362116 | `41ef838a73f38739f6c3d8421abc81f151abfff4d7df4adf041366eb158c8d68` |
+| latest.yml | 3185 | `4d2118efa319c47e81e4da70edbcabc34a457e8ca8277b6cb1bb973958b2bd40` |
+
+Anche la [CI Windows del commit](https://github.com/giovannistefanuto/Lezionify/actions/runs/45998409643) è verde al secondo tentativo, sullo stesso codice: il primo si era fermato con ENOTEMPTY nella rimozione della cartella temporanea di un test Q&A preesistente. Le asserzioni applicative non erano fallite; nessun cambiamento o soppressione dei test per il retry. Il secondo tentativo completa unitari, Python/Node, React/Electron, updater, build, raccolte, Sessione e PDF. Il pull inizialmente sospeso per i documenti locali è stato completato con --ff-only dopo il commit, senza modifiche remote da integrare.

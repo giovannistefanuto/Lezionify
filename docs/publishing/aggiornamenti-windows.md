@@ -456,3 +456,22 @@ pubblicata e verificata sul commit dei binari `08ee3787deba829821e7f2676c8a74220
 Tutti e tre gli asset remoti sono uploaded, con dimensioni e digest identici ai
 file locali; il manifesto pubblico scaricato senza credenziali è identico byte
 per byte. Aggiornamento disponibile, installazione personale non eseguita.
+
+
+## Windows 0.9.0 · 27 novembre 2026
+
+Pubblicata e verificata [v0.9.0](https://github.com/giovannistefanuto/Lezionify/releases/tag/v0.9.0)
+sul commit `09f9e61eb7cd3bc6726cfe1fdcf1a65568a97ca5`: previsione accanto
+alla lunghezza della dispensa, conferma dei metadati prima dell'importazione
+audio, screenshot Full Focus verso Foto di iCloud con ritaglio PDF da fonte,
+chiarimento sulle riletture e ritiro della diagnostica ripetitiva di scansione.
+
+Gate completo `release-20261127-130108` e CI Windows del commit verdi.
+Build unica riutilizzata per il packaging, compressione invariata; 385 file,
+nove componenti NSIS e tre backup verificati, nessun materiale personale.
+Setup 353318491 byte, SHA256
+`f4e9ea5938272f1b6d91f1c07f08830dddefa8c688119da79c3fe25f5a69477a`.
+Tre asset remoti identici ai locali per dimensione e digest; manifesto pubblico
+anonimo identico byte per byte. Authenticode NotSigned; identità Start corretta.
+Nessuna installazione personale o prova su Windows temporaneo; sincronizzazione
+Apple non collaudata. [Diagnosi, prove e limiti](../quality/studio-import-screenshot-2026-11-27.md).

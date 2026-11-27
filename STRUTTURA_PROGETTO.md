@@ -2,7 +2,7 @@
 
 ## Stato attuale
 
-Le richieste del 27 novembre aggiungono la conferma dei metadati audio
+La 0.9.0, pubblicata e verificata il 27 novembre, aggiunge la conferma dei metadati audio
 (`shared/audioImport.ts`, `AudioImportModal`, sessione temporanea in `ArchiveService`)
 prima dell'eventuale elaborazione automatica. `documentStudyEstimate.ts` espone
 la previsione accanto alla lunghezza fuori da Full Focus. Il tempo delle lezioni

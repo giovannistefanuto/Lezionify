@@ -6965,3 +6965,14 @@ Non modificare manualmente la sezione `Registro`: aggiungi le nuove decisioni es
 - **Impatto:** Verificati 385 file build, nove componenti NSIS, tool e licenze, tre backup, assenza dati privati e identita Start. Authenticode NotSigned. Analizzati solo aggregati di 3503 scansioni storiche: con audio mediana 98.69 ms p95 167.86 ms; checksum 88.68 per cento del costo, rari picchi; controllo di integrita conservato.
 - **Follow-up:** Commit e push di tutte le modifiche pubblicabili, bozza e pubblicazione autorizzata, verifica remota degli asset. Upgrade Windows temporaneo e sincronizzazione Apple non collaudati; nessuna installazione personale.
 - **File coinvolti:** DECISIONI.md, docs/quality/studio-import-screenshot-2026-11-27.md, docs/releases/0.9.0.md, dist (ignorato)
+
+## D-0633 — Windows 0.9.0 pubblicata e verificata
+
+- **Data:** 2026-11-27
+- **Stato:** accettata
+- **Area:** release
+- **Decisione:** Pubblicare v0.9.0 sul commit 09f9e61eb7cd3bc6726cfe1fdcf1a65568a97ca5 dopo gate completo locale, CI Windows verde al secondo tentativo e verifica della bozza con tre asset uploaded. Release latest pubblica e manifesto anonimo identico ai locali.
+- **Motivazione:** Completare tutte le richieste operative autorizzate senza rigenerare la build collaudata. Il primo tentativo CI era fermo sulla pulizia ENOTEMPTY di una cartella Q&A preesistente; il job ripetuto sullo stesso codice passa tutti i controlli, senza soppressioni.
+- **Impatto:** Aggiornamento disponibile agli utenti. Setup SHA256 f4e9ea5938272f1b6d91f1c07f08830dddefa8c688119da79c3fe25f5a69477a 353318491 byte; blockmap 362116 byte e manifesto 3185 byte con digest remoti identici. Nessuna installazione personale; audio e dati invariati.
+- **Follow-up:** Pubblicare anche il riepilogo documentale e verificare HEAD sul remoto. Restano i limiti documentati su Windows temporaneo, firma e sincronizzazione Apple; nessun altro lavoro del backlog avviato.
+- **File coinvolti:** DECISIONI.md, STRUTTURA_PROGETTO.md, docs/quality/studio-import-screenshot-2026-11-27.md, docs/publishing/aggiornamenti-windows.md
