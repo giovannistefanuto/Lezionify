@@ -1,3 +1,4 @@
+import { screenshotSource } from '../../src/utils/screenshotSource'
 import React, { act, useCallback, useRef, useState } from 'react'
 import type { Root } from 'react-dom/client'
 import { FocusWorkspace } from '../../src/components/FocusWorkspace'
@@ -117,6 +118,12 @@ export async function runFocusPdfScenarios(root: Root, api: any) {
     check(document.querySelector<HTMLInputElement>('[aria-label="Seleziona pagina 1 per Gemini"]')?.checked === false && document.querySelector<HTMLInputElement>('[aria-label="Seleziona pagina 2 per Gemini"]')?.checked === false, 'Prepared page selection must not stay checked')
     const snapshot = new Image(); snapshot.src = `data:image/png;base64,${attachments[0].data}`; await snapshot.decode()
     check(Math.max(snapshot.naturalWidth, snapshot.naturalHeight) <= 2048 && snapshot.naturalWidth > 500, 'Image quality must be independent of the displayed viewport and bounded for the request')
+    const pageBounds = document.querySelector('.focus-pdf-page')!.getBoundingClientRect()
+    const screenshotCrop = await screenshotSource({ x: pageBounds.left + 30, y: pageBounds.top + 30, width: 80, height: 60 })
+    check(screenshotCrop && screenshotCrop.length > 24, 'PDF source screenshot crop was not produced')
+    const cropDimensions = new DataView(screenshotCrop!.buffer, screenshotCrop!.byteOffset, screenshotCrop!.byteLength)
+    check(cropDimensions.getUint32(16) >= 160 && cropDimensions.getUint32(20) >= 120, 'PDF screenshot did not render the selected source region at higher resolution')
+
     const questionInput = document.querySelector<HTMLTextAreaElement>('.qna-input-row textarea')!
     await act(async () => { Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')!.set!.call(questionInput, 'Spiega le slide'); questionInput.dispatchEvent(new Event('input', { bubbles: true })) })
     await act(async () => questionInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true })))

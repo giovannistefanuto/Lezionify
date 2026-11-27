@@ -1,3 +1,5 @@
+import { FocusScreenshotButton } from './FocusScreenshot'
+import { readDocumentStudyEstimate } from '../utils/documentStudyEstimate'
 import { InlineMathTitle } from './InlineMathTitle'
 import { useStudyPreview } from '../hooks/useStudyPreview'
 import { useStudyEstimate } from '../hooks/useStudyEstimate'
@@ -450,6 +452,7 @@ export function LectureDrawer({
     paused: trackingPaused || showFocusLock || pauseTimerActive, rootRef: contentRef })
   const studyPreview = useStudyPreview({ lectureId: selectedLectureId ?? null, markdown: markdownText, english: markdownEnText,
     language: effectiveLanguage, enabled: !isFullScreen && activeTab === 'markdown' && !isLoadingContent && studyEstimate.preference, rootRef: standardContentRef, fallbackRef: detailBodyRef })
+  const outsideStudyTime = React.useMemo(() => isFullScreen || isLoadingContent || !studyEstimate.preference ? null : readDocumentStudyEstimate(currentMarkdown ?? ''), [currentMarkdown, isFullScreen, isLoadingContent, studyEstimate.preference])
   persistEstimate.current = studyEstimate.persist
 
   const readingKey = selectedLecture ? `notes:${selectedLecture.id}:${effectiveLanguage}` : null
@@ -728,6 +731,7 @@ export function LectureDrawer({
                 label={studyEstimate.label} uncertainty={studyEstimate.uncertainty}
                 paused={isPaused || showFocusLock || pauseTimerActive} error={studyEstimate.historyError} onRecalculate={studyEstimate.recalculate} />}
               <FocusReminders />
+              <FocusScreenshotButton />
               {highlightError && <small role="alert">{highlightError}</small>}
               <SectionRegenerator key={selectedLecture.id} lectureId={selectedLecture.id} markdown={markdownText ?? ''} english={effectiveLanguage === 'en'} disabled={isGenerating || isTranscribing || isTranslating} />
               {selectedLecture.markdownEnNeedsUpdate && <small>ENG da aggiornare</small>}
@@ -998,6 +1002,9 @@ export function LectureDrawer({
         {selectedLecture.markdownFileName && <span className="lecture-length-badge"
           title="Parole della dispensa italiana, esclusi codice, diagrammi e formule. Il 100% è la dispensa più lunga dello stesso corso; il confronto non dipende dai filtri. Per confrontare una lezione serve un corso assegnato.">
           {lectureWords === null ? 'Lunghezza non disponibile' : `${lectureWords.toLocaleString('it-IT')} parole · ${!selectedLecture.courseCode ? 'Assegna un corso per confrontare' : lengthPercent === null ? 'Confronto non disponibile' : `${lengthPercent}% di lunghezza`}`}
+        </span>}
+        {selectedLecture.markdownFileName && studyEstimate.preference && <span className="lecture-length-badge" title="Previsione approssimativa basata sul tuo ritmo di studio, non sulla durata dell’audio. Il totale non sottrae le riletture; il restante segue la posizione visibile nella dispensa.">
+          {studyPreview?.match(/Studio restante: ([^·]+)/)?.[1] ? `Studio restante: ${studyPreview.match(/Studio restante: ([^·]+)/)![1].trim()}` : outsideStudyTime ?? (isLoadingContent ? 'Tempo previsto: caricamento…' : 'Tempo previsto: in calibrazione')}
         </span>}
       </nav>
 

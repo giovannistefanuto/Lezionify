@@ -1,3 +1,4 @@
+import { FocusScreenshotService } from './focusScreenshot'
 import { readBatteryStatus } from './battery'
 import { startDeviceNotices } from './deviceNotices'
 import { installLanguageShortcut } from './languageShortcut'
@@ -412,6 +413,10 @@ function registerIpcHandlers(): void {
       throw new Error('Richiesta PDF non autorizzata.')
     }
   }
+  const screenshots = new FocusScreenshotService(join(app.getPath('pictures'), 'iCloud Photos', 'Photos'))
+  handle('focus-screenshot:begin', event => { assertPdfSender(event); return screenshots.begin(event.sender) })
+  handle('focus-screenshot:cancel', (event, token) => { assertPdfSender(event); screenshots.cancel(event.sender, token) })
+  handle('focus-screenshot:save', (event, token, rect, enhanced) => { assertPdfSender(event); return screenshots.save(event.sender, token, rect, enhanced) })
   const ipadExport = new IpadExportService(app.getPath('userData'), join(app.getPath('pictures'), 'iCloud Photos', 'Photos'))
   handle('ipad:status', (event, enabled: unknown) => {
     assertPdfSender(event)
@@ -480,6 +485,8 @@ function registerIpcHandlers(): void {
   handle('archive:open-compilation', (_event, videoId: unknown, start: unknown) => shell.openExternal(compilationUrl(videoId, start)))
   handle('archive:phrase-install', () => offlineTranslation.install())
   handle('archive:phrase-translate', (_event, text: unknown, direction: unknown) => offlineTranslation.translate(text, direction))
+  handle('archive:confirm-audio-import', (_event, token, metadata) => archive.confirmAudioImport(token, metadata))
+  handle('archive:cancel-audio-import', (_event, token) => archive.cancelAudioImport(token))
   handle('archive:import-files', () => archive.selectAndImportFiles())
   handle('archive:import-folder', () => archive.selectAndImportFolder())
   handle('archive:select-videos', () => archive.selectVideos())

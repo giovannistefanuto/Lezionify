@@ -1,3 +1,4 @@
+import { runNovember27Scenarios } from './november27Scenarios.browser'
 import { runYoutubeLocalScenarios } from './youtubeLocalScenarios.browser'
 import { runNovember20Scenarios } from './november20Scenarios.browser'
 import { runOctober22Scenarios } from './october22Scenarios.browser'
@@ -381,6 +382,11 @@ async function runFinalLectureScenario() {
 }
 
 async function run() {
+  if (new URLSearchParams(location.search).has('november27Only')) {
+    await runNovember27Scenarios(root, api)
+    require('electron').ipcRenderer.send('done', 'PASS: manual audio confirmation, frozen screenshot native crop, retry and cancellation')
+    return
+  }
   if (new URLSearchParams(location.search).has('youtubeLocalOnly')) {
     await runYoutubeLocalScenarios(root, api)
     require('electron').ipcRenderer.send('done', 'PASS YouTube local downloads and persistent playback')
@@ -2023,6 +2029,7 @@ flowchart TD
   await runYoutubeLocalScenarios(root, api)
   await runInterfacePolishScenarios(root, api)
   await runTodayScenarios(root, api)
+  await runNovember27Scenarios(root, api)
   await runNovember20Scenarios(root, api)
   await runLanguageShortcutScenarios(root)
   await runOctober22Scenarios(root, api)

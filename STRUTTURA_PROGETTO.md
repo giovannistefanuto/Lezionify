@@ -2,6 +2,25 @@
 
 ## Stato attuale
 
+Le richieste del 27 novembre aggiungono la conferma dei metadati audio
+(`shared/audioImport.ts`, `AudioImportModal`, sessione temporanea in `ArchiveService`)
+prima dell'eventuale elaborazione automatica. `documentStudyEstimate.ts` espone
+la previsione accanto alla lunghezza fuori da Full Focus. Il tempo delle lezioni
+completate include le riletture, con dicitura esplicita in Info.
+`FocusScreenshotService`, `FocusScreenshotButton` e `screenshotSource.ts`
+possiedono cattura congelata, selezione e salvataggio PNG nella destinazione
+Foto di iCloud esistente; `FocusPdfViewer` registra il ritaglio da PDF ad alta
+risoluzione. Rimossa la diagnostica periodica dei tempi in `usbDetector.ts`.
+Uso e limiti nelle [note 0.9.0](docs/releases/0.9.0.md); diagnosi e collaudi in
+[studio, importazione e screenshot](docs/quality/studio-import-screenshot-2026-11-27.md).
+
+
+`skills/lezionify-lavoro-autonomo/` traduce le richieste operative di modifica
+in un lavoro circoscritto fino alla release Windows verificata. Il rimando in
+`AGENTS.md` ne assicura l'uso nel progetto; esempi, sola analisi e `LISTA_ORDINE`
+mantengono il proprio perimetro. La procedura di pubblicazione resta nella
+skill `skills/lezionify-release/`.
+
 Il download YouTube locale è implementato nel checkout (D-0617), ancora non
 distribuito: `YoutubeAudioService` e `shared/youtubeAudio.ts` possiedono acquisizione,
 fonti, MP3 verificati e IPC; `useYoutubeAudio` e `youtubePlayback` collegano azioni

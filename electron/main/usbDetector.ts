@@ -3,7 +3,6 @@ import { existsSync } from 'node:fs'
 import * as path from 'node:path'
 import { parseFileName, fileChecksum } from './fileNameParser'
 import { readMp3Duration } from './mp3Duration'
-import { logger } from './logger'
 import { formatLocalCalendarDateTime } from '../../shared/calendarDate'
 
 export const SUPPORTED_AUDIO_EXTENSIONS = new Set([
@@ -114,12 +113,9 @@ export async function scanAudioFiles(
   dirPath: string
 ): Promise<RawUsbAudioFile[]> {
   const result: RawUsbAudioFile[] = []
-  const started = performance.now()
-  const timing = { listingMs: 0, checksumMs: 0, durationMs: 0, files: 0, errors: 0 }
 
   try {
     const entries = await readdir(dirPath, { withFileTypes: true })
-    timing.listingMs = performance.now() - started
     for (const entry of entries) {
       if (!entry.isFile()) continue
       const ext = path.extname(entry.name).toLowerCase()
@@ -128,15 +124,11 @@ export async function scanAudioFiles(
       const fullPath = path.join(dirPath, entry.name)
       try {
         const stats = await stat(fullPath)
-        const checksumStart = performance.now()
         const checksum = await fileChecksum(fullPath)
-        timing.checksumMs += performance.now() - checksumStart
         let durationSeconds = 0
 
         if (ext === '.mp3') {
-          const durationStart = performance.now()
           const parsedDur = await readMp3Duration(fullPath)
-          timing.durationMs += performance.now() - durationStart
           if (parsedDur !== null) {
             durationSeconds = Math.round(parsedDur)
           }
@@ -156,11 +148,11 @@ export async function scanAudioFiles(
           parsedRecordedAt: parsed?.recordedAt ?? formatLocalCalendarDateTime(stats.mtime)
         })
       } catch {
-        timing.errors++
+        // A temporarily unreadable file can be retried on the next scan.
       }
     }
   } catch {
-    timing.errors++
+    // Disconnected or unreadable directories produce an empty detection.
   }
 
   // Ordina dal più recente al più vecchio (o cronologico)
@@ -170,7 +162,5 @@ export async function scanAudioFiles(
     return dateB.localeCompare(dateA)
   })
 
-  timing.files = result.length
-  logger.info('usb-scan', 'Tempi scansione locale (ms).', JSON.stringify({ ...timing, totalMs: performance.now() - started }))
   return result
 }

@@ -114,6 +114,21 @@ asset, protezione dei dati personali e diagnosi dei fallimenti gia' osservati.
   verificati presenti. Considera l'aggiornamento disponibile agli utenti solo
   quando la Release completa e' pubblicata.
 
+## Richieste operative e lavoro autonomo
+
+Quando l'utente chiede correzioni, nuove funzioni o revisioni concrete di
+Lezionify, anche con una lista informale, leggi e applica
+[lezionify-lavoro-autonomo](skills/lezionify-lavoro-autonomo/SKILL.md).
+Questa preferenza permanente autorizza il lavoro sulle sole voci ricevute,
+i chiarimenti necessari e poi implementazione, collaudi, commit, push e
+pubblicazione di una nuova release Windows verificata senza riconferme.
+Prima dell'esecuzione autonoma comunica `DA QUI FACCIO DA SOLO`.
+Le istruzioni specifiche dell'utente, come «senza release» o «solo analisi»,
+prevalgono. Esempi citati, idee da discutere o salvare e richieste di sola
+valutazione non avviano questo flusso. Per sole istruzioni, documentazione o
+test senza effetti sui binari non occorre una release applicativa.
+`LISTA_ORDINE` mantiene il perimetro e la procedura descritti sotto.
+
 ## Comando LISTA_ORDINE
 
 Quando l'utente invia `LISTA_ORDINE`, avvia direttamente l'implementazione e il

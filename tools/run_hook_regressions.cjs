@@ -8,6 +8,7 @@ const sessioneTestWorker = require('./sessione_test_worker.cjs')
 const directory = mkdtempSync(join(tmpdir(), 'lezionify-hooks-'))
 const screenshotDirectory = process.env.LEZIONIFY_VIDEO_SCREENSHOT_DIR || null
 const hookTimeoutMs = Math.max(30000, Math.min(300000, Number(process.env.LEZIONIFY_HOOK_TIMEOUT_MS) || 180000))
+const november27Only = process.argv.includes('--november27-only')
 const october28Only = process.argv.includes('--october28-only')
 const repetitionOnly = process.argv.includes('--repetition-only')
 const october22Only = process.argv.includes('--october22-only')
@@ -32,6 +33,7 @@ const languageShortcutOnly = process.argv.includes('--language-shortcut-only')
 if (screenshotDirectory) mkdirSync(screenshotDirectory, { recursive: true })
 async function run() {
 try {
+  buildSync({ entryPoints: ['./electron/main/focusScreenshot.ts'], bundle: true, platform: 'node', format: 'cjs', external: ['electron'], outfile: join(directory, 'focus-screenshot.cjs') })
   buildSync({ entryPoints: ['./electron/main/studyHistory.ts'], bundle: true, platform: 'node', format: 'cjs', outfile: join(directory, 'study-history.cjs') })
   buildSync({ entryPoints: ['./electron/main/collections/service.ts'], bundle: true, platform: 'node', format: 'cjs', outfile: join(directory, 'collections.cjs') })
   buildSync({ entryPoints: ['./electron/main/languageShortcut.ts'], bundle: true, platform: 'node', format: 'cjs', external: ['electron'], outfile: join(directory, 'language-shortcut.cjs') })
@@ -69,6 +71,26 @@ try {
       let studySessions = [], studyOperations = new Map();
       const StudyHistory = require(${JSON.stringify(join(directory, 'study-history.cjs'))}).StudyHistory;
       const makeStudyHistory = () => new StudyHistory(studyRoot, { readSessions: async () => structuredClone(studySessions), writeSessions: async value => { studySessions = value; studyFs.writeFileSync(studyPath.join(studyRoot,'sessions.json'), JSON.stringify(value)) }, completionOperation: async lesson => studyOperations.get(lesson) });
+      const screenshotDestination = require('node:path').join(${JSON.stringify(directory)}, 'screenshots');
+      require('node:fs').mkdirSync(screenshotDestination, { recursive: true });
+      const { FocusScreenshotService } = require(${JSON.stringify(join(directory, 'focus-screenshot.cjs'))});
+      const screenshots = new FocusScreenshotService(screenshotDestination);
+      ipcMain.handle('nov27-window-state', () => { const [width,height] = win.getContentSize(); return {size:{width,height},zoom:win.webContents.getZoomFactor()}; });
+      ipcMain.handle('nov27-screenshot-escape', async () => { win.webContents.sendInputEvent({type:'keyDown',keyCode:'Escape'}); win.webContents.sendInputEvent({type:'keyUp',keyCode:'Escape'}); await new Promise(resolve => setTimeout(resolve, 80)); });
+      ipcMain.handle('nov27-screenshot-painted', async () => { win.webContents.invalidate(); await win.webContents.capturePage(); await new Promise(resolve => setTimeout(resolve, 100)); });
+      ipcMain.handle('nov27-screenshot-begin', event => screenshots.begin(event.sender));
+      ipcMain.handle('nov27-screenshot-cancel', (event, token) => screenshots.cancel(event.sender, token));
+      ipcMain.handle('nov27-screenshot-save', (event, token, rect, enhanced) => screenshots.save(event.sender, token, rect, enhanced));
+      ipcMain.handle('nov27-screenshot-files', () => require('node:fs').readdirSync(screenshotDestination).map(name => { const image = require('electron').nativeImage.createFromPath(require('node:path').join(screenshotDestination,name)); const bytes = image.toBitmap(); return {name, ...image.getSize(), rgb: [bytes[2],bytes[1],bytes[0]].join(',')} }));
+      ipcMain.handle('nov27-screenshot-drag', async (_, from, to) => {
+        win.focus(); win.webContents.focus();
+        win.webContents.sendInputEvent({type:'mouseMove', ...from});
+        win.webContents.sendInputEvent({type:'mouseDown', ...from, button:'left', clickCount:1});
+        await new Promise(resolve => setTimeout(resolve, 80));
+        win.webContents.sendInputEvent({type:'mouseMove', ...to, button:'left', modifiers:['leftButtonDown']});
+        await new Promise(resolve => setTimeout(resolve, 80));
+        win.webContents.sendInputEvent({type:'mouseUp', ...to, button:'left', clickCount:1});
+      });
       let studyHistory = makeStudyHistory();
       const CollectionsService = require(${JSON.stringify(join(directory, 'collections.cjs'))}).CollectionsService;
       const collectionRoot = studyPath.join(studyRoot, 'collection-fixture');
@@ -185,14 +207,14 @@ try {
       });
       ipcMain.handle('capture-video-import', async (_, name) => {
         const directory = ${JSON.stringify(screenshotDirectory)};
-        if (!directory || (!/^youtube-local-[a-z0-9-]+$/.test(name) && !/^collections-[a-z0-9-]+$/.test(name) && !/^oct28-[a-z0-9-]+$/.test(name) && !/^repeat-[a-z0-9-]+$/.test(name) && !/^oct22-[a-z0-9-]+$/.test(name) && !['memo-study-info-completed', 'memo-study-info-dark', 'november20-records-light', 'november20-records-dark', 'november20-pause', 'november20-notice', 'polish-sidebar', 'polish-sidebar-narrow', 'polish-sidebar-collapsed', 'polish-memo-light', 'polish-memo-dark', 'polish-memo-narrow', 'polish-info', 'study-removal', 'dictionary-long', 'today-qna', 'today-memo', 'today-sounds', 'today-mermaid', 'today-battery', 'logs-light', 'logs-dark', 'sounds-light', 'sounds-dark', 'memo-narrow', 'export-narrow', 'memo-light', 'memo-dark', 'export-light', 'export-dark', 'tools-settings-translation', 'tools-settings-music', 'music-youtube-light', 'music-youtube-dark', 'music-light', 'music-dark', 'dictionary-light', 'dictionary-dark', 'discussion-light', 'discussion-dark', 'markdown-alerts-light', 'markdown-alerts-dark', 'focus-lock-times', 'dashboard-light', 'dashboard-dark', 'dashboard-history', 'order', 'destination-light', 'destination-dark', 'home-light', 'home-dark', 'lecture-title-light', 'lecture-title-dark', 'drawer-focus-floating', 'focus-pdf-light', 'focus-pdf-dark', 'focus-pdf-qna'].includes(name))) return;
+        if (!directory || (!/^nov27-[a-z0-9-]+$/.test(name) && !/^youtube-local-[a-z0-9-]+$/.test(name) && !/^collections-[a-z0-9-]+$/.test(name) && !/^oct28-[a-z0-9-]+$/.test(name) && !/^repeat-[a-z0-9-]+$/.test(name) && !/^oct22-[a-z0-9-]+$/.test(name) && !['memo-study-info-completed', 'memo-study-info-dark', 'november20-records-light', 'november20-records-dark', 'november20-pause', 'november20-notice', 'polish-sidebar', 'polish-sidebar-narrow', 'polish-sidebar-collapsed', 'polish-memo-light', 'polish-memo-dark', 'polish-memo-narrow', 'polish-info', 'study-removal', 'dictionary-long', 'today-qna', 'today-memo', 'today-sounds', 'today-mermaid', 'today-battery', 'logs-light', 'logs-dark', 'sounds-light', 'sounds-dark', 'memo-narrow', 'export-narrow', 'memo-light', 'memo-dark', 'export-light', 'export-dark', 'tools-settings-translation', 'tools-settings-music', 'music-youtube-light', 'music-youtube-dark', 'music-light', 'music-dark', 'dictionary-light', 'dictionary-dark', 'discussion-light', 'discussion-dark', 'markdown-alerts-light', 'markdown-alerts-dark', 'focus-lock-times', 'dashboard-light', 'dashboard-dark', 'dashboard-history', 'order', 'destination-light', 'destination-dark', 'home-light', 'home-dark', 'lecture-title-light', 'lecture-title-dark', 'drawer-focus-floating', 'focus-pdf-light', 'focus-pdf-dark', 'focus-pdf-qna'].includes(name))) return;
         await win.webContents.executeJavaScript('new Promise(resolve => setTimeout(() => requestAnimationFrame(() => requestAnimationFrame(resolve)), 200))');
         await win.webContents.capturePage();
         await new Promise(resolve => setTimeout(resolve, 250));
         const screenshot = await win.webContents.capturePage();
         require('node:fs').writeFileSync(require('node:path').join(directory, name + '.png'), screenshot.toPNG());
       });
-      win.loadFile(${JSON.stringify(join(directory, 'index.html'))}, process.argv.includes('--resume-collections') ? { query: { collectionsResume: '1' } } : process.argv.includes('--resume-reading') ? { query: { resumeReading: '1' } } : ${JSON.stringify(youtubeOnly ? { query: { youtubeLocalOnly: '1' } } : november20Only ? { query: { november20Only: '1' } } : collectionsOnly ? { query: { collectionsOnly: '1' } } : sidebarMenuOnly ? { query: { sidebarMenuOnly: '1' } } : october28Only ? { query: { 'october28-only': '1' } } : repetitionOnly ? { query: { 'repetition-only': '1' } } : october22Only ? { query: { 'october22-only': '1' } } : interfacePolishOnly ? { query: { 'interface-polish-only': '1' } } : todayOnly ? { query: { 'today-only': '1' } } : memoLogsExportOnly ? { query: { 'memo-logs-export-only': '1' } } : lectureListOnly ? { query: { 'lecture-list-only': '1' } } : courseRagOnly ? { query: { 'course-rag-only': '1' } } : studyToolsOnly ? { query: { 'study-tools-only': '1' } } : languageShortcutOnly ? { query: { languageShortcutOnly: '1' } } : focusPdfOnly ? { query: { focusPdfOnly: '1' } } : musicOnly ? { query: { musicOnly: '1' } } : mathRenderingOnly ? { query: { mathRenderingOnly: '1' } } : dictionaryOnly ? { query: { dictionaryOnly: '1' } } : studyPauseOnly ? { query: { studyPauseOnly: '1' } } : readingPositionOnly ? { query: { readingPositionOnly: '1' } } : readingRestartOnly ? { query: { readingRestartOnly: '1' } } : {})});
+      win.loadFile(${JSON.stringify(join(directory, 'index.html'))}, process.argv.includes('--resume-collections') ? { query: { collectionsResume: '1' } } : process.argv.includes('--resume-reading') ? { query: { resumeReading: '1' } } : ${JSON.stringify(november27Only ? { query: { november27Only: '1' } } : youtubeOnly ? { query: { youtubeLocalOnly: '1' } } : november20Only ? { query: { november20Only: '1' } } : collectionsOnly ? { query: { collectionsOnly: '1' } } : sidebarMenuOnly ? { query: { sidebarMenuOnly: '1' } } : october28Only ? { query: { 'october28-only': '1' } } : repetitionOnly ? { query: { 'repetition-only': '1' } } : october22Only ? { query: { 'october22-only': '1' } } : interfacePolishOnly ? { query: { 'interface-polish-only': '1' } } : todayOnly ? { query: { 'today-only': '1' } } : memoLogsExportOnly ? { query: { 'memo-logs-export-only': '1' } } : lectureListOnly ? { query: { 'lecture-list-only': '1' } } : courseRagOnly ? { query: { 'course-rag-only': '1' } } : studyToolsOnly ? { query: { 'study-tools-only': '1' } } : languageShortcutOnly ? { query: { languageShortcutOnly: '1' } } : focusPdfOnly ? { query: { focusPdfOnly: '1' } } : musicOnly ? { query: { musicOnly: '1' } } : mathRenderingOnly ? { query: { mathRenderingOnly: '1' } } : dictionaryOnly ? { query: { dictionaryOnly: '1' } } : studyPauseOnly ? { query: { studyPauseOnly: '1' } } : readingPositionOnly ? { query: { readingPositionOnly: '1' } } : readingRestartOnly ? { query: { readingRestartOnly: '1' } } : {})});
     });
     setTimeout(() => { console.error('Hook tests timed out'); app.exit(1) }, ${hookTimeoutMs});
   `
@@ -216,7 +238,7 @@ try {
     process.stderr.write(restarted.stderr || '')
     process.exitCode = restarted.status ?? 1
   }
-  if (result.status === 0 && !youtubeOnly && !november20Only && !collectionsOnly && !sidebarMenuOnly && !october28Only && !repetitionOnly && !october22Only && !interfacePolishOnly && !todayOnly && !memoLogsExportOnly && !lectureListOnly && !courseRagOnly && !studyToolsOnly && !focusPdfOnly && !musicOnly && !readingPositionOnly && !studyPauseOnly && !dictionaryOnly && !mathRenderingOnly && !languageShortcutOnly) {
+  if (result.status === 0 && !november27Only && !youtubeOnly && !november20Only && !collectionsOnly && !sidebarMenuOnly && !october28Only && !repetitionOnly && !october22Only && !interfacePolishOnly && !todayOnly && !memoLogsExportOnly && !lectureListOnly && !courseRagOnly && !studyToolsOnly && !focusPdfOnly && !musicOnly && !readingPositionOnly && !studyPauseOnly && !dictionaryOnly && !mathRenderingOnly && !languageShortcutOnly) {
     const restarted = spawnSync(require('electron'), [join(directory, 'main.cjs'), '--resume-reading'], { env, encoding: 'utf8', windowsHide: true, timeout: 190000 })
     process.stdout.write(restarted.stdout || '')
     process.stderr.write(restarted.stderr || '')

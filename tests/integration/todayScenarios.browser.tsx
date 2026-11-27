@@ -621,13 +621,24 @@ export async function runTodayScenarios(root: Root, api: any) {
       return { success: true, text: 'Risposta' }
     }
     api.getLectureStudySeconds = async () => 5160
+    const originalSamples = localStorage.getItem('lezionify.paragraph-samples.v1')
+    try {
+      localStorage.setItem('lezionify.paragraph-samples.v1', JSON.stringify(['preview-a','preview-b'].map(document => ({ document, day: '2026-11-27', words:100, numbers:0, formulas:0, seconds:120 }))))
+      await act(async () => root.render(<LectureDrawer {...drawerProps} activeTab="info" markdownText={'# Test focus\n\n' + 'Contenuto sintetico da studiare con attenzione. '.repeat(40)} />))
+      check(document.querySelector('.detail-tabs')?.textContent?.includes('Studio totale: circa') || [...document.querySelectorAll('.lecture-length-badge')].some(node => node.textContent?.includes('Studio totale: circa')), 'Study estimate must appear beside lesson length even in Info outside Full Focus')
+      await act(async () => root.render(null))
+    } finally {
+      if (originalSamples === null) localStorage.removeItem('lezionify.paragraph-samples.v1')
+      else localStorage.setItem('lezionify.paragraph-samples.v1', originalSamples)
+    }
+
     await act(async () => root.render(<LectureDrawer {...drawerProps} activeTab="info" selectedLecture={{ ...selectedLecture, recordedAt: '2026-10-21T10:32:00', durationSeconds: 6360 }} />))
     check(document.querySelector('.metadata-card .recording-times')?.textContent?.includes('12:18'), 'Info e Gestione did not show calculated audio end')
     check(!document.querySelector('.recording-times input'), 'Recording times must remain read-only')
     await until(() => document.querySelector('.lecture-study-time')?.textContent?.includes('1 ora e 26 minuti'), 'Info did not load accumulated study time')
     check(document.querySelector('.lecture-study-time')?.textContent?.includes('Tempo di studio'), 'Active lesson study label missing')
     await act(async () => root.render(<LectureDrawer {...drawerProps} activeTab="info" selectedLecture={{ ...selectedLecture, studyStatus: 'completata' }} />))
-    await until(() => document.querySelector('.lecture-study-time')?.textContent?.includes('Completata in1 ora e 26 minuti'), 'Completed lesson duration missing')
+    await until(() => document.querySelector('.lecture-study-time')?.textContent?.includes('Tempo di studio · incluse riletture1 ora e 26 minuti'), 'Completed lesson duration missing')
     await require('electron').ipcRenderer.invoke('capture-video-import', 'memo-study-info-completed')
     const previousTheme = document.documentElement.getAttribute('data-theme')
     document.documentElement.setAttribute('data-theme', 'dark')

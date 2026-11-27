@@ -1,3 +1,4 @@
+import type { AudioImportSelection, AudioImportMetadata } from '../../shared/audioImport'
 import { KeyUsageStore } from './ai/keyUsage'
 import { StudyHistory } from './studyHistory'
 import { CollectionsService } from './collections/service'
@@ -68,6 +69,8 @@ import { getQnaModelFallbackChain, qnaThinkingLabel } from '../../shared/qnaMode
 import { studyRecords } from '../../shared/studyRecords'
 import { notesProgressMessage } from './ai/progressDiagnostics'
 import {
+  formatLocalCalendarDateTime,
+  toLocalDateTimeInput,
   formatLocalCalendarDate,
   parseLocalCalendarDate
 } from '../../shared/calendarDate'
@@ -145,6 +148,7 @@ export function isRetryableApiError(errorText: string): boolean {
 
 export class ArchiveService {
   readonly collections: CollectionsService
+  private audioImportSession: { token: string; paths: Map<string, string> } | null = null
   private updating = false
   private clearingQueue = false
   private aiControllers = new Set<AbortController>()
@@ -583,30 +587,60 @@ export class ArchiveService {
     })
   }
 
-  async selectAndImportFiles(): Promise<ImportSummary | null> {
-    const selection = await dialog.showOpenDialog({
-      title: 'Importa file audio',
-      properties: ['openFile', 'multiSelections'],
+  async selectAudioImport(kind: 'files' | 'folder'): Promise<AudioImportSelection | null> {
+    if (kind !== 'files' && kind !== 'folder') throw new Error('Selezione audio non valida.')
+    const selection = await dialog.showOpenDialog(kind === 'files' ? {
+      title: 'Importa file audio', properties: ['openFile', 'multiSelections'],
       filters: [{ name: 'Audio MP3', extensions: ['mp3'] }]
-    })
-    if (selection.canceled) return null
-    return this.importFiles(selection.filePaths)
+    } : { title: 'Scegli la cartella audio', properties: ['openDirectory'] })
+    if (selection.canceled || !selection.filePaths.length) return null
+    const files = kind === 'files' ? selection.filePaths : (await readdir(selection.filePaths[0]))
+      .filter(name => path.extname(name).toLowerCase() === AUDIO_EXTENSION)
+      .map(name => path.join(selection.filePaths[0], name))
+    return this.prepareAudioImport(files)
   }
 
-  async selectAndImportFolder(): Promise<ImportSummary | null> {
-    const selection = await dialog.showOpenDialog({
-      title: 'Scegli la cartella del registratore',
-      properties: ['openDirectory']
-    })
-    if (selection.canceled || selection.filePaths.length === 0) return null
-
-    const directory = selection.filePaths[0]
-    const dirEntries = await readdir(directory).catch(() => [])
-    const audioFiles = dirEntries
-      .filter((file) => path.extname(file).toLowerCase() === AUDIO_EXTENSION)
-      .map((file) => path.join(directory, file))
-    return this.importFiles(audioFiles)
+  async prepareAudioImport(paths: string[]): Promise<AudioImportSelection> {
+    const token = randomUUID(), entries = new Map<string, string>()
+    const files: AudioImportSelection['files'] = []
+    for (const file of paths) {
+      if (path.extname(file).toLowerCase() !== AUDIO_EXTENSION) continue
+      const info = await stat(file)
+      if (!info.isFile()) continue
+      const id = randomUUID(), parsed = parseFileName(path.basename(file))
+      entries.set(id, file)
+      files.push({ id, name: path.basename(file), courseCode: parsed?.courseCode ?? null,
+        recordedAt: toLocalDateTimeInput(parsed?.recordedAt ?? formatLocalCalendarDateTime(info.mtime)) })
+    }
+    this.audioImportSession = { token, paths: entries }
+    return { token, files }
   }
+
+  cancelAudioImport(token: string): void {
+    if (this.audioImportSession?.token === token) this.audioImportSession = null
+  }
+
+  async confirmAudioImport(token: string, metadata: AudioImportMetadata[]): Promise<ImportSummary> {
+    const session = this.audioImportSession
+    if (!session || session.token !== token || !Array.isArray(metadata) || !metadata.length || metadata.length !== session.paths.size)
+      throw new Error('Selezione audio scaduta o incompleta. Seleziona di nuovo i file.')
+    const settings = await this.settingsService.getSettings()
+    const seen = new Set<string>()
+    for (const item of metadata) {
+      if (!item || !session.paths.has(item.id) || seen.has(item.id) ||
+        (item.courseCode !== null && !Object.hasOwn(settings.courses ?? {}, item.courseCode)) ||
+        typeof item.recordedAt !== 'string' || !/^\d{4}-\d{2}-\d{2}T(?:[01]\d|2[0-3]):[0-5]\d$/.test(item.recordedAt) ||
+        !parseLocalCalendarDate(item.recordedAt.slice(0, 10))) throw new Error('Corso o data/ora audio non validi.')
+      seen.add(item.id)
+    }
+    if (this.audioImportSession !== session) throw new Error('Selezione audio scaduta. Seleziona di nuovo i file.')
+    this.audioImportSession = null
+    return this.importFiles(metadata.map(item => session.paths.get(item.id)!), new Map(metadata.map(item => [session.paths.get(item.id)!, item])))
+  }
+
+  // Legacy callers also stop at metadata selection; only confirmation can import.
+  async selectAndImportFiles(): Promise<AudioImportSelection | null> { return this.selectAudioImport('files') }
+  async selectAndImportFolder(): Promise<AudioImportSelection | null> { return this.selectAudioImport('folder') }
 
   setVideoImportProgressCallback(callback: (progress: VideoImportProgress) => void): void {
     this.videoImporter.setProgressCallback(callback)
@@ -1904,7 +1938,7 @@ export class ArchiveService {
     }
   }
 
-  async importFiles(filePaths: string[]): Promise<ImportSummary> {
+  async importFiles(filePaths: string[], metadata?: Map<string, AudioImportMetadata>): Promise<ImportSummary> {
     return this.repository.runExclusive(async () => {
       await this.storage.initialize()
       await this.repository.initialize()
@@ -1958,8 +1992,9 @@ export class ArchiveService {
             transcriptSourcePath
           )
           copiedTranscriptFileName = transcriptFileName
-          let courseCode = parsed?.courseCode ?? null
-          if (!courseCode && parsed?.recordedAt) {
+          const chosen = metadata?.get(sourcePath)
+          let courseCode = chosen ? chosen.courseCode : parsed?.courseCode ?? null
+          if (!chosen && !courseCode && parsed?.recordedAt) {
             const durationSecs = measuredDuration ?? 0
             const match = await this.matchLectureToCourse(
               parsed.recordedAt,
@@ -1973,7 +2008,7 @@ export class ArchiveService {
           const lecture: Lecture = {
             id,
             courseCode,
-            recordedAt: parsed?.recordedAt ?? null,
+            recordedAt: chosen?.recordedAt ?? parsed?.recordedAt ?? null,
             sourceAudioFileName: sourceFileName,
             sourceTranscriptFileName: transcriptFileName
               ? path.basename(transcriptSourcePath)

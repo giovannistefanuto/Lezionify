@@ -26,7 +26,7 @@ export function LectureStudyTime({ lecture, visible }: { lecture: Lecture; visib
     return () => { cancelled = true }
   }, [lecture.id, lecture.studyStatus, visible])
   return <section className="lecture-study-time" aria-label="Tempo di studio della lezione">
-    <span>{lecture.studyStatus === 'completata' ? 'Completata in' : 'Tempo di studio'}</span>
+    <span>{lecture.studyStatus === 'completata' ? 'Tempo di studio · incluse riletture' : 'Tempo di studio'}</span>
     <strong>{failed ? 'Tempo non disponibile' : result?.id === lecture.id ? studyDurationLabel(result.seconds) : 'Caricamento…'}</strong>
   </section>
 }

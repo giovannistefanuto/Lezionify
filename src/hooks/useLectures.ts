@@ -1,3 +1,4 @@
+import type { AudioImportSelection } from '../../shared/audioImport'
 import { useState, useMemo, useEffect, useCallback, useRef } from 'react'
 import type { CourseStats, ImportSummary, Lecture } from '../../shared/archive'
 
@@ -296,6 +297,7 @@ export function useLectures() {
   )
   const missingTranslationsCount = candidateTranslationLectures.length
 
+  const [audioSelection, setAudioSelection] = useState<AudioImportSelection | null>(null)
   const handleImport = useCallback(
     async (kind: 'files' | 'folder'): Promise<void> => {
       if (!window.archive) {
@@ -312,8 +314,7 @@ export function useLectures() {
             ? await window.archive.importFiles()
             : await window.archive.importFolder()
         if (!summary) return
-        setNotice(importMessage(summary))
-        await refreshLibrary()
+        setAudioSelection(summary)
       } catch (err) {
         console.error('Import error:', err)
         const msg =
@@ -325,7 +326,7 @@ export function useLectures() {
         setIsImporting(false)
       }
     },
-    [refreshLibrary]
+    []
   )
 
   const handleOpenFolder = useCallback(async (): Promise<void> => {
@@ -418,6 +419,9 @@ export function useLectures() {
     refreshLibrary,
     syncAndRefreshLibrary,
     updateLectureInState,
+    audioSelection,
+    closeAudioImport: () => setAudioSelection(null),
+    finishAudioImport: (summary: ImportSummary) => { setNotice(importMessage(summary)); void refreshLibrary() },
     handleImport,
     handleOpenFolder,
     handleManualSync,

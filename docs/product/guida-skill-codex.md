@@ -31,6 +31,16 @@ iniziale; per la nona skill vedi [Intervista con grilling](#intervista-con-grill
 
 ## Scelta rapida
 
+Per le richieste operative di modifiche al progetto si applica
+[lezionify-lavoro-autonomo](../../skills/lezionify-lavoro-autonomo/SKILL.md),
+richiamata da `AGENTS.md`: basta inviare le cose da fare, anche senza caselle
+o titolo. L'agente chiarisce solo i punti necessari, comunica
+`DA QUI FACCIO DA SOLO` e prosegue fino a collaudi e release Windows verificata.
+Puoi restringere il mandato con «senza release», «solo analisi» o «prima
+discutiamone». Esempi e idee da archiviare restano tali; `LISTA_ORDINE`
+conserva la propria procedura. La skill è versionata nel repository e viene
+letta tramite il rimando in `AGENTS.md`, senza richiedere una copia personale.
+
 | Situazione | Skill | Risultato principale |
 | --- | --- | --- |
 | Vuoi preparare un installer, pubblicare una release Windows o riprendere una bozza | [lezionify-release](../../skills/lezionify-release/SKILL.md) | Gate, backup, asset coerenti, push e verifica pubblica; materiali personali solo locali |

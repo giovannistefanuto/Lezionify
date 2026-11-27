@@ -1,3 +1,4 @@
+import { AudioImportModal } from './components/AudioImportModal'
 import {
   lazy,
   Suspense,
@@ -245,6 +246,7 @@ export default function App() {
     refreshLibrary,
     syncAndRefreshLibrary,
     updateLectureInState,
+    audioSelection, closeAudioImport, finishAudioImport,
     handleImport,
     handleManualSync,
     handleOpenCourseInfo
@@ -781,6 +783,7 @@ export default function App() {
           onRefreshLibrary={refreshLibrary} onNotice={setNotice}
           courses={Object.values(settings.courses || {})}
         />}
+        {audioSelection && <AudioImportModal selection={audioSelection} courses={Object.values(settings.courses || {})} onClose={closeAudioImport} onImported={finishAudioImport} />}
         {videoSelection && <VideoImportModal
           selection={videoSelection}
           courses={Object.values(settings.courses || {}).filter(course => !archivedCourseCodes.includes(course.code))}

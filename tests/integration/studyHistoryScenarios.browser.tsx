@@ -24,10 +24,10 @@ export async function runStudyHistoryScenarios(root: Root, api: any) {
     for(let i=0;i<80;i++) { if(condition())return; await act(async()=>{await new Promise(r=>setTimeout(r,40))}) }
     throw new Error(message)
   }
-  function Harness({memo=false}:{memo?:boolean}) {
+  function Harness({memo=false, rereading=false}:{memo?:boolean; rereading?:boolean}) {
     const ref=useRef<HTMLDivElement>(null)
     tracker=useStudyTracker({activeLectureId:lecture.id,courseCode:'TEST',isFocusMode:true,activeTab:'markdown',isEnabled:true,suspended:memo})
-    estimate=useStudyEstimate({lectureId:lecture.id,markdown:source,enabled:true,paused:tracker.trackingPaused,language:'it',rootRef:ref,managedActivity:true})
+    estimate=useStudyEstimate({lectureId:lecture.id,markdown:source,enabled:true,paused:tracker.trackingPaused,language:'it',rootRef:ref,managedActivity:true,collecting:!rereading})
     content=useLectureContent({selectedLecture:lecture,onRefreshLibrary:async()=>{},onUpdateLectureInState:noop,onNotice:noop,onClearSelectedLecture:noop})
     return <><div data-history-root ref={ref} style={{height:200,overflow:'auto'}}><div className="markdown-body">{Array.from({length:20},(_,i)=><p key={i} style={{height:200,margin:0}}>Paragrafo {i}. {'Studio sintetico di parole. '.repeat(20)}</p>)}</div></div><div className="focus-qna-column" tabIndex={0}>Q&amp;A</div></>
   }
@@ -83,6 +83,14 @@ export async function runStudyHistoryScenarios(root: Root, api: any) {
     await ipc.invoke('study-test-restart')
     day=await api.getStudyDay('2026-11-09')
     check(day.forecasts.some((p:any)=>typeof p.actual==='number'),'Production completion flow did not create a recoverable outcome')
+    const beforeRereading = day.creditedSeconds
+    await render(<Harness rereading />)
+    await tick(7)
+    await render(null); await getStudyHistoryClient(lecture.id)?.flush()
+    day=await api.getStudyDay('2026-11-09')
+    check(day.creditedSeconds===beforeRereading+7,'Rereading a completed lesson must credit seven seconds to its study journal')
+    check(day.segments.filter((s:any)=>s.lectureId===lecture.id).reduce((sum:number,s:any)=>sum+s.creditedSeconds,0)===day.creditedSeconds,'Study credit must remain attributed to the completed lesson')
+
     Date.now=originalNow;window.setInterval=originalInterval;window.clearInterval=originalClear
     if(performanceDescriptor)Object.defineProperty(performance,'now',performanceDescriptor);else Reflect.deleteProperty(performance,'now')
     const start='2026-11-09T09:00:00Z'

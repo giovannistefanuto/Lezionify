@@ -1,3 +1,4 @@
+import { registerScreenshotSource } from '../utils/screenshotSource'
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { getDocument, GlobalWorkerOptions, type PDFDocumentProxy, type RenderTask } from 'pdfjs-dist'
 import workerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url'
@@ -60,6 +61,27 @@ function PdfPage({ document, number, width, ratio, scrollRoot, onGeometryChange,
       canvas.height = 0
     }
   }, [document, number, width, visible])
+  useEffect(() => {
+    const element = ref.current
+    if (!element || !visible) return
+    return registerScreenshotSource(element, async rect => {
+      const bounds = element.getBoundingClientRect()
+      const page = await document.getPage(number)
+      const base = page.getViewport({ scale: 1 })
+      const scale = Math.min(4, Math.max(2, window.devicePixelRatio || 1))
+      const factor = bounds.width / base.width * scale
+      const viewport = page.getViewport({ scale: factor })
+      const cropWidth = Math.ceil(rect.width * scale), cropHeight = Math.ceil(rect.height * scale)
+      if (cropWidth * cropHeight > 24_000_000 || cropWidth > 12000 || cropHeight > 12000) return null
+      const canvas = window.document.createElement('canvas')
+      canvas.width = cropWidth; canvas.height = cropHeight
+      try {
+        await page.render({ canvas, viewport, transform: [1, 0, 0, 1, -(rect.x - bounds.left) * scale, -(rect.y - bounds.top) * scale] }).promise
+        const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/png'))
+        return blob && blob.size <= 16 * 1024 * 1024 ? new Uint8Array(await blob.arrayBuffer()) : null
+      } finally { canvas.width = 0; canvas.height = 0 }
+    })
+  }, [document, number, visible, width])
   return <div ref={ref} className="focus-pdf-page" style={{ width, height: width * aspect, position: 'relative' }} role="group" aria-label={`Pagina ${number}`}>
     {onSelect && <label className="pdf-page-select"><input type="checkbox" checked={Boolean(selected)} onChange={onSelect} aria-label={`Seleziona pagina ${number} per Gemini`} /> Pagina {number}</label>}
     <canvas ref={canvasRef} style={{ width: '100%', height: '100%' }} />

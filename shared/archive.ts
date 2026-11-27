@@ -1,3 +1,4 @@
+import type { AudioImportSelection, AudioImportMetadata } from './audioImport'
 import type { StudyHistoryApi } from './studyHistory'
 import type { CourseRagApi } from './courseRag'
 import type { SectionRevisionApi } from './sectionRevision'
@@ -616,6 +617,9 @@ export interface FocusPdfDocument {
 export interface ArchiveApi extends StudyHistoryApi, CourseRagApi, RepetitionApi, SectionRevisionApi {
   sessione: import('./sessione').SessionApi
   mobileCompanion: import('./mobileCompanion').MobileCompanionApi
+  beginFocusScreenshot: () => Promise<import('./focusScreenshot').FocusScreenshot>
+  cancelFocusScreenshot: (token: string) => Promise<void>
+  saveFocusScreenshot: (token: string, rect: import('./focusScreenshot').ScreenshotRect, enhanced?: Uint8Array) => Promise<void>
   ipadExportStatus: (enabled?: boolean) => Promise<import('./ipadExport').IpadExportStatus>
   exportIpadDiagram: (request: import('./ipadExport').IpadExportRequest) => Promise<import('./ipadExport').IpadExportResult>
   languageShortcutDiagnosticsEnabled?: boolean
@@ -649,8 +653,10 @@ export interface ArchiveApi extends StudyHistoryApi, CourseRagApi, RepetitionApi
   openSpotify: () => Promise<void>
   installOfflineTranslation: () => Promise<import('./offlineTranslation').OfflineTranslationStatus>
   translatePhrase: (text: string, direction: DictionaryDirection) => Promise<import('./offlineTranslation').OfflineTranslationResult>
-  importFiles: () => Promise<ImportSummary | null>
-  importFolder: () => Promise<ImportSummary | null>
+  importFiles: () => Promise<AudioImportSelection | null>
+  importFolder: () => Promise<AudioImportSelection | null>
+  confirmAudioImport: (token: string, metadata: AudioImportMetadata[]) => Promise<ImportSummary>
+  cancelAudioImport: (token: string) => Promise<void>
   selectVideos: () => Promise<VideoImportSelection | null>
   convertVideos: (sessionId: string, orderedIds: string[]) => Promise<VideoImportReady>
   saveVideoImport: (sessionId: string, destination: VideoImportDestination) => Promise<Lecture>

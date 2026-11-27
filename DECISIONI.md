@@ -6855,3 +6855,113 @@ Non modificare manualmente la sezione `Registro`: aggiungi le nuove decisioni es
 - **Impatto:** Nessuna modifica applicativa o ai binari Windows 0.8.0 e Android 0.2.0 gia pubblicati. Correzione del gesto sintetico condiviso dai due divisori, senza retry o riduzione dei controlli. Il commit dei binari e i digest restano invariati.
 - **Follow-up:** Ripetere la suite Electron completa e attendere la CI sul commit di manutenzione. Conservare i tag sul commit originale e non rigenerare installer per soli test e documentazione.
 - **File coinvolti:** tools/run_hook_regressions.cjs, tests/integration/focusPdfScenarios.browser.tsx, docs/quality/youtube-locale-2026-11-25.md
+
+## D-0623 — Prossima sessione: installare Android sul telefono
+
+- **Data:** 2026-11-25
+- **Stato:** accettata
+- **Area:** promemoria
+- **Decisione:** Su richiesta esplicita dell utente, ricordare alla prossima sessione su Lezionify di installare Android 0.2.0 sul telefono personale, quando disponibile. Non e un promemoria a data o ora fissa.
+- **Motivazione:** L APK e gia compilato, collaudato e pubblicato; l utente vuole riprendere l installazione la prossima volta.
+- **Impatto:** APK pronto in local-artifacts/android-install-ready/0.2.0/Lezionify-Android-0.2.0.apk e nella release android-v0.2.0. Aggiornamento sul posto con adb install -r, stessa firma, senza disinstallare per conservare dati e abbinamento. Verificare dispositivo prima di installare.
+- **Follow-up:** Alla prossima sessione ricordare per prima cosa l installazione sul telefono; poi verificare sincronizzazione e nuovo widget Memo con elenco cose da fare e testo Note. Non installato in questa sessione.
+- **File coinvolti:** DECISIONI.md, docs/releases/android-0.2.0.md
+
+## D-0624 — Android 0.2.0 installato sul telefono personale
+
+- **Data:** 2026-11-25
+- **Stato:** accettata
+- **Area:** android
+- **Decisione:** Installare su richiesta esplicita Android 0.2.0 codice 4 sul telefono collegato tramite adb install -r, usando l APK gia pubblicato e verificato.
+- **Motivazione:** Completare il promemoria D-0623 con aggiornamento sul posto della versione 0.1.2 codice 3, senza disinstallazione o cancellazione dati.
+- **Impatto:** Installazione Success; pacchetto it.lezionify.mobile confermato a versione 0.2.0 codice 4. Avvio MainActivity Status ok e processo presente. Data della prima installazione invariata. SHA256 APK 2264377db64ab4efce3cb194048429e57d3bf658d5b2d00a7aad535d0733a573. Nessuna ricompilazione, nuova pubblicazione o modifica delle credenziali.
+- **Follow-up:** Verificare nell uso la sincronizzazione personale; non ispezionati contenuti o chiavi. Per Memo aggiungere Lezionify Memo alla Home e attivare Sincronizza anche Memo nel desktop 0.8.0. Fetch completato; pull sospeso per modifica locale preesistente in DECISIONI.md, conservata.
+- **File coinvolti:** DECISIONI.md, local-artifacts/android-install-ready/0.2.0/Lezionify-Android-0.2.0.apk (ignorato)
+
+## D-0625 — Recupero manuale di una dispensa inglese entro dieci minuti
+
+- **Data:** 2026-11-26
+- **Stato:** accettata
+- **Area:** traduzione-eng
+- **Decisione:** Completare su richiesta una sola traduzione fallita, riusando dodici sezioni del tentativo verificato e traducendo manualmente le venticinque mancanti, senza nuove chiamate Gemini.
+- **Motivazione:** La pipeline era conclusa con errori dopo ripetute indisponibilita del provider; l utente autorizza il recupero con limite massimo di dieci minuti.
+- **Impatto:** Trentasette sezioni ricomposte e validate strutturalmente; formule e codice originali conservati. Un diagramma mantiene le etichette originali secondo il fallback di integrita. Con app chiusa, backup locale ripristinabile, fonte e tentativi invariati, inglese scritto atomicamente e soli metadati pertinenti aggiornati. Stato pipeline terminato senza attivita pendenti rimosso secondo il contratto corrente; checkpoint per lezione conservati. Nessuna pubblicazione esterna o modifica del codice applicativo.
+- **Follow-up:** L indice viene ricostruito al prossimo avvio dell app. Verifica visiva in app non eseguita per evitare la pubblicazione automatica configurata. Materiale personale e backup restano soltanto in local-artifacts ignorato e nell archivio locale.
+- **File coinvolti:** DECISIONI.md, archivio locale (non versionato), local-artifacts/eng-manual-20261126 (ignorato)
+
+## D-0626 — Richieste operative fino alla release con lavoro autonomo
+
+- **Data:** 2026-11-27
+- **Stato:** accettata
+- **Area:** agenti
+- **Decisione:** Aggiungere la skill di progetto lezionify-lavoro-autonomo e il richiamo in AGENTS.md. Le richieste operative di bug, funzioni e revisioni autorizzano chiarimenti necessari, implementazione circoscritta, collaudi, commit, push e release Windows verificata; dopo i chiarimenti comunicare DA QUI FACCIO DA SOLO.
+- **Motivazione:** Ridurre il prompt ripetitivo e le conferme fra le fasi, mantenendo chiari perimetro, risultati attesi e criteri di completamento.
+- **Impatto:** Skill versionata nel repository e raggiungibile da AGENTS senza installazione personale. Esclusi esempi, sola analisi, idee e LISTA_ORDINE; vincoli espliciti correnti prevalenti. Release delegata alla procedura esistente; nessuna release applicativa per sole istruzioni o test senza effetti sui binari.
+- **Follow-up:** Verificare formato e riferimenti e simulare richieste chiare, ambigue, senza release e bloccate. Nessun installer o pubblicazione per la sola creazione della skill; pull pendente per modifiche locali preesistenti in DECISIONI.md.
+- **File coinvolti:** AGENTS.md, skills/lezionify-lavoro-autonomo/SKILL.md, STRUTTURA_PROGETTO.md, docs/product/guida-skill-codex.md, DECISIONI.md
+
+## D-0627 — Conferma corso e registrazione prima dell importazione audio
+
+- **Data:** 2026-11-27
+- **Stato:** accettata
+- **Area:** importazione
+- **Decisione:** Separare selezione e conferma dei file e delle cartelle MP3: mostrare corso e data ora per ogni audio prima di copiare o avviare la coda automatica configurata. Conservare i percorsi nel main dietro un token temporaneo.
+- **Motivazione:** Il vecchio flusso importava direttamente e avviava la pipeline senza revisione dei metadati. La richiesta operativa autorizza correzione e release secondo D-0626.
+- **Impatto:** Metadati validati prima della copia; Annulla non importa ne trascrive. Deduplicazione e fonti originali restano nel servizio esistente, senza nuove dipendenze.
+- **Follow-up:** Gate completo e release Windows 0.9.0; nessuna modifica Android o installazione personale.
+- **File coinvolti:** shared/audioImport.ts, shared/archive.ts, electron/main/archive.ts, electron/main/index.ts, electron/preload/index.ts, src/hooks/useLectures.ts, src/App.tsx, src/components/AudioImportModal.tsx, tests, docs
+
+## D-0628 — Previsione esterna e riletture delle lezioni completate
+
+- **Data:** 2026-11-27
+- **Stato:** accettata
+- **Area:** studio
+- **Decisione:** Affiancare alla percentuale di lunghezza una previsione di sola lettura: restante se disponibile, altrimenti totale approssimativo appreso dai campioni esistenti o indicazione di calibrazione. Chiarire in Info che il totale include le riletture, gia accreditate dal tracker indipendentemente dal completamento.
+- **Motivazione:** Rendere visibile lo sforzo previsto prima del Focus e chiarire il comportamento delle riletture senza inventare un numero iniziale. Il paragrafo osservato e una stima geometrica dei blocchi visibili, non dello sguardo.
+- **Impatto:** Nessun tempo o campione scritto dalla previsione esterna. Prova persistente accredita sette secondi alla stessa lezione completata dopo riapertura; nessuna migrazione dati o chiamata AI.
+- **Follow-up:** Verificare header anche in Info e gate completo; mantenere esplicita l incertezza della stima.
+- **File coinvolti:** src/utils/documentStudyEstimate.ts, src/components/LectureDrawer.tsx, src/components/LectureStudyTime.tsx, tests, docs/releases/0.9.0.md, docs/quality/studio-import-screenshot-2026-11-27.md
+
+## D-0629 — Ritaglio Full Focus verso Foto di iCloud e ritiro diagnostica scansione
+
+- **Data:** 2026-11-27
+- **Stato:** accettata
+- **Area:** screenshot
+- **Decisione:** Aggiungere fotocamera discreta in Full Focus: cattura congelata in memoria, rettangolo con gesto inverso supportato, Esc per annullare e PNG univoco nella destinazione iCloud degli schemi. Per una sola pagina PDF renderizzare il ritaglio da fonte a risoluzione maggiore. Rimuovere il log Tempi scansione locale e le misure periodiche inutilizzate.
+- **Motivazione:** La richiesta esplicita autorizza il salvataggio manuale. Un token proprietario e destinazione fissa mantengono il flusso locale e limitato; due scansioni riproducono due log ridondanti, mentre il problema di lentezza era gia ritirato in D-0469.
+- **Impatto:** Nessuna dipendenza o chiamata AI. Errori di salvataggio conservano la selezione per riprova; niente sovrascrittura degli schemi. Cattura normale alla risoluzione visibile e PDF con limite 24 milioni pixel. Log storici conservati, nessuna ottimizzazione prestazionale non dimostrata.
+- **Follow-up:** Pubblicare 0.9.0 con gate completo, compressione invariata e build unica; sincronizzazione Apple e upgrade Windows temporaneo restano limiti dichiarati.
+- **File coinvolti:** shared/focusScreenshot.ts, electron/main/focusScreenshot.ts, electron/main/usbDetector.ts, electron/main/index.ts, electron/preload/index.ts, src/components/FocusScreenshot.tsx, src/components/FocusPdfViewer.tsx, src/utils/screenshotSource.ts, src/styles.css, tests, tools/run_hook_regressions.cjs, docs, STRUTTURA_PROGETTO.md, package.json, package-lock.json, electron-builder.yml
+
+## D-0630 — Esc dei nuovi dialoghi e PNG completo prima della sincronizzazione
+
+- **Data:** 2026-11-27
+- **Stato:** accettata
+- **Area:** collaudi-focus
+- **Decisione:** Lasciare Esc ai dialoghi screenshot e importazione audio nel controller Full Focus; salvare gli screenshot con file temporaneo e rinomina dopo scrittura completa.
+- **Motivazione:** La prova con tasto nativo e controller reale riproduce l uscita Focus impropria prima del cancel; dopo la correzione lo stesso scenario annulla senza uscire. La rinomina evita un PNG finale parziale se la scrittura fallisce.
+- **Impatto:** Prima preparazione 0.9.0 interrotta durante i test prima del packaging. Fixture screenshot attende il repaint e confronta i pixel reali; nessuna asserzione rimossa. Nuovo gate completo sui sorgenti definitivi.
+- **Follow-up:** Verificare il nuovo gate, asset e pubblicazione senza ricostruire la build collaudata.
+- **File coinvolti:** src/hooks/useFocusModeController.ts, electron/main/focusScreenshot.ts, tests/integration/november27Scenarios.browser.tsx, tools/run_hook_regressions.cjs, docs/quality/studio-import-screenshot-2026-11-27.md
+
+## D-0631 — Isolamento finestra e riavvio della fixture screenshot
+
+- **Data:** 2026-11-27
+- **Stato:** accettata
+- **Area:** test
+- **Decisione:** Fissare dimensioni zoom e focus della nuova fixture prima dei gesti nativi, ripristinare lo stato precedente e creare in modo idempotente la cartella temporanea PNG anche nel secondo processo Electron.
+- **Motivazione:** Il gate completo ha esposto dipendenze dallo stato dei precedenti scenari; la prima fase completa passa dopo isolamento. Il riavvio reale ha poi riprodotto EEXIST sulla cartella dei PNG, risolto senza cancellare i file o togliere la verifica di riapertura.
+- **Impatto:** Sole correzioni del runner sintetico; nessuna modifica dei binari applicativi rispetto a D-0630. Tutte le asserzioni su geometria pixel errore riprova annullamento ed Esc restano attive. Nessun packaging dai tentativi interrotti.
+- **Follow-up:** Ripetere il gate completo e pubblicare solo gli asset verificati della stessa build.
+- **File coinvolti:** tools/run_hook_regressions.cjs, tests/integration/november27Scenarios.browser.tsx, docs/quality/studio-import-screenshot-2026-11-27.md
+
+## D-0632 — Gate completo e installer Windows 0.9.0 verificati
+
+- **Data:** 2026-11-27
+- **Stato:** accettata
+- **Area:** release
+- **Decisione:** Adottare gli asset del rapporto release-20261127-130108, cinque passaggi verdi e sorgenti invariati. Setup 353318491 byte SHA256 f4e9ea5938272f1b6d91f1c07f08830dddefa8c688119da79c3fe25f5a69477a. Riutilizzare questi binari per la pubblicazione.
+- **Motivazione:** Completare le richieste operative con nuova versione MINOR secondo convenzione: 1993 unitari nel discovery con checkout storico, 49 Python, 41 Node, Java, Bluetooth, RAG, updater, Electron con riavvio, raccolte, Sessione e PDF reali tutti passati.
+- **Impatto:** Verificati 385 file build, nove componenti NSIS, tool e licenze, tre backup, assenza dati privati e identita Start. Authenticode NotSigned. Analizzati solo aggregati di 3503 scansioni storiche: con audio mediana 98.69 ms p95 167.86 ms; checksum 88.68 per cento del costo, rari picchi; controllo di integrita conservato.
+- **Follow-up:** Commit e push di tutte le modifiche pubblicabili, bozza e pubblicazione autorizzata, verifica remota degli asset. Upgrade Windows temporaneo e sincronizzazione Apple non collaudati; nessuna installazione personale.
+- **File coinvolti:** DECISIONI.md, docs/quality/studio-import-screenshot-2026-11-27.md, docs/releases/0.9.0.md, dist (ignorato)
